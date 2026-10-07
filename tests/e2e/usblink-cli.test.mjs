@@ -57,7 +57,7 @@ test('status: one line and a distinct exit code per state (unplugged 3, usb-lost
 
   r = await run('proxy', 'start', '--by', 'lead', '--reason', 'test');
   assert.equal(r.code, 0, r.out);
-  assert.match(r.stdout, new RegExp(`^PROXY START OK: started \\(pid \\d+\\), :${port} answers\\n$`));
+  assert.match(r.stdout, new RegExp(`^PROXY START OK: started \\(pid \\d+\\), :${port} answers on 127\\.0\\.0\\.1:${port} only\\n$`), 'I-241: loopback only');
   const t = Date.now();
   r = await run('status', '--stale-after', '1'); // I-235: usbmux back, the proxy lists nothing
   assert.equal(r.code, 5, r.out);
@@ -224,4 +224,57 @@ test('watch --post-step: usb-lost past --step-after posts ONE re-plug action ste
   assert.equal(s.status, 'cancelled');
   assert.equal(stateOf().step, null);
   noIds(r.out + JSON.stringify(s), 'post-step');
+});
+
+// ---- I-241: the proxy on loopback only ------------------------------------------------------------------------------
+// ios_webkit_debug_proxy binds INADDR_ANY (src/socket_manager.c sm_listen, v1.9.2) and has no option against it. The
+// shim tools/lib/bind-localhost.c, loaded with DYLD_INSERT_LIBRARIES, turns 0.0.0.0 / :: into 127.0.0.1 / ::1. Proven
+// here on a real ad-hoc signed binary that binds like sm_listen (tests/fixtures/any-listener.c, built with cc like
+// Homebrew's iwdp: no hardened runtime); the CLI's fail-closed check on the fake proxy, with a no-op dylib as the shim
+// (whether the real shim reaches the #!/usr/bin/env fake varies, OBSERVED).
+
+test('I-241 bind-localhost shim: an INADDR_ANY / in6addr_any listener binds 127.0.0.1 / ::1 with it, 0.0.0.0 / :: without', async () => {
+  const { buildBindShim } = await import('../../tools/lib/usblink.mjs');
+  const shim = buildBindShim({ dir: join(dir, 'shim') });
+  assert.equal(shim.ok, true, shim.why);
+  const bin = join(dir, 'any-listener');
+  const cc = spawnSync('cc', ['-O2', '-o', bin, join(TESTS, 'fixtures', 'any-listener.c')], { encoding: 'utf8' });
+  assert.equal(cc.status, 0, cc.stderr);
+  const plain = spawnSync(bin, ['6'], { encoding: 'utf8', env: cleanEnv() });
+  assert.equal(plain.stdout, '0.0.0.0\n::\n', plain.stderr);
+  const shimmed = spawnSync(bin, ['6'], { encoding: 'utf8', env: cleanEnv({ DYLD_INSERT_LIBRARIES: shim.path }) });
+  assert.equal(shimmed.stdout, '127.0.0.1\n::1\n', shimmed.stderr);
+});
+
+test('I-241 proxy start: a proxy listening beyond loopback is stopped and refused; no cc, no start; show names the listeners', async () => {
+  mux.set([{ id: 132, udid: UDID }]);
+  // the shim did not take (a hardened build, a launcher script): a no-op dylib, and the proxy binds every interface
+  const noop = join(dir, 'noop.dylib');
+  writeFileSync(join(dir, 'noop.c'), 'int fw_noop(void) { return 0; }\n');
+  assert.equal(spawnSync('cc', ['-dynamiclib', '-o', noop, join(dir, 'noop.c')], { encoding: 'utf8' }).status, 0);
+  let r = await nodeAsync(USBLINK, ['proxy', 'start', '--by', 'lead'], { env: { ...env, FAKE_PHONE_IWDP_BIND: '0.0.0.0', FW_USBLINK_SHIM: noop } });
+  assert.equal(r.code, 1, r.out);
+  const m = r.stdout.match(new RegExp(`^PROXY START REFUSED: the proxy listened on \\*:${port}, not on loopback only \\(the bind-localhost shim did not take\\); stopped it \\(pid (\\d+)\\)\\n$`));
+  assert.ok(m, r.stdout);
+  assert.ok(!alive(Number(m[1])), 'the exposed proxy is gone');
+  assert.ok(!existsSync(join(dir, 'state', 'usblink', 'proxy.json')), 'no record of it');
+  assert.equal((await run('status', '--stale-after', '0')).code, 6, 'nothing listens');
+  // cc missing: refused before anything starts
+  r = await nodeAsync(USBLINK, ['proxy', 'start', '--by', 'lead'], { env: { ...env, FW_CC: join(dir, 'no-such-cc') } });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stdout, /^PROXY START REFUSED: cannot build the bind-localhost shim with \S+no-such-cc: ENOENT; not started \(it would listen on every interface\)\n$/);
+  assert.equal((await run('status', '--stale-after', '0')).code, 6);
+  // the normal start (the fake on 127.0.0.1, where the shim puts iwdp): the shim and the listeners in the record
+  r = await run('proxy', 'start', '--by', 'lead');
+  assert.equal(r.code, 0, r.out);
+  const rec = JSON.parse(readFileSync(join(dir, 'state', 'usblink', 'proxy.json'), 'utf8'));
+  assert.match(rec.shim, /^bind-localhost-[0-9a-f]{12}\.dylib$/);
+  assert.deepEqual(rec.listen, [`127.0.0.1:${port}`]);
+  assert.ok(existsSync(join(dir, 'state', 'usblink', rec.shim)), 'built once into the state dir');
+  r = await run('proxy', 'show');
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, new RegExp(`; listening on 127\\.0\\.0\\.1:${port}\\n$`));
+  const ev = audit().filter((a) => a.event.startsWith('proxy-start'));
+  assert.deepEqual(ev.map((a) => a.event), ['proxy-start-refused', 'proxy-start-refused', 'proxy-start']);
+  assert.deepEqual(ev[0].listen, [`*:${port}`]);
 });

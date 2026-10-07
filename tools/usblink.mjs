@@ -30,11 +30,14 @@
 //   node tools/usblink.mjs proxy start|stop|restart|show --by <you> [--reason "<why>"]
 //        # start: `ios_webkit_debug_proxy -c null:9221,:9222-9322` detached ($FW_IWDP_PHONE), its pid, -c argument and
 //        # start time recorded in <state dir>/usblink/proxy.json; refused when anything answers on :9221 already.
+//        # Loopback only (I-241): iwdp has no bind option and listens on every interface, so start loads
+//        # tools/lib/bind-localhost.c (built once with cc, $FW_CC; into <state dir>/usblink/) via DYLD_INSERT_LIBRARIES, then
+//        # checks the listeners with lsof: anything but 127.0.0.1 / ::1 and the proxy is stopped and the start refused.
 //        # stop / restart: only that recorded process (same -c argument, no -s unix:, same start time); anything else is
-//        # refused with nothing killed. show: the record and whether it is still ours. Each action is audited.
-//        # exit 0 done, 1 refused or failed, 2 usage.
+//        # refused with nothing killed. show: the record, whether it is still ours, and where it listens now. Each action
+//        # is audited. exit 0 done, 1 refused or failed, 2 usage.
 // Ports: $FW_IPHONE_DEVICE_PORT (9221, the device list) and $FW_IPHONE_PORT (9222, the first tab port), as iphone.mjs.
-import { LINK_EXIT, LINK_DEFAULTS, sample, evaluate, sampleFacts, readLinkState, writeLinkState, audit, startProxy, stopProxy, restartProxy, readProxyRecord, isOurProxy, replugStepPass, proxyPorts } from './lib/usblink.mjs';
+import { LINK_EXIT, LINK_DEFAULTS, sample, evaluate, sampleFacts, readLinkState, writeLinkState, audit, startProxy, stopProxy, restartProxy, readProxyRecord, isOurProxy, replugStepPass, proxyPorts, listenAddrs, isLoopback } from './lib/usblink.mjs';
 import { pidAlive } from './lib/wait.mjs';
 import { runMain } from './lib/exit.mjs';
 import { exitOnHelp } from './lib/help.mjs';
@@ -149,7 +152,9 @@ async function proxy() {
   if (!['start', 'stop', 'restart', 'show'].includes(sub)) throw new Usage(USAGE);
   if (sub === 'show') {
     const rec = readProxyRecord(), o = isOurProxy(rec);
-    console.log(rec ? `PROXY ${o.ours ? 'ours' : 'not ours'}: ${o.why}; -c ${rec.match?.replace(/^-c /, '')}, ports ${rec.ports?.list}/${rec.ports?.tabs}-${rec.ports?.last}` : `PROXY none: ${o.why}`);
+    const addrs = o.ours ? listenAddrs(rec.pid) : null; // I-241: where it listens now (tab ports open when the phone attaches)
+    const where = addrs ? `; listening on ${addrs.length ? addrs.join(', ') : 'nothing'}${addrs.every(isLoopback) ? '' : ' (NOT loopback only)'}` : '';
+    console.log(rec ? `PROXY ${o.ours ? 'ours' : 'not ours'}: ${o.why}; -c ${rec.match?.replace(/^-c /, '')}, ports ${rec.ports?.list}/${rec.ports?.tabs}-${rec.ports?.last}${where}` : `PROXY none: ${o.why}`);
     return o.ours ? 0 : 1;
   }
   const by = byOpt(`proxy ${sub}`);

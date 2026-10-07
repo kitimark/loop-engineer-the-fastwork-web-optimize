@@ -15,7 +15,50 @@ const state = tempDir('usblink-unit-');
 process.env.FW_STATE_DIR = state; // audit lines and the console store of these tests go here
 process.env.FW_WDA_HOME = join(state, 'wda'); // no WDA config: never the Mac's real phone udid (knownDevice)
 const L = await import('../../tools/lib/usblink.mjs');
-const { parseIoreg, ioUsbIphone, ioUsbLinkCause, muxPhone, proxyDevices, sample, evaluate, sampleFacts, isOurProxy, replugStepPass, LINK_EXIT, LINK_STATES, proxyConfigArg, proxyPorts, auditFile } = L;
+const { parseIoreg, ioUsbIphone, ioUsbLinkCause, muxPhone, proxyDevices, sample, evaluate, sampleFacts, isOurProxy, replugStepPass, LINK_EXIT, LINK_STATES, proxyConfigArg, proxyPorts, auditFile, parseLsofListen, isLoopback, listenAddrs, buildBindShim, SHIM_SOURCE } = L;
+
+// ---- I-241: the proxy on loopback only -------------------------------------------------------------------------------
+// ios_webkit_debug_proxy binds INADDR_ANY with no option to change it (src/socket_manager.c sm_listen, v1.9.2 278bf487),
+// so startProxy loads tools/lib/bind-localhost.c (built with cc) through DYLD_INSERT_LIBRARIES and refuses a proxy whose
+// listeners are not loopback. The shim's effect on a real ad-hoc signed binary is tested in tests/e2e/usblink-cli.test.mjs.
+
+test('I-241 parseLsofListen / isLoopback: the listen addresses of `lsof -Fn`; only 127.x and ::1 are loopback', () => {
+  assert.deepEqual(parseLsofListen('p27994\nf3\nn*:9221\nf5\nn*:9222\n'), ['*:9221', '*:9222'], 'the hand-started proxy on 2026-10-07: every interface');
+  assert.deepEqual(parseLsofListen('p1\nf3\nn127.0.0.1:9221\nf4\nn[::1]:9221\n'), ['127.0.0.1:9221', '[::1]:9221']);
+  assert.deepEqual(parseLsofListen(''), []);
+  for (const a of ['127.0.0.1:9221', '127.0.0.2:1', '[::1]:9222']) assert.equal(isLoopback(a), true, a);
+  for (const a of ['*:9221', '0.0.0.0:9221', '[::]:9221', '192.168.1.5:9221', '[fe80::1]:9221', '']) assert.equal(isLoopback(a), false, a);
+});
+
+test('I-241 listenAddrs: lsof exit 1 with no output = no listener; a missing lsof = no answer (null)', () => {
+  const fake = join(state, 'fake-lsof.sh');
+  writeFileSync(fake, '#!/bin/sh\necho "$@" > "$(dirname "$0")/lsof.args"\nprintf "p42\\nf3\\nn127.0.0.1:7001\\n"\n', { mode: 0o755 });
+  assert.deepEqual(listenAddrs(42, { lsof: fake }), ['127.0.0.1:7001']);
+  assert.equal(readFileSync(join(state, 'lsof.args'), 'utf8').trim(), '-nP -a -p 42 -iTCP -sTCP:LISTEN -Fn');
+  assert.deepEqual(listenAddrs(42, { lsof: '/usr/bin/false' }), [], 'lsof finds nothing: exit 1');
+  assert.equal(listenAddrs(42, { lsof: join(state, 'no-such-lsof') }), null);
+});
+
+test('I-241 buildBindShim: cc builds the dylib once per source version (hash in the name); a failing cc is a refusal', () => {
+  const dir = join(state, 'shim'), log = join(state, 'cc.log');
+  const cc = join(state, 'fake-cc.sh');
+  // a stand-in for cc: logs its arguments and writes the -o file
+  writeFileSync(cc, `#!/bin/sh\necho "$@" >> ${log}\nwhile [ $# -gt 0 ]; do [ "$1" = -o ] && { echo dylib > "$2"; }; shift; done\n`, { mode: 0o755 });
+  let r = buildBindShim({ cc, dir });
+  assert.equal(r.ok, true, JSON.stringify(r));
+  assert.equal(r.built, true);
+  assert.match(r.path, /\/shim\/bind-localhost-[0-9a-f]{12}\.dylib$/);
+  assert.match(readFileSync(log, 'utf8'), new RegExp(`^-dynamiclib -O2 -o \\S+\\.tmp ${SHIM_SOURCE.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}\\n$`));
+  r = buildBindShim({ cc, dir });
+  assert.equal(r.built, false, 'the same source: built once');
+  assert.equal(readFileSync(log, 'utf8').trim().split('\n').length, 1);
+  const bad = buildBindShim({ cc: '/usr/bin/false', dir: join(state, 'shim2') });
+  assert.equal(bad.ok, false);
+  assert.match(bad.why, /^cannot build the bind-localhost shim with \/usr\/bin\/false/);
+  const none = buildBindShim({ cc: join(state, 'no-such-cc'), dir: join(state, 'shim3') });
+  assert.equal(none.ok, false);
+  assert.match(none.why, /ENOENT/);
+});
 
 const UDID = '00008130-0011223344556677';
 const IOREG = `+-o iPhone@00100000  <class IOUSBHostDevice, id 0x10009dfef, registered, matched, active, busy 0 (238 ms), retain 65>

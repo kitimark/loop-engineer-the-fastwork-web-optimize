@@ -23,7 +23,10 @@
 // (no ids). The proxy's own output goes to <state dir>/usblink/proxy.log (0600, local, never printed: it names the phone).
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync, appendFileSync, openSync, closeSync, rmSync, renameSync, chmodSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname, basename } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import http from 'node:http';
 import { sharedStateDir } from './paths.mjs';
 import { listDevices, usbAttachIn } from './usbmux.mjs';
@@ -203,6 +206,51 @@ export function isOurProxy(rec, { alive = pidAlive, command = procCommand, start
 
 const proxyExe = () => process.env.FW_IWDP_PHONE || 'ios_webkit_debug_proxy';
 
+// ---- I-241: loopback only ------------------------------------------------------------------------------------------
+// ios_webkit_debug_proxy has no bind-address option: sm_listen() binds INADDR_ANY (google/ios-webkit-debug-proxy
+// src/socket_manager.c, v1.9.2 278bf487 and master; CONFIRMED), so :9221 and every tab port answered on all interfaces.
+// startProxy loads bind-localhost.c (an interposed bind(): 0.0.0.0 -> 127.0.0.1, :: -> ::1) with DYLD_INSERT_LIBRARIES
+// and refuses (stops) a proxy whose listeners are not all loopback afterwards, so a binary that ignores the shim (a
+// hardened-runtime build, or a launcher script whose interpreter macOS starts without DYLD_*) fails closed instead of
+// exposing Safari's inspector to the LAN.
+
+export const SHIM_SOURCE = join(dirname(fileURLToPath(import.meta.url)), 'bind-localhost.c');
+
+/** Build the shim with cc into `dir` (<state dir>/usblink), named by the source's hash, once. -> {ok, path, built, why}.
+ *  $FW_USBLINK_SHIM: a prebuilt dylib to use instead. */
+export function buildBindShim({ cc = process.env.FW_CC || 'cc', source = SHIM_SOURCE, dir = linkDir() } = {}) {
+  if (process.env.FW_USBLINK_SHIM) return { ok: true, path: process.env.FW_USBLINK_SHIM, built: false };
+  const hash = createHash('sha256').update(readFileSync(source)).digest('hex').slice(0, 12);
+  const out = join(dir, `bind-localhost-${hash}.dylib`);
+  if (existsSync(out)) return { ok: true, path: out, built: false };
+  mkdirSync(dir, { recursive: true });
+  const tmp = `${out}.${process.pid}.tmp`;
+  const r = spawnSync(cc, ['-dynamiclib', '-O2', '-o', tmp, source], { encoding: 'utf8', timeout: 120000 });
+  if (r.error || r.status !== 0 || !existsSync(tmp)) {
+    rmSync(tmp, { force: true });
+    return { ok: false, why: `cannot build the bind-localhost shim with ${cc}: ${r.error ? r.error.code || r.error.message : `exit ${r.status}${r.stderr ? `: ${r.stderr.trim().split('\n')[0]}` : ''}`}` };
+  }
+  renameSync(tmp, out);
+  return { ok: true, path: out, built: true };
+}
+
+/** The addresses in `lsof -Fn` output (lines n<addr>:<port>). */
+export const parseLsofListen = (text) => String(text || '').split('\n').filter((l) => l.startsWith('n')).map((l) => l.slice(1).trim()).filter(Boolean);
+/** 127.0.0.0/8 or [::1], with a port. */
+export const isLoopback = (a) => /^(127\.\d{1,3}\.\d{1,3}\.\d{1,3}|\[::1\]):\d+$/.test(String(a));
+/** The TCP listen addresses of `pid` ([] none), or null when lsof can't be run ($FW_LSOF). */
+export function listenAddrs(pid, { lsof = process.env.FW_LSOF || 'lsof' } = {}) {
+  const r = spawnSync(lsof, ['-nP', '-a', '-p', String(pid), '-iTCP', '-sTCP:LISTEN', '-Fn'], { encoding: 'utf8', timeout: 15000 });
+  if (r.error) return null;
+  return r.status === 0 ? parseLsofListen(r.stdout) : [];
+}
+
+async function killPid(pid) {
+  try { process.kill(pid, 'SIGTERM'); } catch {}
+  for (let i = 0; i < 30 && pidAlive(pid); i++) await sleep(100);
+  if (pidAlive(pid)) { try { process.kill(pid, 'SIGKILL'); } catch {} for (let i = 0; i < 20 && pidAlive(pid); i++) await sleep(100); }
+}
+
 async function waitPort(port, want, ms) {
   const end = Date.now() + ms;
   for (;;) {
@@ -226,19 +274,31 @@ export async function startProxy({ by, reason = null, ports = proxyPorts() } = {
     return { ok: false, why };
   }
   mkdirSync(linkDir(), { recursive: true });
+  const shim = buildBindShim(); // I-241: loopback only
+  if (!shim.ok) { audit({ event: 'proxy-start-refused', by, reason, why: shim.why }); return { ok: false, why: `${shim.why}; not started (it would listen on every interface)` }; }
   const cfg = proxyConfigArg(ports);
   const fd = openSync(proxyLogFile(), 'a', 0o600);
-  const p = spawn(proxyExe(), ['-c', cfg], { detached: true, stdio: ['ignore', fd, fd] });
+  const p = spawn(proxyExe(), ['-c', cfg], { detached: true, stdio: ['ignore', fd, fd], env: { ...process.env, DYLD_INSERT_LIBRARIES: shim.path } });
   closeSync(fd);
   try { chmodSync(proxyLogFile(), 0o600); } catch {}
   const spawned = await new Promise((res) => { p.once('spawn', () => res(true)); p.once('error', (e) => res(e)); });
   if (spawned !== true) { audit({ event: 'proxy-start-failed', by, reason, why: spawned.code || spawned.message }); return { ok: false, why: `could not start ${proxyExe()}: ${spawned.code || spawned.message}` }; }
   p.unref();
-  const rec = { pid: p.pid, match: `-c ${cfg}`, exe: proxyExe().split('/').pop(), ports, by, reason, startedAt: new Date().toISOString(), procStart: procStart(p.pid) };
+  const rec = { pid: p.pid, match: `-c ${cfg}`, exe: proxyExe().split('/').pop(), ports, by, reason, startedAt: new Date().toISOString(), procStart: procStart(p.pid), shim: basename(shim.path) };
   writeJsonAtomic(proxyFile(), rec);
   const up = await waitPort(ports.list, 'up', 5000);
-  audit({ event: 'proxy-start', by, reason, pid: p.pid, up });
-  return up ? { ok: true, pid: p.pid, why: `started (pid ${p.pid}), :${ports.list} answers` } : { ok: false, pid: p.pid, why: `started (pid ${p.pid}), but :${ports.list} does not answer after 5 s (see ${proxyLogFile()})` };
+  // I-241: every listener on loopback, or the proxy goes (fail closed)
+  const addrs = up ? listenAddrs(p.pid) : null;
+  if (up && (!addrs || !addrs.length || !addrs.every(isLoopback))) {
+    await killPid(p.pid);
+    rmSync(proxyFile(), { force: true });
+    const seen = addrs?.length ? addrs.join(', ') : addrs ? 'no listener lsof could see' : 'unknown addresses (lsof failed)';
+    audit({ event: 'proxy-start-refused', by, reason, pid: p.pid, why: 'not loopback only', listen: addrs });
+    return { ok: false, pid: p.pid, why: `the proxy listened on ${seen}, not on loopback only (the bind-localhost shim did not take); stopped it (pid ${p.pid})` };
+  }
+  writeJsonAtomic(proxyFile(), { ...rec, listen: addrs });
+  audit({ event: 'proxy-start', by, reason, pid: p.pid, up, listen: addrs });
+  return up ? { ok: true, pid: p.pid, why: `started (pid ${p.pid}), :${ports.list} answers on ${addrs.join(', ')} only` } : { ok: false, pid: p.pid, why: `started (pid ${p.pid}), but :${ports.list} does not answer after 5 s (see ${proxyLogFile()})` };
 }
 
 /** Stop the proxy usblink.mjs started (never another one). -> {ok, pid, why}. */
