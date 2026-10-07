@@ -109,9 +109,23 @@ First open of the page load (`cm-sim.mjs --cold --stack 6`, one load each):
 (C and V11 from the v11 snapshot, served by `fixes/v11/phone/v11-serve.sh`). It keeps the design: AB/BA pairs plus a
 C/C catch pair, forced choice, each side recorded, a fresh WDA session and a 60 s settle first. Every step's meta carries
 both pins. The first try (C vs Vc, int-v8's script, 17:52Z) stopped at the WDA start (XCTest "Timed out while enabling
-automation mode") before anything was posted. Result: pending.
+automation mode") before anything was posted.
 
-## Phone block v11-nw (pre-staged, dry run only; runs on the lead's go after the swipe test)
+Result (answers 2026-10-07 00:20-00:32Z, ticket v11-swipe, key script `fixes/v11/phone/v11-swipe.sh` sha 60613d019ac0, the user
+blind; order CC, AB, BA; scale 1-5):
+
+| pair | step | page 1 / page 2 | pick | scale | scored |
+|---|---|---|---|---|---|
+| CC (catch) | C-092 | C / C | 2 | 1 | same (lead: the user's note asked for a "same" answer, which the kit did not offer then) |
+| AB | C-093 | C / V11 | 2 = V11 | 5 | V11 |
+| BA | C-094 | V11 / C | 1 = V11 | 5 | V11 |
+
+v11 was picked in both real pairs at the top of the scale; the catch pair scored same. The user's notes on C-093 named a
+look question at the end-of-page morph (the menu background looked more transparent for a moment while the finger held
+still after a short move); it went to arch-compositor-morph with the records and the AB/BA timelines (lead's routing).
+Since b13bbe7d the kit offers a third answer, "same" (`--options 1,2,same`).
+
+## Phone block v11-nw (pre-staged; ran 2026-10-07 00:2x-03:02Z, result at the end of this section)
 
 Kit: `fixes/v11/phone/nw11-{serve,hold,block}.sh` and `nw11-read.mjs`, credited copies of int-v8's v10cm-nw kit
 (`fixes/v10/phone/nw-*`, itself fix-end-morph-p1's P-156 kit).
@@ -125,9 +139,72 @@ Kit: `fixes/v11/phone/nw11-{serve,hold,block}.sh` and `nw11-read.mjs`, credited 
 | order | WC, WA (uncounted warm-ups), S0 (sentinel on C, Timeline off), counted EC1 EA1 EA2 EC2 EC3 EA3 EA4 EC4 (+ EC5), one counted run per 600 s chrome-measure `--no-timing` hold, TAIL (at most 2 re-runs), S1 on C in its own hold |
 | part start | a fresh WDA session (stop, start, check), a 60 s settle (I-225), Safari parked and exactly one tab (I-227); a failure stops before any hold and goes to the lead for the user step; `NW_PREFLIGHT=<cmd>` swaps in ts-i227's preflight tool when it lands |
 | cooling | as planned: none between holds; a hold VOID at a thermal gate: park, cool to <= 39.5 C (600 s at most), re-run the hold once; a second gate VOID or no cooling: BLOCK STOP. **Changed after H3, before any counted data (lead ruling 2026-10-07 ~00:55Z):** `NW_COOL=1`, park and cool to 38 C before every hold (two 600 s waits at most); the 39.5 C ceiling re-run stays; the state gate still decides validity |
-| card change log | 00:33Z H1 WC VALID (40.3-40.9 C), H2 WA VALID (40.9-41.7 C); H3 S0 sentinel PASS (54.8 fps) but its end gate read Critical at 42.4 C (real ceiling): VOID; cooled to 39.3 C in 421 s; the H3 re-run's start gate read Critical at 39.0 C (I-225): BLOCK STOP. User re-armed the Xcode condition (C-095); the next preflight said AUTH after a USB re-attach (#126 -> #127, I-227; C-096). Resume from H3 with NW_COOL=1; H1 and H2 stand (uncounted warm-ups) |
+| card change log | 00:33Z H1 WC VALID (40.3-40.9 C), H2 WA VALID (40.9-41.7 C); H3 S0 sentinel PASS (54.8 fps) but its end gate read Critical at 42.4 C (real ceiling): VOID; cooled to 39.3 C in 421 s; the H3 re-run's start gate read Critical at 39.0 C (I-225): BLOCK STOP. User re-armed the Xcode condition (C-095); the next preflight said AUTH after a USB re-attach (#126 -> #127, I-227; C-096). Resume from H3 with NW_COOL=1; H1 and H2 stand (uncounted warm-ups). 01:1xZ the resumed H3's start gate read Critical twice at a cool battery (35.4 and 34.8 C, Xcode condition Serious): BLOCK STOP; a stop + restart of the condition (C-097) and a check (preflight --settle 120 + profile) still read Critical at 34.5 C. Lead option (a), the agent waits: condition stopped (C-098 part 1, 01:26:56Z), plain reads with no condition 01:27Z Critical 34.1 C, 01:28Z Serious 34.1 C, 01:29Z Nominal 34.2 C; Serious restarted (C-099, 01:30:01Z); profile 01:30:19Z Serious (induced) 34.3 C; resumed from H3 at 01:30Z; every read in I-225. No counted run existed before the resume, so no data changed hands |
 | read | `node fixes/v11/phone/nw11-read.mjs out/v11nw/runs --base v11` (the P-156 A-card reader rev 2 with base v11 and runs 1-5; predictions unchanged: first open, end zone no-worse, CB34) |
 
 Dry run (`NW_DRY=1`, own folder, servers checked): all 13 holds DRY ok in three parts (H1-H6, H7-H11, H12 + TAIL ending in
 S1), served hashes ok, fs and park30 programs at their pins (budget 229 s / 327 s), a two-counted-run hold refused, reader
 selftest 40 checks ok, base check ok on the dry logs.
+
+### v11-nw result (read 2026-10-07 03:0xZ)
+
+`node fixes/v11/phone/nw11-read.mjs out/v11nw/runs --base v11`: base check ok on 13 hold logs; every hold VALID; S0 PASS
+(56.5 fps, slow 0.025), S1 PASS (53.9 fps, slow 0.034); every counted run's start and end gate Serious (induced), battery
+36.6-39.1 C. Counted runs: C 5 (EC1-EC5), A = v11 4 (EA1-EA4; the card's order has no EA5). Part B (park) was not in
+this block, so Pr4 reads INSUFFICIENT by design.
+
+**DECISION FAIL Pr1 (Pr4 not read).** Pr2 and Pr3 hold.
+
+| per run | EC1 | EC2 | EC3 | EC4 | EC5 | EA1 | EA2 | EA3 | EA4 |
+|---|---|---|---|---|---|---|---|---|---|
+| end zone frames (n) | 1437 | 1423 | 1450 | 1397 | 1403 | 1468 | 1483 | 1467 | 1492 |
+| end zone >34 ms | 24 | 31 | 20 | 33 | 41 | 23 | 18 | 26 | 19 |
+| end zone >50 ms | 5 | 6 | 3 | 8 | 12 | 2 | 1 | 6 | 0 |
+| CB34 / CB50 | 1 / 0 | 2 / 0 | 0 / 0 | 7 / 3 | 1 / 0 | 3 / 2 | 0 / 0 | 0 / 0 | 0 / 0 |
+| first open f1 / f2 / f3 ms | 16 / 30 / 16 | 16 / 26 / 19 | 17 / 30 / 15 | 17 / 25 / 19 | 17 / 30 / 18 | 17 / 46 / 11 | 17 / 45 / 14 | 17 / 50 / 12 | 17 / 44 / 11 |
+| first open f123 ms | 62 | 61 | 62 | 61 | 65 | 74 | 76 | 79 | 72 |
+
+| prediction | bound | C median (range) | v11 median (range) | A - C | verdict |
+|---|---|---|---|---|---|
+| Pr1 first open O1.f2 | <= +4 ms | 30 (25-30) | 45.5 (44-50) | **+15.5** | FAILS, runs fully separated |
+| (f123, descriptive) | | 62 (61-65) | 75 (72-79) | +13 | not paid back by f3 |
+| Pr2 end zone no-worse | P-153 rule | | | | holds (NO-WORSE PASS, not threshold-sensitive) |
+| end zone >50 ms (goal 0) | | 6 (3-12) | 1.5 (0-6) | -4.5 | descriptive |
+| end zone >34 ms | | 31 (20-41) | 21 (18-26) | -10 | descriptive |
+| Pr3 CB34 | <= +3 | 1 (0-7) | 0 (0-3) | -1 | holds |
+| Pr4 park | | | | | INSUFFICIENT (no part B) |
+
+- The first-open frame is in the near band of the >50 goal in v11 (44-50 ms; EA3 50 counts at the >46 twin, none over
+  50); C's is 25-30 ms.
+- Vc's only first open on the phone (v10cm-nw ED1, fixes/v10/README.md, n 1): f2 46 ms, f123 73, busy 23 ms; V (CM
+  without c1): 75-77 ms, busy 45. v11's 44-50 ms with busy 22-26 ms equals Vc's, so V13 and H1c add nothing measurable
+  to the first open (OBSERVED, Vc n 1).
+- Census (250 px bins, frame counts, decides nothing): worse bins 750-1000, 3000-3500, 4250-4500, 5000-5500.
+
+**O1 attribution** (`node fixes/end-morph-p1/phone/o1-attr.mjs out/v11nw/runs`, the block's own Timeline,
+maxCallStackDepth 1, so record types, not functions; runs 1-4 per arm; medians, ms clipped to the gap):
+
+| record | f2 C | f2 v11 | f3 C | f3 v11 |
+|---|---|---|---|---|
+| gap dt | 28 | 45.5 | 17.5 | 11.5 |
+| FireAnimationFrame (script in rAF) | 9.1 | **20.9** | 3.55 | 4.6 |
+| FunctionCall | 9.3 | **21.15** | 3.7 | 4.6 |
+| RecalculateStyles | 2.85 | 5.95 | 2.15 | 4.1 |
+| Layout | 2.6 | 2.45 | 0.7 | 0.1 |
+| Composite | 13.65 | 19.8 | 10.4 | 2.25 |
+| Paint | 0.95 | 0.8 | 0.95 | 0.1 |
+
+- Composite moves, as in P-156: f2 + f3 is C 24.05, v11 22.05 ms.
+- What v11 adds is script in the first open's animation frame (+11.8 ms) and style (+3.1 ms in f2, +1.9 in f3).
+- **Cause candidate (UNRESOLVED; record types only, no function names):** `__cmPrep` runs in the first open's rAF (V11
+  JS 14618-14641) and calls `__cmGen()` unconditionally. `__cmGen` rebuilds the whole keyframe text (~39 KB, every key
+  over its frame grid through `__cmVals`) before it compares the result with `__cmCss` and returns. So when c1
+  (`__cmWarm`) has already generated and injected the keyframes, the open frame still pays the full string build.
+  Next to it are `__cmEls()` (querySelector per part) and one `setProperty` per part and property. The style part is
+  the class flip onto the 39 KB of keyframes on scroll timelines.
+- Did c1 run before the first fling? Not observed on the phone (no marker). The fs program leaves 4.7 s still between
+  page ready and the first touch (every run, 4.70-4.72 s), and c1 arms 2 s after mount and needs 300 ms without scroll,
+  the panel mounted and the ResizeObserver's size, so it should have. The Simulator's cold run had the 39155-char
+  keyframes in place before the open in Vc and V11 alike (Gates, "First open").
+- The decisive checks (Chrome call tree and Simulator) and the proposed delta go to the lead first. No new phone block
+  runs without the lead's OK. **Status:** v11 does not become the best build on this result (lead, 03:0xZ).
