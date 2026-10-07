@@ -868,3 +868,33 @@ Contents:
 - cm-sim (rAF-stepped, no toolbar; rev 1, 3 runs per arm): open forced layouts 53-55 vs 59-66; styles 92-105 vs 69-82
   (the glass write); close about equal.
 - Phone: none yet; only on the lead's word.
+
+## P-160 card: v13 (v12 + c3) vs C, first open and each open from closed (pre-data)
+
+Ticket P-160, the lead's go 2026-10-07 07:15Z (c3 landed as bcaaadca). This section was written before any P-160 data;
+its commit time is the pre-data time. Everything not named here is as in the P-159 card.
+
+| item | value |
+|---|---|
+| question | is v13 = v12 + c3 no worse than C on the first open after load and on every open from closed, under the finger? |
+| arms | C = v9-final rev 7d, JS 1b2eecc66011 / CSS e1359ab9994a (the same file as P-158's and P-159's C). V = v13 = v12 + c3, JS 1e6daf11957a / CSS 9c1067cff473. `fixes/compositor-morph/v13-build.sh` proves v12 (807ea24c4bf5 / a9a47b10326a) + `c3-on-v12.diff` (0f4a51ea92d5, patch -F 0) equals the gated out/cm/c3 byte for byte; node --check ok |
+| snapshot | out/cm/snap160 (C and P copied from out/cm/snap11, V from out/cm/c3, read-only), HASHES ae245de936fc. The kit checks it, and the served hashes, before every hold |
+| driver | G fast-short, `fixes/morph-scroll/g-fastshort-v1.json`, compiled program 8737f212c0ff (as P-158 and P-159). Timeline on in every counted run, with Page.disable, Page.enable, then Timeline.start on the page target, re-sent after every navigation (F-047) |
+| profile | tool-serious: `CM_THERMAL=serious`. `iphone.mjs rearm` at the part's start owns the condition (I-225); `thermal.mjs clear` runs in the exit trap; `CM_COOL=0`; start and end gate per hold. Never pooled with xcode-serious |
+| kit | `fixes/compositor-morph/phone-c3/`: cm-serve.sh, cm-hold.sh and cm-block.sh are copies of `phone-c2/` with the pins above; reader `p160-read.mjs`; attribution `open0-attr.mjs` |
+| link loss (new, I-222, d0439a26) | cm-block.sh runs `usblink.mjs status` before every hold and after every failed hold, and acts on phone-temp exit 5 (LINK-LOST). On a loss it pauses and polls the status every 20 s (at most 3600 s; the lead's watch posts the re-plug step). Then it runs wda ensure, a Safari restart and the I-225 rearm, ONE uncounted warm-up per arm (`H<n>lw<k>C` WC, `H<n>lw<k>V` WV), and re-runs the failed hold once. At most 3 losses per part. A loss is never read as "did not cool". Tested end to end with stubs (no device) |
+| order | H1:WC H2:WV (uncounted warm-ups, one per arm's port), then H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 (C V V C C V V C), then H11:TAIL (at most 2 re-runs, then the end sentinel S1 on C) |
+| heat | A hold whose start gate reads Critical gets the kit's one rearm. A second Critical stops the block, and we stop and read: the block is read with what it has if each arm has >= 3 valid counted runs, with no top-up. An end gate that reads Critical voids only that hold. Park Safari after the block. Afterwards, check that no `thermal.mjs set` process survives (`thermal.mjs clear` if one does) |
+| command | `CM_TICKET=P-160 CM_COOL=0 CM_THERMAL=serious node tools/lock.mjs run iphone --owner arch-compositor-morph --block P-160 --max-seconds 3600 --keep 120 -- sh fixes/compositor-morph/phone-c3/cm-block.sh H1:WC H2:WV H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 H11:TAIL`, as a Bash background job with a 7200000 ms timeout (I-240) |
+| reader | `node fixes/compositor-morph/phone-c3/p160-read.mjs out/cmp160/runs` (selftest 8 checks). A run counts only when its hold log ends VALID. Warm-ups never count |
+| metrics and decision | P-159's, unchanged. D1: median V O1.f2 - median C O1.f2 <= +4 ms. D2: median of per-run open-0 median dt, V - C <= +4 ms. D3: per T in {34, 30, 38}: "le" when V's median open-0 share <= C's; "worse" when every V run > every C run (>= 3 valid runs per arm); else "open". **PASS**: D1 and D2 within +4 ms and D3 "le" at all three. **FAIL**: D1 or D2 over +4 ms, or D3 "worse" at all three. Anything else is **OPEN** (threshold-sensitive or insufficient) and is reported; no second block without the lead's OK |
+| descriptive: where the time goes | `open0-attr.mjs out/cmp160/runs`: per open-0 frame, FunctionCall, Layout inside a FunctionCall (P-159: C 0.4 vs v12 13.0 ms, at scriptLine 2705 `iE`), RecalculateStyles and Composite. c3's success check: the in-`iE` Layout falls toward C's |
+| descriptive: glass and blink | The G runs carry no class log and no pixel channel, and the Timeline cannot show a backdrop that was not drawn. So the blink check itself stays the Simulator gate (glassD against C: 0.36 % of px over 24 levels at m 0.004, Join excluded), plus the user's eye on the Try-it pages. On the phone this block reports the glass write's cost: RecalculateStyles per open-0 frame, V against C and against P-159's v12 (4.5 ms). From the Simulator (n() +1 ms per forced pass) I expect about +1 ms, not more than +2 ms. No verdict rides on it |
+
+**Prediction (frozen).** D2 and D3 PASS: open-0 median dt within +4 ms of C's, and open-0 > 34 share at or below C's at
+all three thresholds. Basis: P-159 put the slow open-0 frames' cost in a Layout forced inside `iE` (13 ms). c3 R moves
+the toolbar's re-measure out of `iE` into a 300 ms timer (Simulator: forced re-measures in `iE` 24 -> 1; open-0 frames
+with one 5/5 -> 1/5). #1 drops the next-frame re-test (F forced style 64 -> 0).
+D1 is the risk. In the Simulator the first open after load still paid the re-measure (86 ms vs 61-64 for the later
+opens), and P-159's D1 was +9 ms. My overall call is **PASS**, at about 55 %. The likeliest miss is **FAIL by D1 alone**,
+with D2 and D3 passing. If that happens, the first open's own re-measure is c3b's next target.
