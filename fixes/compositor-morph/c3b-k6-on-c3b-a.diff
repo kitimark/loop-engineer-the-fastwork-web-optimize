@@ -1,0 +1,130 @@
+diff --git a/out/cm/c3ba/_app/immutable/assets/2.gBuqKVzi.css b/out/cm/c3bk6/_app/immutable/assets/2.gBuqKVzi.css
+index 306eebcb..b87d95a5 100644
+--- a/out/cm/c3ba/_app/immutable/assets/2.gBuqKVzi.css
++++ b/out/cm/c3bk6/_app/immutable/assets/2.gBuqKVzi.css
+@@ -12547,3 +12547,47 @@ html.fw-cm.fw-cm-out .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) {
+     filter: blur(10px);
+   }
+ }
++/* c3b-K2 (arch-compositor-morph): the CM layers are built near the end while the morph is still closed ("pre":
++   .is-morphing with .fw-cm-pre, JS __cmPreSet). Under pre the nav must look and behave like today's closed pill:
++   the glass is on the bar (its own backdrop, cut to its own box, as today's nav) instead of u3's panel-sized one; today's closed transitions (the scroll-hidden slide by the pill's height, the actions' gap)
++   and the Join button's taps. */
++@media (width<=640px) {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre {
++    transition:
++      opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
++      transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
++      visibility 0s linear 0.32s;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre:not(.is-scroll-hidden) {
++    transition-delay: 0s;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre.is-scroll-hidden {
++    transform: translate(-50%) translateY(calc(-1 * var(--pill-h) - 24px));
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre [data-fw-cm="u3"] {
++    background: none;
++    -webkit-backdrop-filter: none !important;
++    backdrop-filter: none !important;
++  }
++  /* the glass on the bar (pill height, the corner clippers cut its width to the pill's): its backdrop is cut to its own
++     box, as today's nav's is, and it stays the backdrop root of the language switch's own blur */
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre .start-selling-top-nav-bar:where(.svelte-1dcozpm) {
++    background: #ffffff1a;
++    -webkit-backdrop-filter: blur(20px);
++    backdrop-filter: blur(20px);
++    border-radius: 32px;
++  }
++  /* K-min: only the corner clippers and boxes (c0-c3, u0-u3: they draw nothing but u3's glass, off under pre) run their
++     scroll-driven animations under pre, so only their layers are built early; the parts that draw (the dark overlay, the
++     bar with its glass, the logo, the actions, the panel) keep __cmPrep(0)'s inline values, paint as today's nav paints
++     them, and get their animations (and layers) at the open, as in v13 */
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre :is(.fw-cm-dk, .start-selling-top-nav-bar, .start-selling-top-nav-logo, .start-selling-top-nav-actions, .start-selling-morph-panel, .start-selling-morph-backdrop, .start-selling-morph-veil, .start-selling-morph-center, .start-selling-morph-footer, .start-selling-morph-col) {
++    animation: none !important;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
++    transition: gap 0.68s cubic-bezier(0.33, 0, 0.2, 1);
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre:not(.is-hero-pill) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    pointer-events: auto;
++  }
++}
+diff --git a/out/cm/c3ba/_app/immutable/nodes/2.DyWL8TcE.js b/out/cm/c3bk6/_app/immutable/nodes/2.DyWL8TcE.js
+index 3b13d242..1e441d25 100644
+--- a/out/cm/c3ba/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/out/cm/c3bk6/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -14048,6 +14048,10 @@ function dN(n, r) {
+     // width / background transitions came back on and restarted about 5 times for sub-pixel changes. `> 0` keeps
+     // .is-morphing (transition: none) until the tween's done frame sets 0.
+     E = R(() => s(x) > 0),
++    // c3b-K: CM's structure (.is-morphing under html.fw-cm) is kept live near the end screen while the morph is closed,
++    // so an open builds no layers (WebKit has no layer pool, F-324). Only the class follows it: x, E and everything
++    // derived from them (inert, aria, the earn and scroll-hidden flags) stay as they were.
++    __cmPreS = N(!1),
+     /*countdown-faces: the panel (.start-selling-morph-panel, opacity clamp(0, (--morph - 0.08) / 0.72, 1), --morph =
+     JM(x), no transition on it) is painted at opacity > 0 only while this is true*/
+     __cdPanelShown = R(() => JM(s(x)) > 0.08),
+@@ -14490,7 +14494,19 @@ function dN(n, r) {
+       __msLift = 0,
+       __msGo = 0,
+       __msArm = () => {
+-        (window.clearTimeout(__msTO), (__msTO = window.setTimeout(() => ((__msGo = 0), __msSettle()), 200)));
++        (window.clearTimeout(__msTO), (__msTO = window.setTimeout(() => ((__msGo = 0), __cmPreChk(), __msSettle()), 200)));
++      },
++      // c3b-K: the page came to rest (200 ms after its last scroll frame) within one end-screen height of the end
++      // screen with the morph closed: build CM's structure now, in a still frame, instead of in the open frame
++      // c3b-K: WebKit only. WebKit keeps no pool of composited layers (F-324), so every open rebuilds them; pre builds
++      // them at rest instead. `GestureEvent` is the page's WebKit test (heCss above; a WebKit-only interface, MDN
++      // browser-compat-data api/GestureEvent.json): iOS Safari and Chrome on iOS (WebKit) have it, Android Chrome not.
++      __cmPreWk = `GestureEvent` in window,
++      __cmPreChk = () => {
++        let g = __msTick.g;
++        if (!g || !__cmPreWk || !__cmOn() || __cmPre || __msP > 0 || __msY < 0) return;
++        let e = (__msY - (g[1] - g[2] - g[0])) / g[0];
++        e > -1 && e <= 0 && __cmPreSet(!0);
+       },
+       __msSettle = () => {
+         if (!__msEnd || __msTouch || __msGo) return;
+@@ -14590,6 +14606,8 @@ function dN(n, r) {
+             (__g = __msTick.g = [__msEnd.offsetHeight, document.documentElement.scrollHeight, __ih]);
+         let t = __g[0],
+           e = t > 0 ? (y - (__g[1] - __ih - t)) / t : 0;
++        // c3b-K: away from the end (1.25 end-screen heights above it) the kept structure goes
++        __cmPre && (e < -1.25 || !__cmOn()) && __cmPreSet(!1);
+         // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
+         // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
+         ((e = e > 0 ? (e < 1 ? e : 1) : 0),
+@@ -14631,6 +14649,21 @@ function dN(n, r) {
+       },
+       __cmKv = ``,
+       __cmLive = !1,
++      // c3b-K: on: the class arrives with today's m 0 values inline for its first frame (a new scroll-driven animation
++      // is pending for one frame, F-162; the keyframes' fill gives m 0 below the range after that). Off (closed, far
++      // from the end): the inline values go, and the frame .is-morphing drops gets the same transition hold as a close
++      __cmPre = 0,
++      __cmPreSet = (on) => {
++        if (!on === !__cmPre) return;
++        __cmPre = on ? 1 : 0;
++        if (on) __cmPrep(0);
++        else
++          __msP <= 0 &&
++            (__cmLive && __cmClear(),
++            document.documentElement.classList.add(`fw-cm-out`),
++            requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove(`fw-cm-out`))));
++        z(__cmPreS, !!on);
++      },
+       __cmD = null,
+       __cmGb = ``,
+       __cmE = null,
+@@ -15527,7 +15560,9 @@ function dN(n, r) {
+         ((L = U(I, 1, `start-selling-top-nav svelte-1dcozpm`, null, L, {
+           "is-hero-pill": s(O),
+           "is-hero-chrome-ready": s(h),
+-          "is-morphing": s(E),
++          "is-morphing": s(E) || s(__cmPreS),
++          // c3b-K2: the closed look while pre-built (CSS .fw-cm-pre: today's pill glass, slide, transitions, Join taps)
++          "fw-cm-pre": s(__cmPreS) && !s(E),
+           "is-expanded": s(x) > qM,
+           "is-on-dark": s(g) || s(x) > 0.2,
+           "is-locale-open": s(y),

@@ -1218,3 +1218,40 @@ Written before any data; its commit time is the pre-data time. Everything not na
 - **D2: PASS.** Later opens start from m 0 after a close and rebuild as in c3b-a.
 - **D3: PASS**, as in P-160, unless the moved build frame crosses T.
 - **Overall: PASS, about 55 %.**
+
+**Lead decision (10:2xZ): the K8 card above is not run.** P-161 is C against c3b-a + K6.
+- Why K8 lost: after a rest of more than 3 s, K8 moves the build into the first scroll frame (Simulator span 50-61 ms).
+  That is the over-50 ms moving frame the goal removes, and the driver's rest before O1 can trigger it.
+- K6's cost is accepted as a known cost: rest-only style work (2-2.5x near the end) and +10.6 MB. It shows no visible
+  jank.
+- K8 stays as the alternative (`c3b-k8-on-c3b-a.diff`, kit `phone-c3bk/`, snapshot snap162, not run).
+- The rebuild of later opens at m 0 stays UNRESOLVED, for after P-161.
+
+## P-161: C vs c3b-a + K6, first open and each open from closed (pre-data)
+
+Written before any data; its commit time is the pre-data time. The rules are P-160's. Everything not named here is
+as in the c3b-a card above.
+
+| item | value |
+|---|---|
+| question | does pre-building CM's layers at rest near the end (K6, WebKit only) bring c3b-a's first open after load within D1 of C, and stay no worse than C on every open from closed, under the finger? |
+| arms | C = v9-final rev 7d, JS 1b2eecc66011 / CSS e1359ab9994a (as P-158/159/160). V = c3b-a + K6, JS d23ee885d54f / CSS 4fafb83f1e72 (out/cm/c3bk6; `c3b-k6-on-c3b-a.diff`, sha 4836ece355c8) |
+| snapshot | out/cm/snap163 (C and P from out/cm/snap160, V from out/cm/c3bk6, read-only), HASHES b3c356f6d76f, checked by the kit before every hold |
+| kit | `fixes/compositor-morph/phone-c3bk6/`: a copy of `phone-c3bk/` with the pins above (state out/cmp163). Dry run 10:07Z: serve check ok (3 of 3 servers serve the pinned hashes), H1-H4 and TAIL DRY ok, programs fs 8737f212c0ff / pr 7ff27a2413c8 ok. Reader `p161-read.mjs` (P-160's rules unchanged; selftest 8 checks ok); attribution `open0-attr.mjs`, `o1-attr.mjs` |
+| driver, profile, order, heat, link loss | as P-160: G fast-short (8737f212c0ff), Timeline on in every counted run, tool-serious (`CM_THERMAL=serious`, `CM_COOL=0`), H1:WC H2:WV, then EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4, H11:TAIL with the end sentinel; link loss as before (a VOID item is re-run, the block resumes at the hold that failed) |
+| command | `CM_TICKET=P-161 CM_COOL=0 CM_THERMAL=serious node tools/lock.mjs run iphone --owner arch-compositor-morph --block P-161 --max-seconds 3600 --keep 120 -- sh fixes/compositor-morph/phone-c3bk6/cm-block.sh H1:WC H2:WV H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 H11:TAIL` (servers first: `sh fixes/compositor-morph/phone-c3bk6/cm-serve.sh start`), as a Bash background job with a 7200000 ms timeout |
+| metrics and decision | P-160's, unchanged. D1: median V O1.f2 - median C O1.f2 <= +4 ms. D2: median of per-run open-0 median dt, V - C <= +4 ms. D3 at T in {34, 30, 38}. PASS / FAIL / OPEN as in P-160 |
+| descriptive (no verdict) | (1) O1's open frame Composite ms per arm, per rendering frame (`o1-attr.mjs`), against P-160's v13. (2) Rest style at m -0.5: skipped. The driver has no rest there: it approaches in 520 px drags with 300 ms pauses, then rests only at the end (m 1, 1200 ms) and after each settle |
+
+The driver and pre: the approach pauses are 300 ms. K6 turns pre on 200 ms into a pause that falls in m (-1, 0], so
+the build should land in a still frame of the approach, about 100 ms before the next drag. If no pause falls in that
+range, O1 is c3b-a's open. The descriptive item (1) shows which happened (the frame where `.fw-cm-pre` drops is the
+open).
+
+**Prediction (frozen).**
+- **D1: PASS, about 55 %.** In the Simulator the first open's Composite falls 15-25 ms below c3b-a and C (median 27
+  vs about 40-53), and P-160/161's D1 gap was +11 ms. The risk is a pre-on still frame that lands where the reader
+  counts it, or an approach where no pause falls in range.
+- **D2: PASS.** Later opens start from m 0 after a close and rebuild as in c3b-a.
+- **D3: PASS**, as in P-160.
+- **Overall: PASS, about 50 %.**
