@@ -257,7 +257,7 @@ Why the G program cannot run on g0 builds (OBSERVED, both arms; mechanism from t
 
 | item | value |
 |---|---|
-| ticket | P-164 (for the lead to sign; driver option (a) chosen by the lead, its pre-data check 2 above passed) |
+| ticket | P-164 (signed by the lead 2026-10-08 04:00Z, before any P-164 data; driver option (a) chosen by the lead, its pre-data check 2 above passed; swipe robot checked READY 03:37Z after the re-plug, I-244) |
 | question | Does g0.0f (g0.0e + v3-W) open and close the end-of-page menu no worse than g0.0e under a G finger gesture on the phone? This is a no-worse check for an accepted look (PR-038), not a "smoother" claim. |
 | arms + pins | C = g0.0e (g0.0c + join-fade + logo-close, main 8bc50d29), JS 5c39f7a96e41 / CSS d4e684032482 (`out/g0box/g00e`). V = g0.0f = g0.0e + v3-W (`fixes/v3w-g00e/patch.diff`, main 214617dd), JS 30fd80ccbb3f / CSS 1d1e5d62a2c4 (`out/g0box/g00f`). |
 | snapshot + HASHES | `out/g0box/snap4` (C from g00e, V from g00f, read-only), HASHES 3412a08fa9ac, checked by the kit before every start and every hold |
