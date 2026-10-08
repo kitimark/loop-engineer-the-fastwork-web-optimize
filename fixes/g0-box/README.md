@@ -173,6 +173,205 @@ paint outside the nav) and of the logo (stays inside the box).
   median dt V−C ≤ +4 ms, D3 share > 34 / 30 / 38 ms. Command: `sh fixes/g0-box/phone/g0b-run.sh <ticket>`.
 - The user accepted PR-038, so this test is next; the lead signs the card and books the phone with the user.
 
+## P-165 (phone card draft: the one real-heat check of the final build; written before any P-165 data; not signed, not run)
+
+The lead asked for it (2026-10-08, after P-164 landed): "is the final build no worse than the original anywhere on the
+page under real heat, and better where we claim it?" It is the one real-heat block for the final build
+(`memory/phone-checks-start-warm.md`: real heat runs once, for the final best build). After it come the goal check's
+two follow-ups (end of this section).
+
+**Precondition: I-246, landed on main (8f2d9e8c; docs 5c88c40c), this branch rebased onto it.** Before it, the phone
+tools could not run under real heat:
+- `iphone.mjs run|scroll|gesture` took only `--profile serious` (Xcode-induced) or `fair`.
+- A real Serious phone reads "Serious, induced No", which is gate code 7 under `serious`, so every run refused with exit 8.
+
+What the card uses (ts-246's fix):
+- **`profile: real-serious`**: the flag `--profile real-serious` on `iphone.mjs run|scroll|record|gesture|profile`
+  (gate real-serious: expect serious, no `--accept-induced`). It passes Serious with Is Induced = No.
+- It refuses with exit 8 when the phone is induced (code 4), too cool (code 2) or over the ceiling (code 3).
+- The heat pre-warm works under it with no extra flag. A `--warmup` run passes "too cool", but the ceiling, an active
+  condition and a failed read still refuse it. A warm-up is never the hold's start read: the first counted run reads
+  and keeps it. A warm-up is marked `meta.profile.warmup: true`.
+- Each warm-up costs one xctrace read (about 25 s) until the hold has its start read. The time estimate below counts it.
+
+**Pre-data check: Simulator start state per arm, both programs (2026-10-08 05:21-06:00Z, before any P-165 data).**
+Setup:
+- Arms are served as the kit will serve them (`g0b-serve.sh`): C = the plain baseline port, V = `snap4/V`.
+- Records: `out/sim/fix-g0-box-{run-p165s,gesture-p165g,gesture-p165gb}-{C,V}-*.json` (gitignored). Readers:
+  `out/g0box/p165s.mjs` (S), `research/end-of-page-fresh/phone/fe-start.mjs` and `g0b-read.mjs` triggers (G).
+- No timing is read from these runs. The Simulator's frame numbers never pool with the phone's.
+
+*S, `sim.mjs run --driver scroll --probe std`*: one normal session, the two arms back to back. Result: **START-STATE MATCH.**
+
+| | C (v0) | V (g0.0f) |
+|---|---|---|
+| served JS / CSS (`meta.served`) | 4606120cf392 / 27776f3d4138 | 30fd80ccbb3f / 1d1e5d62a2c4 |
+| geometry | ih 775; docH 6035 at the bottom; finalY 5260 | the same |
+| marks | idle, scroll, bottom | the same |
+| crossings (section and class changes logged by the probe) | 53 | 55 |
+| state at start (the probe's `panel` fields) | no `div.start-selling-morph-panel` | `div.start-selling-morph-panel` present and inert, 21 images (V's own code, kept from v14; not a driver state) |
+
+*G with P-164's program `g-fastshort-g0.json` (38d7fe5d7fa8)*: one functional session per arm (V shared lane; C in a
+`--no-timing` hold, because its run outlasted the shared lane's 218 s). Result: **START-STATE DIFFER.**
+
+| | C (v0) | V (g0.0f) |
+|---|---|---|
+| approach | drag 11 settles at y 5220; `until atEnd` holds there; the loop ends after 11 drags | drag 11 settles at y 5214; drag 12 runs into the jack (76 of 76 moves prevented) |
+| what follows | no drag 12, and no passes in the first re-approach. The first 450 px down drag scrolls the page to 4780 with the menu closed. The page is pinned at 5256 only from stroke 19 on | pinned at 5214 from drag 12 on; every E stroke from the pin (as P-164's V) |
+| strokes / opens / closes | 49 / 11 / 10 | 52 / 13 / 12 |
+| flings / toolbar transitions | 1 / 4 | 0 / 1 |
+
+- **Why:** the 6 px settle difference after drag 11 decides the path. At 5220, `until atEnd` (gesture-run.mjs 132,
+  y >= maxY - 2) held on v0. On g0.0f (5214) and g0.0e (P-164: 5213) it did not. Which part of v0 makes drag 11 end
+  6 px further is unknown (OBSERVED, one run). Either way the program, not the arms' menus, decides the path.
+- **Fix (the lead approved fixing the repeats):** `fixes/g0-box/phone/g-fastshort-g0b.json`, **compiled program 31fc66329daf**
+  (GESTURE_BUDGET_S 334; made by `out/g0box/mkprog-b.mjs` from v1). It is g-fastshort-g0 with fixed repeats: the
+  approach is exactly 12 drags and each re-approach exactly 2, with no `until atEnd` exit. Strokes, marks, profiles,
+  pauses and the optional atEnd + `y>=3000` guards are unchanged.
+  - On V nothing changes: V already ran 12 approach drags and 2 passes in every re-approach.
+  - On C, drag 12 now runs into the jack wherever drag 11 ended.
+  - The budget is higher than g0's 229 s because no exit shortens the estimate. The Simulator run takes about 176 s.
+
+*G with `g-fastshort-g0b.json` (31fc66329daf)*: one functional session per arm, in `--no-timing` holds, 05:51-06:00Z.
+Result: **START-STATE MATCH.**
+
+| | C (v0) | V (g0.0f) |
+|---|---|---|
+| run | complete, 52 strokes, no abort | complete, 52 strokes, no abort |
+| settle ys | 510 1020 … 5100, then 5214 for every later stroke | identical |
+| drag 12 (into the jack) | 76 of 76 moves prevented at y 5214 | 76 of 76 at y 5214 |
+| moving frames, total | 465 | 497 (+6.4 %, inside fe-start's 10 %) |
+| toolbar transitions / flings | 1 / 0 | 1 / 0 |
+| reader triggers (`g0b-read.mjs`) | **13 opens, 12 closes**, every one a prevented move at the pin | **13 opens, 12 closes**, the same |
+
+- In this run v0's drag 11 settled at 5214, not 5220. The 6 px of the first run is run-to-run variance in our
+  Simulator setup (OBSERVED, one run each, cause unknown). With fixed repeats the path no longer depends on it.
+- `fe-start.mjs` prints "first E stroke y 510" for both arms. That is cosmetic: it finds E strokes by the v1/g0 stroke
+  ids, and g0b's unrolled repeats number the strokes s1-s52. The MATCH verdict compares every settle y, stroke order and
+  the moving-frame total, and they agree.
+
+**G6 re-pin check (the lead's condition, before signing; the P-164 slip).** `p129-read-g0b.mjs` is
+`p129-read-g0.mjs` with only line 66 changed: `FS_HASH = '31fc66329daf'`. `p129-gates-g0b.mjs` is `p129-gates-g0.mjs`
+with only its import and usage line pointed at that copy (`diff` shows those lines only). Both are committed with this
+card. Test: the C g0b Simulator record, copied as a counted run (E1) and as a sentinel (S1), and read through both gate
+copies (`out/g0box/g6test/`):
+
+| gate copy | E1 | S1 |
+|---|---|---|
+| `p129-gates-g0b.mjs` (31fc66329daf) | INVALID G5, G1 only (a count-only record has no frames and no Timeline) | FAIL on G5 only |
+| `p129-gates-g0.mjs` (38d7fe5d7fa8) | INVALID G5, **G6** ("script hash 31fc66329daf is not fs 38d7fe5d7fa8"), G1 | FAIL on G5 and **G6** |
+
+So the g0b copy accepts the program the record carries (`program.hash` 31fc66329daf…), and the old copy would void it.
+The kit's dry run must also show "PROG fs 31fc66329daf ok" and name `p129-gates-g0b.mjs` in its PIN line.
+
+**Card** (P-164's and P-118's form; everything not named here is as P-164 for the G leg and as P-118 for the S leg):
+
+| item | value |
+|---|---|
+| ticket | P-165 (draft; the lead signs before any P-165 data) |
+| profile | **real-serious** (real heat, not induced). A hold counts only when `research/phone-thermal-gate/thermal-gate.mjs --expect serious --max-c 44` (no `--accept-induced`) reads PASS (Serious, Is Induced = No, battery < 44 °C, not Critical) at its start and at its end. Each read is an xctrace Thermal State read plus the timer grid on B. Heat comes from use only: a heat pre-warm on B (below); no Xcode condition, no `thermal.mjs set`. The kit runs `thermal.mjs clear` once before the block, and an induced read (gate exit 4) stops the block. Ceiling 44 °C / Critical. **Never pooled** with tool-serious (P-164), xcode-serious or real-fair blocks; its C is its own. |
+| question | Under real heat, is g0.0f no worse than the original page anywhere on the page (S leg: the whole page, scripted; G leg: the end-of-page menu, finger-like), and is it better where we claim it (S leg: fewer slow frames in the whole-page scroll, DS3)? |
+| arms + pins | C = **v0, the original page**: the baseline snapshot b1789284481295-4ad4a84a as served by every phone block (`site-pretty`, no overlay), JS 4606120cf392 / CSS 27776f3d4138. V = **g0.0f** (BEST_BUILDS, main 214617dd / f1003072), JS 30fd80ccbb3f / CSS 1d1e5d62a2c4, from `out/g0box/snap4/V` (read-only, HASHES 3412a08fa9ac). B = the plain baseline on its own port, the same files as C: the pre-warm page and the gate's timer page, so that C's port gets only its own warm-up. |
+| kit | `fixes/g0-box/phone/p165-*` (to build after this card is read; dry run and scorer self-test before the signature). It copies the g0b kit (P-164's lessons: WDA ensure, Safari restart and park, the get-ready step on preflight AUTH, link loss, one item list per 600 s `--no-timing` chrome-measure hold, served hashes before every item, pmcheck). Changes: (1) serve C from the baseline (no overlay); (2) no `iphone.mjs rearm`, no `CM_THERMAL=serious`, no `thermal.mjs set`; (3) gates without `--accept-induced`; (4) the heat pre-warm loop of P-116's `fixes/v8-best/phone/p116/hold.sh` at every hold start (below); (5) S items through `iphone.mjs run`; (6) every run with `--profile real-serious` (I-246); (7) the ceiling cooling wait (`wait.mjs phone-temp --below 42 --timeout 600`); (8) the G program `g-fastshort-g0b.json` (PROG pin 31fc66329daf) and a time guard for S items too. Reader G: `g0b-read.mjs` (unchanged). Run gates G1-G6: **`p129-gates-g0b.mjs` with `p129-read-g0b.mjs`, FS_HASH = 31fc66329daf** (the g0 copy with only that line changed, committed with this card, and tested on the Simulator g0b records before signing: see "G6 re-pin check" below; the P-164 G6 slip must not repeat). Scorer S: `p165-score.mjs`, a copy of P-118's scorer (it imports P-105's `fixes/v7-best/phone/score.mjs` b9a29ffcc7bb unchanged) with P-165's pins, plus the S cluster bins and DS3 (below). |
+| heat (start method, the same for every hold and arm) | At every hold start: the start gate. **Too cool (exit 2):** up to 2 pre-warm runs on B (`iphone.mjs run --driver scroll --probe std --profile real-serious --warmup`), each followed by the gate. Still too cool: the hold ends VOID with no counted run, a heat hold follows (pre-warm runs on B with the gate after each, at most 6 per heat hold), then the hold runs again. Pre-warm is capped at 40 min per part, then BLOCK STOP (message the lead). **Ceiling (exit 3):** `phone-temp --below 42` (≤ 10 min), then the hold again (its pre-warm restores Serious if it dropped). **Induced (exit 4):** BLOCK STOP. |
+| drivers | **S**: `iphone.mjs run --driver scroll --probe std --profile real-serious --block P-165 --arm C\|V --run <n>`: reload, settle 8 s, idle 3 s at the top, `scrollBy` 250 px smooth every 300 ms to the bottom, 3 s at the bottom; Timeline off. The timed window is [idle, bottom): the idle at the top plus the scroll down (P-105). **G**: `fixes/g0-box/phone/g-fastshort-g0b.json`, **compiled program 31fc66329daf**, GESTURE_BUDGET_S 334 (fixed repeats; see the pre-data check). Otherwise as P-164: Timeline on in every counted G run, P-129 run gates G1-G6 through the g0b copy. The end of the page is the original's on both arms (g0), so both arms run the same program. **The G program differs from P-164's (38d7fe5d7fa8), and P-164 measured g0.0e against g0.0f under tool-serious, so P-164's G numbers never pool with P-165's.** |
+| order | One uncounted warm-up per arm per leg, then C V V C C V V C per leg (n = 4 per arm per leg); the holds and phone holds are listed under "Order and holds" below the table. |
+| sentinel | The protocol's S criterion (`meta.sentinel.pass`: bottom ≥ 58 fps and scroll ≥ 44 fps). Every counted C S run (C1, C4, C5, C8) is a heat sentinel. sC is an uncounted S run on C with `--heat-sentinel`, Timeline off: the G leg's Timeline-off control after the warm-ups (H6), after every second counted G run (H8, H10, H12) and at the block end (TAIL). **A failing sentinel voids every counted run since the last passing one**, in either leg and either arm. Then the real-heat rule: cool until the battery is at or below the last passing sentinel's minus 0.5 °C (38 °C if none today), at most 10 min (`wait.mjs phone-temp --below <°C>`). Then the next hold's heat start, and the voided items run once more in the TAIL. A second failing sentinel stops the block (BLOCK STOP; the lead decides; at most 2 blocks for this question, §5.3). Run validity otherwise as P-105 (S: served hashes, LPM, marks) and P-164 (G: G1-G6, served check, trigger counts). |
+| command | `sh fixes/g0-box/phone/p165-run.sh P-165 1`, then `… 2`, then `… 3`, each as a Bash background job (as P-164's `g0b-run.sh`). Each part starts the servers, runs its holds in one phone hold with the block mark, and stops the servers. |
+
+**Order and holds.** Each hold is a 600 s `--no-timing` chrome-measure hold: start gate, any pre-warm, the items, end gate.
+- **Phone hold 1 (S leg):** H1 wC wV C1 V2 · H2 V3 C4 C5 V6 · H3 V7 C8.
+- **Phone hold 2 (G leg, first half):** H4 WC · H5 WV · H6 sC EC1 · H7 EV1 · H8 sC EV2.
+- **Phone hold 3 (G leg, second half):** H9 EC2 · H10 sC EC3 · H11 EV3 · H12 sC EV4 · H13 EC4 · TAIL.
+
+How a hold fits 600 s:
+- A G hold with an sC: start gate about 35 s + sC about 60 s + G (budget 334) + end gate.
+- The time guard starts an item only while elapsed + budget + 30 ≤ 600 s.
+- So a G hold that also needed 2 pre-warm runs ends VOID (time, exit 7) before its G item, and runs once more at once
+  on the now-warm phone. That is P-164's rule.
+
+The TAIL holds the G re-runs (≤ 2, as P-164) and the re-runs of any sentinel-voided items, then a closing sC.
+
+Each phone hold is `lock.mjs run iphone --owner fix-g0-box --block P-165 --max-seconds 3600 --keep 120` (the signed
+ticket lifts the 900 s cap to 3600 s). Each is planned to stay under 60 min (time table below), and the next one
+follows at once.
+
+**D-rules per driver (fixed before data).** Minimum 3 valid runs per arm per leg, else "insufficient" (at most one
+extra hold per leg).
+
+S leg, the whole page (scorer `p165-score.mjs`; per run the counts in the timed window):
+- **DS1, no-worse:** d = median V − median C of the per-run count of frames with dt > 50 ms. **FAIL at d > +2.** The
+  twins 46 / 54 are scored the same way; when a twin's verdict differs, the result is OPEN (threshold-sensitive). The
+  > 34 count (twins 30 / 38) is reported with the same arithmetic, not gated (as P-105).
+- **DS2, no-worse anywhere:** P-105's new-cluster rule, applied to the S timed window. Spots are fixed 250 px bins of
+  the frame's scrollY. A V cluster is a bin with a dt > 50 frame in ≥ 2 valid V runs. It is NEW when no valid C run
+  has one in that bin or a neighbouring bin (±250 px). **Any NEW cluster fails**; the twins 46 / 54 decide
+  threshold-sensitivity.
+- **DS3, better where we claim it** (the goal numbers: the whole-page scripted scroll, frames > 50 and > 34 ms per
+  run; `fixes/DIRECTION.md` "GOAL STATUS"). **BETTER at T ∈ {50, 34}** when every valid V run has fewer frames over T
+  than every valid C run (max V < min C, the study's non-overlap rule) and d ≤ −2. The twins (46 / 54; 30 / 38) mark
+  it threshold-sensitive when their verdict differs. Not better is "not shown better": it is reported, and it is not a
+  no-worse failure.
+- Descriptive: a per-bin table of > 50 and > 34 frames per arm (where the remaining slow frames are), the largest dt,
+  frames > 100 ms per run, battery °C and Mac load1 per run.
+
+G leg, the page end (`g0b-read.mjs`, P-164's rules word for word, with C = v0):
+- **D1:** median V O1.f2 − median C O1.f2 ≤ +4 ms (O1 = the first open after load).
+- **D2:** the median over runs of the per-run median dt of all later open-tween frames (700 ms windows), V − C ≤ +4 ms.
+- **D3:** the share of those frames over T, T ∈ {34, 30, 38}, V ≤ C.
+- Each run's open and close trigger counts must match between the arms. PASS / FAIL / OPEN as in P-160/P-163/P-164.
+- **No "better" claim at the end:** g0 gives both arms the original's end. g0.0f's end parts (join-fade,
+  logo-close, v3-W, platform corners) are look fixes and memory fixes. Simulator repaints per open frame (g0.0b about 5-6
+  against the original's about 20) are context only.
+- Descriptive: close tweens, and finger-down frames > 50 and > 34 per run (twins), per arm.
+
+**Block verdict.** PASS when DS1, DS2 and D1-D3 pass. FAIL when any of them fails. OPEN when none fails and one is
+threshold-sensitive. Insufficient when a leg has < 3 valid runs per arm after its extra hold. DS3 is reported beside
+the verdict ("better at > 50 / > 34: yes / not shown / threshold-sensitive").
+
+**Prediction (frozen with this commit, before any P-165 data).**
+- DS1 PASS, about 90 %. Every landed fix since v0 removes work in the scroll; P-105 to P-164 found no S worsening that survived.
+- DS2 PASS, about 80 %. A new cluster would need V to add a slow spot that v0 lacks. The likeliest place is the end
+  zone, where g0.0f adds the v3-W fills.
+- DS3 BETTER at > 50, about 50 %; at > 34, about 65 %. On 10-01 v0 had 5 frames > 50 and 16 > 34 per run (scripted,
+  n = 3). Real heat and the 30 ms timer grid may thin the gap; disjoint ranges with n = 4 are a strict test.
+- D1 PASS, about 75 %; D2 PASS, about 80 %; D3 PASS, about 75 %. g0.0f opens the original's menu with fewer repaints per
+  frame (Simulator), and P-164 found 17 ms tweens with 0 % frames > 34 ms.
+- Sentinels pass on the first try, about 60 % (real heat: 10-04 had 41 of 109 hold starts off Serious).
+- **Overall PASS, about 55 %.** OPEN (threshold-sensitive) is the most likely other outcome.
+
+**Decisions (proposed; the lead states them before signing):**
+- **PASS:** the final build is no worse than the original under real heat, everywhere on the page; DS3 says where it is
+  better. The goal check moves on to the follow-ups below.
+- **FAIL on DS1 or DS2:** the goal is not met under real heat at the named spot. A W window probe at that spot
+  (attribution, Timeline on) comes before any further build; the lead tells the user.
+- **FAIL on D1-D3:** the end is slower than the original's under real heat. The suspects are g0.0f's own end parts
+  (v3-W first, then join-fade and logo-close), since the menu mechanism is the original's on both arms; the lead decides.
+- **OPEN or insufficient:** at most one more block (sequential rule, §5.3); the lead decides.
+
+**Phone time (estimate; real heat needs the phone warmed by use):**
+
+| part | what | estimate |
+|---|---|---|
+| first heat | pre-warm S runs on B until the start gate reads real Serious | 2-31 min (10-04's four pre-warms: 1.4, 6.6, 19.4, 30.6 min); about 10 if the phone comes warm |
+| phone hold 1, S leg | 3 holds: 10 S runs (about 45-60 s each with reload, settle, battery and served reads), 6 gate reads (about 35 s each), the first counted run's profile read (about 25 s), about 70 s hand-over per hold | about 17 min |
+| phone hold 2, G leg | 5 holds: 2 warm-ups and 3 counted G runs (about 200 s each on the phone; P-164's one-item holds took 283-292 s with both gates, about 5.7 min with the hand-over), 2 sC | about 31 min |
+| phone hold 3, G leg | 5 holds: 5 counted G runs, 2 sC, then the TAIL (0-2 G re-runs plus a closing sC, 3-15 min) | about 35-47 min |
+| re-heats | on 10-04, 41 of 109 hold starts were not at real Serious: about 5 of 13 holds need 1-2 pre-warm runs (about 110 s each with the gate) | about 9 min |
+| ceiling cooling | about 2 h of use under real heat may reach 44 °C: 0-2 waits of ≤ 10 min | 0-20 min |
+| **total** | | **about 110 min expected; about 85 min with a warm phone and no misses, up to about 165 min** |
+
+Each phone hold stays under the `--block` cap of 3600 s in the expected case. Hold 3 with a full TAIL and a cooling
+wait can pass it: it then shows OVERDUE and is not killed. All three run back to back. Mac side: every hold is an
+exclusive `--no-timing` chrome-measure hold, so Chrome measurements by others wait about 2 h in total, in ~10 min slices.
+
+**Follow-ups (listed only; each is its own ticket after P-165):**
+- **A short no-worse check at Fair** (`memory/phone-checks-start-warm.md`: before the goal is called done, the final
+  build gets one short no-worse check on a cooler phone). Profile real-fair (`--profile fair`, gate `--expect fair`),
+  S leg only, C = v0, V = g0.0f, n = 3 per arm, about 15 min.
+- **A finger test by the user** (`memory/perception-tests-touch-ab.md`): a blind swipe A/B on the iPhone, original
+  against g0.0f, posted by the phone holder as a console swipe-pair step (the lead sets the order).
+
 ## P-164 (phone card; written before any P-164 data)
 
 **Pre-data check 2, with the g0 program (2026-10-08 03:47-03:55Z, before any P-164 data). Result: START-STATE

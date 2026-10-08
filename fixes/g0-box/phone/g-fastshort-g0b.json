@@ -1,0 +1,774 @@
+{
+ "name": "ms-fastshort-g0b",
+ "version": 1,
+ "screen": [
+  430,
+  932
+ ],
+ "about": "P-165 draft (fix-g0-box): g-fastshort-g0 (P-164, 38d7fe5d7fa8) with fixed repeats: the approach runs exactly 12 drags and each re-approach exactly 2, with no until atEnd exit. On the original page (v0) drag 11 settled 6 px further (5220, Simulator 05:4xZ), atEnd held there, so g0 skipped drag 12 and the first re-approach and played the E strokes out of phase. Fixed repeats make both arms reach the jack the same way. The strokes, marks, profiles, pauses and the optional atEnd + y>=3000 guards are as in g0.",
+ "params": {
+  "x": 215
+ },
+ "steps": [
+  {
+   "type": "reload",
+   "scrollAfterMs": 0
+  },
+  {
+   "type": "pause",
+   "ms": 4000
+  },
+  {
+   "type": "mark",
+   "name": "approach"
+  },
+  {
+   "type": "repeat",
+   "times": 12,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 1500,
+   "optional": true
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E20-close-fast-60px-50ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 2,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 1500,
+   "optional": true
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E21-open-fast-60px-50ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 2,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 1500,
+   "optional": true
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E22-close-fast-120px-60ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 2,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 1500,
+   "optional": true
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E23-open-fast-120px-60ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 2,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 1500,
+   "optional": true
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E24-close-fast-200px-90ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 2,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 1500,
+   "optional": true
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E25-open-fast-200px-90ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 2,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 1500,
+   "optional": true
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E26-close-fast-60px-50ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 2,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 1500,
+   "optional": true
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E27-open-fast-60px-50ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 2,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 1500,
+   "optional": true
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E28-close-fast-120px-60ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 2,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 1500,
+   "optional": true
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E29-open-fast-120px-60ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 2,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 1500,
+   "optional": true
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E30-close-fast-200px-90ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 2,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "until",
+   "cond": "atEnd",
+   "timeoutMs": 1500,
+   "optional": true
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E31-open-fast-200px-90ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "mark",
+   "name": "done"
+  }
+ ]
+}

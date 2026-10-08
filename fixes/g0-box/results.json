@@ -1,1251 +1,1300 @@
 {
- "topic": "g0-box",
- "build": "M3-B v3-W on g0.0c, final: v3 (nav colour as two composited solid fills, corner as clip-path inset(0 round 32-12m px), v0 box and card untouched) in WebKit only (html.fw-bx when `GestureEvent` in window), phones <= 640 px; the dark fill takes v0's 0.7 s background transition outside .is-morphing; under prefers-reduced-motion v3-W steps aside (v0's nav exactly)",
- "config": {
-  "baselineSnapshot": "b1789284481295-4ad4a84a",
-  "base": "g0.0e = baseline + fixes/g0-0e/patch.diff (main 8bc50d29: g0.0c + join-fade PR-036 + logo-close PR-037)",
-  "patchRelativeTo": "g0.0e (a/ = out/g0box/g00e: JS 5c39f7a96e41, CSS d4e684032482); the g0.0c-relative version is in 8b56a6a1",
-  "served": {
-   "g0.0c": {
-    "js": "5c39f7a96e41",
-    "css": "c65da97ba01f"
-   },
-   "v3-W": {
-    "js": "30fd80ccbb3f",
-    "css": "f9b2f894dedf",
-    "note": "JS differs from the measured 7f7d83162ef6 only in a comment"
-   },
-   "v3-W pre-RM-fix": {
-    "js": "7f7d83162ef6",
-    "css": "70df8114a809"
-   },
-   "v3-W RM-transition (superseded)": {
-    "js": "7f7d83162ef6",
-    "css": "2c9deee5b885"
-   },
-   "v3-W measured": {
-    "js": "7f7d83162ef6",
-    "css": "f9b2f894dedf"
-   },
-   "g0.0e": {
-    "js": "5c39f7a96e41",
-    "css": "d4e684032482"
-   },
-   "g0.0f": {
-    "js": "30fd80ccbb3f",
-    "css": "1d1e5d62a2c4",
-    "note": "g0.0e + v3-W; fixes/v3w-g00e/patch.diff (baseline-relative)"
-   }
-  },
-  "tools": "fixes/g0-box/gates (seek.mjs, run4.sh: one --shared hold per arm, four loads; t2.mjs: PR-010 consistent rule, status bar rows < 56 css px left out, flat/edge split = 3x3 luma range <= 16 / > 16 in A or V); no timing A/B, no phone",
-  "measurementCodeChanged": false,
-  "patchDiff": "v3-W relative to g0.0e; applies cleanly to a fresh g0.0e copy and rebuilds g0.0f byte for byte",
-  "tryIt": {
-   "a": "fixes/platform-corners-g00b/patch.diff (g0.0c)",
-   "b": "fixes/v3w-g00c/patch.diff (g0.0c + v3-W, baseline-relative; rebuilt byte-identical from a fresh baseline copy)"
-  },
-  "land": "fixes/v3w-g00e/patch.diff (g0.0f, baseline-relative, CSS 1d1e5d62a2c4 / JS 30fd80ccbb3f)"
- },
- "verdict": "P-164 PASS (lead ruling (a), re-read shown): g0.0f no worse than g0.0e on the phone (D1 0, D2 0, D3 0/0/0; 4+4 planned runs). ACCEPTED T3 (PR-038, user 03:04Z). g0.0f = g0.0e + v3-W reproduces the PR-038 gates against g0.0e: Chrome T0 within A/A, Simulator the same 6 outline stops and maxima (max 218), Reduce Motion T0, Join clip corners/over-EN 0, logo flip jump <= 0.14 px. T3 look-alike PROPOSAL (lead decision after 043143d2): WebKit misses T2 only on the nav outline anti-aliasing mid-motion (edge max 218 > 128 at 6 of 144 stops; flat max 31; rests identical); Chrome T0 by construction (148 stops within A/A); Reduce Motion T0 (v3-W steps aside). Gain (Simulator, 2 sessions, counts only): opening adds ~11 MB less layer memory (open minus closed 16.2-17.9 -> 5.4-7.1 MB; the nav backing store at panel size, 11.6 MB); redraw area per open -5 % / -16 %, per close +10 % / -6 % (mixed); bar repaints after a close 86-88 -> 0, top scroll 65 -> 0 (area -12 %); layers per open equal; top/mid/end memory within 1 MB. Not timed, not on the phone.",
- "gates": {
-  "seek": [
-   {
-    "engine": "chrome",
-    "viewport": "430x775",
-    "build": "pre-RM-fix",
-    "loads": "A V A2 V2",
-    "stops": 148,
-    "stateMismatch": 0,
-    "result": "T0 within A/A: consistent pixels at 3 stops, max 8 css px2, level 53 (A/A max 59), countdown/cycler area x 224-320 y 480-592",
-    "out": "out/g0box/seekW-c775.score"
-   },
-   {
-    "engine": "sim fw-sim",
-    "build": "pre-RM-fix",
-    "loads": "A V A2 V2",
-    "stops": 144,
-    "stateMismatch": 0,
-    "t2": {
-     "dir": "out/g0box/seekW-sim",
-     "dpr": 3,
-     "topCss": 56,
-     "limits": {
-      "flat": 64,
-      "edge": 128,
-      "pct": 0.5,
-      "cluster": 2000
-     },
-     "stops": 144,
-     "fails": 6,
-     "worst": {
-      "flat": 31,
-      "edge": 218,
-      "pct": 0.1799,
-      "cluster": 678
-     }
-    },
-    "failing": [
-     {
-      "stop": "open-240",
-      "edgeMax": 164,
-      "edgeAt": [
-       36,
-       663
-      ],
-      "cssPx2": 565,
-      "pct": 0.1501
-     },
-     {
-      "stop": "open-260",
-      "edgeMax": 161,
-      "edgeAt": [
-       32,
-       688
-      ],
-      "cssPx2": 51,
-      "pct": 0.0137
-     },
-     {
-      "stop": "open-340",
-      "edgeMax": 182,
-      "edgeAt": [
-       30,
-       770
-      ],
-      "cssPx2": 509,
-      "pct": 0.1352
-     },
-     {
-      "stop": "open-440",
-      "edgeMax": 218,
-      "edgeAt": [
-       24,
-       828
-      ],
-      "cssPx2": 553,
-      "pct": 0.1469
-     },
-     {
-      "stop": "rev2-000",
-      "edgeMax": 217,
-      "edgeAt": [
-       84,
-       833
-      ],
-      "cssPx2": 678,
-      "pct": 0.1799
-     },
-     {
-      "stop": "rev2-060",
-      "edgeMax": 164,
-      "edgeAt": [
-       36,
-       662
-      ],
-      "cssPx2": 565,
-      "pct": 0.15
-     }
-    ],
-    "result": "FAIL T2 (edge level)",
-    "out": "out/g0box/seekW-sim.t2"
-   },
-   {
-    "engine": "sim fw-sim, Reduce Motion on",
-    "build": "pre-RM-fix",
-    "stops": 20,
-    "result": "FAIL: close@0 16133 css px2 max 219, close@100 16052 max 44 (light fill while g0.0c still fades dark->light)",
-    "out": "out/g0box/seekW-simrm"
-   },
-   {
-    "engine": "sim fw-sim, Reduce Motion on",
-    "build": "v3-W (RM fix)",
-    "stops": 24,
-    "t2": {
-     "dir": "out/g0box/seekW2-simrm",
-     "dpr": 3,
-     "topCss": 56,
-     "limits": {
-      "flat": 64,
-      "edge": 128,
-      "pct": 0.5,
-      "cluster": 2000
-     },
-     "stops": 24,
-     "fails": 1,
-     "worst": {
-      "flat": 70,
-      "edge": 70,
-      "pct": 0.6132,
-      "cluster": 2275
-     }
-    },
-    "rows": [
-     {
-      "stop": "close-000",
-      "pass": true,
-      "cssPx2": 58,
-      "flatMax": 11,
-      "edgeMax": 48
-     },
-     {
-      "stop": "close-040",
-      "pass": false,
-      "cssPx2": 2310,
-      "flatMax": 70,
-      "edgeMax": 70
-     },
-     {
-      "stop": "close-080",
-      "pass": true,
-      "cssPx2": 19,
-      "flatMax": 0,
-      "edgeMax": 22
-     },
-     {
-      "stop": "close-120",
-      "pass": true,
-      "cssPx2": 13,
-      "flatMax": 0,
-      "edgeMax": 25
-     },
-     {
-      "stop": "close-160",
-      "pass": true,
-      "cssPx2": 12,
-      "flatMax": 0,
-      "edgeMax": 28
-     },
-     {
-      "stop": "close-200",
-      "pass": true,
-      "cssPx2": 12,
-      "flatMax": 0,
-      "edgeMax": 28
-     },
-     {
-      "stop": "close-240",
-      "pass": true,
-      "cssPx2": 12,
-      "flatMax": 0,
-      "edgeMax": 28
-     },
-     {
-      "stop": "close-280",
-      "pass": true,
-      "cssPx2": 12,
-      "flatMax": 0,
-      "edgeMax": 28
-     },
-     {
-      "stop": "close-320",
-      "pass": true,
-      "cssPx2": 12,
-      "flatMax": 0,
-      "edgeMax": 28
-     },
-     {
-      "stop": "close-360",
-      "pass": true,
-      "cssPx2": 12,
-      "flatMax": 0,
-      "edgeMax": 28
-     },
-     {
-      "stop": "close-500",
-      "pass": true,
-      "cssPx2": 12,
-      "flatMax": 0,
-      "edgeMax": 28
-     },
-     {
-      "stop": "close-700",
-      "pass": true,
-      "cssPx2": 12,
-      "flatMax": 0,
-      "edgeMax": 28
-     },
-     {
-      "stop": "open-000",
-      "pass": true,
-      "cssPx2": 20,
-      "flatMax": 0,
-      "edgeMax": 69
-     },
-     {
-      "stop": "open-040",
-      "pass": true,
-      "cssPx2": 20,
-      "flatMax": 0,
-      "edgeMax": 69
-     },
-     {
-      "stop": "open-080",
-      "pass": true,
-      "cssPx2": 20,
-      "flatMax": 0,
-      "edgeMax": 69
-     },
-     {
-      "stop": "open-120",
-      "pass": true,
-      "cssPx2": 20,
-      "flatMax": 0,
-      "edgeMax": 69
-     },
-     {
-      "stop": "open-160",
-      "pass": true,
-      "cssPx2": 20,
-      "flatMax": 0,
-      "edgeMax": 69
-     },
-     {
-      "stop": "open-200",
-      "pass": true,
-      "cssPx2": 20,
-      "flatMax": 0,
-      "edgeMax": 69
-     },
-     {
-      "stop": "open-240",
-      "pass": true,
-      "cssPx2": 20,
-      "flatMax": 0,
-      "edgeMax": 69
-     },
-     {
-      "stop": "open-280",
-      "pass": true,
-      "cssPx2": 20,
-      "flatMax": 0,
-      "edgeMax": 69
-     },
-     {
-      "stop": "open-320",
-      "pass": true,
-      "cssPx2": 20,
-      "flatMax": 0,
-      "edgeMax": 69
-     },
-     {
-      "stop": "open-360",
-      "pass": true,
-      "cssPx2": 20,
-      "flatMax": 0,
-      "edgeMax": 69
-     },
-     {
-      "stop": "open-500",
-      "pass": true,
-      "cssPx2": 20,
-      "flatMax": 0,
-      "edgeMax": 69
-     },
-     {
-      "stop": "open-700",
-      "pass": true,
-      "cssPx2": 20,
-      "flatMax": 0,
-      "edgeMax": 69
-     }
-    ],
-    "out": "out/g0box/seekW2-simrm"
-   },
-   {
-    "engine": "sim fw-ipad",
-    "result": "not finished (session boot hit the 300 s hold cap); not re-run after the stop"
-   },
-   {
-    "engine": "sim fw-sim",
-    "build": "final (CSS f9b2f894dedf)",
-    "loads": "A V A2 V2 (two holds per half)",
-    "stops": 144,
-    "stateMismatch": 0,
-    "t2": {
-     "dir": "out/g0box/seekW3-sim",
-     "dpr": 3,
-     "topCss": 56,
-     "limits": {
-      "flat": 64,
-      "edge": 128,
-      "pct": 0.5,
-      "cluster": 2000
-     },
-     "stops": 144,
-     "fails": 6,
-     "worst": {
-      "flat": 31,
-      "edge": 218,
-      "pct": 0.1799,
-      "cluster": 678
-     }
-    },
-    "failing": [
-     {
-      "stop": "open-240",
-      "edgeMax": 164,
-      "edgeAt": [
-       36,
-       663
-      ],
-      "cssPx2": 565,
-      "pct": 0.1501
-     },
-     {
-      "stop": "open-260",
-      "edgeMax": 161,
-      "edgeAt": [
-       32,
-       688
-      ],
-      "cssPx2": 51,
-      "pct": 0.0137
-     },
-     {
-      "stop": "open-340",
-      "edgeMax": 182,
-      "edgeAt": [
-       30,
-       770
-      ],
-      "cssPx2": 509,
-      "pct": 0.1352
-     },
-     {
-      "stop": "open-440",
-      "edgeMax": 218,
-      "edgeAt": [
-       24,
-       828
-      ],
-      "cssPx2": 553,
-      "pct": 0.1469
-     },
-     {
-      "stop": "rev2-000",
-      "edgeMax": 217,
-      "edgeAt": [
-       84,
-       833
-      ],
-      "cssPx2": 678,
-      "pct": 0.1799
-     },
-     {
-      "stop": "rev2-060",
-      "edgeMax": 164,
-      "edgeAt": [
-       36,
-       662
-      ],
-      "cssPx2": 565,
-      "pct": 0.15
-     }
-    ],
-    "result": "T2 edge level only (same 6 stops as the pre-fix run); T3",
-    "out": "out/g0box/seekW3-sim.t2"
-   },
-   {
-    "engine": "sim fw-sim, Reduce Motion on",
-    "build": "final (v3-W steps aside under RM)",
-    "stops": 24,
-    "t2": {
-     "dir": "out/g0box/seekW3-simrm",
-     "dpr": 3,
-     "topCss": 56,
-     "limits": {
-      "flat": 64,
-      "edge": 128,
-      "pct": 0.5,
-      "cluster": 2000
-     },
-     "stops": 24,
-     "fails": 0,
-     "worst": {
-      "flat": 0,
-      "edge": 0,
-      "pct": 0,
-      "cluster": 0
-     }
-    },
-    "result": "T0: 0 consistent px at every stop, state equal",
-    "out": "out/g0box/seekW3-simrm"
-   }
-  ],
-  "rescoreOfV3": {
-   "out": "out/g0box/seek-v3-sim.t2",
-   "stops": 20,
-   "result": "PASS on its 20 stops (edge max 117), identical to the same stops of the 144-stop v3-W run: v3 = v3-W in WebKit, deterministic; the 10-step seek missed the worse stops"
-  },
-  "gain": {
-   "tool": "fixes/g0-box/gates/counts-sim.mjs (2 sessions, arm order swapped) + top-sim.mjs; Simulator, counts only, one load per arm per session",
-   "files": [
-    "out/g0box/counts/counts-sim-2026-10-07T19-56-04-875Z.json",
-    "out/g0box/counts/counts-sim-2026-10-07T20-00-19-719Z.json",
-    "out/g0box/counts/top-sim-2026-10-07T20-04-41-371Z.json"
-   ],
-   "memoryAddedByOpenMB": {
-    "g0.0c": [
-     [
-      16.3,
-      17.9
-     ],
-     [
-      16.2,
-      17.9
-     ]
-    ],
-    "v3-W": [
-     [
-      5.4,
-      7
-     ],
-     [
-      5.5,
-      7.1
-     ]
-    ],
-    "note": "open minus closed in the same arm (open, open2); the nav backing store at 406x791 css x DPR 3 = 11.6 MB"
-   },
-   "memoryOpenAbsMB": {
-    "g0.0c": [
-     117.3,
-     109.3
-    ],
-    "v3-W": [
-     113.6,
-     97.8
-    ]
-   },
-   "memoryClosedAbsMB": {
-    "g0.0c": [
-     101,
-     93.1
-    ],
-    "v3-W": [
-     108.2,
-     92.3
-    ],
-    "note": "run 1 V started 7.2 MB higher at L0 with the same 52 layers"
-   },
-   "paintMpx3Opens": {
-    "g0.0c": [
-     49.58,
-     65.77
-    ],
-    "v3-W": [
-     47.02,
-     55.47
-    ]
-   },
-   "paintMpx3Closes": {
-    "g0.0c": [
-     38.22,
-     44.78
-    ],
-    "v3-W": [
-     42.21,
-     42.04
-    ]
-   },
-   "navFullBoxRect406x791Per3Opens": {
-    "g0.0c": [
-     26,
-     29
-    ],
-    "v3-W": [
-     11,
-     14
-    ]
-   },
-   "navPillRepaintAfterClose398x52": {
-    "g0.0c": [
-     86,
-     88
-    ],
-    "v3-W": [
-     0,
-     0
-    ]
-   },
-   "layersNewPerOpen": "equal (the Join only); run 1 V first open also the language-switch wrap (0 MB)",
-   "topScroll": {
-    "g0.0c": {
-     "paints": 659,
-     "mpx": 40.48,
-     "bar398x52": 65
-    },
-    "v3-W": {
-     "paints": 498,
-     "mpx": 35.79,
-     "bar398x52": 0
-    }
-   },
-   "censusTopMidEndMB": {
-    "g0.0c": [
-     52.2,
-     101.1,
-     93.1
-    ],
-    "v3-W": [
-     51.7,
-     100.4,
-     92.3
-    ],
-    "note": "+2 layers (the fills, 0.00 MB)"
-   },
-   "leadRule": "end-open memory >= 10 MB as open minus closed (lead): passes both runs; no new layers per open; top not worse -> T3 proposal"
-  },
-  "stacking": "v3-W + fix-join-fade block + fix-logo-close delta apply on g0.0c in either order, same bytes; all three: CSS e434bb66fa5c, JS 7f7d83162ef6",
-  "phoneKit": "P-164 card in README \"P-164\": fixes/g0-box/phone/, pinned C g0.0e 5c39f7a96e41/d4e684032482, V g0.0f 30fd80ccbb3f/1d1e5d62a2c4, snapshot out/g0box/snap4 HASHES 3412a08fa9ac, G program fixes/g0-box/phone/g-fastshort-g0.json 38d7fe5d7fa8 (v1 8737f212c0ff aborts on g0); dry run ok 03:54Z (out/g0box/kitdry5.log); not run"
- },
- "v3": {
-  "build": "M3-B v3 (lead option 3) on g0.0: v0 box and card untouched; nav colour as two composited solid fills (light #ffffff1a, dark #131922 at opacity --morph), corner as clip-path inset(0 round 32-12m px); phones <= 640 px",
+  "topic": "g0-box",
+  "build": "M3-B v3-W on g0.0c, final: v3 (nav colour as two composited solid fills, corner as clip-path inset(0 round 32-12m px), v0 box and card untouched) in WebKit only (html.fw-bx when `GestureEvent` in window), phones <= 640 px; the dark fill takes v0's 0.7 s background transition outside .is-morphing; under prefers-reduced-motion v3-W steps aside (v0's nav exactly)",
   "config": {
-   "baselineSnapshot": "b1789284481295-4ad4a84a",
-   "base": "g0.0 f75c1707",
-   "patchRelativeTo": "g0.0 (a/ = sh fixes/g0-revert/rebuild.sh output: JS 5c39f7a96e41, CSS 95f0eff3c57f)",
-   "served": {
-    "g0.0": {
-     "js": "5c39f7a96e41",
-     "css": "95f0eff3c57f"
+    "baselineSnapshot": "b1789284481295-4ad4a84a",
+    "base": "g0.0e = baseline + fixes/g0-0e/patch.diff (main 8bc50d29: g0.0c + join-fade PR-036 + logo-close PR-037)",
+    "patchRelativeTo": "g0.0e (a/ = out/g0box/g00e: JS 5c39f7a96e41, CSS d4e684032482); the g0.0c-relative version is in 8b56a6a1",
+    "served": {
+      "g0.0c": {
+        "js": "5c39f7a96e41",
+        "css": "c65da97ba01f"
+      },
+      "v3-W": {
+        "js": "30fd80ccbb3f",
+        "css": "f9b2f894dedf",
+        "note": "JS differs from the measured 7f7d83162ef6 only in a comment"
+      },
+      "v3-W pre-RM-fix": {
+        "js": "7f7d83162ef6",
+        "css": "70df8114a809"
+      },
+      "v3-W RM-transition (superseded)": {
+        "js": "7f7d83162ef6",
+        "css": "2c9deee5b885"
+      },
+      "v3-W measured": {
+        "js": "7f7d83162ef6",
+        "css": "f9b2f894dedf"
+      },
+      "g0.0e": {
+        "js": "5c39f7a96e41",
+        "css": "d4e684032482"
+      },
+      "g0.0f": {
+        "js": "30fd80ccbb3f",
+        "css": "1d1e5d62a2c4",
+        "note": "g0.0e + v3-W; fixes/v3w-g00e/patch.diff (baseline-relative)"
+      }
     },
-    "m3b-v3": {
-     "js": "1fa6cfc78f56",
-     "css": "6663cef214fb"
+    "tools": "fixes/g0-box/gates (seek.mjs, run4.sh: one --shared hold per arm, four loads; t2.mjs: PR-010 consistent rule, status bar rows < 56 css px left out, flat/edge split = 3x3 luma range <= 16 / > 16 in A or V); no timing A/B, no phone",
+    "measurementCodeChanged": false,
+    "patchDiff": "v3-W relative to g0.0e; applies cleanly to a fresh g0.0e copy and rebuilds g0.0f byte for byte",
+    "tryIt": {
+      "a": "fixes/platform-corners-g00b/patch.diff (g0.0c)",
+      "b": "fixes/v3w-g00c/patch.diff (g0.0c + v3-W, baseline-relative; rebuilt byte-identical from a fresh baseline copy)"
     },
-    "m3b-v2": {
-     "js": "64d112c141e7",
-     "css": "973fb22bb4be"
-    }
-   },
-   "tools": "fixes/g0-box/gates (copies of fixes/g0-gpu/gates + avscan.mjs, top-sim.mjs); shared lane, one hold per arm; no timing A/B, no phone",
-   "measurementCodeChanged": false,
-   "patchDiff": "v3, relative to g0.0; applies cleanly to g0.0b (45a2d3ee, CSS a2351bd219ae) -> CSS e12dd33118e6"
+    "land": "fixes/v3w-g00e/patch.diff (g0.0f, baseline-relative, CSS 1d1e5d62a2c4 / JS 30fd80ccbb3f)"
   },
-  "verdict": "v3 STOPPED at gate 1: Simulator within T2 (outline edges only, max 117, 553 css px2 / 0.14 %; status-bar cluster excluded), Chrome misses T2 on the nav outline anti-aliasing only (max 226 > edge 128, 866 css px2 / 0.26 %); card interior identical, state equal everywhere. v2 (card laid out once) also stopped at gate 1 (text phase, both engines).",
+  "verdict": "P-164 PASS (lead ruling (a), re-read shown): g0.0f no worse than g0.0e on the phone (D1 0, D2 0, D3 0/0/0; 4+4 planned runs). ACCEPTED T3 (PR-038, user 03:04Z). g0.0f = g0.0e + v3-W reproduces the PR-038 gates against g0.0e: Chrome T0 within A/A, Simulator the same 6 outline stops and maxima (max 218), Reduce Motion T0, Join clip corners/over-EN 0, logo flip jump <= 0.14 px. T3 look-alike PROPOSAL (lead decision after 043143d2): WebKit misses T2 only on the nav outline anti-aliasing mid-motion (edge max 218 > 128 at 6 of 144 stops; flat max 31; rests identical); Chrome T0 by construction (148 stops within A/A); Reduce Motion T0 (v3-W steps aside). Gain (Simulator, 2 sessions, counts only): opening adds ~11 MB less layer memory (open minus closed 16.2-17.9 -> 5.4-7.1 MB; the nav backing store at panel size, 11.6 MB); redraw area per open -5 % / -16 %, per close +10 % / -6 % (mixed); bar repaints after a close 86-88 -> 0, top scroll 65 -> 0 (area -12 %); layers per open equal; top/mid/end memory within 1 MB. Not timed, not on the phone.",
   "gates": {
-   "seek": [
-    {
-     "engine": "chrome",
-     "viewport": "430x775",
-     "loads": "A V A2 V2",
-     "stops": 22,
-     "stateMismatch": 0,
-     "worstClusterMax": 226,
-     "worstConsistentCssPx2": 866,
-     "worstConsistentPct": 0.26,
-     "where": "nav outline (edges, round corners)",
-     "t2": false,
-     "out": "out/g0box/seek-v3-c775.score"
+    "seek": [
+      {
+        "engine": "chrome",
+        "viewport": "430x775",
+        "build": "pre-RM-fix",
+        "loads": "A V A2 V2",
+        "stops": 148,
+        "stateMismatch": 0,
+        "result": "T0 within A/A: consistent pixels at 3 stops, max 8 css px2, level 53 (A/A max 59), countdown/cycler area x 224-320 y 480-592",
+        "out": "out/g0box/seekW-c775.score"
+      },
+      {
+        "engine": "sim fw-sim",
+        "build": "pre-RM-fix",
+        "loads": "A V A2 V2",
+        "stops": 144,
+        "stateMismatch": 0,
+        "t2": {
+          "dir": "out/g0box/seekW-sim",
+          "dpr": 3,
+          "topCss": 56,
+          "limits": {
+            "flat": 64,
+            "edge": 128,
+            "pct": 0.5,
+            "cluster": 2000
+          },
+          "stops": 144,
+          "fails": 6,
+          "worst": {
+            "flat": 31,
+            "edge": 218,
+            "pct": 0.1799,
+            "cluster": 678
+          }
+        },
+        "failing": [
+          {
+            "stop": "open-240",
+            "edgeMax": 164,
+            "edgeAt": [
+              36,
+              663
+            ],
+            "cssPx2": 565,
+            "pct": 0.1501
+          },
+          {
+            "stop": "open-260",
+            "edgeMax": 161,
+            "edgeAt": [
+              32,
+              688
+            ],
+            "cssPx2": 51,
+            "pct": 0.0137
+          },
+          {
+            "stop": "open-340",
+            "edgeMax": 182,
+            "edgeAt": [
+              30,
+              770
+            ],
+            "cssPx2": 509,
+            "pct": 0.1352
+          },
+          {
+            "stop": "open-440",
+            "edgeMax": 218,
+            "edgeAt": [
+              24,
+              828
+            ],
+            "cssPx2": 553,
+            "pct": 0.1469
+          },
+          {
+            "stop": "rev2-000",
+            "edgeMax": 217,
+            "edgeAt": [
+              84,
+              833
+            ],
+            "cssPx2": 678,
+            "pct": 0.1799
+          },
+          {
+            "stop": "rev2-060",
+            "edgeMax": 164,
+            "edgeAt": [
+              36,
+              662
+            ],
+            "cssPx2": 565,
+            "pct": 0.15
+          }
+        ],
+        "result": "FAIL T2 (edge level)",
+        "out": "out/g0box/seekW-sim.t2"
+      },
+      {
+        "engine": "sim fw-sim, Reduce Motion on",
+        "build": "pre-RM-fix",
+        "stops": 20,
+        "result": "FAIL: close@0 16133 css px2 max 219, close@100 16052 max 44 (light fill while g0.0c still fades dark->light)",
+        "out": "out/g0box/seekW-simrm"
+      },
+      {
+        "engine": "sim fw-sim, Reduce Motion on",
+        "build": "v3-W (RM fix)",
+        "stops": 24,
+        "t2": {
+          "dir": "out/g0box/seekW2-simrm",
+          "dpr": 3,
+          "topCss": 56,
+          "limits": {
+            "flat": 64,
+            "edge": 128,
+            "pct": 0.5,
+            "cluster": 2000
+          },
+          "stops": 24,
+          "fails": 1,
+          "worst": {
+            "flat": 70,
+            "edge": 70,
+            "pct": 0.6132,
+            "cluster": 2275
+          }
+        },
+        "rows": [
+          {
+            "stop": "close-000",
+            "pass": true,
+            "cssPx2": 58,
+            "flatMax": 11,
+            "edgeMax": 48
+          },
+          {
+            "stop": "close-040",
+            "pass": false,
+            "cssPx2": 2310,
+            "flatMax": 70,
+            "edgeMax": 70
+          },
+          {
+            "stop": "close-080",
+            "pass": true,
+            "cssPx2": 19,
+            "flatMax": 0,
+            "edgeMax": 22
+          },
+          {
+            "stop": "close-120",
+            "pass": true,
+            "cssPx2": 13,
+            "flatMax": 0,
+            "edgeMax": 25
+          },
+          {
+            "stop": "close-160",
+            "pass": true,
+            "cssPx2": 12,
+            "flatMax": 0,
+            "edgeMax": 28
+          },
+          {
+            "stop": "close-200",
+            "pass": true,
+            "cssPx2": 12,
+            "flatMax": 0,
+            "edgeMax": 28
+          },
+          {
+            "stop": "close-240",
+            "pass": true,
+            "cssPx2": 12,
+            "flatMax": 0,
+            "edgeMax": 28
+          },
+          {
+            "stop": "close-280",
+            "pass": true,
+            "cssPx2": 12,
+            "flatMax": 0,
+            "edgeMax": 28
+          },
+          {
+            "stop": "close-320",
+            "pass": true,
+            "cssPx2": 12,
+            "flatMax": 0,
+            "edgeMax": 28
+          },
+          {
+            "stop": "close-360",
+            "pass": true,
+            "cssPx2": 12,
+            "flatMax": 0,
+            "edgeMax": 28
+          },
+          {
+            "stop": "close-500",
+            "pass": true,
+            "cssPx2": 12,
+            "flatMax": 0,
+            "edgeMax": 28
+          },
+          {
+            "stop": "close-700",
+            "pass": true,
+            "cssPx2": 12,
+            "flatMax": 0,
+            "edgeMax": 28
+          },
+          {
+            "stop": "open-000",
+            "pass": true,
+            "cssPx2": 20,
+            "flatMax": 0,
+            "edgeMax": 69
+          },
+          {
+            "stop": "open-040",
+            "pass": true,
+            "cssPx2": 20,
+            "flatMax": 0,
+            "edgeMax": 69
+          },
+          {
+            "stop": "open-080",
+            "pass": true,
+            "cssPx2": 20,
+            "flatMax": 0,
+            "edgeMax": 69
+          },
+          {
+            "stop": "open-120",
+            "pass": true,
+            "cssPx2": 20,
+            "flatMax": 0,
+            "edgeMax": 69
+          },
+          {
+            "stop": "open-160",
+            "pass": true,
+            "cssPx2": 20,
+            "flatMax": 0,
+            "edgeMax": 69
+          },
+          {
+            "stop": "open-200",
+            "pass": true,
+            "cssPx2": 20,
+            "flatMax": 0,
+            "edgeMax": 69
+          },
+          {
+            "stop": "open-240",
+            "pass": true,
+            "cssPx2": 20,
+            "flatMax": 0,
+            "edgeMax": 69
+          },
+          {
+            "stop": "open-280",
+            "pass": true,
+            "cssPx2": 20,
+            "flatMax": 0,
+            "edgeMax": 69
+          },
+          {
+            "stop": "open-320",
+            "pass": true,
+            "cssPx2": 20,
+            "flatMax": 0,
+            "edgeMax": 69
+          },
+          {
+            "stop": "open-360",
+            "pass": true,
+            "cssPx2": 20,
+            "flatMax": 0,
+            "edgeMax": 69
+          },
+          {
+            "stop": "open-500",
+            "pass": true,
+            "cssPx2": 20,
+            "flatMax": 0,
+            "edgeMax": 69
+          },
+          {
+            "stop": "open-700",
+            "pass": true,
+            "cssPx2": 20,
+            "flatMax": 0,
+            "edgeMax": 69
+          }
+        ],
+        "out": "out/g0box/seekW2-simrm"
+      },
+      {
+        "engine": "sim fw-ipad",
+        "result": "not finished (session boot hit the 300 s hold cap); not re-run after the stop"
+      },
+      {
+        "engine": "sim fw-sim",
+        "build": "final (CSS f9b2f894dedf)",
+        "loads": "A V A2 V2 (two holds per half)",
+        "stops": 144,
+        "stateMismatch": 0,
+        "t2": {
+          "dir": "out/g0box/seekW3-sim",
+          "dpr": 3,
+          "topCss": 56,
+          "limits": {
+            "flat": 64,
+            "edge": 128,
+            "pct": 0.5,
+            "cluster": 2000
+          },
+          "stops": 144,
+          "fails": 6,
+          "worst": {
+            "flat": 31,
+            "edge": 218,
+            "pct": 0.1799,
+            "cluster": 678
+          }
+        },
+        "failing": [
+          {
+            "stop": "open-240",
+            "edgeMax": 164,
+            "edgeAt": [
+              36,
+              663
+            ],
+            "cssPx2": 565,
+            "pct": 0.1501
+          },
+          {
+            "stop": "open-260",
+            "edgeMax": 161,
+            "edgeAt": [
+              32,
+              688
+            ],
+            "cssPx2": 51,
+            "pct": 0.0137
+          },
+          {
+            "stop": "open-340",
+            "edgeMax": 182,
+            "edgeAt": [
+              30,
+              770
+            ],
+            "cssPx2": 509,
+            "pct": 0.1352
+          },
+          {
+            "stop": "open-440",
+            "edgeMax": 218,
+            "edgeAt": [
+              24,
+              828
+            ],
+            "cssPx2": 553,
+            "pct": 0.1469
+          },
+          {
+            "stop": "rev2-000",
+            "edgeMax": 217,
+            "edgeAt": [
+              84,
+              833
+            ],
+            "cssPx2": 678,
+            "pct": 0.1799
+          },
+          {
+            "stop": "rev2-060",
+            "edgeMax": 164,
+            "edgeAt": [
+              36,
+              662
+            ],
+            "cssPx2": 565,
+            "pct": 0.15
+          }
+        ],
+        "result": "T2 edge level only (same 6 stops as the pre-fix run); T3",
+        "out": "out/g0box/seekW3-sim.t2"
+      },
+      {
+        "engine": "sim fw-sim, Reduce Motion on",
+        "build": "final (v3-W steps aside under RM)",
+        "stops": 24,
+        "t2": {
+          "dir": "out/g0box/seekW3-simrm",
+          "dpr": 3,
+          "topCss": 56,
+          "limits": {
+            "flat": 64,
+            "edge": 128,
+            "pct": 0.5,
+            "cluster": 2000
+          },
+          "stops": 24,
+          "fails": 0,
+          "worst": {
+            "flat": 0,
+            "edge": 0,
+            "pct": 0,
+            "cluster": 0
+          }
+        },
+        "result": "T0: 0 consistent px at every stop, state equal",
+        "out": "out/g0box/seekW3-simrm"
+      }
+    ],
+    "rescoreOfV3": {
+      "out": "out/g0box/seek-v3-sim.t2",
+      "stops": 20,
+      "result": "PASS on its 20 stops (edge max 117), identical to the same stops of the 144-stop v3-W run: v3 = v3-W in WebKit, deterministic; the 10-step seek missed the worse stops"
     },
-    {
-     "engine": "simulator",
-     "loads": "A V A2 V2",
-     "stops": 22,
-     "stateMismatch": 0,
-     "worstClusterMaxBelowStatusBar": 117,
-     "worstConsistentCssPx2": 553,
-     "worstConsistentPct": 0.14,
-     "flatShare": "0.02-0.03",
-     "where": "nav outline (edges, corners); 18 px2 status-bar cluster (max 255) at every stop excluded",
-     "t2": true,
-     "out": "out/g0box/seek-v3-sim.score"
+    "gain": {
+      "tool": "fixes/g0-box/gates/counts-sim.mjs (2 sessions, arm order swapped) + top-sim.mjs; Simulator, counts only, one load per arm per session",
+      "files": [
+        "out/g0box/counts/counts-sim-2026-10-07T19-56-04-875Z.json",
+        "out/g0box/counts/counts-sim-2026-10-07T20-00-19-719Z.json",
+        "out/g0box/counts/top-sim-2026-10-07T20-04-41-371Z.json"
+      ],
+      "memoryAddedByOpenMB": {
+        "g0.0c": [
+          [
+            16.3,
+            17.9
+          ],
+          [
+            16.2,
+            17.9
+          ]
+        ],
+        "v3-W": [
+          [
+            5.4,
+            7
+          ],
+          [
+            5.5,
+            7.1
+          ]
+        ],
+        "note": "open minus closed in the same arm (open, open2); the nav backing store at 406x791 css x DPR 3 = 11.6 MB"
+      },
+      "memoryOpenAbsMB": {
+        "g0.0c": [
+          117.3,
+          109.3
+        ],
+        "v3-W": [
+          113.6,
+          97.8
+        ]
+      },
+      "memoryClosedAbsMB": {
+        "g0.0c": [
+          101,
+          93.1
+        ],
+        "v3-W": [
+          108.2,
+          92.3
+        ],
+        "note": "run 1 V started 7.2 MB higher at L0 with the same 52 layers"
+      },
+      "paintMpx3Opens": {
+        "g0.0c": [
+          49.58,
+          65.77
+        ],
+        "v3-W": [
+          47.02,
+          55.47
+        ]
+      },
+      "paintMpx3Closes": {
+        "g0.0c": [
+          38.22,
+          44.78
+        ],
+        "v3-W": [
+          42.21,
+          42.04
+        ]
+      },
+      "navFullBoxRect406x791Per3Opens": {
+        "g0.0c": [
+          26,
+          29
+        ],
+        "v3-W": [
+          11,
+          14
+        ]
+      },
+      "navPillRepaintAfterClose398x52": {
+        "g0.0c": [
+          86,
+          88
+        ],
+        "v3-W": [
+          0,
+          0
+        ]
+      },
+      "layersNewPerOpen": "equal (the Join only); run 1 V first open also the language-switch wrap (0 MB)",
+      "topScroll": {
+        "g0.0c": {
+          "paints": 659,
+          "mpx": 40.48,
+          "bar398x52": 65
+        },
+        "v3-W": {
+          "paints": 498,
+          "mpx": 35.79,
+          "bar398x52": 0
+        }
+      },
+      "censusTopMidEndMB": {
+        "g0.0c": [
+          52.2,
+          101.1,
+          93.1
+        ],
+        "v3-W": [
+          51.7,
+          100.4,
+          92.3
+        ],
+        "note": "+2 layers (the fills, 0.00 MB)"
+      },
+      "leadRule": "end-open memory >= 10 MB as open minus closed (lead): passes both runs; no new layers per open; top not worse -> T3 proposal"
+    },
+    "stacking": "v3-W + fix-join-fade block + fix-logo-close delta apply on g0.0c in either order, same bytes; all three: CSS e434bb66fa5c, JS 7f7d83162ef6",
+    "phoneKit": "P-164 card in README \"P-164\": fixes/g0-box/phone/, pinned C g0.0e 5c39f7a96e41/d4e684032482, V g0.0f 30fd80ccbb3f/1d1e5d62a2c4, snapshot out/g0box/snap4 HASHES 3412a08fa9ac, G program fixes/g0-box/phone/g-fastshort-g0.json 38d7fe5d7fa8 (v1 8737f212c0ff aborts on g0); dry run ok 03:54Z (out/g0box/kitdry5.log); not run"
+  },
+  "v3": {
+    "build": "M3-B v3 (lead option 3) on g0.0: v0 box and card untouched; nav colour as two composited solid fills (light #ffffff1a, dark #131922 at opacity --morph), corner as clip-path inset(0 round 32-12m px); phones <= 640 px",
+    "config": {
+      "baselineSnapshot": "b1789284481295-4ad4a84a",
+      "base": "g0.0 f75c1707",
+      "patchRelativeTo": "g0.0 (a/ = sh fixes/g0-revert/rebuild.sh output: JS 5c39f7a96e41, CSS 95f0eff3c57f)",
+      "served": {
+        "g0.0": {
+          "js": "5c39f7a96e41",
+          "css": "95f0eff3c57f"
+        },
+        "m3b-v3": {
+          "js": "1fa6cfc78f56",
+          "css": "6663cef214fb"
+        },
+        "m3b-v2": {
+          "js": "64d112c141e7",
+          "css": "973fb22bb4be"
+        }
+      },
+      "tools": "fixes/g0-box/gates (copies of fixes/g0-gpu/gates + avscan.mjs, top-sim.mjs); shared lane, one hold per arm; no timing A/B, no phone",
+      "measurementCodeChanged": false,
+      "patchDiff": "v3, relative to g0.0; applies cleanly to g0.0b (45a2d3ee, CSS a2351bd219ae) -> CSS e12dd33118e6"
+    },
+    "verdict": "v3 STOPPED at gate 1: Simulator within T2 (outline edges only, max 117, 553 css px2 / 0.14 %; status-bar cluster excluded), Chrome misses T2 on the nav outline anti-aliasing only (max 226 > edge 128, 866 css px2 / 0.26 %); card interior identical, state equal everywhere. v2 (card laid out once) also stopped at gate 1 (text phase, both engines).",
+    "gates": {
+      "seek": [
+        {
+          "engine": "chrome",
+          "viewport": "430x775",
+          "loads": "A V A2 V2",
+          "stops": 22,
+          "stateMismatch": 0,
+          "worstClusterMax": 226,
+          "worstConsistentCssPx2": 866,
+          "worstConsistentPct": 0.26,
+          "where": "nav outline (edges, round corners)",
+          "t2": false,
+          "out": "out/g0box/seek-v3-c775.score"
+        },
+        {
+          "engine": "simulator",
+          "loads": "A V A2 V2",
+          "stops": 22,
+          "stateMismatch": 0,
+          "worstClusterMaxBelowStatusBar": 117,
+          "worstConsistentCssPx2": 553,
+          "worstConsistentPct": 0.14,
+          "flatShare": "0.02-0.03",
+          "where": "nav outline (edges, corners); 18 px2 status-bar cluster (max 255) at every stop excluded",
+          "t2": true,
+          "out": "out/g0box/seek-v3-sim.score"
+        }
+      ],
+      "seekNotRun": [
+        "chrome 430x815",
+        "widths 768 and 1280",
+        "prefers-reduced-motion"
+      ],
+      "gates23NotRun": "v3: stop rule"
     }
-   ],
-   "seekNotRun": [
-    "chrome 430x815",
-    "widths 768 and 1280",
-    "prefers-reduced-motion"
-   ],
-   "gates23NotRun": "v3: stop rule"
+  },
+  "v2": {
+    "build": "gpu-original M3-B v2 on g0.0: nav colour as two composited solid fills, corner as clip-path inset(0 round r), menu card laid out once at the open size from v0's box origin (backdrop centred by transform, quarter-size veil scaled, centre/footer by layout); phones <= 640 px",
+    "verdict": "STOPPED at gate 1: misses T2 in Chrome and the Simulator (sub-pixel text phase mid-tween: Chrome up to 3251 css px2 / 0.98 % consistent beyond A/A, max 226; Simulator up to 2305 css px2 / 0.69 %, max 226 on glyphs). Gates 2-3 pass: 0 layers built per open, nav root repaint gone (Simulator paint area open -47 %, close -26 %), memory at rest equal at top/mid/end (-0.4 to -0.6 MB) and -22 MB with the menu open; per-frame box layout stays (claim would be 'no box repaint', not 'no layout').",
+    "served": {
+      "js": "64d112c141e7",
+      "css": "973fb22bb4be"
+    },
+    "gates": {
+      "seek": [
+        {
+          "engine": "chrome",
+          "viewport": "430x775",
+          "loads": "A V A2 V2",
+          "stops": 22,
+          "stateMismatch": "none except backdrop/col rects (fixed width by design)",
+          "worstMax": 226,
+          "worstConsistentCssPx2": 3251,
+          "worstConsistentPct": 0.98,
+          "worstStop": "open@200",
+          "t2": false,
+          "out": "out/g0box/seek-v2o-c775.score"
+        },
+        {
+          "engine": "simulator",
+          "loads": "A V A2 V2",
+          "stops": 22,
+          "stateMismatch": "none except backdrop/col rects",
+          "worstMax": 226,
+          "worstConsistentCssPx2": 2305,
+          "worstConsistentPct": 0.69,
+          "worstStop": "open@360",
+          "t2": false,
+          "out": "out/g0box/seek-v2o-sim.score"
+        }
+      ],
+      "seekNotRun": [
+        "chrome 430x815",
+        "widths 768 and 1280",
+        "prefers-reduced-motion"
+      ],
+      "countsSimulator": {
+        "open": {
+          "g0.0": {
+            "style": 159,
+            "layout": 109,
+            "paint": 928,
+            "paintMpx": 78.85
+          },
+          "m3b": {
+            "style": 189,
+            "layout": 120,
+            "paint": 767,
+            "paintMpx": 42.1
+          }
+        },
+        "close": {
+          "g0.0": {
+            "style": 192,
+            "layout": 144,
+            "paint": 1048,
+            "paintMpx": 53.73
+          },
+          "m3b": {
+            "style": 194,
+            "layout": 143,
+            "paint": 798,
+            "paintMpx": 39.65
+          }
+        },
+        "restOpen": {
+          "g0.0": {
+            "paint": 134,
+            "paintMpx": 2.26
+          },
+          "m3b": {
+            "paint": 130,
+            "paintMpx": 2.24
+          }
+        },
+        "restClosed": {
+          "g0.0": {
+            "paint": 243,
+            "paintMpx": 3.77
+          },
+          "m3b": {
+            "paint": 152,
+            "paintMpx": 1.97
+          }
+        },
+        "layersBuiltPerOpenClose": {
+          "g0.0": "Join button animation layer only (0.21 MB)",
+          "m3b": "Join button animation layer only (0.21 MB)"
+        },
+        "loads": 1,
+        "out": "out/g0box/counts/counts-sim-2026-10-07T18-30-21-146Z.json"
+      },
+      "memoryLayersAtRest": {
+        "top": {
+          "g0.0": [
+            163,
+            52.4
+          ],
+          "m3b": [
+            161,
+            52
+          ]
+        },
+        "mid": {
+          "g0.0": [
+            53,
+            101.1
+          ],
+          "m3b": [
+            55,
+            100.5
+          ]
+        },
+        "endClosed": {
+          "g0.0": [
+            54,
+            93.1
+          ],
+          "m3b": [
+            56,
+            92.5
+          ]
+        },
+        "endOpen": {
+          "g0.0": [
+            54,
+            109.3
+          ],
+          "m3b": [
+            56,
+            86.9
+          ]
+        },
+        "units": "[layers, MB]",
+        "out": "out/g0box/counts/top-sim-2026-10-07T18-31-42-603Z.json"
+      },
+      "topScrollSimulator": {
+        "g0.0": {
+          "frames": 54,
+          "style": 77,
+          "layout": 201,
+          "paint": 401,
+          "paintMpx": 28.27
+        },
+        "m3b": {
+          "frames": 57,
+          "style": 80,
+          "layout": 204,
+          "paint": 372,
+          "paintMpx": 26.34
+        },
+        "loads": 1
+      }
+    },
+    "commit": "7da9b47e"
+  },
+  "notes": [
+    "No tool changed. New gate script fixes/g0-box/gates/t2.mjs (scorer only, no browser).",
+    "Every Chrome and Simulator step ran in the shared lane (--shared --weight probe|simulator --max-seconds 300 --owner fix-g0-box).",
+    "Per-frame layout of the nav box stays (v0's width/height/top; bar, centre block and footer laid out each frame); only the nav root's paint goes.",
+    "v1 (card held at page position 12,12) shifted Chrome text by round(frac(navX)*3) device px; v2 restores v0's card origin; v1's four-load Chrome run is invalid (overlay edited mid-run).",
+    "No measurement code changed.",
+    "v3 measured on g0.0 before the rebase onto g0.0b; the Join change in g0.0b is outside the nav box.",
+    "The top-sim V load may have read the overlay just before or after the reduced-motion CSS edit; that edit only touches prefers-reduced-motion: reduce rules, which do not apply in that run.",
+    "New scripts: fixes/g0-box/gates/crops.mjs (proposal crops, no browser).",
+    "2026-10-08: rebuilt on g0.0e (g0.0f); no tool changed; copies of fix-join-fade probes in the gitignored out/jf/."
+  ],
+  "status": "PR-038 accepted by the user 03:04Z 2026-10-08; rebuilt on g0.0e as g0.0f; phone kit re-snapped, dry-run, not run",
+  "onG00e": {
+    "when": "2026-10-08T03:08Z..03:40Z",
+    "a": "g0.0e (out/g0box/g00e)",
+    "v": "g0.0f (out/g0box/g00f = overlay)",
+    "lane": "shared chrome-measure lane, --weight probe|simulator, --max-seconds 300, one hold per arm; each background call < 20 min (I-240); no timing",
+    "chrome775": {
+      "stops": 148,
+      "stateDiffStops": 0,
+      "t2": {
+        "dir": "out/g0box/seekF-c775",
+        "dpr": 3,
+        "topCss": 0,
+        "limits": {
+          "flat": 64,
+          "edge": 128,
+          "pct": 0.5,
+          "cluster": 2000
+        },
+        "stops": 144,
+        "fails": 0,
+        "worst": {
+          "flat": 14,
+          "edge": 33,
+          "pct": 0.0539,
+          "cluster": 105
+        }
+      },
+      "result": "T0 within A/A. open@320 180 css px2 max 23 = the intermittent whole-nav frame in both A loads; re-check open@280-360 (seekF-c775re): open@320 0, frame moved to A/A or V/V pairs. Rest in the countdown area (max <= 18). v3-W inactive in Chrome by construction."
+    },
+    "simSeek": {
+      "stops": 144,
+      "stateDiffStops": 0,
+      "t2": {
+        "dir": "out/g0box/seekF-sim",
+        "dpr": 3,
+        "topCss": 56,
+        "limits": {
+          "flat": 64,
+          "edge": 128,
+          "pct": 0.5,
+          "cluster": 2000
+        },
+        "stops": 144,
+        "fails": 6,
+        "worst": {
+          "flat": 31,
+          "edge": 218,
+          "pct": 0.1799,
+          "cluster": 678
+        }
+      },
+      "failing": {
+        "open-240": 164,
+        "open-260": 161,
+        "open-340": 182,
+        "open-440": 218,
+        "rev2-000": 217,
+        "rev2-060": 164
+      },
+      "result": "identical to PR-038 (seekW3-sim.t2) at all 144 stops: same 6 outline stops, same maxima and areas; nothing new"
+    },
+    "simReduceMotion": {
+      "stops": 24,
+      "t2": {
+        "dir": "out/g0box/seekF-simrm",
+        "dpr": 3,
+        "topCss": 56,
+        "limits": {
+          "flat": 64,
+          "edge": 128,
+          "pct": 0.5,
+          "cluster": 2000
+        },
+        "stops": 24,
+        "fails": 0,
+        "worst": {
+          "flat": 0,
+          "edge": 0,
+          "pct": 0,
+          "cluster": 0
+        }
+      },
+      "result": "T0: 0 consistent px at every stop, state equal"
+    },
+    "joinClip": {
+      "tool": "fix-join-fade's out/jf/jfsim.mjs + remetric2.mjs, variants v3.json (hidden-Join stylesheet reference), JOIN_PLAN 24:40,80:0,80:200,400:280,400:340",
+      "g00e": {
+        "cornersOff": 0,
+        "overEN": 0,
+        "outsideBox": {
+          "join-24-40": 20
+        }
+      },
+      "g00f": {
+        "cornersOff": 0,
+        "overEN": 0,
+        "outsideBox": {
+          "join-24-40": 18
+        }
+      },
+      "result": "unchanged: corners off 0 and dark px over EN 0 at every join stop in both; widths, opacities, 4 px gap identical",
+      "note": "a first run with jfsim's at-shot-time reference gave non-zero counts in both builds (g0.0e included); that reference is superseded by fix-join-fade's remetric2 method"
+    },
+    "logoPath": {
+      "tool": "fixes/logo-close/probe/logo-path-sim.mjs",
+      "g00e": {
+        "closeJump": -0.13,
+        "openJump": 0.14
+      },
+      "g00f": {
+        "closeJump": -0.13,
+        "openJump": 0.14
+      },
+      "result": "unchanged, <= 1 px"
+    }
+  },
+  "p164": {
+    "status": "PASS after the lead ruling (a): G6 was a stale pin (signed program 38d7fe5d7fa8 in every record); re-read through the g0 gates copy passes",
+    "preData1": {
+      "program": "fixes/morph-scroll/g-fastshort-v1.json (8737f212c0ff)",
+      "result": "STOP: both arms abort at the first non-optional `until atEnd` (scrollY 5213/5214): g0 pins the opened page where its jack fired and opening grows docH 5999 -> 6035 (maxY 5260); no E stroke reached"
+    },
+    "readerChange": "g0b-read.mjs: triggers from prevented touchmoves (open = prevented upward move while closed, close = prevented downward move while open); end rule only as fallback for a record with no prevented move; ih falls back to vh0; selftest 8 checks ok; made before any P-164 data",
+    "preData2": {
+      "program": "fixes/g0-box/phone/g-fastshort-g0.json (38d7fe5d7fa8)",
+      "result": "START-STATE MATCH: both arms complete (52 strokes), first E stroke at the pin y 5213/5214, identical stroke order, settle ys within 1 px, moving frames 529/518 (-2.1 %), toolbar 1/1; reader 13 opens and 12 closes per arm, all prevented moves at the pin"
+    },
+    "comparability": "the G program changed against P-161/P-163 (v1): P-164 numbers do not compare with those tickets",
+    "prediction": {
+      "D1": "PASS ~65 %",
+      "D2": "PASS ~70 %",
+      "D3": "PASS ~60 %",
+      "overall": "PASS ~50 %, OPEN (threshold-sensitive) the most likely other outcome"
+    },
+    "block": {
+      "kitVerdict": "VOID: S1 FAIL on G6 alone (fps 54.3 >= 50, slow 0.039 <= 0.06 pass), every counted run INVALID on G6 alone; re-runs EC1r, EV1r spent on G6",
+      "gatesWithoutG6": "G1-G5 ok on all 10 counted runs; idle 4.68-4.86 s",
+      "heat": "tool-serious, Serious induced at every gate, battery 38.8-41.0 C, no Critical",
+      "link": "no link loss, no re-plug",
+      "reading": {
+        "decision": "PASS",
+        "d1": {
+          "diff": 0,
+          "ok": true
+        },
+        "d2": {
+          "diff": 0,
+          "ok": true
+        },
+        "d3": {
+          "30": "le",
+          "34": "le",
+          "38": "le"
+        },
+        "perRun": {
+          "EC1": {
+            "nOpen": 13,
+            "nClose": 12,
+            "f1": 16,
+            "f2": 17,
+            "n": 514,
+            "medianDt": 17,
+            "share": {
+              "30": 0,
+              "34": 0,
+              "38": 0,
+              "50": 0
+            },
+            "close": {
+              "n": 513,
+              "medianDt": 17,
+              "share": {
+                "30": 0.0078,
+                "34": 0.0019,
+                "38": 0,
+                "50": 0
+              }
+            }
+          },
+          "EV1": {
+            "nOpen": 13,
+            "nClose": 12,
+            "f1": 16,
+            "f2": 17,
+            "n": 516,
+            "medianDt": 17,
+            "share": {
+              "30": 0,
+              "34": 0,
+              "38": 0,
+              "50": 0
+            },
+            "close": {
+              "n": 511,
+              "medianDt": 17,
+              "share": {
+                "30": 0.0059,
+                "34": 0,
+                "38": 0,
+                "50": 0
+              }
+            }
+          },
+          "EV2": {
+            "nOpen": 13,
+            "nClose": 12,
+            "f1": 12,
+            "f2": 16,
+            "n": 515,
+            "medianDt": 17,
+            "share": {
+              "30": 0,
+              "34": 0,
+              "38": 0,
+              "50": 0
+            },
+            "close": {
+              "n": 514,
+              "medianDt": 17,
+              "share": {
+                "30": 0.0058,
+                "34": 0.0019,
+                "38": 0,
+                "50": 0
+              }
+            }
+          },
+          "EC2": {
+            "nOpen": 13,
+            "nClose": 12,
+            "f1": 12,
+            "f2": 16,
+            "n": 514,
+            "medianDt": 17,
+            "share": {
+              "30": 0.0019,
+              "34": 0,
+              "38": 0,
+              "50": 0
+            },
+            "close": {
+              "n": 511,
+              "medianDt": 17,
+              "share": {
+                "30": 0.0098,
+                "34": 0.002,
+                "38": 0.002,
+                "50": 0
+              }
+            }
+          },
+          "EC3": {
+            "nOpen": 13,
+            "nClose": 12,
+            "f1": 16,
+            "f2": 17,
+            "n": 515,
+            "medianDt": 17,
+            "share": {
+              "30": 0,
+              "34": 0,
+              "38": 0,
+              "50": 0
+            },
+            "close": {
+              "n": 513,
+              "medianDt": 17,
+              "share": {
+                "30": 0.0039,
+                "34": 0.0019,
+                "38": 0,
+                "50": 0
+              }
+            }
+          },
+          "EV3": {
+            "nOpen": 13,
+            "nClose": 12,
+            "f1": 17,
+            "f2": 16,
+            "n": 514,
+            "medianDt": 17,
+            "share": {
+              "30": 0.0019,
+              "34": 0,
+              "38": 0,
+              "50": 0
+            },
+            "close": {
+              "n": 513,
+              "medianDt": 17,
+              "share": {
+                "30": 0.0058,
+                "34": 0.0019,
+                "38": 0,
+                "50": 0
+              }
+            }
+          },
+          "EV4": {
+            "nOpen": 13,
+            "nClose": 12,
+            "f1": 11,
+            "f2": 17,
+            "n": 514,
+            "medianDt": 17,
+            "share": {
+              "30": 0,
+              "34": 0,
+              "38": 0,
+              "50": 0
+            },
+            "close": {
+              "n": 513,
+              "medianDt": 17,
+              "share": {
+                "30": 0.0019,
+                "34": 0,
+                "38": 0,
+                "50": 0
+              }
+            }
+          },
+          "EC4": {
+            "nOpen": 13,
+            "nClose": 12,
+            "f1": 17,
+            "f2": 16,
+            "n": 513,
+            "medianDt": 17,
+            "share": {
+              "30": 0,
+              "34": 0,
+              "38": 0,
+              "50": 0
+            },
+            "close": {
+              "n": 514,
+              "medianDt": 17,
+              "share": {
+                "30": 0.0039,
+                "34": 0,
+                "38": 0,
+                "50": 0
+              }
+            }
+          }
+        }
+      },
+      "descriptiveFingerDown": {
+        "gt50": {
+          "C": [
+            7,
+            5,
+            6,
+            6
+          ],
+          "V": [
+            5,
+            10,
+            8,
+            9
+          ]
+        },
+        "gt34": {
+          "C": [
+            29,
+            31,
+            34,
+            28
+          ],
+          "V": [
+            32,
+            32,
+            30,
+            39
+          ]
+        },
+        "order": "EC1 EC2 EC3 EC4 / EV1 EV2 EV3 EV4"
+      }
+    },
+    "leadRuling": {
+      "ruling": "(a) G6 stale pin: the signed card names 38d7fe5d7fa8 and every record carries it",
+      "gatesCopy": "fixes/g0-box/phone/p129-read-g0.mjs (= research/serious-heat/p129-read.mjs with only line 66 FS_HASH = 38d7fe5d7fa8) + fixes/g0-box/phone/p129-gates-g0.mjs (import pointed at it); g0b-hold.sh uses them",
+      "reRead": "G1-G6 ok on EC1-EC4, EV1-EV4, EC1r, EV1r (idle 4.68-4.86 s); SENTINEL S1 PASS 54.3 fps, slow 0.039; g0b-read output byte-identical: D1 0, D2 0, D3 0/0/0",
+      "counted": "EC1-EC4 / EV1-EV4 (planned runs, as the card says)",
+      "descriptiveOnly": {
+        "EC1r": {
+          "triggers": "13/12",
+          "f1": 12,
+          "f2": 17,
+          "openN": 516,
+          "openMedian": 17,
+          "share": "0/0/0",
+          "closeMedian": 17,
+          "close34": 0.002,
+          "fingerDown50": "9 (9/4)",
+          "fingerDown34": "32 (56/19)"
+        },
+        "EV1r": {
+          "triggers": "13/12",
+          "f1": 11,
+          "f2": 17,
+          "openN": 513,
+          "openMedian": 17,
+          "share": "0/0/0",
+          "closeMedian": 17,
+          "close34": 0,
+          "fingerDown50": "6 (7/3)",
+          "fingerDown34": "29 (63/17)"
+        }
+      },
+      "verdict": "PASS"
+    }
+  },
+  "p165": {
+    "status": "card draft, not signed, not run (before any P-165 data); README \"P-165\"",
+    "profile": "real-serious (iphone.mjs --profile real-serious, I-246, main 8f2d9e8c); never pooled with tool-serious, xcode-serious or real-fair",
+    "arms": {
+      "C": "v0, the original page (baseline b1789284481295-4ad4a84a, site-pretty, no overlay), JS 4606120cf392 / CSS 27776f3d4138",
+      "V": "g0.0f, JS 30fd80ccbb3f / CSS 1d1e5d62a2c4 (out/g0box/snap4/V, HASHES 3412a08fa9ac)"
+    },
+    "drivers": {
+      "S": "iphone.mjs run --driver scroll --probe std --profile real-serious; timed window [idle, bottom); n = 4 per arm, C V V C C V V C, warm-ups wC wV",
+      "G": "fixes/g0-box/phone/g-fastshort-g0b.json, compiled program 31fc66329daf, GESTURE_BUDGET_S 334; Timeline on; run gates p129-gates-g0b.mjs (FS_HASH 31fc66329daf); n = 4 per arm, warm-ups WC WV; does not pool with P-164 (program 38d7fe5d7fa8, other arms, tool-serious)"
+    },
+    "preData": {
+      "S": "START-STATE MATCH (Simulator, one run per arm): served hashes are the arms; ih 775, docH 6035 at the bottom, finalY 5260, marks idle/scroll/bottom, crossings 53/55; state at start differs only by design (V builds its GPU menu panel at load). No timing read.",
+      "G_g0": "START-STATE DIFFER with g-fastshort-g0 (38d7fe5d7fa8): on v0 drag 11 settled at 5220, until atEnd held, so C skipped drag 12 and the first re-approach (49 strokes, 11 opens / 10 closes, 1 fling, 4 toolbar transitions) against V 52 strokes, 13 / 12",
+      "G_g0b": "START-STATE MATCH with g-fastshort-g0b (31fc66329daf, fixed repeats: approach 12, re-approaches 2): both 52 strokes, settle ys identical (5214 from drag 11 on), drag 12 76/76 prevented in both, moving frames 465/497 (+6.4 %), toolbar 1/1, flings 0/0, reader 13 opens / 12 closes per arm",
+      "G6": "p129-gates-g0b.mjs on the C g0b record: no G6 reason (only G5/G1, a count-only record has no frames or Timeline); p129-gates-g0.mjs on the same record: G6 \"script hash 31fc66329daf is not fs 38d7fe5d7fa8\""
+    },
+    "dRules": {
+      "DS1": "S no-worse: d = median V - median C of per-run frames > 50 ms in the timed window; FAIL at d > +2; twins 46/54 decide OPEN; > 34 (30/38) reported",
+      "DS2": "S no-worse anywhere: new-cluster rule on 250 px scrollY bins of the timed window (a V bin slow in >= 2 V runs, no C run slow in it or a neighbour) fails; twins 46/54",
+      "DS3": "S better where claimed: BETTER at T in {50, 34} when max V < min C and d <= -2; twins 46/54 and 30/38; else \"not shown better\" (no failure)",
+      "D1": "G: median V O1.f2 - median C O1.f2 <= +4 ms",
+      "D2": "G: median over runs of per-run median dt of later open-tween frames (700 ms windows), V - C <= +4 ms",
+      "D3": "G: share of those frames over 34 / 30 / 38 ms, V <= C; trigger counts must match between arms",
+      "sentinel": "S criterion (bottom >= 58 fps, scroll >= 44 fps) on every counted C S run and on sC controls (H6, H8, H10, H12, TAIL); a failure voids every counted run since the last pass in both legs, then cool to the last passing sentinel battery - 0.5 C (38 if none), <= 10 min, re-heat, re-run once in the TAIL; a second failure stops the block",
+      "minimum": ">= 3 valid runs per arm per leg, else insufficient (one extra hold per leg at most)"
+    },
+    "prediction": {
+      "DS1": 0.9,
+      "DS2": 0.8,
+      "DS3_gt50": 0.5,
+      "DS3_gt34": 0.65,
+      "D1": 0.75,
+      "D2": 0.8,
+      "D3": 0.75,
+      "sentinelsFirstTry": 0.6,
+      "overallPass": 0.55
+    },
+    "phoneTimeMin": {
+      "expected": 110,
+      "warmNoMisses": 85,
+      "upTo": 165,
+      "phoneHolds": 3
+    },
+    "followUps": [
+      "short no-worse check at Fair (real-fair, S leg, n = 3 per arm, about 15 min)",
+      "finger test by the user (blind swipe A/B, original against g0.0f, console swipe-pair)"
+    ]
   }
- },
- "v2": {
-  "build": "gpu-original M3-B v2 on g0.0: nav colour as two composited solid fills, corner as clip-path inset(0 round r), menu card laid out once at the open size from v0's box origin (backdrop centred by transform, quarter-size veil scaled, centre/footer by layout); phones <= 640 px",
-  "verdict": "STOPPED at gate 1: misses T2 in Chrome and the Simulator (sub-pixel text phase mid-tween: Chrome up to 3251 css px2 / 0.98 % consistent beyond A/A, max 226; Simulator up to 2305 css px2 / 0.69 %, max 226 on glyphs). Gates 2-3 pass: 0 layers built per open, nav root repaint gone (Simulator paint area open -47 %, close -26 %), memory at rest equal at top/mid/end (-0.4 to -0.6 MB) and -22 MB with the menu open; per-frame box layout stays (claim would be 'no box repaint', not 'no layout').",
-  "served": {
-   "js": "64d112c141e7",
-   "css": "973fb22bb4be"
-  },
-  "gates": {
-   "seek": [
-    {
-     "engine": "chrome",
-     "viewport": "430x775",
-     "loads": "A V A2 V2",
-     "stops": 22,
-     "stateMismatch": "none except backdrop/col rects (fixed width by design)",
-     "worstMax": 226,
-     "worstConsistentCssPx2": 3251,
-     "worstConsistentPct": 0.98,
-     "worstStop": "open@200",
-     "t2": false,
-     "out": "out/g0box/seek-v2o-c775.score"
-    },
-    {
-     "engine": "simulator",
-     "loads": "A V A2 V2",
-     "stops": 22,
-     "stateMismatch": "none except backdrop/col rects",
-     "worstMax": 226,
-     "worstConsistentCssPx2": 2305,
-     "worstConsistentPct": 0.69,
-     "worstStop": "open@360",
-     "t2": false,
-     "out": "out/g0box/seek-v2o-sim.score"
-    }
-   ],
-   "seekNotRun": [
-    "chrome 430x815",
-    "widths 768 and 1280",
-    "prefers-reduced-motion"
-   ],
-   "countsSimulator": {
-    "open": {
-     "g0.0": {
-      "style": 159,
-      "layout": 109,
-      "paint": 928,
-      "paintMpx": 78.85
-     },
-     "m3b": {
-      "style": 189,
-      "layout": 120,
-      "paint": 767,
-      "paintMpx": 42.1
-     }
-    },
-    "close": {
-     "g0.0": {
-      "style": 192,
-      "layout": 144,
-      "paint": 1048,
-      "paintMpx": 53.73
-     },
-     "m3b": {
-      "style": 194,
-      "layout": 143,
-      "paint": 798,
-      "paintMpx": 39.65
-     }
-    },
-    "restOpen": {
-     "g0.0": {
-      "paint": 134,
-      "paintMpx": 2.26
-     },
-     "m3b": {
-      "paint": 130,
-      "paintMpx": 2.24
-     }
-    },
-    "restClosed": {
-     "g0.0": {
-      "paint": 243,
-      "paintMpx": 3.77
-     },
-     "m3b": {
-      "paint": 152,
-      "paintMpx": 1.97
-     }
-    },
-    "layersBuiltPerOpenClose": {
-     "g0.0": "Join button animation layer only (0.21 MB)",
-     "m3b": "Join button animation layer only (0.21 MB)"
-    },
-    "loads": 1,
-    "out": "out/g0box/counts/counts-sim-2026-10-07T18-30-21-146Z.json"
-   },
-   "memoryLayersAtRest": {
-    "top": {
-     "g0.0": [
-      163,
-      52.4
-     ],
-     "m3b": [
-      161,
-      52
-     ]
-    },
-    "mid": {
-     "g0.0": [
-      53,
-      101.1
-     ],
-     "m3b": [
-      55,
-      100.5
-     ]
-    },
-    "endClosed": {
-     "g0.0": [
-      54,
-      93.1
-     ],
-     "m3b": [
-      56,
-      92.5
-     ]
-    },
-    "endOpen": {
-     "g0.0": [
-      54,
-      109.3
-     ],
-     "m3b": [
-      56,
-      86.9
-     ]
-    },
-    "units": "[layers, MB]",
-    "out": "out/g0box/counts/top-sim-2026-10-07T18-31-42-603Z.json"
-   },
-   "topScrollSimulator": {
-    "g0.0": {
-     "frames": 54,
-     "style": 77,
-     "layout": 201,
-     "paint": 401,
-     "paintMpx": 28.27
-    },
-    "m3b": {
-     "frames": 57,
-     "style": 80,
-     "layout": 204,
-     "paint": 372,
-     "paintMpx": 26.34
-    },
-    "loads": 1
-   }
-  },
-  "commit": "7da9b47e"
- },
- "notes": [
-  "No tool changed. New gate script fixes/g0-box/gates/t2.mjs (scorer only, no browser).",
-  "Every Chrome and Simulator step ran in the shared lane (--shared --weight probe|simulator --max-seconds 300 --owner fix-g0-box).",
-  "Per-frame layout of the nav box stays (v0's width/height/top; bar, centre block and footer laid out each frame); only the nav root's paint goes.",
-  "v1 (card held at page position 12,12) shifted Chrome text by round(frac(navX)*3) device px; v2 restores v0's card origin; v1's four-load Chrome run is invalid (overlay edited mid-run).",
-  "No measurement code changed.",
-  "v3 measured on g0.0 before the rebase onto g0.0b; the Join change in g0.0b is outside the nav box.",
-  "The top-sim V load may have read the overlay just before or after the reduced-motion CSS edit; that edit only touches prefers-reduced-motion: reduce rules, which do not apply in that run.",
-  "New scripts: fixes/g0-box/gates/crops.mjs (proposal crops, no browser).",
-  "2026-10-08: rebuilt on g0.0e (g0.0f); no tool changed; copies of fix-join-fade probes in the gitignored out/jf/."
- ],
- "status": "PR-038 accepted by the user 03:04Z 2026-10-08; rebuilt on g0.0e as g0.0f; phone kit re-snapped, dry-run, not run",
- "onG00e": {
-  "when": "2026-10-08T03:08Z..03:40Z",
-  "a": "g0.0e (out/g0box/g00e)",
-  "v": "g0.0f (out/g0box/g00f = overlay)",
-  "lane": "shared chrome-measure lane, --weight probe|simulator, --max-seconds 300, one hold per arm; each background call < 20 min (I-240); no timing",
-  "chrome775": {
-   "stops": 148,
-   "stateDiffStops": 0,
-   "t2": {
-    "dir": "out/g0box/seekF-c775",
-    "dpr": 3,
-    "topCss": 0,
-    "limits": {
-     "flat": 64,
-     "edge": 128,
-     "pct": 0.5,
-     "cluster": 2000
-    },
-    "stops": 144,
-    "fails": 0,
-    "worst": {
-     "flat": 14,
-     "edge": 33,
-     "pct": 0.0539,
-     "cluster": 105
-    }
-   },
-   "result": "T0 within A/A. open@320 180 css px2 max 23 = the intermittent whole-nav frame in both A loads; re-check open@280-360 (seekF-c775re): open@320 0, frame moved to A/A or V/V pairs. Rest in the countdown area (max <= 18). v3-W inactive in Chrome by construction."
-  },
-  "simSeek": {
-   "stops": 144,
-   "stateDiffStops": 0,
-   "t2": {
-    "dir": "out/g0box/seekF-sim",
-    "dpr": 3,
-    "topCss": 56,
-    "limits": {
-     "flat": 64,
-     "edge": 128,
-     "pct": 0.5,
-     "cluster": 2000
-    },
-    "stops": 144,
-    "fails": 6,
-    "worst": {
-     "flat": 31,
-     "edge": 218,
-     "pct": 0.1799,
-     "cluster": 678
-    }
-   },
-   "failing": {
-    "open-240": 164,
-    "open-260": 161,
-    "open-340": 182,
-    "open-440": 218,
-    "rev2-000": 217,
-    "rev2-060": 164
-   },
-   "result": "identical to PR-038 (seekW3-sim.t2) at all 144 stops: same 6 outline stops, same maxima and areas; nothing new"
-  },
-  "simReduceMotion": {
-   "stops": 24,
-   "t2": {
-    "dir": "out/g0box/seekF-simrm",
-    "dpr": 3,
-    "topCss": 56,
-    "limits": {
-     "flat": 64,
-     "edge": 128,
-     "pct": 0.5,
-     "cluster": 2000
-    },
-    "stops": 24,
-    "fails": 0,
-    "worst": {
-     "flat": 0,
-     "edge": 0,
-     "pct": 0,
-     "cluster": 0
-    }
-   },
-   "result": "T0: 0 consistent px at every stop, state equal"
-  },
-  "joinClip": {
-   "tool": "fix-join-fade's out/jf/jfsim.mjs + remetric2.mjs, variants v3.json (hidden-Join stylesheet reference), JOIN_PLAN 24:40,80:0,80:200,400:280,400:340",
-   "g00e": {
-    "cornersOff": 0,
-    "overEN": 0,
-    "outsideBox": {
-     "join-24-40": 20
-    }
-   },
-   "g00f": {
-    "cornersOff": 0,
-    "overEN": 0,
-    "outsideBox": {
-     "join-24-40": 18
-    }
-   },
-   "result": "unchanged: corners off 0 and dark px over EN 0 at every join stop in both; widths, opacities, 4 px gap identical",
-   "note": "a first run with jfsim's at-shot-time reference gave non-zero counts in both builds (g0.0e included); that reference is superseded by fix-join-fade's remetric2 method"
-  },
-  "logoPath": {
-   "tool": "fixes/logo-close/probe/logo-path-sim.mjs",
-   "g00e": {
-    "closeJump": -0.13,
-    "openJump": 0.14
-   },
-   "g00f": {
-    "closeJump": -0.13,
-    "openJump": 0.14
-   },
-   "result": "unchanged, <= 1 px"
-  }
- },
- "p164": {
-  "status": "PASS after the lead ruling (a): G6 was a stale pin (signed program 38d7fe5d7fa8 in every record); re-read through the g0 gates copy passes",
-  "preData1": {
-   "program": "fixes/morph-scroll/g-fastshort-v1.json (8737f212c0ff)",
-   "result": "STOP: both arms abort at the first non-optional `until atEnd` (scrollY 5213/5214): g0 pins the opened page where its jack fired and opening grows docH 5999 -> 6035 (maxY 5260); no E stroke reached"
-  },
-  "readerChange": "g0b-read.mjs: triggers from prevented touchmoves (open = prevented upward move while closed, close = prevented downward move while open); end rule only as fallback for a record with no prevented move; ih falls back to vh0; selftest 8 checks ok; made before any P-164 data",
-  "preData2": {
-   "program": "fixes/g0-box/phone/g-fastshort-g0.json (38d7fe5d7fa8)",
-   "result": "START-STATE MATCH: both arms complete (52 strokes), first E stroke at the pin y 5213/5214, identical stroke order, settle ys within 1 px, moving frames 529/518 (-2.1 %), toolbar 1/1; reader 13 opens and 12 closes per arm, all prevented moves at the pin"
-  },
-  "comparability": "the G program changed against P-161/P-163 (v1): P-164 numbers do not compare with those tickets",
-  "prediction": {
-   "D1": "PASS ~65 %",
-   "D2": "PASS ~70 %",
-   "D3": "PASS ~60 %",
-   "overall": "PASS ~50 %, OPEN (threshold-sensitive) the most likely other outcome"
-  },
-  "block": {
-   "kitVerdict": "VOID: S1 FAIL on G6 alone (fps 54.3 >= 50, slow 0.039 <= 0.06 pass), every counted run INVALID on G6 alone; re-runs EC1r, EV1r spent on G6",
-   "gatesWithoutG6": "G1-G5 ok on all 10 counted runs; idle 4.68-4.86 s",
-   "heat": "tool-serious, Serious induced at every gate, battery 38.8-41.0 C, no Critical",
-   "link": "no link loss, no re-plug",
-   "reading": {
-    "decision": "PASS",
-    "d1": {
-     "diff": 0,
-     "ok": true
-    },
-    "d2": {
-     "diff": 0,
-     "ok": true
-    },
-    "d3": {
-     "30": "le",
-     "34": "le",
-     "38": "le"
-    },
-    "perRun": {
-     "EC1": {
-      "nOpen": 13,
-      "nClose": 12,
-      "f1": 16,
-      "f2": 17,
-      "n": 514,
-      "medianDt": 17,
-      "share": {
-       "30": 0,
-       "34": 0,
-       "38": 0,
-       "50": 0
-      },
-      "close": {
-       "n": 513,
-       "medianDt": 17,
-       "share": {
-        "30": 0.0078,
-        "34": 0.0019,
-        "38": 0,
-        "50": 0
-       }
-      }
-     },
-     "EV1": {
-      "nOpen": 13,
-      "nClose": 12,
-      "f1": 16,
-      "f2": 17,
-      "n": 516,
-      "medianDt": 17,
-      "share": {
-       "30": 0,
-       "34": 0,
-       "38": 0,
-       "50": 0
-      },
-      "close": {
-       "n": 511,
-       "medianDt": 17,
-       "share": {
-        "30": 0.0059,
-        "34": 0,
-        "38": 0,
-        "50": 0
-       }
-      }
-     },
-     "EV2": {
-      "nOpen": 13,
-      "nClose": 12,
-      "f1": 12,
-      "f2": 16,
-      "n": 515,
-      "medianDt": 17,
-      "share": {
-       "30": 0,
-       "34": 0,
-       "38": 0,
-       "50": 0
-      },
-      "close": {
-       "n": 514,
-       "medianDt": 17,
-       "share": {
-        "30": 0.0058,
-        "34": 0.0019,
-        "38": 0,
-        "50": 0
-       }
-      }
-     },
-     "EC2": {
-      "nOpen": 13,
-      "nClose": 12,
-      "f1": 12,
-      "f2": 16,
-      "n": 514,
-      "medianDt": 17,
-      "share": {
-       "30": 0.0019,
-       "34": 0,
-       "38": 0,
-       "50": 0
-      },
-      "close": {
-       "n": 511,
-       "medianDt": 17,
-       "share": {
-        "30": 0.0098,
-        "34": 0.002,
-        "38": 0.002,
-        "50": 0
-       }
-      }
-     },
-     "EC3": {
-      "nOpen": 13,
-      "nClose": 12,
-      "f1": 16,
-      "f2": 17,
-      "n": 515,
-      "medianDt": 17,
-      "share": {
-       "30": 0,
-       "34": 0,
-       "38": 0,
-       "50": 0
-      },
-      "close": {
-       "n": 513,
-       "medianDt": 17,
-       "share": {
-        "30": 0.0039,
-        "34": 0.0019,
-        "38": 0,
-        "50": 0
-       }
-      }
-     },
-     "EV3": {
-      "nOpen": 13,
-      "nClose": 12,
-      "f1": 17,
-      "f2": 16,
-      "n": 514,
-      "medianDt": 17,
-      "share": {
-       "30": 0.0019,
-       "34": 0,
-       "38": 0,
-       "50": 0
-      },
-      "close": {
-       "n": 513,
-       "medianDt": 17,
-       "share": {
-        "30": 0.0058,
-        "34": 0.0019,
-        "38": 0,
-        "50": 0
-       }
-      }
-     },
-     "EV4": {
-      "nOpen": 13,
-      "nClose": 12,
-      "f1": 11,
-      "f2": 17,
-      "n": 514,
-      "medianDt": 17,
-      "share": {
-       "30": 0,
-       "34": 0,
-       "38": 0,
-       "50": 0
-      },
-      "close": {
-       "n": 513,
-       "medianDt": 17,
-       "share": {
-        "30": 0.0019,
-        "34": 0,
-        "38": 0,
-        "50": 0
-       }
-      }
-     },
-     "EC4": {
-      "nOpen": 13,
-      "nClose": 12,
-      "f1": 17,
-      "f2": 16,
-      "n": 513,
-      "medianDt": 17,
-      "share": {
-       "30": 0,
-       "34": 0,
-       "38": 0,
-       "50": 0
-      },
-      "close": {
-       "n": 514,
-       "medianDt": 17,
-       "share": {
-        "30": 0.0039,
-        "34": 0,
-        "38": 0,
-        "50": 0
-       }
-      }
-     }
-    }
-   },
-   "descriptiveFingerDown": {
-    "gt50": {
-     "C": [
-      7,
-      5,
-      6,
-      6
-     ],
-     "V": [
-      5,
-      10,
-      8,
-      9
-     ]
-    },
-    "gt34": {
-     "C": [
-      29,
-      31,
-      34,
-      28
-     ],
-     "V": [
-      32,
-      32,
-      30,
-      39
-     ]
-    },
-    "order": "EC1 EC2 EC3 EC4 / EV1 EV2 EV3 EV4"
-   }
-  },
-  "leadRuling": {
-   "ruling": "(a) G6 stale pin: the signed card names 38d7fe5d7fa8 and every record carries it",
-   "gatesCopy": "fixes/g0-box/phone/p129-read-g0.mjs (= research/serious-heat/p129-read.mjs with only line 66 FS_HASH = 38d7fe5d7fa8) + fixes/g0-box/phone/p129-gates-g0.mjs (import pointed at it); g0b-hold.sh uses them",
-   "reRead": "G1-G6 ok on EC1-EC4, EV1-EV4, EC1r, EV1r (idle 4.68-4.86 s); SENTINEL S1 PASS 54.3 fps, slow 0.039; g0b-read output byte-identical: D1 0, D2 0, D3 0/0/0",
-   "counted": "EC1-EC4 / EV1-EV4 (planned runs, as the card says)",
-   "descriptiveOnly": {
-    "EC1r": {
-     "triggers": "13/12",
-     "f1": 12,
-     "f2": 17,
-     "openN": 516,
-     "openMedian": 17,
-     "share": "0/0/0",
-     "closeMedian": 17,
-     "close34": 0.002,
-     "fingerDown50": "9 (9/4)",
-     "fingerDown34": "32 (56/19)"
-    },
-    "EV1r": {
-     "triggers": "13/12",
-     "f1": 11,
-     "f2": 17,
-     "openN": 513,
-     "openMedian": 17,
-     "share": "0/0/0",
-     "closeMedian": 17,
-     "close34": 0,
-     "fingerDown50": "6 (7/3)",
-     "fingerDown34": "29 (63/17)"
-    }
-   },
-   "verdict": "PASS"
-  }
- }
 }
