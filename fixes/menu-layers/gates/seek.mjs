@@ -123,7 +123,9 @@ const LIB = `(() => {
 // ---- engines ---------------------------------------------------------------------------------------------------
 let sim = null, chrome = null, cdp = null, cfg = null;
 async function boot() {
-  if (ENGINE === 'sim') { sim = await import(join(WT, 'tools/lib/sim.mjs')); cfg = sim.readConfig(); return; }
+  // the session's device (FW_SIM_DEVICE, e.g. fw-ipad): without useDevice() readConfig() gave fw-sim's udid, so an iPad
+  // session's screenshots targeted the shut-down iPhone Simulator (seek-ipad-1, -2a: no shots, 2026-10-08)
+  if (ENGINE === 'sim') { sim = await import(join(WT, 'tools/lib/sim.mjs')); sim.useDevice(process.env.FW_SIM_DEVICE); cfg = sim.readConfig(); lg('sim device', process.env.FW_SIM_DEVICE || 'fw-sim'); return; }
   const C = await import(join(WT, 'tools/lib/cdp.mjs'));
   chrome = await C.launchChrome({ port: 0, profileDir: C.tempProfileDir(join(WT, 'out/menu-layers/chrome'), 'menulayersseek'), headless: true, windowSize: `${WD},${H}` });
   cdp = await C.CDP.connect(chrome.wsUrl); chrome.C = C;

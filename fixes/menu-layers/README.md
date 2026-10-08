@@ -60,7 +60,8 @@ html.fw-bx .start-selling-morph-panel[data-start-selling-scene="active"] .start-
     (`out/menu-layers/seek-chrome-1`, the first, unscoped build CSS 28badb9b5a98; OBSERVED, in our setup, cause unknown).
   - Chrome keeps g0.0h's pixels: the rules don't match there.
 - Desktop: the same rules apply in WebKit desktop Safari (`GestureEvent` exists on macOS Safari). One small layer while
-  the menu is open; no look change expected (not checked at desktop width).
+  the menu is open. Checked at desktop width on the iPad Simulator (WebKit, desktop-class Safari, 1032 CSS px): T2 PASS
+  with 0 consistent pixels at every stop (table below).
 - Reduced motion: the clock snaps instead of rolling. A tick then repaints the wrapper once instead of the centre once.
   Nothing else changes.
 
@@ -105,6 +106,7 @@ close tweens captured at fixed times. Scorer `gates/t2.mjs`. A = g0.0h, V = g0.0
 |---|---|---|---|
 | Chrome 430x932 DPR 3 (`out/menu-layers/seek-chrome-2`) | 22 | **T2 PASS**, 0 fails | edge 59 at open@440, 29 CSS px² at the photo columns' right edge (x 416-432): load phase, the rules don't match in Chrome |
 | iOS Simulator (`out/menu-layers/seek-sim-1`, --top 56) | 14 | **T2 PASS**, 0 fails | glyph edges of the countdown labels/digits at open@440 (37 levels, 28 CSS px²) and open@560 (76 levels, 80 CSS px², 0.02 %); **0 at open@700 (m = 1) and at every close stop** |
+| iPad Simulator fw-ipad, desktop-class Safari 1032 CSS px, DPR 2 (`out/menu-layers/seek-ipad-2`, --dpr 2 --top 140) | 8 (open/close at 0, 440, 560, 700 ms) | **T2 PASS**, 0 fails | **0 consistent pixels at every stop** (V's panel scene is `active` at open 440-700, so the rule applies) |
 
 - In WebKit the mid-tween difference is antialiasing of the clock text while the panel is still scaled (0.96 + 0.04 m)
   and fading in. The wrapper's own backing is drawn at a different subpixel phase than the centre's (OBSERVED, in our
@@ -213,8 +215,11 @@ program 38d7fe5d7fa8, profile tool-serious, the D1-D3 rules and the gates.
   first frame is the D1 question.
 - Overlap: CSS-only, appended at the end of the CSS file. fix-g0-box and fix-scrollcb-g0 edit the JS (drag-down); no
   shared lines.
-- Not done: desktop-width pixel check (WebKit desktop Safari also sets `fw-bx`); a phone Timeline read of the paint/composite
-  time per roll frame (the decisive check for the UNRESOLVED Core Animation term above).
+- Desktop-width WebKit look: done on the iPad Simulator (T2 PASS, 0 consistent pixels). The first two tries produced no
+  screenshots: my probe copy `gates/seek.mjs` read fw-sim's device id inside an iPad session. It now calls
+  `useDevice(FW_SIM_DEVICE)`. The shared tool is fine.
+- Not done: a phone Timeline read of the paint/composite time per roll frame (the decisive check for the UNRESOLVED Core
+  Animation term above).
 
 ## Files
 

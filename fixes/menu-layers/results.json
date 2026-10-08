@@ -1,28 +1,211 @@
 {
-  "topic": "menu-layers",
-  "item": "T-253 #10 item 2: the panel countdown on its own layer while the menu scene is active (WebKit only)",
-  "base": { "name": "g0.0h", "commit": "55f5cacd", "js": "9162843e750f", "css": "26d28a0a263b" },
-  "build": { "name": "g0.0h + clock layer", "js": "9162843e750f", "css": "adb875d94c1f" },
-  "baselineSnapshot": "b1789284481295-4ad4a84a",
-  "measurementCode": "unchanged (no tools/ change on this branch)",
-  "simCensus": {
-    "tool": "fixes/menu-layers/gates/morph-sim.mjs (de-offscreen morph-sim.mjs, arms b = g0.0h, c = build); counts only, iOS Simulator 430x775 DPR 3",
-    "layersMB": {
-      "g0.0h": { "a": [151, 35.1], "b_m0": [43, 55.2], "c_m0.2": [53, 72.3], "c_m0.5": [53, 78.1], "d_m1": [53, 77.3], "e_closed": [43, 55.2] },
-      "build": { "a": [151, 35.1], "b_m0": [43, 55.2], "c_m0.2": [54, 73.5], "c_m0.5": [54, 79.3], "d_m1": [54, 78.5], "e_closed": [43, 55.2] }
-    },
-    "paintsOverOneOpen": {
-      "g0.0h": { "morph-center_5.7MB": 196 },
-      "build": { "morph-center_5.7MB": 11, "waitlist-closing-countdown_1.2MB": 187 }
-    },
-    "nullStepControlAtM1_per0.45s": { "g0.0h": "morph-center +22", "build": "waitlist-closing-countdown +34, morph-center 0" },
-    "redisplayedBackingMBPerOpen": { "g0.0h": 1117, "build": 287, "delta": "-74 %" }
+ "topic": "menu-layers",
+ "item": "T-253 #10 item 2: the panel countdown on its own layer while the menu scene is active (WebKit only)",
+ "base": {
+  "name": "g0.0h",
+  "commit": "55f5cacd",
+  "js": "9162843e750f",
+  "css": "26d28a0a263b"
+ },
+ "build": {
+  "name": "g0.0h + clock layer",
+  "js": "9162843e750f",
+  "css": "adb875d94c1f"
+ },
+ "baselineSnapshot": "b1789284481295-4ad4a84a",
+ "measurementCode": "unchanged (no tools/ change on this branch)",
+ "simCensus": {
+  "tool": "fixes/menu-layers/gates/morph-sim.mjs (de-offscreen morph-sim.mjs, arms b = g0.0h, c = build); counts only, iOS Simulator 430x775 DPR 3",
+  "layersMB": {
+   "g0.0h": {
+    "a": [
+     151,
+     35.1
+    ],
+    "b_m0": [
+     43,
+     55.2
+    ],
+    "c_m0.2": [
+     53,
+     72.3
+    ],
+    "c_m0.5": [
+     53,
+     78.1
+    ],
+    "d_m1": [
+     53,
+     77.3
+    ],
+    "e_closed": [
+     43,
+     55.2
+    ]
+   },
+   "build": {
+    "a": [
+     151,
+     35.1
+    ],
+    "b_m0": [
+     43,
+     55.2
+    ],
+    "c_m0.2": [
+     54,
+     73.5
+    ],
+    "c_m0.5": [
+     54,
+     79.3
+    ],
+    "d_m1": [
+     54,
+     78.5
+    ],
+    "e_closed": [
+     43,
+     55.2
+    ]
+   }
   },
-  "pixelGates": {
-    "rule": "T2 (PR-010 wide): flat <= 64, edge <= 128, <= 0.5 %, clusters <= 2000 CSS px2; four loads A V A2 V2; A = g0.0h, V = build",
-    "chrome": { "dir": "out/menu-layers/seek-chrome-2", "stops": 22, "verdict": "T2 PASS", "worst": { "flat": 0, "edge": 59, "pct": 0.0071, "cluster": 28 } },
-    "simulator": { "dir": "out/menu-layers/seek-sim-1", "stops": 14, "verdict": "T2 PASS", "worst": { "flat": 0, "edge": 76, "pct": 0.0213, "cluster": 28 }, "note": "differences only at open@440/560 (clock text mid-tween); 0 at m = 1 and at every close stop" },
-    "chromeUnscopedBuild": { "css": "28badb9b5a98", "dir": "out/menu-layers/seek-chrome-1", "verdict": "T2 FAIL (5 of 22 stops, edge up to 224: the digits drawn 3 device px higher); fixed by scoping the rules to WebKit (html.fw-bx)" }
+  "paintsOverOneOpen": {
+   "g0.0h": {
+    "morph-center_5.7MB": 196
+   },
+   "build": {
+    "morph-center_5.7MB": 11,
+    "waitlist-closing-countdown_1.2MB": 187
+   }
   },
-  "phone": { "status": "card drafted, not signed, no data" }
+  "nullStepControlAtM1_per0.45s": {
+   "g0.0h": "morph-center +22",
+   "build": "waitlist-closing-countdown +34, morph-center 0"
+  },
+  "redisplayedBackingMBPerOpen": {
+   "g0.0h": 1117,
+   "build": 287,
+   "delta": "-74 %"
+  }
+ },
+ "pixelGates": {
+  "rule": "T2 (PR-010 wide): flat <= 64, edge <= 128, <= 0.5 %, clusters <= 2000 CSS px2; four loads A V A2 V2; A = g0.0h, V = build",
+  "chrome": {
+   "dir": "out/menu-layers/seek-chrome-2",
+   "stops": 22,
+   "verdict": "T2 PASS",
+   "worst": {
+    "flat": 0,
+    "edge": 59,
+    "pct": 0.0071,
+    "cluster": 28
+   }
+  },
+  "simulator": {
+   "dir": "out/menu-layers/seek-sim-1",
+   "stops": 14,
+   "verdict": "T2 PASS",
+   "worst": {
+    "flat": 0,
+    "edge": 76,
+    "pct": 0.0213,
+    "cluster": 28
+   },
+   "note": "differences only at open@440/560 (clock text mid-tween); 0 at m = 1 and at every close stop"
+  },
+  "chromeUnscopedBuild": {
+   "css": "28badb9b5a98",
+   "dir": "out/menu-layers/seek-chrome-1",
+   "verdict": "T2 FAIL (5 of 22 stops, edge up to 224: the digits drawn 3 device px higher); fixed by scoping the rules to WebKit (html.fw-bx)"
+  },
+  "ipadDesktop": {
+   "device": "iOS Simulator fw-ipad (iPad Pro 13-inch M5), Safari desktop-class, innerWidth 1032, DPR 2",
+   "dir": "out/menu-layers/seek-ipad-2",
+   "scorer": "t2.mjs --dpr 2 --top 140",
+   "stops": 8,
+   "result": "T2 PASS",
+   "fails": 0,
+   "worst": {
+    "flat": 0,
+    "edge": 0,
+    "pct": 0,
+    "cluster": 0
+   },
+   "note": "open and close at 0/440/560/700 ms; V panel scene active at open 440-700 (the rule applies); 0 consistent pixels at every stop; the first tries (seek-ipad-1, -2a) gave no shots: the probe copy used fw-sim's udid in an iPad session, fixed with useDevice(FW_SIM_DEVICE)"
+  }
+ },
+ "phone": {
+  "status": "P-170 void (end sentinel S1 FAIL: 49.4 fps, slow 0.075, battery 43.0 C); P-170b signed (S0 + S1, C V V C), starts on fix-cm-return's proposal or 22:00Z",
+  "P-170": {
+   "driver": "G g-fastshort-g0, program 38d7fe5d7fa8",
+   "profile": "tool-serious",
+   "runs": {
+    "C": [
+     "EC1",
+     "EC2",
+     "EC3"
+    ],
+    "V": [
+     "EV1",
+     "EV2",
+     "EV3"
+    ]
+   },
+   "holds": "H1-H8 VALID",
+   "triggers": "13 open / 12 close in every run",
+   "descriptiveOnly": {
+    "D1_O1f2_ms": {
+     "C": "17 (17-17)",
+     "V": "16 (16-17)",
+     "diff": -1
+    },
+    "D2_openTweenMedian_ms": {
+     "C": "17 (17-17)",
+     "V": "17 (17-17)",
+     "diff": 0
+    },
+    "D3_share_gt34_30_38": {
+     "C": [
+      0,
+      0,
+      0
+     ],
+     "V": [
+      0,
+      0,
+      0
+     ]
+    },
+    "openTween_gt50": {
+     "C": 0,
+     "V": 0
+    },
+    "closeTweenMedian_ms": {
+     "C": 17,
+     "V": 17
+    },
+    "readDecision": "PASS"
+   },
+   "sentinelS1": {
+    "fps": 49.4,
+    "slowShare": 0.075,
+    "gate": "fps >= 50, slow <= 0.06",
+    "result": "FAIL",
+    "battery_C": 43
+   },
+   "batteryTrend_C": {
+    "H1": 36.1,
+    "H5": 40.7,
+    "H7": 41.7,
+    "H8": 42.1,
+    "H9": 42.7,
+    "H9end": 43
+   },
+   "verdict": "VOID (the card makes the sentinel decide; lead ruling)",
+   "failedStarts": "tries 1-3: WDA terminate timeout, then XCTDaemonErrorDomain Code=41 (incident I-254); WDA restarted by the lead 19:11:36Z",
+   "simWindowGap": "void: the 6-min I-160 window after H6 stayed shut because the lock counts the stopped block shell as a live phone run (tools/lib/lock.mjs 1249-1252); paused 19:53:38-19:56:20Z between holds, H7 re-gated",
+   "logs": "out/mlp-p170 (gitignored)"
+  }
+ }
 }
