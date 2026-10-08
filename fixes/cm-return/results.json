@@ -1,0 +1,266 @@
+{
+  "topic": "cm-return",
+  "kind": "gates (counts and pixels only; no timing A/B, no phone block: lead's rule for this step)",
+  "config": {
+    "baselineSnapshot": "b1789284481295-4ad4a84a",
+    "pins": {
+      "A_g0.0h": {
+        "js": "9162843e750f",
+        "css": "26d28a0a263b"
+      },
+      "v14": {
+        "js": "d23ee885d54f",
+        "css": "4fafb83f1e72"
+      },
+      "PR030B": {
+        "js": "2948d49e47c6",
+        "css": "b9d2eceae44a"
+      },
+      "B_cm_return": {
+        "js": "f09ccfa19178",
+        "css": "e6885953c233"
+      }
+    },
+    "simulator": "fw-sim iPhone 15 Pro Max (iOS 26.5 Simulator), functional sessions in the shared lane, 430x815 after the first finger stroke",
+    "measurementCodeChanges": "none (no change to verify.mjs, lib/cdp.mjs or fix.mjs ab on this branch)"
+  },
+  "verdict": "B removes PR-030 B glass flicker, v14 closed-bar jump and v14 Join sweep replay (0 flicker frames on glass, logo, EN, Join in the Simulator finger cases); end-of-page paints and layouts per frame lower than g0.0h, style recalcs and forced style higher (v14 end code); Simulator pixels above the end over T2 at 2 of 7 stops (sub-pixel #platform offset); counts OBSERVED, one load per build, no timing verdict",
+  "gates": {
+    "fingerWiggle_m0": {
+      "driver": "Simulator WDA finger, 6 down/up strokes around m 0, 33 async shots per build, Join sheen frozen (nav-earn-sheen paused at 0)",
+      "data": "out/cm-return/simhold-2026-10-08T20-57-05-765Z (not committed)",
+      "PR030B": {
+        "glassMissingFrames": 12,
+        "of": 33,
+        "glassSharpness": [
+          0.02,
+          1.87
+        ],
+        "maxP24": {
+          "logo": 15.87,
+          "en": 20.63,
+          "join": 44.54
+        }
+      },
+      "v14": {
+        "glassMissingFrames": 0,
+        "glassSharpness": [
+          0.03,
+          0.09
+        ],
+        "logoX_closedAfterReturn": 17.3,
+        "logoX_closedFresh": 37.3,
+        "joinX_closedAfterReturn": 300,
+        "joinX_closedFresh": 296,
+        "note": "closed-bar jump at every m-0 crossing after the first return (K6 pre lost __cmPrep(0)'s inline values)"
+      },
+      "B": {
+        "glassMissingFrames": 0,
+        "glassSharpness": [
+          0.03,
+          0.09
+        ],
+        "logoX_closed": 37.3,
+        "joinX_closed": 296,
+        "flickerFrames": 0,
+        "note": "remaining box diffs are the grow's own motion (logo x follows m: 41.3-47 while open, as PR030B and v14 at the same m)"
+      }
+    },
+    "fingerHold_m0.28": {
+      "driver": "Simulator WDA finger, 8 moves of 120 ms to m ~0.28, held still 2 s (8-12 still shots), lift",
+      "PR030B": {
+        "fallBackFrames": 0,
+        "note": "lastMoving vs firstStill: only EN's timed slide changes"
+      },
+      "v14": {
+        "fallBackFrames": 0
+      },
+      "B": {
+        "fallBackFrames": 0,
+        "lastMovingVsFirstStill": {
+          "pxOver24": 0,
+          "maxLevel": 9
+        }
+      },
+      "note": "#22 not reproduced at m 0.28 in the Simulator; PR030B loses the glass only under the moving finger near m 0"
+    },
+    "lookVsV14_27": {
+      "note": "#27 constant blur(20px) vs v14's 20 x (1 - m): same Simulator frame at equal m",
+      "m0.022": {
+        "pxOver64Pct": 0.04
+      },
+      "m0.288": {
+        "pxOver24Pct": 0,
+        "maxLevel": 7
+      }
+    },
+    "endCounts": {
+      "driver": "Simulator Timeline, WDA strokes (5 up into the end and past the bottom, 5 down), 1 load per build; ms only rank, never a verdict",
+      "data": "out/cm-return/endsim-2026-10-08T21-21-35-575Z, step2-c.log (not committed)",
+      "columns": [
+        "endFrames",
+        "paintsPerFrame",
+        "layoutsPerFrame",
+        "stylesPerFrame",
+        "framesWithLayout",
+        "framesWithPaint",
+        "layoutMs",
+        "styleMs",
+        "compositeMs",
+        "forcedMs",
+        "over34",
+        "over50",
+        "layersClosed",
+        "mbClosed",
+        "layersOpen",
+        "mbOpen"
+      ],
+      "A_g0.0h": [
+        1444,
+        3.67,
+        0.91,
+        1.1,
+        863,
+        862,
+        417.6,
+        1215.8,
+        7289.4,
+        643.9,
+        46,
+        12,
+        46,
+        77.2,
+        56,
+        99.4
+      ],
+      "B": [
+        1556,
+        0.69,
+        0.46,
+        1.46,
+        638,
+        674,
+        100.2,
+        1489.8,
+        2778.6,
+        1356.4,
+        59,
+        5,
+        53,
+        103.6,
+        55,
+        95.7
+      ],
+      "v14": [
+        1529,
+        0.7,
+        0.47,
+        1.52,
+        633,
+        660,
+        116.5,
+        1562.6,
+        3157.6,
+        1399.1,
+        73,
+        4,
+        64,
+        113.1,
+        55,
+        95.7
+      ],
+      "PR030B": [
+        1548,
+        0.71,
+        0.47,
+        1.47,
+        637,
+        693,
+        99.4,
+        1825.6,
+        2819.6,
+        1686.7,
+        61,
+        7,
+        55,
+        102.7,
+        55,
+        95.5
+      ],
+      "note": "g0.0h has no end spacer (t 0): its end segment is the bottom of the page where the menu opens by itself; the others' is the 815 px grow. Layers at rest near the end closed: B 53 <= PR030B 55 < v14 64 (#21 kept)"
+    },
+    "staticFlicker": {
+      "driver": "simflick.mjs, scrollTo ladder m 0..0.03 + 8 toggles, synthetic touch held",
+      "glassP64Max": 0.97,
+      "logoP64Max": 0,
+      "enP64Max": 0,
+      "joinNote": "Join changes at +400 ms were the intro sweep replay (fixed after this run; see joinSweepReplay)"
+    },
+    "pixelsAboveEnd": {
+      "simulator": {
+        "data": "out/g0box/p168/px-sim-2026-10-08T21-54-29-600Z",
+        "stops": {
+          "0": 0,
+          "548": 0,
+          "1422": 0,
+          "2403": 0,
+          "3384": 0.0009,
+          "3875": 0.7569,
+          "4200": 1.0541
+        },
+        "overT2": [
+          3875,
+          4200
+        ],
+        "note": "edge-only sub-device-pixel offset in #platform (profile card, stats, agents-ask); cause UNRESOLVED, likely the 815 px taller page"
+      },
+      "chrome": {
+        "data": "out/g0box/p168/px-mobile-2026-10-08T19-02-50-673Z",
+        "build": "B before #27 and the two fixes (end-only code)",
+        "note": "8 stops 0; over T2 only at the hero accent word (y0/300/548) and the avatar carousel phase (y1422/1913)"
+      }
+    },
+    "joinBlurPR036": {
+      "driver": "simjoin.mjs, Join fade held at 120/200/280/360 ms at m 0.25, plain vs clip-path",
+      "result": "no square around the Join; differences only EN slide timing",
+      "carried": false
+    },
+    "joinSweepReplay": {
+      "driver": "simsheen.mjs, animationstart log, rests at m -1.5,-0.5,0.05,-0.1,0.05,-0.1,-1.6,-0.5,-1.6",
+      "g0_0h": [
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "B_before": [
+        2,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "B_final": [
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "note": "first stop counts the page intro in every arm"
+    }
+  }
+}
