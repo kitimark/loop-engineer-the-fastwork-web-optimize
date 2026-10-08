@@ -86,6 +86,8 @@ async function runLoad(c, wda, prog) {
   await c.send('Timeline.stop').catch(() => {});
   await sleep(500);
   const L = JSON.parse(await c.evaluate('JSON.stringify(window.__eops)'));
+  // first-open readiness (after Timeline off, at the approach's end y, before any open): panel images with a src, loaded
+  const imgs = JSON.parse(await c.evaluate("JSON.stringify((() => { const a = [...document.querySelectorAll('.start-selling-morph-col img')]; return { n: a.length, src: a.filter((i) => i.getAttribute('src')).length, loaded: a.filter((i) => i.complete && i.naturalWidth > 0).length }; })())"));
   const syncTL = findTimeStamp(recs, 'eopsim'); if (syncTL == null) throw new Error('no Timeline sync mark');
   const F = frames(recs, syncTL * 1000 - syncT, L.f, L.t);
   const S = summarize(F);
@@ -96,7 +98,7 @@ async function runLoad(c, wda, prog) {
   const te = L.t.filter((x) => x[1] === 'e').map((x) => x[0]);
   S.touchEnd = te.map((t) => { const w = F.filter((x) => x.pm >= t - 120 && x.pm <= t + 20); const m = w.reduce((p, x) => (!p || x.dur > p.dur ? x : p), null);
     return m && { y: Math.round(m.y), dur: m.dur, before: r1(t - m.pm), lay: m.lay, sty: m.sty, js: m.js }; }).filter(Boolean);
-  return { strokes: sent, yEnd: L.f.at(-1)?.[1] ?? null, touches: L.t.length, mutations: L.m, summary: S, frames: F };
+  return { strokes: sent, yEnd: L.f.at(-1)?.[1] ?? null, touches: L.t.length, imgs, mutations: L.m, summary: S, frames: F };
 }
 
 function selftest() {
@@ -140,7 +142,7 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
       c.close(); r.arm = arm; r.n = n; r.url = url; r.ready = ready;
       writeFileSync(file, JSON.stringify(r, null, 1));
       const s = r.summary;
-      console.log(`SIMLINE ${arm}-${n}: strokes ${r.strokes} yEnd ${Math.round(r.yEnd)} frames ${s.frames} (down ${s.downFrames}) | forced L/S >= 5: ${s.forcedLS.n} (sum ${s.forcedLS.sum}) | Layout+style >= 20: ${s.heavyLS.n} at ${s.heavyLS.ys.join(',')} | clusters ${s.clusters.map((x) => `${x.y}:LS${x.maxLS}/C${x.maxComp}/m${x.mutations}`).join(' ')} | touch-end max ${Math.max(0, ...s.touchEnd.map((x) => x.dur))}`);
+      console.log(`SIMLINE ${arm}-${n}: strokes ${r.strokes} yEnd ${Math.round(r.yEnd)} frames ${s.frames} (down ${s.downFrames}) | forced L/S >= 5: ${s.forcedLS.n} (sum ${s.forcedLS.sum}) | Layout+style >= 20: ${s.heavyLS.n} at ${s.heavyLS.ys.join(',')} | clusters ${s.clusters.map((x) => `${x.y}:LS${x.maxLS}/C${x.maxComp}/m${x.mutations}`).join(' ')} | touch-end max ${Math.max(0, ...s.touchEnd.map((x) => x.dur))} | panel imgs src/loaded ${r.imgs ? `${r.imgs.src}/${r.imgs.loaded} of ${r.imgs.n}` : 'n/a'}`);
     }
   } finally { await wda.close(); }
 }

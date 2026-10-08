@@ -78,7 +78,44 @@ def b(a):
     edit(j, '    (R && te && te.observe(R), _(), m());', '    (R && te && te.observe(R), R && __teJ && __teJ.observe(R), _(), m());')
     edit(j, '          te?.disconnect(),\n          P(),', '          te?.disconnect(),\n          __teJ?.disconnect(),\n          P(),')
 
-ARMS = {'a1': [a1], 'a2': [a2], 'b': [b], 'a1b': [a1, b]}
+# a3 (lead 2026-10-09 after the first Simulator counts: the cost at y ~1700 is the inert flip, not the src writes; a2's
+# early inert is an a11y defect): the panel's inert lifts at the first scroll-quiet moment (no scroll event for 300 ms,
+# the idle mount's own rule) after b latches, via a new latch __bIn, instead of in the IO frame mid-drag. inert =
+# !(__bIn || E): an open before the quiet moment lifts it at the open, as before (E). The hidden panel is focusable only
+# from __bIn on, i.e. no earlier than in g0.0f (b at y ~1750), so focus order and aria-hidden are unchanged in kind.
+# src and the mount keep b (a1 showed the src writes are not the cost).
+def a3(a):
+    j = os.path.join(a, JS)
+    edit(j, '  var I = uN();\n  let L, te;',
+         '  // [eop a3] the panel\'s inert lifts at the first scroll-quiet moment (no scroll for 300 ms) after b latches, not in\n'
+         '  // the IntersectionObserver frame mid-drag (one 25-68 ms style recalc of the panel subtree on the phone); an open\n'
+         '  // (E) before that lifts it at once, as before.\n'
+         '  let __bIn = N(!1);\n'
+         '  ne(() => {\n'
+         '    if (!s(b) || s(__bIn)) return;\n'
+         '    let t = 0,\n'
+         '      o = performance.now(),\n'
+         '      i = () => {\n'
+         '        o = performance.now();\n'
+         '      },\n'
+         '      n = () => {\n'
+         '        performance.now() - o < 300 ? (t = window.setTimeout(n, 300)) : (window.removeEventListener(`scroll`, i), z(__bIn, !0));\n'
+         '      };\n'
+         '    return (\n'
+         '      window.addEventListener(`scroll`, i, { passive: !0 }),\n'
+         '      (t = window.setTimeout(n, 300)),\n'
+         '      () => {\n'
+         '        (window.removeEventListener(`scroll`, i), window.clearTimeout(t));\n'
+         '      }\n'
+         '    );\n'
+         '  });\n'
+         '  var I = uN();\n  let L, te;')
+    edit(j, '((a.inert = !(s(b) || s(E))),', '((a.inert = !(s(__bIn) || s(E))) /* [eop a3] */,')
+
+ALL = {'a1': [a1], 'a2': [a2], 'b': [b], 'a1b': [a1, b], 'a3': [a3], 'a3b': [a3, b]}
+# usage: python3 eop-build.py [OUT [arm ...]]   (default: out/g0box/eop with a1 a2 b a1b, as first built)
+if len(sys.argv) > 1: OUT = sys.argv[1]
+ARMS = {k: ALL[k] for k in (sys.argv[2:] or ['a1', 'a2', 'b', 'a1b'])}
 if os.path.exists(os.path.join(OUT, 'HASHES.txt')): sys.exit(f'{OUT}/HASHES.txt exists (read-only snapshot): refuse to rebuild')
 for arm, parts in ARMS.items():
     a = copy(arm)
