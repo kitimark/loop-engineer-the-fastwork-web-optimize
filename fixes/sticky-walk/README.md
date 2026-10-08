@@ -70,6 +70,19 @@ The panel and sb-dialog arms come from the earlier G knock-outs (`out/scrollcb-g
   - If fixcq removes the finger-down layouts of 5 ms or more the way both-relative did, the drag cost is this same walk.
   - If the big layouts in base line up with resize or visualViewport-resize stamps, the trigger is the size-change path. If not, the trigger stays unknown and the phone version of this run (P-164-style Timeline plus event stamps) decides it, after the lead signs.
 
+## Drag check result (sw-drag.mjs, Simulator G approach, 10 drags y 0 -> ~5100, counts only)
+
+| arm | loads | layouts >= 5 ms / run | finger-down | at y >= 1000 | frames delivered | layouts (all) | big ones within 40 ms of a resize / vv-resize |
+|---|---|---|---|---|---|---|---|
+| g0.0h base | 3 | 138, 139, 144 | 134-139 | 56-83 | 1060-1073 | 857-866 | 8-23 |
+| + fixcq (CSS injected after settle) | 4 (one more VOID: `sim.mjs open` failed) | 36, 36, 43, 49 | 33-46 | 2 | 1174-1206 | 910-921 | 18-21 |
+
+Data: `out/sticky-walk/drag-base.json`, `drag-fixcq.json`.
+
+- The ranges don't overlap. Above y 1000, fixcq removes the finger-down big layouts the way both-relative did (2 per run left). The drag cost there is this walk (OBSERVED, Simulator).
+- The 34-47 left at y 0-1000 are the hero-zone residual; both-relative had 19-20 in total.
+- **Why mid-drag:** window resize events (2-3 per run) and visualViewport resize events (6-9) are rare. Only 8-23 of base's 138-144 big layouts fall within 40 ms of one. So a layout-viewport size change explains a minority (OBSERVED). What dirties the sticky renderers on the other finger-down frames is still UNRESOLVED; the phone version decides it, after the lead signs.
+
 ## Build gates (after D)
 
 1. **Pixels.** Pixel-identical to g0.0h at every y, or T2 within PR-010 wide (Chrome + Simulator A/A). Include the deck at each of the 6 shells' snap positions.
