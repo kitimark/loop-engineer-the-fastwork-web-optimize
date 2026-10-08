@@ -3,7 +3,12 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured; **a T3 look-alike proposal** (lead's decision after 043143d2). It is not a T2 fix.
+**Status:** PR-038 **accepted by the user (03:04Z, 2026-10-08)**; rebuilt on the new best build as **g0.0f = g0.0e +
+v3-W** (`fixes/v3w-g00e/patch.diff`, CSS 1d1e5d62a2c4, JS 30fd80ccbb3f). Its gates against g0.0e reproduce PR-038
+exactly ("On g0.0e" below). The phone kit is re-snapped to C = g0.0e, V = g0.0f, dry-run, not run (waits for the
+lead's card and the I-244 WDA check). The rest of this summary is the PR-038 state on g0.0c.
+
+**PR-038 summary:** measured; **a T3 look-alike proposal** (lead's decision after 043143d2). It is not a T2 fix.
 - v3-W = v3 in WebKit only. Chrome is T0 against g0.0c by construction, checked with a 148-stop seek.
 - WebKit misses T2 only on the nav's outline anti-aliasing, mid-motion: up to **218 levels** against T2's edge limit
   of 128, at 6 of 144 stops. Fills are within T2 (flat max 31 ≤ 64). Rests are identical.
@@ -17,14 +22,17 @@
   same 20 stops re-scored give the same numbers; the denser seek finds the worse stops in between.
 - It stacks with fix-join-fade's block and fix-logo-close's delta in either order (dry runs).
 - Try-it build: `fixes/v3w-g00c/patch.diff` (baseline-relative, B); A = `fixes/platform-corners-g00b/patch.diff`.
+  The build to land is `fixes/v3w-g00e/patch.diff` (g0.0f).
 
 **Stage:** F (build), step M3-B of `research/gpu-original/README.md`, on g0.0c (the best build since PR-035).
 
 **Base:** g0.0c = g0.0b + `fixes/platform-corners-g00b/patch.diff` (main fbf96d8c, BEST_BUILDS e1291f8d), built in
 `out/g0box/g00c`: JS 5c39f7a96e41, CSS c65da97ba01f. Baseline snapshot b1789284481295-4ad4a84a.
 
-**patch.diff = v3-W**, relative to g0.0c (`a/` = g0.0c's files), made with `diff -u`; it applies cleanly to a fresh
-g0.0c copy. Final v3-W: JS 30fd80ccbb3f, CSS f9b2f894dedf (the reduced-motion step-aside). JS 30fd80ccbb3f differs from the measured 7f7d83162ef6 only in a comment (the stale "WebKit stays within T2" now reads T3, PR-038); every run in this README used 7f7d83162ef6. Earlier CSS:
+**patch.diff = v3-W**, now relative to **g0.0e** (`a/` = g0.0e's files, `out/g0box/g00e`: JS 5c39f7a96e41, CSS
+d4e684032482), made with `diff -u`; it applies cleanly to a fresh g0.0e copy and rebuilds g0.0f byte for byte. The
+change itself is the same as on g0.0c (the same 103-line diff, other line numbers; the PR-038 version relative to g0.0c
+is in 8b56a6a1). Final v3-W: JS 30fd80ccbb3f, CSS f9b2f894dedf (the reduced-motion step-aside). JS 30fd80ccbb3f differs from the measured 7f7d83162ef6 only in a comment (the stale "WebKit stays within T2" now reads T3, PR-038); every run in this README used 7f7d83162ef6. Earlier CSS:
 2c9deee5b885 (the dark fill's RM transition, superseded) and 70df8114a809 (before any RM fix).
 - v3 (both engines) relative to g0.0 is in this branch's history (e3857c4f); v2 is in 7da9b47e.
 
@@ -35,6 +43,33 @@ g0.0c copy. Final v3-W: JS 30fd80ccbb3f, CSS f9b2f894dedf (the reduced-motion st
 - `/_app/immutable/assets/2.gBuqKVzi.css`: one block after line 12331, before the platform-corners rule, all under
   `html.fw-bx` and `(width<=640px)`.
 - Elsewhere (Chrome, Firefox, widths over 640 px) nothing is created and no rule applies.
+
+## On g0.0e: g0.0f = g0.0e + v3-W (after PR-038's acceptance)
+
+**Build.** g0.0e = baseline + `fixes/g0-0e/patch.diff` (main 8bc50d29: g0.0c + join-fade PR-036 + logo-close PR-037),
+rebuilt here as `out/g0box/g00e` (CSS d4e684032482, JS 5c39f7a96e41, the pinned values). g0.0e and g0.0c share the
+JS, so v3-W's JS is the same file (30fd80ccbb3f). Its CSS block applies to g0.0e with no offset or fuzz (join-fade's
+block is appended at the file end; logo-close changes one declaration above v3-W's block): g0.0f CSS 1d1e5d62a2c4.
+`fixes/v3w-g00e/patch.diff` (baseline-relative, CSS then JS) rebuilds the same two files from a fresh baseline copy.
+The overlay now holds g0.0f's files.
+
+**Gates, g0.0f (V) against g0.0e (A),** 2026-10-08 03:08-03:40Z, every step in the shared lane (`--shared --weight
+probe|simulator --max-seconds 300`), one hold per arm, each background call under 20 min (I-240). No timing.
+
+| gate | stops | result |
+|---|---|---|
+| Chrome 430x775, full seek, four loads (`out/g0box/seekF-c775`) | 148 | **T0 within A/A**: state equal at every stop; t2.mjs passes (worst flat 14, edge 33, 0.05 %). One stop, open@320, scored 180 CSS px² "consistent" (max 23): the known intermittent whole-nav frame (~160 k px at max 11-55, which also hits g0.0e's own A/A at other stops in this run and in PR-038's). It came in both A loads, not in the V loads, so the consistency rule counted it. A re-check of open@280-360, four loads (`seekF-c775re`): open@320 0 px, and the frame moved to other stops and pairs (A/A or V/V each time, so never consistent). The rest is the countdown area (x 224-320, y 490-590, max ≤ 18). v3-W does nothing in Chrome by construction (no `GestureEvent`, so no `html.fw-bx`). |
+| Simulator (fw-sim), full seek, four loads in two halves (`seekF-sim`) | 144 | **Same as PR-038, stop for stop:** state equal (148), the same 6 failing stops with the same maxima and areas (open@240 164, open@260 161, open@340 182, open@440 218, rev2@0 217, rev2@60 164), flat max 31, area ≤ 0.18 %, biggest cluster 678 CSS px². The t2 reports of this run and PR-038's (`seekW3-sim.t2`) are identical at all 144 stops. Nothing new. |
+| Simulator, Reduce Motion on (open/close 0-360 by 40, 500, 700; `seekF-simrm`) | 24 | **T0**: 0 consistent px at every stop (worst flat 0, edge 0), state equal. Reduce Motion on was confirmed by the session and restored after. |
+| The Join under the nav clip (fix-join-fade's `out/jf/jfsim.mjs` + `remetric2.mjs`, their variants `v3.json`: reference = the same stop with the Join hidden by a stylesheet from load; their stops 24:40, 80:0, 80:200, 400:280, 400:340; `out/g0box/jf2-{e,f}`) | 7 per arm | **Unchanged:** corners off 0 and dark px over EN 0 at every stop in both builds (corner max ≤ 1); outside the box 20 (g0.0e) / 18 (g0.0f) at join-24-40, 0 elsewhere; pill widths, opacities and the 4 px gap identical. The g0.0e numbers equal fix-join-fade's committed fix numbers. |
+| Logo path (fix-logo-close's `probe/logo-path-sim.mjs`, Simulator, arms g0.0e and g0.0f; `out/g0box/logoF`) | open + close seeks | **Unchanged:** close flip jump -0.13 px, open flip jump +0.14 px in both builds (≤ 1 px), the same as logo-close's committed fix numbers. |
+
+- A first Join run with jfsim's built-in reference (the Join hidden by inline style at shot time, `out/g0box/jfF-*`)
+  gave non-zero corner and over-EN counts in **both** builds, g0.0e included (e.g. join-80-0: 906 / 904 corners off).
+  The reference is wrong for this question: fix-join-fade replaced it with the stylesheet-from-load reference
+  (`remetric2.mjs`), which is what the table uses. In that run the two builds were also equal except join-24-40
+  (corners 223 / 373), which the correct reference shows as 0 / 0.
+- No tool changed; the copies of fix-join-fade's probes live in this worktree's gitignored `out/jf/`.
 
 ## v3-W (lead's decision after e3857c4f): v3 in WebKit only, on g0.0c
 
@@ -125,13 +160,18 @@ paint outside the nav) and of the logo (stays inside the box).
   `thermal.mjs clear` after the hold, the get-ready step on preflight AUTH, and `--block`.
 - `g0b-read.mjs` reuses p161-read's decision code, with opens taken from touch rows: g0 opens are a time tween on a
   held page, never a scroll crossing (selftest 7 checks ok).
-- Pins: C = g0.0c (JS 5c39f7a96e41 / CSS c65da97ba01f), V = final v3-W (JS 30fd80ccbb3f / CSS f9b2f894dedf); snapshot
-  `out/g0box/snap3`, HASHES 6710a7e52104 (re-snapped after the reduced-motion fix and the comment fix). Dry run 2026-10-08 (`out/g0box/kitdry3.log`): servers up, H1-H4 and H11 DRY ok, programs fs 8737f212c0ff (budget 229 s) and pr 7ff27a2413c8 ok, exit 0.
-- Still to check before any block: that the reader finds touch rows in a real G record.
-- Card (for the lead to sign): v3-W against g0.0c, driver G fast-short (8737f212c0ff), tool-serious, C V V C order,
+- Pins (re-snapped after PR-038's acceptance, on the new best build): C = **g0.0e** (JS 5c39f7a96e41 / CSS
+  d4e684032482), V = **g0.0f** = g0.0e + v3-W (JS 30fd80ccbb3f / CSS 1d1e5d62a2c4); snapshot `out/g0box/snap4` (C from
+  `out/g0box/g00e`, V from `out/g0box/g00f`, read-only), HASHES 3412a08fa9ac. Earlier snapshots (snap3: g0.0c against
+  g0.0c + v3-W, HASHES 6710a7e52104) are superseded and not served.
+- Dry run 2026-10-08 03:10Z (`out/g0box/kitdry4.log`): 3 of 3 servers up, served hashes C 5c39f7a96e41/d4e684032482 and
+  V 30fd80ccbb3f/1d1e5d62a2c4 ok, H1-H4 and H11 DRY ok, programs fs 8737f212c0ff (budget 229 s) and pr 7ff27a2413c8
+  ok, exit 0.
+- Still to check before any block: I-244's WDA check, and that the reader finds touch rows in a real G record.
+- Card (for the lead to sign): g0.0f against g0.0e, driver G fast-short (8737f212c0ff), tool-serious, C V V C order,
   H1:WC H2:WV EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4 H11:TAIL. Decision D1-D3 as P-163: D1 O1.f2 V−C ≤ +4 ms, D2 open
   median dt V−C ≤ +4 ms, D3 share > 34 / 30 / 38 ms. Command: `sh fixes/g0-box/phone/g0b-run.sh <ticket>`.
-- Per the lead, a phone timing test follows only if the user accepts the proposal.
+- The user accepted PR-038, so this test is next; the lead signs the card and books the phone with the user.
 
 ### Options considered after the stop (the lead chose (a))
 

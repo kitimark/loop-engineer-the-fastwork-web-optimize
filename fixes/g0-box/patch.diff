@@ -31,7 +31,7 @@
        var a = lN(),
 --- a/_app/immutable/assets/2.gBuqKVzi.css
 +++ b/_app/immutable/assets/2.gBuqKVzi.css
-@@ -12329,6 +12329,69 @@
+@@ -12331,6 +12331,69 @@
    .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
    animation: fw-c-shell-hold 0.95s linear;
  }

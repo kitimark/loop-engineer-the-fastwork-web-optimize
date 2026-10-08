@@ -1,9 +1,9 @@
 #!/bin/sh
 # g0-box phone kit (card: fixes/g0-box/README.md "Phone card draft"): one hold of the block. A copy of fix-g0-box's P-163 kit
 # (research/end-of-page-fresh/phone/, credit: fix-g0-box, arch-compositor-morph, fix-end-morph) with these pins:
-#   C = g0.0c (g0.0b + platform corners, BEST_BUILDS e1291f8d)   JS 5c39f7a96e41  CSS c65da97ba01f
-#   V = g0.0c + v3-W (fixes/g0-box/patch.diff)                     JS 30fd80ccbb3f  CSS f9b2f894dedf
-# snapshot out/g0box/snap3 (C from out/g0box/g00c, V from out/g0box/g00c-apply, read-only), logs out/g0bp, owner fix-g0-box.
+#   C = g0.0e (g0.0c + join-fade + logo-close, fixes/g0-0e, 8bc50d29) JS 5c39f7a96e41  CSS d4e684032482
+#   V = g0.0f = g0.0e + v3-W (fixes/v3w-g00e/patch.diff)             JS 30fd80ccbb3f  CSS 1d1e5d62a2c4
+# snapshot out/g0box/snap4 (C from out/g0box/g00e, V from out/g0box/g00f, read-only), logs out/g0bp, owner fix-g0-box.
 # The P-161..P-163 lessons are kept unchanged (tool-serious via iphone.mjs rearm, Safari parked before the rearm, thermal
 # clear after the hold, the get-ready step on preflight AUTH or "Failed to initialize for UI testing", the --block mark).
 # Original header of the copied file:
@@ -14,7 +14,7 @@
 # compositor-morph phone runner (card: fixes/compositor-morph/README.md "Phone card"): one hold of the block. A copy of
 # fix-end-morph's fixes/end-morph-f12/phone/p155-hold.sh (credit: fix-end-morph; P-152 rev 1.4 lineage) with two arms
 # (C, V), the probe page's attribution items, and the ticket id in $CM_TICKET.
-# Builds (immutable snapshot out/g0box/snap3, served by fixes/g0-box/phone/g0b-serve.sh, plain http, --latency 150):
+# Builds (immutable snapshot out/g0box/snap4, served by fixes/g0-box/phone/g0b-serve.sh, plain http, --latency 150):
 #   C  v9-final rev 7d (int-v11)    JS 1b2eecc66011  CSS e1359ab9994a   out/g0bp/serve-C.json
 #   V  c3b-a + K6 (pre, WebKit only)    JS d23ee885d54f  CSS 4fafb83f1e72   out/g0bp/serve-V.json
 #   B  the plain baseline (the thermal gate's timer page)               out/g0bp/serve-B.json
@@ -41,7 +41,7 @@ O=out/g0bp/runs; SV=out/g0bp
 FS=fixes/morph-scroll/g-fastshort-v1.json; PROG_FS=8737f212c0ff
 PR=fixes/compositor-morph/phone/g-probe-v1.json; PROG_PR=${CM_PROG_PR:-7ff27a2413c8}
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
-C_JS=5c39f7a96e41; V_JS=30fd80ccbb3f; C_CSS=c65da97ba01f; V_CSS=f9b2f894dedf
+C_JS=5c39f7a96e41; V_JS=30fd80ccbb3f; C_CSS=d4e684032482; V_CSS=1d1e5d62a2c4
 GM=${CM_GATE:-both}
 case $GM in start|end|both|none) ;; *) echo "CM_GATE must be start, end, both or none (got $GM): no run"; exit 2 ;; esac
 SELF=fixes/g0-box/phone/g0b-hold.sh; GATES=research/serious-heat/phone/p129-gates.mjs
@@ -57,7 +57,7 @@ echo "HOLD $H ($CM_TICKET) start $(date -u +%FT%TZ) items $* gates $GM"
 echo "PIN $H $CM_TICKET profile ${CM_PROFILE:-xcode-serious} checkout $(pwd | sed 's|.*/\.claude/worktrees/||') head $(git rev-parse --short=8 HEAD 2>/dev/null)$(pins \
   $SELF fixes/g0-box/phone/g0b-block.sh fixes/g0-box/phone/g0b-serve.sh fixes/compositor-morph/phone/cm-read.mjs \
   $GATES research/serious-heat/p129-read.mjs $FS $PR research/phone-thermal-gate/thermal-gate.mjs \
-  fixes/rest-script/tools/pmcheck.mjs out/g0box/snap3/C/$JS out/g0box/snap3/V/$JS out/g0box/snap3/C/$CSS out/g0box/snap3/V/$CSS)"
+  fixes/rest-script/tools/pmcheck.mjs out/g0box/snap4/C/$JS out/g0box/snap4/V/$JS out/g0box/snap4/C/$CSS out/g0box/snap4/V/$CSS)"
 hashok || { echo "HOLD $H VOID served hashes C $(served $PC $JS)/$(served $PC $CSS) V $(served $PV $JS)/$(served $PV $CSS); pinned C $C_JS/$C_CSS V $V_JS/$V_CSS (no run)"; exit 4; }
 echo "SERVED C $C_JS/$C_CSS ok, V $V_JS/$V_CSS ok"
 budget() { # script pinned-hash -> prints the budget; exit 4 on a hash mismatch
