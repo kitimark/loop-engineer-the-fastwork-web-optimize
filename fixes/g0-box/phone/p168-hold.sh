@@ -36,7 +36,7 @@ H=$1; shift
 [ -n "$H" ] && [ $# -gt 0 ] || { echo "usage: CM_TICKET=P-168 sh fixes/g0-box/phone/p168-hold.sh <H> <items>"; exit 2; }
 R=${RUNNER:-fix-g0-box}
 SV=out/p168; LG=out/p168ph; O=out/p168ph/runs
-K=${P168_K:?P168_K must name the part's test arm: fcv25 (window A; fko25 diagnostic) or g (window B)}
+K=${P168_K:?P168_K must name the part's test arm: fcv25 (window A; fko25 diagnostic) or g (window B; fB if the lead picks f+KO-B)}
 PROF="--profile serious"
 SELF=fixes/g0-box/phone/p168-hold.sh
 TOOLS_MIN=db884e9d   # iphone.mjs run --timeline (I-247); the signature's condition 1
@@ -45,7 +45,7 @@ BUDGET_W=${CM_BUDGET_W:-75}
 mkdir -p $O
 for I in "$@"; do case $I in [AB]w[0ek]|[AB][0ek][1-3]|[AB][0ek][1-3]x|[AB]sC) ;; *) echo "HOLD $H VOID unknown item $I (no run)"; exit 4 ;; esac; done
 srv() { case $1 in 0) echo v0 ;; e) echo f ;; k) echo $K ;; B) echo B ;; esac; }
-kpin() { case $K in fcv25) echo "b700ddaf88b4 fa5888cfa299" ;; fko25) echo "120386db2e02 1d1e5d62a2c4" ;; g) echo "30fd80ccbb3f 2390e4715327" ;; esac; }
+kpin() { case $K in fcv25) echo "b700ddaf88b4 fa5888cfa299" ;; fko25) echo "120386db2e02 1d1e5d62a2c4" ;; g) echo "30fd80ccbb3f 2390e4715327" ;; fB) echo "30fd80ccbb3f cafb80014f69" ;; esac; }
 pin() { case $1 in B|0) echo "4606120cf392 27776f3d4138" ;; e) echo "30fd80ccbb3f 1d1e5d62a2c4" ;; k) kpin ;; esac; }
 alet() { case $1 in 0) echo C ;; e) echo A ;; k) echo V ;; esac; }
 port() { node -e "console.log(JSON.parse(require('fs').readFileSync('$SV/serve-$1.json','utf8')).port)" 2>/dev/null; }

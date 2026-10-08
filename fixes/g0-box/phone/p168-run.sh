@@ -22,9 +22,10 @@ case $P in
   *) echo "part must be A or B"; exit 2 ;;
 esac
 RD=${P168_READY:-$RD}
-case $P in A) export P168_K=${P168_K:-fcv25} ;; B) export P168_K=${P168_K:-g} ;; esac   # the card's k per window (lead 14:2xZ, 14:3xZ)
+case $P in A) export P168_K=${P168_K:-fcv25} ;; B) export P168_K=${P168_K:-${P168_KB:-g}} ;; esac   # the card's k per window (lead 14:2xZ, 14:3xZ); P168_KB=fB: f+KO-B in window B (lead's option)
 export P168_ARMS="B v0 f fcv25 g"   # every arm of both parts: the ports stay for the whole block
 [ "$P168_K" = fko25 ] && export P168_ARMS="$P168_ARMS fko25"   # the diagnostic arm, only if named
+[ "${P168_KB:-g}" = fB ] && export P168_ARMS="$P168_ARMS fB"   # set P168_KB for BOTH parts: the ports stay for the block
 if sh fixes/g0-box/phone/p168-serve.sh check > $LG/serve-pre-$P.log 2>&1; then echo "servers up: $(grep -c ' ok$' $LG/serve-pre-$P.log) ok"
 elif [ "$P" = "${P168_FIRST:-A}" ]; then sh fixes/g0-box/phone/p168-serve.sh start || { echo "BLOCK STOP: servers"; echo "EXIT 4"; exit 4; }
 else echo "BLOCK STOP: the first part's servers are not up with the pinned hashes (ports must stay for the block)"; echo "EXIT 4"; exit 4; fi

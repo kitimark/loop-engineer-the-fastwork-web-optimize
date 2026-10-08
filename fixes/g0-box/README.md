@@ -957,7 +957,7 @@ Data: `out/p167ph/wread.json`, `out/p167ph/runs/{w,tl}-*.json`, `out/g0box/p167-
 | item | content |
 |---|---|
 | question | **Window A:** are g0.0f's scroll-phase long frames at y 250-555 the costlier Layouts of a bigger layout tree? The test arm f-cv25 has no idle un-skip, and it keeps the idle-mounted morph panel out of layout until its trigger. **Window B:** does a constant stacking context on the fwWC targets (g0.0g) shorten the `+is-play` frame? There, platform-card and the platform tracks are the only fwWC targets whose data-fw-wc flip can change the used z-index, which WebKit answers with Layout. |
-| arms | **Part A:** v0 (control; JS 4606120cf392 / CSS 27776f3d4138) · g0.0f (JS 30fd80ccbb3f / CSS 1d1e5d62a2c4) · **f-cv25** = g0.0f + ko2 (no idle un-skip; cE re-defers as the baseline) + the idle mount kept, with `html:not([data-fw-cv-live]) .start-selling-morph-panel { content-visibility: hidden }`. The attribute is set and latched by a dN effect on the original mount trigger `s(b) || s(E)` (#platform zone reached, or morph > 0.001). JS b700ddaf88b4 / CSS fa5888cfa299. **f-cv25 moves the panel's render cost (layout, paint, layers) to that trigger**, near the platform section, before the morph. It needs a morph-start check (M driver) later, not in P-168. The diagnostic f-ko25 (no idle mount at all; JS 120386db2e02) is not in the block (`P168_K=fko25` would swap it in): ko5 brings back the 40-75 ms mount task, see below.<br>**Part B:** v0 · g0.0f · **g0.0g** = g0.0f + `.start-selling [data-fw-wc] { isolation: isolate }` (JS 30fd80ccbb3f / CSS 2390e4715327; a candidate).<br>Built by `p168-build.py` and served by `p168-serve.sh` (arms B v0 f fcv25 g; fko25 only if named). If de-offscreen points that way, the lead may name g0.0g+ko25 for part B instead (it would need a build). |
+| arms | **Part A:** v0 (control; JS 4606120cf392 / CSS 27776f3d4138) · g0.0f (JS 30fd80ccbb3f / CSS 1d1e5d62a2c4) · **f-cv25** = g0.0f + ko2 (no idle un-skip; cE re-defers as the baseline) + the idle mount kept, with `html:not([data-fw-cv-live]) .start-selling-morph-panel { content-visibility: hidden }`. The attribute is set and latched by a dN effect on the original mount trigger `s(b) || s(E)` (#platform zone reached, or morph > 0.001). JS b700ddaf88b4 / CSS fa5888cfa299. **f-cv25 moves the panel's render cost (layout, paint, layers) to that trigger**, near the platform section, before the morph. It needs a morph-start check (M driver) later, not in P-168. The diagnostic f-ko25 (no idle mount at all; JS 120386db2e02) is not in the block (`P168_K=fko25` would swap it in): ko5 brings back the 40-75 ms mount task, see below.<br>**Part B:** v0 · g0.0f · **g0.0g** = g0.0f + `.start-selling [data-fw-wc] { isolation: isolate }` (JS 30fd80ccbb3f / CSS 2390e4715327; a candidate).<br>Built by `p168-build.py` and served by `p168-serve.sh` (arms B v0 f fcv25 g; fko25 only if named). If de-offscreen points that way, the lead may name g0.0g+ko25 for part B instead (it would need a build). **f+B (de-offscreen KO B) is not in P-168**: it goes to a later block, after a proposal decision (see "Composite count" below). The kit can still run it in part B on the lead's word: `P168_KB=fB` for both parts (JS 30fd80ccbb3f / CSS cafb80014f69). |
 | windows | A: 0 → 750 (the W runs scroll to y ≈ 995). B: 4000 → 5000. One ticket, two parts, one phone hold each. The order is the lead's; the kit defaults to A then B (`P168_FIRST` / `P168_LAST`). |
 | profile | **tool-serious**, as P-166 stage 2 and P-167 (`iphone.mjs rearm`, gates `--accept-induced`, `--profile serious`, `FW_PHONE_CONDITION=tool`; `thermal.mjs clear` after each part). Compared only within P-168. |
 | driver | W with Timeline on every counted run (`iphone.mjs run --driver window --probe std --hold 2 --sentinel 3 --timeline`), plus one uncounted W warm-up per arm port per part. |
@@ -992,9 +992,33 @@ Data: `out/p167ph/wread.json`, `out/p167ph/runs/{w,tl}-*.json`, `out/g0box/p167-
 | V vs A = g0.0f | Chrome 430x932 | Simulator 430x775 |
 |---|---|---|
 | g0.0g | 0 CSS px² past the A/A band at every stop (consistent differences up to 13 levels at y 500 / 1500, inside A/A) | 0 at 5 stops; y 1500: one cluster of 57 CSS px², max 23 levels, under `section.feed > span.record`. Within T2 (23 < 64, 515 px < 2000, 0.02 %). |
-| f-cv25 | 0 CSS px² past the A/A band at every stop (only y 1500 differs, 195 px at 1 level) | 0 at 5 stops; y 1500: 2 clusters of 1 CSS px² each, under the people section's community pill (bbox 48-96 x 608-656 CSS px), max 222 levels (`t2.mjs`: edge 222, flat 19). By the letter **T2 fails** (edge 222 > 128) on that 1 px² spot. Simulator A/A differs on 5.3-6.0 % of the frame at every stop (6.0 % at y 1500). Re-check pending: y 1500 only, fresh loads. If the spot stays, look at the shots. |
+| f-cv25 | 0 CSS px² past the A/A band at every stop (only y 1500 differs, 195 px at 1 level) | 0 at 5 stops; y 1500: 2 clusters of 1 CSS px² each, under the people section's community pill (bbox 48-96 x 608-656 CSS px), max 222 levels (`t2.mjs`: edge 222, flat 19). By the letter **T2 fails** (edge 222 > 128) on that 1 px² spot. Simulator A/A differs on 5.3-6.0 % of the frame at every stop (6.0 % at y 1500). **Re-check (y 1500, fresh loads, plus an f vs f A/A in the same session):** f vs f-cv25 has a consistent 37 CSS px² spot, max 240 levels. f vs **f, the same build**, has one too: 2 CSS px², max 233. Both sit in the same place, the pill's avatar row (bbox 64-176 x 608-656). The crops of the four loads (`out/g0box/p168/pill-y1500-f-vs-cv.png`, A / V / A2 / V2) show the avatar carousel at a different phase in every load, A against A2 included: the freeze does not stop it. So the spot is the carousel's phase, not f-cv25, and the same-build A/A fails T2 there too. Outside the pill, f-cv25 is exact at y 1500 and at the other 5 stops. **Verdict: f-cv25 is pixel-identical except for the unfrozen carousel**, which the gate cannot judge (`px-sim-2026-10-08T14-59-04-513Z`, `…14-59-54-463Z`). |
 
 Files: `out/g0box/p168/px-*/px.json`.
+
+**Composite count, windows A and B** (lead 14:5xZ; `p168-comp.mjs`, Simulator Timeline, 3 loads per arm, counts and Simulator ms only, no timing claim). Window A: W-like steps 0 → ~1000. Window B: jump to 4000, 3 s, then steps 4000 → 5000. Each cell is the min-max over the 3 loads. Arms: f = g0.0f, f+B = g0.0f + KO B, f+C = g0.0f + KO C, g = g0.0g.
+
+| window | arm | frames | Composite sum ms | Composite max ms | max frame ms (y) | Layouts |
+|---|---|---|---|---|---|---|
+| A | f | 176-182 | 841-877 | 102.6-113.0 | 125.8-139.9 (y 599-835) | 13-17 |
+| A | f+B | 177-180 | 835-920 | 88.6-123.6 | 110.5-137.6 (y 601-828) | 11-16 |
+| A | f+C | 180-185 | 799-856 | 84.9-111.0 | 115.1-131.8 (y 601-831) | 11-16 |
+| A | g | 170-182 | 860-927 | 70.8-130.0 | 101.7-148.3 (y 598-828) | 11-17 |
+| B | f | 204 | 541-555 | 62.0-64.2 | 81.3-83.3 (y 4514) | 0-2 |
+| B | f+B | 202-204 | 531-547 | **58.2-60.9** | **77.3-79.5** (y 4513-4514) | 1 |
+| B | f+C | 195-205 | 506-719 | 61.2-84.0 | 79.6-102.3 (y 4505-4514) | 1 |
+| B | g | 203-207 | 517-581 | 62.3-73.3 | 80.8-91.9 (y 4501-4513) | 0-1 |
+
+- **Window A:** every arm overlaps f on every column. Neither KO B nor KO C changes the Simulator's Composite work at the top, so f+C has no case for window A.
+- **Window B:**
+  - f+B is the only arm whose ranges clear f's: Composite max −2.8 ms (median 60.4 vs 63.2) and max frame −3.2 ms (78.7 vs 81.9), 3 of 3 loads. Its Composite sum is within noise (531-547 vs 541-555).
+  - In every arm the worst frame is the same one, at y 4501-4514.
+  - g0.0g shows no Simulator signal here (it overlaps f). It stays in P-168 as the lead decided: its question (isolation on the fwWC boxes) is for the phone's Layout and Composite path, which the Simulator does not time.
+- **Decision: f+B is not in P-168 window B. It goes to a later block.** Reasons:
+  1. It is not pixel-identical. With KO B, the paused col-track columns restart from 0 when the menu opens (de-offscreen), so f+B is a proposal under the pixel rule (memory "illusions must be pixel-identical"). A phone gain block for it should come after the user's decision on that proposal, not before.
+  2. The Simulator effect is small (−3 ms on a ~80 ms frame, about 4 %) and sits in one frame per run. On the phone that may or may not cross a >50 / >34 threshold. It is worth one phone question of its own, not a swap that would cost g0.0g's question.
+  3. Swapping it in would change part B's arm after the card was drafted, with no Simulator reason to drop g0.0g: g0.0g is no worse than f on the Simulator either.
+  The kit keeps the option (`P168_KB=fB`) if the lead decides otherwise.
 
 ## P-164 (phone card; written before any P-164 data)
 
