@@ -1,6 +1,6 @@
 #!/bin/sh
 # P-171 (lead 2026-10-09, candidate 1 D signed NAMED): a copy of the eop kit with C = g0.0h (JS 9162843e750f, CSS 26d28a0a263b,
-# from out/g0box/p168/f-B2) and V = ws (JS d0f48dc4f82e, CSS 26d28a0a263b, from out/g0box/eop8/ws), snapshot out/g0box/snap5,
+# from out/g0box/p168/f-B2) and V = ws3 (JS f4b28aaebb75, CSS 26d28a0a263b, from out/g0box/eop10/ws3; plus its analytics.js 7ed47cc67fee), snapshot out/g0box/snap6,
 # logs out/p171p, labels p171-; no K arm (p171-k.env empty). Everything else is the eop kit's (below, the copied header).
 # end-of-page (eop, lead 2026-10-09, user T-228 #98): a copy of the P-164 g0b kit with its own log dir (out/p171p), labels
 # eop-, items up to n = 6, and a third arm K (a candidate) pinned in fixes/g0-box/phone/p171-k.env (K_NAME, K_DIR =

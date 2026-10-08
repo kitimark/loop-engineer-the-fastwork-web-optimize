@@ -1,6 +1,6 @@
 #!/bin/sh
 # P-171 (lead 2026-10-09, candidate 1 D signed NAMED): a copy of the eop kit with C = g0.0h (JS 9162843e750f, CSS 26d28a0a263b,
-# from out/g0box/p168/f-B2) and V = ws (JS d0f48dc4f82e, CSS 26d28a0a263b, from out/g0box/eop8/ws), snapshot out/g0box/snap5,
+# from out/g0box/p168/f-B2) and V = ws3 (JS f4b28aaebb75, CSS 26d28a0a263b, from out/g0box/eop10/ws3; plus its analytics.js 7ed47cc67fee), snapshot out/g0box/snap6,
 # logs out/p171p, labels p171-; no K arm (p171-k.env empty). Everything else is the eop kit's (below, the copied header).
 # end-of-page (eop, lead 2026-10-09, user T-228 #98): a copy of the P-164 g0b kit with its own log dir (out/p171p), labels
 # eop-, items up to n = 6, and a third arm K (a candidate) pinned in fixes/g0-box/phone/p171-k.env (K_NAME, K_DIR =
@@ -32,15 +32,16 @@
 # State: out/g0bp/serve-{B,C,V,P}.json (ports), .pid, .log. Phone URLs only via tools/lan.mjs; never copy the LAN address
 # into a committed file (Hard rule 12).
 cd "$(dirname "$0")/../../.." || exit 2
-S=out/p171p; D=out/g0box/snap5
+S=out/p171p; D=out/g0box/snap6
 [ -f fixes/g0-box/phone/p171-k.env ] && . fixes/g0-box/phone/p171-k.env
 ARMS="B C V${K_NAME:+ K}"
 OWNER=${FW_AGENT:-fix-g0-box}
 JS=_app/immutable/nodes/2.DyWL8TcE.js
 CSS=_app/immutable/assets/2.gBuqKVzi.css
 C_JS=9162843e750f; C_CSS=26d28a0a263b
-V_JS=d0f48dc4f82e; V_CSS=26d28a0a263b
-HASHES_PIN=${CM_HASHES_PIN:-ba2e2fc5457c}
+V_JS=f4b28aaebb75; V_CSS=26d28a0a263b
+C_AN=a2ceb9775ea7; V_AN=7ed47cc67fee   # served /analytics.js: C (and B) the baseline's, V ws3's (head wheel listener, 7ed47cc67fee on disk)
+HASHES_PIN=${CM_HASHES_PIN:-48da4450e4ce}
 case "$1" in snap|start|check|stop) ;; *) echo "usage: sh fixes/g0-box/phone/p171-serve.sh snap|start|check|stop"; exit 2 ;; esac
 if [ "$1" = stop ]; then
   for A in B C V K; do [ -f $S/serve-$A.pid ] && kill "$(cat $S/serve-$A.pid)" 2>/dev/null; rm -f $S/serve-$A.pid; done
@@ -49,7 +50,7 @@ fi
 if [ "$1" = snap ]; then
   [ -e $D/HASHES.txt ] && { echo "snapshot exists at $D (read-only): refuse to rebuild"; exit 3; }
   mkdir -p $D/C/_app/immutable/nodes $D/C/_app/immutable/assets $D/V/_app/immutable/nodes $D/V/_app/immutable/assets
-  cp out/g0box/p168/f-B2/$JS $D/C/$JS && cp out/g0box/p168/f-B2/$CSS $D/C/$CSS && cp out/g0box/eop8/ws/$JS $D/V/$JS && cp out/g0box/eop8/ws/$CSS $D/V/$CSS || exit 3
+  cp out/g0box/p168/f-B2/$JS $D/C/$JS && cp out/g0box/p168/f-B2/$CSS $D/C/$CSS && cp out/g0box/eop10/ws3/$JS $D/V/$JS && cp out/g0box/eop10/ws3/$CSS $D/V/$CSS && cp out/g0box/eop10/ws3/analytics.js $D/V/analytics.js || exit 3
   (cd $D && find C V -type f | sort | xargs shasum -a 256 > HASHES.txt)
   chmod -R a-w $D/C $D/V $D/HASHES.txt
   echo "snapshot $D: HASHES.txt $(shasum -a 256 $D/HASHES.txt | cut -c1-12)"; cat $D/HASHES.txt; exit 0
@@ -80,10 +81,11 @@ for A in $ARMS; do
   P=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$S/serve-$A.json','utf8')).port)")
   J=$(curl -s http://localhost:$P/$JS | shasum -a 256 | cut -c1-12)
   K=$(curl -s http://localhost:$P/$CSS | shasum -a 256 | cut -c1-12)
-  case "$A:$J:$K" in
-    B:4606120cf392:27776f3d4138|C:$C_JS:$C_CSS|V:$V_JS:$V_CSS|K:$K_JS:$K_CSS) ok=ok ;;
+  AN=$(curl -s http://localhost:$P/analytics.js | shasum -a 256 | cut -c1-12)
+  case "$A:$J:$K:$AN" in
+    B:4606120cf392:27776f3d4138:$C_AN|C:$C_JS:$C_CSS:$C_AN|V:$V_JS:$V_CSS:$V_AN|K:$K_JS:$K_CSS:*) ok=ok ;;
     *) ok=WRONG; bad=1 ;;
   esac
-  echo "$A pid $(cat $S/serve-$A.pid) port $P served JS $J CSS $K $ok"
+  echo "$A pid $(cat $S/serve-$A.pid) port $P served JS $J CSS $K analytics.js $AN $ok"
 done
 [ $bad -eq 0 ] || { echo "SERVED HASH WRONG: stop and report"; exit 4; }

@@ -1204,6 +1204,8 @@ and src do not.
     (prefers-reduced-motion: no-preference)')` matches at mount (the PR-030 scope). Everywhere else, `N()`/`P()` keep
     g0.0h's add/remove timing.
   - On the Simulator (430 px, coarse pointer) ws is w.
+  - ws failed the mount gate. The candidate is **ws3**: the same scope, with the wheel listener added from the head
+    script instead of at mount (next section). P-171 is re-pinned to ws3.
 
 ### A11y (an existing property of the original, not a change)
 
@@ -1286,6 +1288,20 @@ No console errors in any of the four.
     ≤ +4 ms for both the mount-frame duration and the mount-frame L+S. The first 3 drags must overlap.
   - A miss on either is a FAIL, with no further extension.
 
+**Gate result, n = 6 (loads 1-6 per arm, `out/eopp/mount3`, read by `phone/eop-mountgate.mjs`): PASS.**
+
+| n = 6 | H (g0.0h) | ws3 | ws3 - H (medians) |
+|---|---|---|---|
+| mount frame dur (ms) | 638.9, 648.4, 704.6, 651.9, 671.9, 645.3 (median 650.2) | 635.2, 645.5, 670.5, 635.6, 644.7, 686.4 (median 645.1) | **-5.0** (limit +4) |
+| mount frame L+S (ms) | 113.6, 108.4, 144.0, 112.9, 125.6, 116.6 (median 115.1) | 114.7, 119.4, 122.5, 112.7, 117.8, 140.2 (median 118.6) | **+3.5** (limit +4) |
+| first 3 drags > 50 | 9, 9, 11, 9, 11, 11 | 10, 11, 10, 14, 8, 13 | ranges overlap |
+| first 3 drags > 34 | 21, 29, 26, 26, 23, 23 | 23, 25, 23, 28, 27, 25 | ranges overlap |
+| head wheel add (ms after navigation) | none | 357-401 | |
+
+- The L+S margin is small (+3.5 against +4), and the ranges overlap fully (H 108-144, ws3 113-140). Read: the head
+  add costs at most a few ms inside the hydration frame, within the A/A spread of ~12 ms at n = 1-2. OBSERVED, Simulator only.
+- The first-3-drag counts are descriptive. ws3's > 50 range (8-14) is wider than H's (9-11); the medians are 10.5 vs 10.
+
 ### P-171 (phone card DRAFT for the lead's signature; written before any P-171 data; not signed, not run)
 
 **The phone already shows the frame** (replaying P-164's runs with the P-171 reader, before any P-171 data):
@@ -1297,10 +1313,10 @@ No console errors in any of the four.
 | item | value |
 |---|---|
 | ticket | P-171 (lead 2026-10-09; runs after P-170, after fix-cm-return if it needs the phone first) |
-| question | Does ws (g0.0h with the wheel jack listener added at mount on small touch screens) remove the te-crossing frame's style spike on the phone, with the same end-of-page behaviour as g0.0h? |
-| arms + pins | C = g0.0h (fixes/g0-0h, main 2de0031f): JS 9162843e750f / CSS 26d28a0a263b (`out/g0box/p168/f-B2`). V = ws = g0.0h + `eop-build.py ws`: JS d0f48dc4f82e / CSS 26d28a0a263b (`out/g0box/eop8/ws`, HASHES 3b42965276bd). |
-| snapshot + HASHES | `out/g0box/snap5` (C from p168/f-B2, V from eop8/ws, read-only), HASHES ba2e2fc5457c, checked by the kit before every start and hold |
-| kit | `fixes/g0-box/phone/p171-{run,block,hold,serve}.sh` + `p171-k.env` (no K): copies of the eop kit (= P-164's g0b kit) with these pins, logs `out/p171p`, labels `p171-`. Made by `out/g0box/mkp171.sh` (sed of pins, snapshot and paths only). Dry run 19:19Z: 3 of 3 servers serve the pinned hashes; H1-H11 DRY ok; programs fs 38d7fe5d7fa8 (budget 229 s) and pr 7ff27a2413c8 ok; exit 0. |
+| question | Does ws3 (g0.0h with the wheel jack listener added from the head script on small touch screens) remove the te-crossing frame's style spike on the phone, with the same end-of-page behaviour as g0.0h? (rev 2: V re-pinned from ws to ws3 after ws failed the mount gate; signed text of rev 1 below) |
+| arms + pins | C = g0.0h (fixes/g0-0h, main 2de0031f): JS 9162843e750f / CSS 26d28a0a263b (`out/g0box/p168/f-B2`), baseline `/analytics.js` (served a2ceb9775ea7). V = ws3 = g0.0h + `eop-build.py ws3`: JS f4b28aaebb75 / CSS 26d28a0a263b / `/analytics.js` 7ed47cc67fee (`out/g0box/eop10/ws3`, HASHES a8c905e221f8). Rev 1: V = ws, JS d0f48dc4f82e (`out/g0box/eop8/ws`). |
+| snapshot + HASHES | `out/g0box/snap6` (C from p168/f-B2; V's JS, CSS and analytics.js from eop10/ws3; read-only), HASHES 48da4450e4ce, checked by the kit before every start and hold. Rev 1: snap5, ba2e2fc5457c. |
+| kit | `fixes/g0-box/phone/p171-{run,block,hold,serve}.sh` + `p171-k.env` (no K): copies of the eop kit (= P-164's g0b kit) with these pins, logs `out/p171p`, labels `p171-`. Made by `out/g0box/mkp171.sh` (sed of pins, snapshot and paths only). Rev 2 adds one check: `p171-serve.sh check` and every hold's served-hash check also compare `/analytics.js` (C and B a2ceb9775ea7, V 7ed47cc67fee); the servers stay `--vendors=local`. Rev 2 dry run 2026-10-08 21:59Z: snapshot HASHES 48da4450e4ce verified; 3 of 3 servers serve the pinned JS, CSS and analytics.js; H1-H11 DRY ok (each hold's served check: C 9162843e750f/26d28a0a263b/a2ceb9775ea7, V f4b28aaebb75/26d28a0a263b/7ed47cc67fee); programs fs 38d7fe5d7fa8 (budget 229 s) and pr 7ff27a2413c8 ok; exit 0. |
 | driver, profile, order | G `fixes/g0-box/phone/g-fastshort-g0.json`, compiled program 38d7fe5d7fa8 (P-164's, unchanged). Timeline on in every counted run. Profile tool-serious (`CM_THERMAL=serious`, `CM_COOL=0`) as P-164, so P-164's replayed numbers stay a reference (profiles never pool; the lead may choose xcode-serious instead). Order H1:WC H2:WV, then EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4 (C V V C C V V C), then H11:TAIL with the end sentinel. |
 | command | `CM_THERMAL=serious CM_COOL=0 sh fixes/g0-box/phone/p171-run.sh P-171 H1:WC H2:WV H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 H11:TAIL` as a Bash background job (timeout 7200000 ms), as P-164's. |
 | primary metric (lead's condition 3) | The te-crossing frame X per run: the longest approach frame (before O1) with scrollY in W = [1650, 1850]. Its dt and its Timeline Layout + RecalculateStyles. Per arm: median over the 4 runs. Twins: runs with X.dt over 46 / 50 / 54. Reader `fixes/g0-box/phone/p171-read.mjs` (selftest 5 checks ok). |
@@ -1315,8 +1331,13 @@ No console errors in any of the four.
   - The risk: the phone's te-crossing frame may also hold other work (the avatar slide, F-357's sticky relayout), as some Simulator loads did.
 - **PARITY: holds, about 90 %.** The touch jack's timing is unchanged, and the wheel jack is attached earlier.
 
-**Signed by the lead 2026-10-09 as in 6b48fe58** (C = g0.0h, V = ws, snap5 HASHES ba2e2fc5457c, G 38d7fe5d7fa8,
-tool-serious like P-164 and P-170, so they compare; order and rules as written).
+- **Rev 2 (ws3):** the prediction stands as written. The mechanism is the same (no listener add at te on a small
+  touch screen), and the arm differs only in where the add happens before hydration.
+
+**Signed by the lead 2026-10-09 as in 6b48fe58** (rev 1: C = g0.0h, V = ws, snap5 HASHES ba2e2fc5457c, G 38d7fe5d7fa8,
+tool-serious like P-164 and P-170, so they compare; order and rules as written). The lead then approved V = ws3 if the
+gates pass (parity on ws3, no HTML or CSP change, desktop Chrome unchanged). All three pass above, and the n = 6 mount
+gate passes. **Rev 2 (V = ws3, snap6 HASHES 48da4450e4ce) awaits the lead's signature.**
 
 **Decisions (the lead's, word for word):**
 - GAIN -> ws stacks with whatever wins P-170 (g0.0i candidate).
