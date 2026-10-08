@@ -738,6 +738,67 @@ How this fits the earlier data:
 - Stage 1's Simulator counts saw no main-thread difference at either spot. That fits: the added time is in WebKit's paint/composite inside the rendering update, not in Script or Layout. Counts of records cannot show durations.
 - What g0.0e changes besides he-css is the next question. The lead has a ranked candidate list for spot A, and its knock-outs are pre-staged for a P-167 card.
 
+**Timeline detail: the cost is the Composite step, not Paint** (OBSERVED; `out/g0box/tlcomp.mjs`, `tlslow.mjs`; finding posted):
+- In each spot frame the time is the `Composite` record's own time, and its `Paint` children are small:
+
+| spot | arm | Composite | Paint children |
+|---|---|---|---|
+| A | v0 | 0.2 ms | none |
+| A | g0.0e / e-nohe | 26-36 ms | 25-27 paints, 1.2-2.5 ms in total |
+| B | v0 | 40-43 ms | ≤ 3 ms in total |
+| B | g0.0e / g0.0f | 58-63 ms | ≤ 3 ms in total |
+
+- The records carry clip rects only, no layer names and no layer sizes. At spot A the clips cover about the full viewport (≈ 336k px²). At spot B they cover the platform section.
+- So the extra time is WebKit's layer flush, not repaint area. That WebKit's `Composite` record is the layer flush is still to be confirmed against WebKit source.
+- Over the whole spot-A window, spot A is a moved hitch, not an added one (whole-window reader `p167-wread.mjs` on P-166's runs, medians):
+
+| window | arm | frames > 34 | > 50 | max dt | Composite sum | where the big Composite is |
+|---|---|---|---|---|---|---|
+| A 0-750 | v0 | 7 | 3 | 76 | 542 | y ≈ 690-740 (A02: a 186/231/178 ms burst) |
+| A 0-750 | g0.0e | 5 | 1 | 55 | 301 | the first step (y 43-70) |
+| A 0-750 | e-nohe | 4 | 1 | 53 | 297 | the first step |
+| B 4000-5000 | v0 | 1 | 0 | 46 | 1230 | at `+is-play` |
+| B 4000-5000 | g0.0e | 1 | 1 | 70 | 368 | at `+is-play` |
+| B 4000-5000 | g0.0f | 1 | 1 | 72 | 353 | at `+is-play` |
+
+  - At spot A, g0.0e is not worse over the window. At spot B the one `+is-play` frame gets 24 ms longer, while total Composite time over the window is lower on g0.0e.
+
+**Simulator layer census for P-167** (lead 12:3xZ; counts only, a mechanism check, not a verdict; `p167-sim.mjs`, one load per arm, LayerTree.layersForNode on `<html>`; two shared sessions, because the first hit its 300 s cap after 3 arms):
+
+| arm | top (y 0) | after the A steps (y 750) | after the B steps (y 5000) | deferred sections A / B |
+|---|---|---|---|---|
+| v0 | 109 layers, 12.5 MB | 105, 74.7 MB | 29, 82.9 MB | 2 / 4 |
+| g0.0e | 160, 28.8 MB | 156, 108.2 MB | 51, 71.0 MB | 0 / 2 |
+| ko1 (accent idle frames) | 160, 28.7 MB | 169, 96.5 MB | 51, 71.0 MB | 0 / 2 |
+| **ko2 (no early un-skip)** | **142**, 28.6 MB | **136**, 108.5 MB | **41**, 71.0 MB | 2 / 4 |
+| ko3 (no will-change windows) | 169, 28.7 MB | 179, 81.8 MB | 54, 71.0 MB | 0 / 2 |
+| ko123 | 143, 28.7 MB | 153, 81.8 MB | 46, 71.0 MB | 2 / 4 |
+
+- Only ko2 moves g0.0e's layer count toward v0's: −18 at the top, −20 after A, −10 at B. It also restores v0's deferred sections.
+- ko3 goes the other way: without the windows every will-change element keeps its layer.
+- ko1 changes nothing in the counts.
+- No KO closes the gap: ko2 still has +33 layers at the top. g0.0e's extra memory at the top (28.8 vs 12.5 MB) is unchanged by every KO, so it sits in layers of the lead's candidates 4-8 (countdown will-change, the morph panel mounted at idle, ...).
+- By the lead's rule (a KO that cuts the layer count toward v0's goes into P-167), **P-167's knock-out arm is ko2**. ko123 mixes ko2's cut with ko3's addition.
+- The `layerTreeDidChange` count is not usable: WebKit sent one event per window. It seems to send one until the layers are requested again; that is OBSERVED, not checked against source.
+
+## P-167 (phone card DRAFT for the lead's signature; written before any P-167 data; not signed, not run)
+
+| item | content |
+|---|---|
+| question | Does g0.0e's longer Composite at spot B (the `+is-play` frame, window max 46 → 70 ms in P-166) come from its extra layers via the early un-skip of deferred sections (KO2)? And is spot A's first-step burst a moved hitch (v0's y ≈ 700 burst) rather than added cost? |
+| arms | **v0** (control, plain baseline, JS 4606120cf392 / CSS 27776f3d4138) · **g0.0e** (JS 5c39f7a96e41 / CSS d4e684032482) · **k = e-ko2**: g0.0e with `fwKick` a no-op and `cE` re-deferring as the baseline (JS 43e9c65489bf / CSS d4e684032482). Built by `p167-build.py`, diagnostic only, never a candidate. `P167_K=ko123` would swap in ko123 if the lead prefers it. |
+| windows | A: 0 → 750 (W `--from 0 --to 750`); B: 4000 → 5000 (W `--from 4000 --to 5000`). Both in one ticket, as part A then part B (one phone hold each, as P-166). |
+| profile | **tool-serious**, as P-166 stage 2 (`iphone.mjs rearm`, gates `--accept-induced`, `--profile serious`, `FW_PHONE_CONDITION=tool`; `thermal.mjs clear` after each part). Profiles never pool: P-167 compares only within its own block, never with P-165 or P-166. |
+| driver | W with Timeline on every counted run (`iphone.mjs run --driver window --probe std --hold 2 --sentinel 3 --timeline`). One uncounted W warm-up per arm port per part. |
+| order | Latin square, 3 counted runs per arm per window. Part A: `H1:Aw0,Awe,Awk,AsC,A01  H2:Ae1,Ak1,Ae2,Ak2  H3:A02,Ak3,A03,Ae3  H4:TAILA`. Part B: the same with B (H5-H9). |
+| sentinels | as P-166 (lead ruling 11:1xZ): only `<S>sC`, one uncounted Timeline-OFF S run on v0 (`--heat-sentinel`, bottom ≥ 58 and scroll ≥ 44 fps), at each part's start after the warm-ups and in the TAIL. A failing sC is BLOCK STOP 8. Counted Timeline-on runs are never judged as sentinels. |
+| metric (primary) | whole window (`p167-wread.mjs`), the move phase [scroll start, hold end) of each run: frames > 34 and > 50 (twins 30/38 and 46/54), max dt, Composite sum and the largest Composite inside one frame. The idle phase is reported apart. Per arm: medians of 3. |
+| metric (secondary) | P-166's binned spot frame (`p166-wread.mjs` rules: A = the first frame past y 30, B = the `+is-play` frame) |
+| rules (written before data) | **B, reproduce:** g0.0e's median max dt ≥ v0's + 6 ms (else "not reproduced", no KO verdict).<br>**B, KO2 removes the cost:** k's median max dt ≤ v0's + 6 ms **and** k's median > 50 count ≤ v0's.<br>**B, partial:** k's median max dt at least 6 ms below g0.0e's but not "removes".<br>**B, no effect:** otherwise.<br>A rule is threshold-sensitive when the 46/54 twins give another verdict.<br>**A, moved hitch:** "g0.0e is no worse over window A" when its median > 34 count ≤ v0's and its median max dt ≤ v0's + 6 ms; the card lists each arm's slow frames with y and Composite ms (v0's y ≈ 700 burst vs g0.0e's first-step burst). k is read the same way.<br>**Mechanism line (both windows):** k's largest Composite median moves toward v0's. |
+| budget | P-166's parts took 15 min (A2, 3 holds) and 23 min (B, 5 holds) once running. P-167 is 2 parts of 4-5 holds each, so about 45-50 min of phone time, not 30. The lead decides whether to cut it to window B only (about 25 min). |
+| kit | `fixes/g0-box/phone/p167-{build.py,serve.sh,hold.sh,block.sh,run.sh,sim.mjs,wread.mjs}`. hold, block and run are P-166's final kit with only names, paths and arms changed. `p167-wread.mjs --selftest`: 4 cases ok. Dry runs of both parts (`CM_DRY=1`, k = ko123 at the time): every hold `HOLD DRY ok`, tools head 58bbc3b3 contains db884e9d, served hashes of B/v0/e/k ok. |
+| conditions before the first counted run | (1) a dry run with `P167_K=ko2` prints its pins; (2) the user's ready step is answered (posted from inside the phone hold); (3) parts start detached, with the watchdog (`out/g0box/watchdog2.sh`); (4) USB link, WDA and the thermal read work (P-166's restarts). |
+
 ## P-164 (phone card; written before any P-164 data)
 
 **Pre-data check 2, with the g0 program (2026-10-08 03:47-03:55Z, before any P-164 data). Result: START-STATE
