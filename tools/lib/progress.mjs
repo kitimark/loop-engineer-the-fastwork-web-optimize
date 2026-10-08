@@ -548,8 +548,9 @@ export async function gatherLive() {
   } catch (e) { live.errors.push(`incidents: ${e.message}`); }
   try { live.steps = (await import('./console.mjs')).list({ pending: true }); } catch (e) { live.errors.push(`console steps: ${e.message}`); }
   try { live.waits = (await import('./waits.mjs')).listWaits(); } catch (e) { live.errors.push(`waits: ${e.message}`); } // I-058
-  // I-163: a wait whose parent chain no longer reaches a live Claude Code process is an orphan (proctree.mjs)
-  try { const att = (await import('./proctree.mjs')).attachedNow(); if (att && live.waits) live.waits = live.waits.map((w) => (att(Number(w.pid)) ? w : { ...w, orphan: true })); } catch (e) { live.errors.push(`processes: ${e.message}`); }
+  // I-163: a wait whose parent chain no longer reaches a live Claude Code process is an orphan (proctree.mjs); I-248: not
+  // one that runs inside a live lock hold of its own owner (a detached block runner's step wait)
+  try { const att = (await import('./proctree.mjs')).attachedNow({ locks: live.locks }); if (att && live.waits) live.waits = live.waits.map((w) => (att(Number(w.pid), w.owner) ? w : { ...w, orphan: true })); } catch (e) { live.errors.push(`processes: ${e.message}`); }
   // I-108: an open proposal (proposed, not held) waits on the user's decision, like a pending step
   try { live.proposals = (await import('./proposal.mjs')).listProposals({ waiting: true }); } catch (e) { live.errors.push(`proposals: ${e.message}`); }
   // I-108 (3): what a row's wait or branch points at, to mark rows whose news is over ("may be out of date")

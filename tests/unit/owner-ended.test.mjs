@@ -231,3 +231,79 @@ test('I-163: a nohup\'d thread wait whose shell exits is reparented to launchd a
     assert.deepEqual(RT.listeningState({ threads: [], attached: (p) => P.attachedTo(p, table) })('desk-nohup'), { listening: false, how: 'owner ended (orphan wait)' });
   } finally { try { process.kill(pid); } catch {} }
 });
+
+// I-248 (P-166 part A, 2026-10-08 10:24Z): the detached block runner (nohup sh p166-run.sh, the I-221 workaround) ran its
+// own console.mjs wait inside `lock.mjs run iphone --owner fix-g0-box -- sh p166-block.sh`; the chain ends at launchd,
+// so the board said "owner ended (orphan wait)" although the owner's own wait ran under Claude Code. A wait whose chain
+// passes a live lock hold process of its own owner is that owner's held work, not an orphan.
+test('I-248: proctree: a wait inside a live lock hold of its own owner (a detached block runner) is attached; another owner\'s wait there, or the owner\'s wait outside the hold, stays an orphan', async () => {
+  const P = await import('../../tools/lib/proctree.mjs');
+  const table = P.parsePs([
+    '    1     0 /sbin/launchd',
+    '  700     1 /Applications/iTerm.app/Contents/MacOS/iTerm2',
+    ' 7457   700 claude',
+    '22440     1 sh fixes/g0-box/phone/p166-run.sh P-166 A',
+    '22450 22440 node tools/lock.mjs run iphone --owner fix-box --block P-166 --max-seconds 3600 -- sh fixes/g0-box/phone/p166-block.sh H1',
+    '22460 22450 sh fixes/g0-box/phone/p166-block.sh H1',
+    '22470 22460 node tools/console.mjs wait C-100 --until done --timeout 3600 --quiet',
+    '22480 22460 node tools/wait.mjs file x --owner other-agent --reason y',
+    '22500 22440 node tools/console.mjs wait C-101 --until done',
+    '22577  7457 node tools/console.mjs thread wait --as fix-box --monitor',
+    '23000     1 node tools/console.mjs thread wait --as fix-box --monitor',
+    '24000     1 node tools/lock.mjs run chrome-measure --shared --owner ts-x -- npm test',
+    '24010 24000 node tools/wait.mjs pid 1 --owner ts-x --reason z',
+    '25000     1 node tools/lock.mjs run chrome-measure --owner gone-agent -- sh x.sh',
+    '25010 25000 node tools/wait.mjs pid 1 --owner gone-agent --reason z',
+  ].join('\n'));
+  const locks = {
+    iphone: { resource: 'iphone', holder: { owner: 'fix-box', kind: 'process', pid: 22450 }, stale: null },
+    'chrome-measure': { resource: 'chrome-measure', holder: { owner: '(shared)', kind: 'lease', shared: true, readers: [{ owner: 'ts-x', kind: 'process', pid: 24000 }, { owner: 'ts-y', kind: 'lease' }] }, stale: null },
+    simulator: { resource: 'simulator', holder: { owner: 'gone-agent', kind: 'process', pid: 25000 }, stale: 'pid 25000 is gone' },
+  };
+  assert.deepEqual([...P.holdPids(locks)].map(([o, s]) => [o, [...s]]), [['fix-box', [22450]], ['ts-x', [24000]]], 'live process holds and process readers; no stale holder, no lease');
+  assert.deepEqual([...P.holdPids(null)], []);
+  assert.equal(P.chainHas(22470, table, new Set([22450])), true);
+  assert.equal(P.chainHas(22500, table, new Set([22450])), false, 'the runner between holds: not inside the hold');
+  const att = P.attachedNow({ table, locks });
+  assert.equal(att(22470, 'fix-box'), true, 'the runner\'s step wait inside its own hold: attached (the P-166 case)');
+  assert.equal(att(22577, 'fix-box'), true, 'the owner\'s own wait under Claude Code, as before');
+  assert.equal(att(22470), false, 'no owner given: the I-163 rule alone');
+  assert.equal(att(22480, 'other-agent'), false, 'another owner\'s wait inside fix-box\'s hold: still an orphan');
+  assert.equal(att(22500, 'fix-box'), false, 'the owner\'s wait in the runner but outside the hold: still an orphan');
+  assert.equal(att(23000, 'fix-box'), false, 'a reparented wait of the owner outside any hold: still an orphan');
+  assert.equal(att(24010, 'ts-x'), true, 'inside its own shared-lane reader');
+  assert.equal(att(25010, 'gone-agent'), false, 'a stale hold anchors nothing');
+});
+
+test('I-248: gatherLive (real ps): a nohup\'d runner holding a lock for its owner: that owner\'s wait inside is no orphan; another owner\'s wait inside is', async () => {
+  const P = await import('../../tools/lib/proctree.mjs');
+  const G = await import('../../tools/lib/progress.mjs');
+  const W = await import('../../tools/lib/waits.mjs');
+  const wait = new URL('../../tools/wait.mjs', import.meta.url).pathname;
+  const env = { ...cleanEnv(), FW_STATE_DIR: process.env.FW_STATE_DIR };
+  const w = (owner) => `"${process.execPath}" "${wait}" pid ${process.pid} --owner ${owner} --timeout 30 --reason i248-${owner}`;
+  // the runner: a nohup'd shell (reparented to launchd once its starter exits) whose children are the two waits
+  const r = spawnSync('sh', ['-c', `nohup sh -c '${w('other-agent')} & ${w('fix-box')}; true' >/dev/null 2>&1 & echo $!`], { env, encoding: 'utf8' });
+  const runner = Number(r.stdout.trim());
+  assert.ok(runner > 1, `started: ${r.stdout} ${r.stderr}`);
+  const prev = process.env.FW_PROC_TREE;
+  let ws = [];
+  try {
+    mkdirSync(join(process.env.FW_STATE_DIR, 'locks'), { recursive: true });
+    writeFileSync(join(process.env.FW_STATE_DIR, 'locks', 'iphone.json'), JSON.stringify({ resource: 'iphone', owner: 'fix-box', kind: 'process', token: 'i248tok', pid: runner, acquiredAt: new Date().toISOString(), meta: {} }));
+    for (let i = 0; i < 100 && ws.length < 2; i++) { ws = W.listWaits().filter((x) => ['fix-box', 'other-agent'].includes(x.owner)); if (ws.length < 2) await new Promise((res) => setTimeout(res, 100)); }
+    assert.equal(ws.length, 2, 'both waits registered');
+    process.env.FW_PROC_TREE = 'on';
+    P.clearProcCache();
+    const live = await G.gatherLive();
+    const by = Object.fromEntries(live.waits.filter((x) => ['fix-box', 'other-agent'].includes(x.owner)).map((x) => [x.owner, x]));
+    assert.equal(live.locks.iphone.holder.pid, runner);
+    assert.equal(by['fix-box'].orphan, undefined, 'the owner\'s wait inside its own hold: no orphan (I-248)');
+    assert.equal(by['other-agent'].orphan, true, 'another owner\'s wait there: an orphan, as before');
+  } finally {
+    if (prev === undefined) delete process.env.FW_PROC_TREE; else process.env.FW_PROC_TREE = prev;
+    P.clearProcCache();
+    for (const x of ws) { try { process.kill(x.pid); } catch {} }
+    try { process.kill(runner); } catch {}
+  }
+});
