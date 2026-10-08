@@ -378,7 +378,8 @@ Short form of `fixes/AGENT_ROLES.md` "Addresses and peer work" (F-046):
   Read-time, no writes (I-152): a ready-to-land row whose branch head is on main reads "landed on main (from git)";
   an active row whose owner's run ended with a hand-back says "owner ended" (from Claude Code's transcripts, OBSERVED
   format) unless it has a live wait; a wait whose parent chain no longer reaches a live Claude Code process (its shell
-  or Monitor task is gone) reads "owner ended (orphan wait)" (I-163, `tools/lib/proctree.mjs`); an owner inside one
+  or Monitor task is gone) reads "owner ended (orphan wait)" (I-163, `tools/lib/proctree.mjs`), unless the chain passes
+  a live lock hold of the wait's own owner, e.g. a detached phone-block runner's wait inside its hold (I-248); an owner inside one
   foreground tool call for more than 30 s reads "deaf: in <command, 40 chars> for N min" (I-169).
 - **Threads** (`console.mjs thread`, console `/threads`): the user's questions, one thread per topic. The lead keeps
   `node tools/console.mjs thread wait --as lead --triage --timeout 3600` armed in the background (re-arm after each
