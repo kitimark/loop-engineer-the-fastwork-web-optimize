@@ -365,6 +365,16 @@ Each phone hold stays under the `--block` cap of 3600 s in the expected case. Ho
 wait can pass it: it then shows OVERDUE and is not killed. All three run back to back. Mac side: every hold is an
 exclusive `--no-timing` chrome-measure hold, so Chrome measurements by others wait about 2 h in total, in ~10 min slices.
 
+**Lead signature (2026-10-08 06:08Z, before any P-165 data).** P-165 is signed as drafted (5d6b05f5), profile
+real-serious. The proposed decisions above are the lead's decisions. The signature takes effect only when all of these
+hold; fix-g0-box checks them itself and records them here before part 1 (no second lead round):
+1. The kit's dry run prints `PROG fs 31fc66329daf ok`, and its PIN line names `p129-gates-g0b.mjs`.
+2. The served hashes are C 4606120cf392 / 27776f3d4138 and V 30fd80ccbb3f / 1d1e5d62a2c4.
+3. `p165-score.mjs` passes its self-test (DS1-DS3 on synthetic runs, including one NEW-cluster and one twin-flip case).
+4. Nothing in the kit sets an Xcode condition or `thermal.mjs set` (grep in the commit), and every run passes `--profile real-serious`.
+5. The user's console step is answered "ready" before phone hold 1 (posted by fix-g0-box from inside its phone hold; one phone step at a time).
+If a condition fails, message the lead with the line; do not run.
+
 **Follow-ups (listed only; each is its own ticket after P-165):**
 - **A short no-worse check at Fair** (`memory/phone-checks-start-warm.md`: before the goal is called done, the final
   build gets one short no-worse check on a cooler phone). Profile real-fair (`--profile fair`, gate `--expect fair`),
