@@ -2,7 +2,7 @@
 # P-167 phone kit (card: fixes/g0-box/README.md "P-167"; DRAFT until the lead signs): one part = one window = one phone
 # hold with the block mark, profile tool-serious (a copy of p166-run.sh). Arms v0 (0) · g0.0e (e) · k = the knock-out
 # named by P167_K (default ko2; p167-build.py, p167-serve.sh). The servers keep their ports for both parts (warm-ups are
-# per arm port); part A starts them if they are not up, part B stops them at its end.
+# per arm port); part A starts them if they are not up; they stop after the last part (A: the lead ran B first).
 #   part A (window A, 0 -> 750; the user's ready step first unless P167_READY=0):
 #     H1:Aw0,Awe,Awk,AsC,A01  H2:Ae1,Ak1,Ae2,Ak2  H3:A02,Ak3,A03,Ae3  H4:TAILA (re-runs, then the S heat sentinel AsC)
 #   part B (window B, 4000 -> 5000):
@@ -36,6 +36,7 @@ else
   node tools/thermal.mjs clear --owner fix-g0-box > $LG/thermal-clear-$(date +%s).log 2>&1; echo "thermal.mjs clear exit $? (the induced condition ended)"
 fi
 echo "part $P ended (exit $rc)"
-[ "$P" = B ] && [ "$CM_DRY" != 1 ] && sh fixes/g0-box/phone/p167-serve.sh stop
+# lead 12:55Z (signature): window B runs first, then A, so the servers stop after the last part, A (P167_LAST overrides)
+[ "$P" = "${P167_LAST:-A}" ] && [ "$CM_DRY" != 1 ] && sh fixes/g0-box/phone/p167-serve.sh stop
 echo "EXIT $rc"
 exit $rc
