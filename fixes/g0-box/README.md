@@ -1124,6 +1124,24 @@ first opening only (a hidden state). It was rebuilt and re-checked: the table sh
 - **Proposal PR-039:** option restart = f-B, option keep-phase = f-B2 (recommended). Try-it A = g0.0f; overlays are
   local in `fixes/colpause-{a,b,b2}/overlay`, never committed. Shots: `gates/colshot.mjs` (the menu's second opening + 0.8 s).
 
+## P-169 (phone card, window B only; written before any P-169 data)
+
+| | |
+|---|---|
+| question | Is g0.0f's ~20 ms extra Composite in the window-B `+is-play` frame the cost of a bigger layer tree? P-168 ("P-168 result" above): Composite in that frame v0 40-42 ms vs g0.0f 58-64 ms, no Layout. de-offscreen's read of the same runs: the paint area is the same in all arms, so the excess is Composite work outside Paint. In the Simulator, after the flip g0.0f has 60 layers vs v0's 50; f-B2 brings g0.0f back to 50 (a different set: the hidden menu subtree goes, the row-title masks/sweeps stay). |
+| arms | **v0** (control; JS 4606120cf392 / CSS 27776f3d4138) · **g0.0f** (JS 30fd80ccbb3f / CSS 1d1e5d62a2c4) · **k = f-B2** = g0.0f + KO B made pixel-identical (PR-039 option keep-phase; JS 9162843e750f / CSS 26d28a0a263b; `p168-build.py` arm f-B2, served as `fB2` by `p168-serve.sh`). Measuring f-B2 before the user's PR-039 decision is a measurement, not a landing; the arm is pixel-identical (the lead's words when asking for this card). |
+| window | B only: jump to 4000, W steps 4000 → 5000, Timeline on in every counted run (P-168 part B, unchanged). |
+| profile, driver | tool-serious (`iphone.mjs rearm`, CM_THERMAL=serious), W + Timeline. Never pooled with P-168 (same profile, different block). |
+| order | P-168 part B's Latin square: `H5:Bw0,Bwe,Bwk,BsC  H6:B01,Be1,Bk1,Be2  H7:Bk2,B02,Bk3  H8:B03,Be3  H9:TAILB`; 3 counted runs per arm, `e` = g0.0f, `k` = f-B2. |
+| sentinels | as P-168: only BsC (uncounted Timeline-off S run on v0, `--heat-sentinel`, bottom ≥ 58 and scroll ≥ 44 fps) after the warm-ups and in the TAIL; a failing BsC is BLOCK STOP 8. |
+| metric (primary) | the Composite time inside the `+is-play` frame (every Composite record's overlap with [frame start, frame end)); per arm the median of 3 (`p169-wread.mjs`, committed before data). |
+| rules (written before data) | **Reproduce first:** g0.0f's median ≥ v0's + 10 ms, else "not reproduced" (no f-B2 verdict).<br>**Tree size:** d = median(f-B2) − median(g0.0f): d ≤ −10 ms "tree size is the cost"; −10 < d < −6 "partly tree size"; \|d\| ≤ 6 "not tree size"; d ≥ +6 "worse". Twins ±4 ms on both bounds (6/2 and 14/10): "threshold-sensitive" when either gives another verdict.<br>**PR-039 line (for the user):** the `+is-play` frame dt, f-B2 vs g0.0f median: ≤ −6 ms "shorter frame"; within ±6 "same frame"; ≥ +6 "longer frame".<br>**Counts (as P-168 B):** whether f-B2's scroll-phase > 34 (30/38) and > 50 (46/54) medians are ≤ g0.0f's. |
+| mechanism line | Not a rule. If "not tree size", the excess sits in g0.0f's own page state; de-offscreen's source read (its README): the sync buffer prepare happens only for stores that were unreachable before the flip (RemoteLayerBackingStoreCollection.mm 271-274; RemoteRenderingBackendProxy.cpp 615-634); expected equal across arms, so f-B2 mainly tests tree size. UNRESOLVED; a Simulator `RemoteLayerBuffers` log check is the decisive local test, not part of this block. |
+| reader check | `p169-wread.mjs` on P-168's part B (k = g0.0g) gives v0 41.3 / g0.0f 61.5 / g0.0g 59.4 ms (d = −2.1 for g0.0g, which is P-168's "no effect"): the metric reproduces P-168's 40-42 vs 58-64 ms. |
+| budget | ~25 min of phone time (P-168's part B order, unchanged); hard stop 35 min, then report what there is. |
+| kit | `phone/p169-{run,block,hold}.sh` (copies of P-168's, logs `out/p169ph`), `phone/p169-wread.mjs`; servers `p168-serve.sh` (B v0 f fB2, `out/p168`). Start detached with `out/g0box/watchdog2.sh`: `nohup sh fixes/g0-box/phone/p169-run.sh P-169 B > out/g0box/p169-partB.log 2>&1 &`. |
+| conditions before the first counted run | (1) a dry run (`CM_DRY=1`) prints every pin; (2) the user's ready step (the lead's); (3) USB link, WDA and the thermal read work; (4) the servers are not restarted after the dry run. |
+
 ## P-164 (phone card; written before any P-164 data)
 
 **Pre-data check 2, with the g0 program (2026-10-08 03:47-03:55Z, before any P-164 data). Result: START-STATE
