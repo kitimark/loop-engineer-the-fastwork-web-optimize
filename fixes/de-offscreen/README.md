@@ -507,6 +507,27 @@ Gains are guesses on g0.0f's 32 frames over 50 ms per 4 runs. None is measured.
   geometry cache on every resize (JS 14250-14252), so c3's guard appears not to have been kept (inferred). It might
   trim the first drag's frames over 34; low for frames over 50.
 
+### 7.4 Item E checked across builds: the drag-end frame is the driver or the OS, not the page
+
+The same G "drag" strokes (520 px in 1200 ms, lift-off 62 px/s) also ran in the approach of two other blocks, on
+builds with entirely different end-of-page code. Data, read only: arch-compositor-morph's `out/cmp160/runs` (P-160:
+v9-final rev 7d and v13) and `out/cmp163/runs` (P-163), run 1 of each arm. The per-drag worst frame within ±120 ms
+of lift-off:
+
+| block, arm | drags with the 24-29 ms frame about 50 ms before lift-off | stretched frames (dt > 34) | content of the empty frames |
+|---|---|---|---|
+| P-164 g0.0e (EC3) / g0.0f (EV2) | 9-10 of 11 | 54 ms at y 3015 / 3507 (+ the layout-stacked 38-40 ms at y 1000-1500) | RenderingFrame children 2-8 ms; touchmove dispatches only |
+| P-163 C / V | 7-9 of 11 | C: 37-58 ms at y 1001-1503, 2999; V: 54 ms at y 2011 and 3524 | same: children 2-11 ms in the plain ones |
+| P-160 C / V | 7-8 of 11 | 35-46 ms at y 1005-1503, 3003 | same |
+
+- **Every build shows the same frame at the same moment.** It appears at y 4000-5500 too, where nothing on the
+  page changes, and the finger is almost still (0.05-0.07 px/ms).
+- **The 54 ms stretches also appear on the v13/v14-lineage builds** (P-163 V: 54 ms at 2011 and 3524).
+- **Verdict: item E comes from the G driver's lift-off (the WDA drag profile) and the OS, not from page code
+  (OBSERVED, 3 blocks).** Drop it as a page-fix target.
+- Frames where E stacks with the layout pass (A) at y 1000-1500 / 2005 shrink with A's fixes. A finger (F) run would
+  tell whether people feel the lift-off frame at all. It is not needed for the page fixes.
+
 **For the end itself (second priority):** the close-start frame (35-40 ms, Composite 33-45 ms, both arms) is the
 first frame of the close tween, the jack's `E(0)` → `T` rAF (JS 14374-14390). Idea: keep the menu's layers
 composited between the open and the close, as v14's K6 did for the open. Likely pixel-identical; gain at most one
