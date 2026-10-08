@@ -3,10 +3,10 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured (Simulator counts, Chrome + Simulator pixel gates); the phone no-worse check (card below) has no data yet
+**Status:** measured (Simulator counts, Chrome + Simulator pixel gates). Phone no-worse block P-170: counted read PASS, but the end sentinel failed (heat), which voids the block; the lead decides
 **Stage:** F (build card and phone card below; the lead signs the phone card)
 **Device class / gate:** render-bound, WebKit only → less-work landing rule (memory "less-work-landing-rule"): Simulator counts per morph state, pixel T2, one short phone no-worse check (G)
-**Driver(s) behind the claims:** Simulator census (stepped tween, counts only); seek pixel gates (Chrome headless, iOS Simulator); phone G (card below, not run yet)
+**Driver(s) behind the claims:** Simulator census (stepped tween, counts only); seek pixel gates (Chrome headless, iOS Simulator); phone G (P-170 below: counted read PASS, void by S1)
 **Base:** g0.0h (fixes/g0-0h, landed 55f5cacd) = g0.0f + PR-039 keep-phase, JS 9162843e750f / CSS 26d28a0a263b. `patch.diff` is stacked on it (`node tools/fix.mjs apply menu-layers --on g0-0h`).
 **Build:** g0.0h + clock layer, JS 9162843e750f (unchanged) / CSS adb875d94c1f
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` only: two rules appended at the end (16 lines with the comment). No JS.
@@ -142,6 +142,68 @@ close tweens captured at fixed times. Scorer `gates/t2.mjs`. A = g0.0h, V = g0.0
 - **FAIL by D1 alone, D2 and D3 passing:** the lead decides (the T-228 #30 precedent).
 - **FAIL on D2 or D3:** g0.0h stays best; the clock layer stays a research result.
 - **OPEN:** at most one more block (sequential rule); the lead decides.
+
+## Phone block P-170 (the card above, signed by the lead as P-170; run 2026-10-08)
+
+**Result: BLOCK STOP at H9.** The end sentinel S1 failed, so by the card every counted run is void. The counted read
+itself is a clean PASS. The lead decides what follows: a second and last block, accept, or drop.
+
+| rule | C (EC1-EC3) | V (EV1-EV3) | V − C | verdict |
+|---|---|---|---|---|
+| triggers per run (open / close) | 13 / 12 ×3 | 13 / 12 ×3 | equal | ok |
+| D1 O1.f2, median (range) | 17 (17-17) ms | 16 (16-17) ms | −1 | within +4 |
+| D2 open-tween median dt | 17 (17-17) ms | 17 (17-17) ms | 0 | within +4 |
+| D3 open-tween share > 34 / 30 / 38 | 0 / 0 / 0 | 0 / 0 / 0 | – | V ≤ C at all three |
+| open-tween frames > 50 | 0 | 0 | – | – |
+| close tween median dt (descriptive) | 17 | 17 | 0 | – |
+| **S1 sentinel** (C, Timeline off, p129 gates: fps ≥ 50, slow ≤ 6 %) | **49.4 fps, slow 7.5 % → FAIL** | | | voids the block |
+
+Read: `node fixes/g0-box/phone/g0b-read.mjs out/mlp-p170/runs --runs EC1,EC2,EC3,EV1,EV2,EV3` → DECISION PASS
+(`out/menu-layers/p170-read.txt`; P-170 logs moved to `out/mlp-p170/` before P-170b; gitignored).
+
+- **Holds.** H1-H8 were all VALID (283-288 s each). Every start gate showed thermal Serious (Xcode-induced), timer 30 ms.
+- **Heat.** The battery rose from 36.0 °C (H1) to 43.0 °C (H9 end): H5 40.7, H7 41.7, H8 42.1, H9 42.7. Under
+  xcode-serious there is no cooling wait between holds. P-164's S1, on the same program, passed at 54.3 fps. The
+  likeliest cause of the S1 miss is heat drift over a ~50 min block (OBSERVED in our setup, from the battery trend
+  only; not shown).
+- **Prediction vs result.**
+  - The counted rules matched the prediction: D1, D2 and D3 passed, and neither arm left the 17 ms median.
+  - The prediction did not cover the validity risk that ended the block: heat over a 9-hold block.
+- **Three failed starts before this run** (p170-try1..3, `out/menu-layers/`), incident I-254:
+  - WDA's terminate timed out;
+  - then HTTP 400 `XCTDaemonErrorDomain Code=41` "Not authorized for performing UI testing actions", which persisted
+    after the user's C-131;
+  - the lead restarted WDA at 19:11:36Z, and try 4 (this block) ran.
+- **Simulator window for fix-cm-return (void).** The lead asked for a 6 min window between H6 (EC2) and H7 (EC3).
+  - Try 1 stopped the block shell after H6 had already started. Try 2 waited for H6's end and opened the window at
+    19:53:38Z with `doing iphone --between 6`.
+  - The window stayed shut anyway: the lock counts the iphone hold's run (the whole block shell, stopped with SIGSTOP but
+    alive) as a live phone run (`tools/lib/lock.mjs` 1249-1252).
+  - The shell was resumed at 19:56:20Z, into H7. The lead opened a tool incident for this.
+  - The pause (19:53:38-19:56:20Z) sits between holds. H7 started with its own heat and timer gates, so the counted runs
+    are unaffected.
+
+### P-170b card delta (the lead's ruling, 2026-10-08 ~20:15Z: P-170 void; second and last block)
+
+Everything not listed here is unchanged from the card above: arms, pins, snapshot `snap1` HASHES 85be2a1a2113,
+program 38d7fe5d7fa8, profile tool-serious, the D1-D3 rules and the gates.
+
+| item | P-170 | P-170b |
+|---|---|---|
+| order | H1:WC H2:WV H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:TAIL | **H1:WC H2:WV H3:S0 H4:EC1 H5:EV1 H6:EV2 H7:EC2 H8:TAIL** |
+| n per arm | 3 (C V V C C V) | **2 (C V V C)** |
+| sentinels | S1 at the end | **S0 directly after the warm-ups, plus S1 at the end** (same procedure: C, Timeline off, p129 gates fps ≥ 50, slow ≤ 6 %). A failing S0 stops the block (exit 8). |
+| start condition | none (xcode-serious, no cooling) | **battery ≤ 39 °C** (`wait.mjs phone-temp --below 39`) before the start; no cooling between holds (as before) |
+| logs | `out/mlp` | `out/mlp` again (P-170's moved to `out/mlp-p170`) |
+| kit change | – | `phone/ml-hold.sh` accepts an item `S0`, run and gated exactly like `S1` but written to `g-S0.json`. Nothing else changes. Dry run `out/menu-layers/kitdry2.log`. |
+| read | – | `g0b-read.mjs out/mlp/runs --runs EC1,EC2,EV1,EV2` |
+
+**Outcomes (the lead's):**
+- S0 and S1 both pass, and the read is PASS: c8f69bb1 and its follow-up land as the g0.0i candidate, together with the
+  iPad look check.
+- A sentinel fails again: the topic lands on the less-work rule with the Simulator counts and P-170's descriptive read.
+  The phone no-worse check is then recorded as not achieved.
+- The read is FAIL with both sentinels passing: the card's decisions above apply.
 
 ## Risks, conflicts, follow-ups
 

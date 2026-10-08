@@ -35,13 +35,14 @@
 # probe script pr = fixes/compositor-morph/phone/g-probe-v1.json (compiled program pinned at the dry run, $PROG_PR).
 # Items:
 #   WC / WV        uncounted warm-up on C's / V's port: E procedure, Timeline off, --warmup     -> g-W<a>-<H>.json
+#   S0             start sentinel on C, the same procedure as S1 (P-170b, lead 2-sentinel order) -> g-S0.json
 #   S1             end sentinel on C: E procedure, Timeline off                                  -> g-S1.json
 #   E<a><n>        counted run on arm a (C, V), n 1-4, Timeline on                              -> g-E<a><n>.json + tl-E<a><n>.json
 #   E<a><n>r       the one re-run of a counted run that failed a run gate
 #   A<v>           attribution run on the probe page, v = N (none), S (sda), R (raf), Timeline on, uncounted
 #                                                                                                -> g-A<v>.json + tl-A<v>.json
 # After each counted run P-129's run gates (research/serious-heat/phone/p129-gates.mjs, role E) print "GATES <run> E ok|INVALID".
-# S1: "SENTINEL S1 PASS|FAIL"; a failing S1 voids every counted run (exit 8). Time guard as P-155 (exit 7).
+# S0/S1: "SENTINEL S<n> PASS|FAIL"; a failing S0 or S1 voids every counted run (exit 8). Time guard as P-155 (exit 7).
 # CM_GATE=start|end|both|none (default both). CM_DRY=1: pins, compiled programs, served hashes and the plan only.
 # Last line: "HOLD <H> VALID <s> s" (exit 0) or "HOLD <H> VOID <why>". Nothing here prints the LAN address (Hard rule 12).
 cd "$(dirname "$0")/../../.." || exit 2
@@ -59,7 +60,7 @@ GM=${CM_GATE:-both}
 case $GM in start|end|both|none) ;; *) echo "CM_GATE must be start, end, both or none (got $GM): no run"; exit 2 ;; esac
 SELF=fixes/menu-layers/phone/ml-hold.sh; GATES=fixes/g0-box/phone/p129-gates-g0.mjs   # P-164 lead ruling: the g0 copy (FS_HASH 38d7fe5d7fa8)
 mkdir -p $O
-for I in "$@"; do case $I in WC|WV|S1|E[CV][1-6]|E[CV][1-6]r) ;; WK|EK[1-6]|EK[1-6]r) [ -n "$K_NAME" ] || { echo "HOLD $H VOID item $I needs a K arm (eop-k.env K_NAME empty) (no run)"; exit 4; } ;; *) echo "HOLD $H VOID unknown item $I (no run)"; exit 4 ;; esac; done
+for I in "$@"; do case $I in WC|WV|S0|S1|E[CV][1-6]|E[CV][1-6]r) ;; WK|EK[1-6]|EK[1-6]r) [ -n "$K_NAME" ] || { echo "HOLD $H VOID item $I needs a K arm (eop-k.env K_NAME empty) (no run)"; exit 4; } ;; *) echo "HOLD $H VOID unknown item $I (no run)"; exit 4 ;; esac; done
 port() { node -e "console.log(JSON.parse(require('fs').readFileSync('$SV/serve-$1.json','utf8')).port)"; }
 PC=$(port C) && PV=$(port V) && PB=$(port B) || { echo "HOLD $H VOID no server state in $SV (start fixes/menu-layers/phone/ml-serve.sh first) (no run)"; exit 4; }
 PK=""; [ -n "$K_NAME" ] && { PK=$(port K) || { echo "HOLD $H VOID no K server state (no run)"; exit 4; }; }
@@ -105,7 +106,7 @@ for I in "$@"; do
   SC=$FS
   case $I in
     W*) F=g-$I-$H; EX="--warmup"; TL="" ;;
-    S1) F=g-$I; EX=""; TL="" ;;
+    S0|S1) F=g-$I; EX=""; TL="" ;;
     E*) F=g-$I; EX=""; TL="--timeline $O/tl-$I.json" ;;
     A*) F=g-$I; EX=""; TL="--timeline $O/tl-$I.json"; SC=$PR ;;
   esac
@@ -119,7 +120,7 @@ for I in "$@"; do
   echo "RUN $I arm $(arm $I) exit $r $(date -u +%TZ) load1 $(sysctl -n vm.loadavg | cut -d' ' -f2)"
   case $I in
     W*|A*) [ $r -ne 0 ] && echo "ITEM $I exit $r (uncounted; the hold goes on)" ;;
-    S1) node $GATES $O $I; s=$?; [ $s -ne 0 ] && SFAIL="$SFAIL $I" ;;
+    S0|S1) node $GATES $O $I; s=$?; [ $s -ne 0 ] && SFAIL="$SFAIL $I" ;;
     *) if [ $r -ne 0 ] || [ ! -s "$O/$F.json" ]; then echo "ITEM $I VOID exit $r$( [ -s "$O/$F.json" ] || echo ', no run file')"; RERUN="$RERUN $I"
        else node $GATES $O $I || RERUN="$RERUN $I"; fi ;;
   esac

@@ -54,6 +54,7 @@ const ARMS = ['A', 'V', 'A2', 'V2'];
 const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSSF = '_app/immutable/assets/2.gBuqKVzi.css';
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const T0 = Date.now(); const lg = (...a) => console.log(`[seek +${((Date.now() - T0) / 1000).toFixed(1)}s]`, ...a); // stage log (iPad hang, 2026-10-08)
 const F = Date.parse('2026-10-04T12:00:00Z') + 500;
 const FF = Date.parse('2026-11-01T00:00:00Z') + 500;   // before the countdown's end (2026-11-02 05:00Z), after any run
 const DATE_FIXED = !has('--date-past');   // --date-past: the old fixed past date, no warm-up (the v0 runs of 2026-10-07)
@@ -158,9 +159,9 @@ async function runArm(arm) {
     const url = `http://localhost:${s.port}/?g0=${Date.now()}`;
     const get = async (u) => { for (let i = 0; ; i++) { try { return Buffer.from(await (await fetch(u)).arrayBuffer()); } catch (e) { if (i >= 20) throw e; await sleep(250); } } };
     load.served = { js: sha(await get(new URL(NODE, url))), css: sha(await get(new URL(CSSF, url))) };
-    c = await open(url, s.port);
+    lg(arm, "served", JSON.stringify(load.served)); c = await open(url, s.port); lg(arm, "tab open");
     for (let i = 0; i < 40 && (await c.ev('document.readyState')) !== 'complete'; i++) await sleep(500);
-    await sleep(2500);
+    lg(arm, "readyState", await c.ev("document.readyState"), "w", await c.ev("innerWidth")); await sleep(2500);
     // walk the page (lazy content, the panel mount at 200 %), freeze the date, go to the bottom
     await c.ev(`(window.__wk = 0, (() => { let y = 0; const step = () => { y += 400; window.scrollTo({ top: y, behavior: 'instant' }); y < document.documentElement.scrollHeight ? setTimeout(step, 60) : setTimeout(() => (window.__wk = 1), 2500); }; step(); })(), 1)`);
     for (let i = 0; i < 200 && !(await c.ev('window.__wk')); i++) await sleep(200);
@@ -172,15 +173,16 @@ async function runArm(arm) {
     // read (its interval writes F once and stays), so the v0 runs with F are unaffected.
     await c.ev(DATE_FIXED ? `(() => { const F = ${FF}; Date.now = () => F; return 1; })()` : `(() => { const F = ${F}; Date.now = () => F; return 1; })()`);
     await c.ev(`(window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }), 1)`); await sleep(1500);
-    if ((await c.ev(LIB)) !== 'ok') throw new Error('lib');
+    lg(arm, "walked"); if ((await c.ev(LIB)) !== 'ok') throw new Error('lib');
     load.geo = await c.ev('JSON.stringify(window.__sk.geo())').then(JSON.parse);
     if (!load.geo.ok) throw new Error('end-of-page condition O() false: ' + JSON.stringify(load.geo));
+    lg(arm, "geo", JSON.stringify(load.geo).slice(0, 200));
     if (DATE_FIXED) {
       // warm-up open/close (not captured): the panel clock goes live, its next fire (<= 1 s real) stores the frozen time
       await c.run(`window.__sk.start([[100, 0]], ${FRAME})`); await c.run(`window.__sk.to(700, ${FRAME})`); await c.run(`window.__sk.settle(${FRAME})`);
       await sleep(1600);
       await c.run(`window.__sk.start([[-100, 0]], ${FRAME})`); await c.run(`window.__sk.to(700, ${FRAME})`); await c.run(`window.__sk.settle(${FRAME})`);
-      load.warmup = true;
+      load.warmup = true; lg(arm, "warm-up done");
     }
     for (const sc of SCEN) {
       // each scenario starts at rest: m 0 for open/rev, m 1 for close
