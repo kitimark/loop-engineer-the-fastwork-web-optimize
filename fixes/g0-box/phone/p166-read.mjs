@@ -21,13 +21,16 @@ export function spotFrame(j) {
   const recs = j.recs || [];
   if (j.spot === 'B') { const s = stamps(recs, (m) => m.startsWith('p166:') && m.includes('+is-play')); return s.length ? { i: s[0].i, how: 'is-play stamp' } : { i: -1, how: 'no is-play flip' }; }
   const st = stamps(recs, (m) => m === 'p166:start')[0];
-  const fr = (j.page?.frames || []); const y0 = fr.length ? fr[0][1] : 0;
-  const first = fr.find((f) => f[1] > y0 + 0.5);
-  if (!st || !first || j.page?.tStart == null) return { i: -1, how: 'no start stamp or no moving frame' };
+  // spot A = the crossing frame: the first rAF frame past y 30 (he-css goes live at y > heTop + 30, JS 4908-4909, heTop 0
+  // here; the e/f +he-css stamp lands in that frame). The first moving frame (the first plan) is y 2-7 in the Simulator,
+  // where the W step's smooth scroll starts slow; the phone's S step reached y 45-62 in its first frame (README P-165).
+  const fr = (j.page?.frames || []);
+  const first = fr.find((f) => f[1] > 30);
+  if (!st || !first || j.page?.tStart == null) return { i: -1, how: 'no start stamp or no frame past y 30' };
   const t = st.t + (first[0] - j.page.tStart) / 1000;
   let i = recs.findIndex((r) => r.startTime <= t && (r.endTime ?? r.startTime) >= t);
   if (i < 0) i = recs.findIndex((r) => r.startTime >= t);
-  return { i, how: 'first moving rAF frame', y: first[1] };
+  return { i, how: 'crossing frame (y > 30)', y: first[1] };
 }
 
 export function readRun(j) {
@@ -39,7 +42,7 @@ export function readRun(j) {
 if (process.argv.includes('--selftest')) {
   const rf = (t, kids) => ({ type: 'RenderingFrame', startTime: t, endTime: t + 0.016, children: kids });
   const ts = (t, m) => ({ type: 'TimeStamp', startTime: t, data: { message: m } });
-  const jA = { arm: 'e', spot: 'A', page: { tStart: 1000, frames: [[1000, 0], [1016, 0], [1033, 12]] },
+  const jA = { arm: 'e', spot: 'A', page: { tStart: 1000, frames: [[1000, 0], [1016, 4], [1033, 45]] },
     recs: [rf(5.0, [ts(5.001, 'p166:start')]), rf(5.016, [{ type: 'Layout' }]), rf(5.032, [{ type: 'RecalculateStyles' }, { type: 'RecalculateStyles' }, ts(5.035, 'p166:section.hero-track +he-css')]), rf(5.05, [])] };
   const a = readRun(jA);
   const jB = { arm: 'f', spot: 'B', page: {}, recs: [rf(1, []), rf(1.02, [{ type: 'Paint' }, { type: 'Composite', children: [{ type: 'Paint' }] }, ts(1.03, 'p166:div.x +is-play')])] };
@@ -47,7 +50,7 @@ if (process.argv.includes('--selftest')) {
   const bad = [];
   if (!(a.frame && a.frame.RecalculateStyles === 2 && a.frame.flips[0] === 'section.hero-track +he-css')) bad.push(`A ${JSON.stringify(a.frame)}`);
   if (!(b.frame && b.frame.Paint === 2 && b.frame.Composite === 1 && b.before && b.before.records === 1)) bad.push(`B ${JSON.stringify(b)}`);
-  console.log(bad.length ? `SELFTEST FAIL ${bad.join(' | ')}` : 'SELFTEST ok (spot A by the first moving rAF frame, spot B by the is-play stamp, nested counts)');
+  console.log(bad.length ? `SELFTEST FAIL ${bad.join(' | ')}` : 'SELFTEST ok (spot A by the y > 30 crossing frame, spot B by the is-play stamp, nested counts)');
   process.exit(bad.length ? 1 : 0);
 }
 

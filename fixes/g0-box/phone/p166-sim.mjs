@@ -9,7 +9,8 @@
 //   node tools/lock.mjs run chrome-measure --shared --weight simulator --max-seconds 300 --owner fix-g0-box -- \
 //     node tools/sim.mjs session --functional --owner fix-g0-box -- node fixes/g0-box/phone/p166-sim.mjs [--reps 1] [arm:spot ...]
 // Output: out/p166/sim/tl-<arm>-<spot>-<rep>.json ({arm, spot, rep, url, page, timelineStart, errors, recs}); runs.jsonl.
-// Existing files are skipped (resume in the next session). Budget: $SB_BUDGET_S (default 270 s) per session.
+// Existing files are skipped (resume in the next session). Budget: $SB_BUDGET_S (default 235 s: the session's boot and settle take ~50-60 s of the 300 s hold) per session; a step
+// starts only with 85 s left (a step took 74-75 s in the second session; the first plan's 25 s let the hold kill run 4).
 import { writeFileSync, mkdirSync, appendFileSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -65,17 +66,26 @@ async function capture(c, arm, spot, rep, url) {
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())) {
   const args = process.argv.slice(2); const ri = args.indexOf('--reps'); const reps = ri >= 0 ? Number(args[ri + 1]) : 1;
   const only = args.filter((a, i) => a.includes(':') && (ri < 0 || i !== ri + 1));
-  const t0 = Date.now(), budget = Number(process.env.SB_BUDGET_S || 270) * 1000;
+  const t0 = Date.now(), budget = Number(process.env.SB_BUDGET_S || 235) * 1000;
   const plan = [];
   for (let rep = 1; rep <= reps; rep++) for (const spot of Object.keys(SPOTS)) for (const arm of ARMS) if (!only.length || only.includes(`${arm}:${spot}`)) plan.push({ arm, spot, rep });
   for (const { arm, spot, rep } of plan) {
     if (existsSync(join(D, `tl-${arm}-${spot}-${rep}.json`))) { console.log(`exists ${arm} ${spot} ${rep}`); continue; }
-    if (budget - (Date.now() - t0) < 25000) { console.log(`STOP budget before ${arm} ${spot} ${rep}`); log({ step: `${arm}-${spot}-${rep}`, stop: 'budget' }); break; }
+    if (budget - (Date.now() - t0) < 85000) { console.log(`STOP budget before ${arm} ${spot} ${rep}`); log({ step: `${arm}-${spot}-${rep}`, stop: 'budget' }); break; }
     const port = JSON.parse(readFileSync(join(WT, `out/p166/serve-${arm}.json`), 'utf8')).port;
     const url = `http://localhost:${port}/?p166=${arm}-${spot}-${rep}-${Date.now()}`;
     const o = spawnSync('node', ['tools/sim.mjs', 'open', url], { cwd: WT, encoding: 'utf8' });
     process.env.FW_TAB_HOST = `localhost:${port}`;
-    let c; try { c = await openTab((u) => u.includes(`p166=${arm}-${spot}-${rep}`)); } catch (e) { console.log(`STOP no tab for ${arm} ${spot}: ${errText(e)}`); log({ step: `${arm}-${spot}-${rep}`, stop: 'tab', open: o.status }); process.exit(3); }
+    // the page drops the query from location (first session 09:4xZ: the tab showed http://localhost:<port>/), so match
+    // the arm's port and prove the load is ours by its navigation entry, which keeps the URL that was opened
+    const key = url.split('?')[1];
+    let c = null;
+    for (let i = 0; i < 8 && !c; i++) {
+      let t; try { t = await openTab((u) => u.startsWith(`http://localhost:${port}/`)); } catch (e) { if (i === 7) { console.log(`STOP no tab for ${arm} ${spot}: ${errText(e)}`); log({ step: `${arm}-${spot}-${rep}`, stop: 'tab', open: o.status }); process.exit(3); } await sleep(1000); continue; }
+      const nav = await t.evaluate("(performance.getEntriesByType('navigation')[0] || {}).name || ''").catch(() => '');
+      if (String(nav).includes(key)) c = t; else { t.close(); await sleep(1000); }
+    }
+    if (!c) { console.log(`STOP no fresh load for ${arm} ${spot} (navigation entry never named ${key})`); log({ step: `${arm}-${spot}-${rep}`, stop: 'nav', open: o.status }); process.exit(3); }
     let ready = false; for (let i = 0; i < 60 && !ready; i++) { ready = (await c.evaluate("document.readyState === 'complete'")) === true; if (!ready) await sleep(250); }
     await sleep(2000);
     const r = await capture(c, arm, spot, rep, url);

@@ -538,6 +538,54 @@ The two new V clusters, from the run logs' frame lines (OBSERVED, one frame per 
 | phone time | About 20-25 min per spot (3 warm-ups, 9 counted runs of about 30 s each, a gate per hold, about 3 holds), so about 50 min for both spots, plus heat if the phone has cooled |
 | decision | Spot owner g0.0e (hero-exit-threaded): a follow-up on hero-exit-threaded's first-scroll switch (for example, switch at idle, not on the first scroll), not v3-W's. Spot owner v3-W: v3-W gets a revision before landing. Not attributed: the lead decides |
 
+### P-166 stage 1 (Simulator counts, 2026-10-08 09:4x-10:1xZ; counts only, no timing; `p166-read.mjs out/p166/sim`)
+
+- **Setup:** 6 arms × 2 spots, one run each, plus a second run of every arm at spot A. Tools at a0a1050c: stage 1 uses
+  only `lib/wip.mjs` and `sim.mjs open`, which db884e9d did not change. Served hashes match the pins.
+- **Kit fixes made during stage 1, before the table was read:**
+  - The page drops the `?p166=` query from `location`, so the first session found no tab. The tab is now matched by its
+    port, and the run proves the load is its own by the navigation entry, which keeps the URL that was opened.
+  - Each step takes ~75 s, so a step starts only with 85 s of budget left (235 s per session). The 300 s cap killed one
+    run.
+  - **The reader's spot-A rule changed** from "the first moving rAF frame" to **"the first frame past y 30"**. he-css
+    goes live at y > heTop + 30 (JS 4908-4909, heTop 0). In the Simulator the W step's smooth scroll starts slowly
+    (y 2-7), so the first moving frame comes before the switch. The phone's S step reached y 45-62 in its first frame.
+    The `+he-css` stamp now lands in the read frame in every arm that has he-css.
+
+Counts in the spot frame (records in that RenderingFrame; S = RecalculateStyles, L = Layout, P = Paint):
+
+| arm | spot A run 1 (S/L/P) | spot A run 2 | A flips | spot B (S/L/P) | B flips |
+|---|---|---|---|---|---|
+| v0 | 4 / 1 / 25 | 3 / 0 / 0 | none | 5 / 2 / 11 | +is-play |
+| g0.0e | 2 / 1 / 4 | 2 / 1 / 4 | +he-css | 2 / 0 / 7 | +is-play |
+| g0.0f | 2 / 1 / 28 | 2 / 1 / 4 | +he-css | 1 / 0 / 7 | +is-play |
+| e-nohe | 2 / 1 / 2 | 2 / 1 / 2 | none (wc flips only) | 1 / 0 / 7 | +is-play |
+| f-nowc | 2 / 1 / 4 | 2 / 1 / 6 | +he-css | 2 / 0 / 7 | +is-play |
+| f-noglint | 3 / 1 / 6 | 2 / 1 / 4 | +he-css | 2 / 0 / 7 | +is-play |
+
+**What stage 1 says** (OBSERVED, Simulator counts, n = 1-2):
+- **The large paint counts are timer phase, not the build.** v0's 25 and g0.0f's 28 at spot A became 0 and 4 in run 2.
+  They are 18×37 px clips in a grid of small cells: a timer repaint that happened to land in that frame.
+- **Spot A:** every arm with he-css does 2 styles, 1 layout and 4-6 paints in the crossing frame. e-nohe does the same
+  minus 2 paints. g0.0e and g0.0f are identical there. v0 does 3-4 styles.
+  - None of this is more main-thread work than v0. So the phone's 51-60 ms (V) against 41 ms (C) is not in these
+    counts. It must be in their durations, or off the main thread (layer commit or raster for the new he-css
+    animations).
+  - The knock-out that removes `+he-css` (e-nohe) is still the one that isolates the switch.
+- **Spot B:** all five g0 arms do less work than v0 (1-2 / 0 / 7 against 5 / 2 / 11), and the two f knock-outs change
+  nothing. Stage 1 points at neither the glint nor will-change. The phone's ~10 ms extra in V is again not in the
+  counts.
+- **Consequence:** stage 2 (phone W with Timeline durations) is the decisive step at both spots. Counts cannot name the
+  owner.
+
+**Stage-2 arms, proposed for the signature** (the card says the arms change before signing when stage 1 points
+elsewhere):
+- **Spot A:** v0 · g0.0e · e-nohe, as expected. g0.0e carries the he-css switch alone (stage 1: g0.0e = g0.0f at A), and
+  e-nohe removes only the switch.
+- **Spot B:** **v0 · g0.0e · g0.0f** in place of g0.0e · g0.0f · f-noglint. Stage 1 gives no knock-out a role at B, so
+  the first question is which build brings the extra ~10 ms. The phone S data compared only v0 and g0.0f. If g0.0f is
+  the owner, a knock-out follows in a second block (the sequential rule allows 2 per question).
+
 ## P-164 (phone card; written before any P-164 data)
 
 **Pre-data check 2, with the g0 program (2026-10-08 03:47-03:55Z, before any P-164 data). Result: START-STATE

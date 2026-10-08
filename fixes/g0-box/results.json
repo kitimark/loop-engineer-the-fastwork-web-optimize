@@ -1541,5 +1541,60 @@
       "thermalObserved": "OBSERVED, in our setup, cause unknown: Critical at 39.1-41.5 C battery and Fair at 38.0 C three minutes later; battery C does not predict Critical",
       "measurementCode": "no change to verify.mjs, lib/cdp.mjs or fix.mjs ab during the block; tools at merge-base 7905475"
     }
+  },
+  "p166": {
+    "status": "card draft (README \"P-166\"); stage 1 done (Simulator counts); stage 2 (phone W with Timeline) awaits the signature",
+    "stage1": {
+      "when": "2026-10-08 09:4x-10:1xZ",
+      "tools": "a0a1050c (stage 1 uses lib/wip.mjs and sim.mjs open only; db884e9d untouched)",
+      "kind": "Simulator, functional session, counts only, no timing; reader p166-read.mjs (spot A = first frame past y 30, the he-css crossing; spot B = the +is-play frame)",
+      "counts": {
+        "A": {
+          "v0": [
+            "4/1/25",
+            "3/0/0"
+          ],
+          "e": [
+            "2/1/4",
+            "2/1/4"
+          ],
+          "f": [
+            "2/1/28",
+            "2/1/4"
+          ],
+          "enohe": [
+            "2/1/2",
+            "2/1/2"
+          ],
+          "fnowc": [
+            "2/1/4",
+            "2/1/6"
+          ],
+          "fnogl": [
+            "3/1/6",
+            "2/1/4"
+          ]
+        },
+        "B": {
+          "v0": "5/2/11",
+          "e": "2/0/7",
+          "f": "1/0/7",
+          "enohe": "1/0/7",
+          "fnowc": "2/0/7",
+          "fnogl": "2/0/7"
+        },
+        "legend": "RecalculateStyles / Layout / Paint records in the spot frame"
+      },
+      "reading": "OBSERVED: large paint counts (25, 28) are timer phase (gone in run 2; 18x37 px cell clips); at A every he-css arm does 2/1/4-6, no more main-thread work than v0; at B all g0 arms do less than v0 and the f knock-outs change nothing; the phone extra (A 51-60 vs 41 ms, B ~10 ms) is not in main-thread counts: durations or off-main-thread; stage 2 decides",
+      "stage2ArmsProposed": {
+        "A": "v0 · g0.0e · e-nohe (as drafted)",
+        "B": "v0 · g0.0e · g0.0f (changed from g0.0e · g0.0f · f-noglint: stage 1 gives no knock-out a role at B)"
+      },
+      "kitFixes": [
+        "tab matched by port + navigation entry (the page drops the query from location)",
+        "step budget 85 s, session budget 235 s (a step takes ~75 s)",
+        "reader spot-A rule: first frame past y 30 (was first moving frame, y 2-7 in the Simulator, before the switch)"
+      ]
+    }
   }
 }
