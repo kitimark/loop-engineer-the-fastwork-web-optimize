@@ -134,20 +134,23 @@ gate() {
     node tools/iphone.mjs safari-restart --owner "$R" --url "$BU" --timeout 60 > "$O/$H-gate-restart.log" 2>&1
     node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
     gate1 "$1"; gr=$?; fi
-  # lead ruling 07:2xZ (P-165, before counted data): real Serious with an 8 ms timer grid is gate exit 6. Once per block:
+  # lead ruling 07:2xZ (P-165, before counted data): real Serious with an 8 ms timer grid is gate exit 6. Every time:
   # a safari-restart and a re-gate (GRIDCHECK before/after, the decisive check: did Safari miss the thermal change?).
   # Still exit 6 with real Serious, induced No, grid < 25 ms after that: exit 6 counts as PASS for this block, the grid
   # recorded, not judged ($GA). Exit 6 any other way (Fair with a 30 ms grid) stays a fail.
   if [ $gr -eq 6 ] && [ "$(gfield state)" = Serious ] && [ "$(gfield induced)" = No ] && [ "$(gfield median | cut -d. -f1)" -lt 25 ] 2>/dev/null; then
-    if [ ! -s $GA ]; then
+    # lead 07:3xZ: the restart + re-gate on EVERY such exit 6 (the phone can leave Serious and come back in any re-heat;
+    # Safari can miss the change each time); the accept fallback only after this gate's own restart still reads < 25 ms
+    GR=0
+    if :; then
       echo "GRIDCHECK $H $1 before: state Serious induced No timer $(gfield median) ms batt $(gfield battC) C: safari-restart, then re-gate"
       node tools/iphone.mjs safari-restart --owner "$R" --url "$BU" --timeout 60 > "$O/$H-grid-restart.log" 2>&1; rr=$?
       node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
       gate1 "$1"; gr=$?
       echo "GRIDCHECK $H $1 after (safari-restart exit $rr): gate exit $gr state $(gfield state) induced $(gfield induced) timer $(gfield median) ms"
-      [ $gr -eq 6 ] && [ "$(gfield state)" = Serious ] && echo "$(date -u +%FT%TZ) $H timer $(gfield median) ms after safari-restart: exit 6 accepted for P-165 (lead ruling)" > $GA
+      [ $gr -eq 6 ] && [ "$(gfield state)" = Serious ] && [ "$(gfield induced)" = No ] && [ "$(gfield median | cut -d. -f1)" -lt 25 ] 2>/dev/null && { GR=1; echo "$(date -u +%FT%TZ) $H $1 timer $(gfield median) ms after safari-restart: exit 6 accepted (lead ruling)" >> $GA; }
     fi
-    if [ $gr -eq 6 ] && [ -s $GA ] && [ "$(gfield state)" = Serious ] && [ "$(gfield induced)" = No ]; then
+    if [ $gr -eq 6 ] && [ $GR = 1 ]; then
       echo "GATE $1 exit 6 accepted (lead ruling: real Serious, induced No; timer grid $(gfield median) ms recorded, not judged)"; gr=0
     fi
   fi
