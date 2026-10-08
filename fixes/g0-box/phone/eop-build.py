@@ -195,7 +195,72 @@ def ws(a):
     edit(j, '    (R && te && te.observe(R), ', '    (R && te && te.observe(R), R && __wM && window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }) /* [eop ws] */, ')
     edit(j, '          P(),\n          ne(),', '          P(),\n          __wM && window.removeEventListener(`wheel`, A, !0) /* [eop ws] */,\n          ne(),')
 
-ALL = {'a1': [a1], 'a2': [a2], 'b': [b], 'a1b': [a1, b], 'a3': [a3], 'a3b': [a3, b], 'a4': [a4], 'a4b': [a4, b], 'a14b': [a1, a4, b], 'w': [w], 'ws': [ws]}
+# ws2 (2026-10-09, after the mount-cost check: ws's add at mount costs a full style rebuild inside the hydration frame,
+# Simulator median +10 ms dur / +9 ms L+S, n = 3): register the wheel listener before the body has any style, from an
+# inline <head> script, so the root's eventListenerRegionTypes are final before the first style resolution and nothing
+# is rebuilt later. Same scope (PR-030 media query, read once in the head). The head listener calls window.__fwWheel,
+# which the component sets to A at mount and clears at teardown; A acts only while the jack is armed (d). The CSP meta
+# gets the inline script's sha256 (its only change). Elsewhere N()/P() keep g0.0h's add/remove timing.
+HTML = 'index.html'
+WS2_JS = ('(function(){if(!matchMedia("(hover: none) and (pointer: coarse) and (max-width: 640px) and (prefers-reduced-motion: no-preference)").matches)return;'
+          'window.__fwWheelOn=1;addEventListener("wheel",function(e){var f=window.__fwWheel;f&&f(e)},{passive:false,capture:true})})()')
+def ws2(a):
+    import base64
+    hp = os.path.join(a, HTML); shutil.copyfile(os.path.join(os.environ.get('EOP_SITE', '/Users/<user>/source/fastwork-com-web-optimize/site-pretty'), HTML), hp)
+    sha = base64.b64encode(hashlib.sha256(WS2_JS.encode()).digest()).decode()
+    edit(hp, "script-src 'self' 'sha256-xZb9LTox5WUlNevpC3teLDEDD7rbLVR6SN+chrqqURw='", f"script-src 'self' 'sha256-xZb9LTox5WUlNevpC3teLDEDD7rbLVR6SN+chrqqURw=' 'sha256-{sha}'")
+    edit(hp, '\t\t<script src="/analytics.js"></script>\n', f'\t\t<script>{WS2_JS}</script>\n\t\t<script src="/analytics.js"></script>\n')
+    j = os.path.join(a, JS)
+    edit(j, '''d = !0),
+          window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),''', '''d = !0),
+          __wM || window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),''')
+    edit(j, '''d = !1),
+          window.removeEventListener(`wheel`, A, !0),''', '''d = !1),
+          __wM || window.removeEventListener(`wheel`, A, !0),''')
+    edit(j, '''      A = (e) => {
+        k(e.deltaY) &&''', '''      A = (e) => {
+        // [eop ws2] on small touch screens the head script's wheel listener calls this from the first paint on, so it
+        // acts only while the jack is armed (d); elsewhere it is attached only while armed, as before
+        d &&
+          k(e.deltaY) &&''')
+    edit(j, '      R = y(),\n', '      // [eop ws2] small touch screens, motion not reduced: the wheel listener was registered by the inline head script\n'
+         '      __wM = !!window.__fwWheelOn,\n'
+         '      R = y(),\n')
+    edit(j, '    (R && te && te.observe(R), ', '    (R && te && te.observe(R), R && __wM && (window.__fwWheel = A) /* [eop ws2] */, ')
+    edit(j, '          P(),\n          ne(),', '          P(),\n          __wM && window.__fwWheel === A && (window.__fwWheel = null) /* [eop ws2] */,\n          ne(),')
+
+# ws3 (2026-10-09, after the Chrome scope check): ws2's inline script never runs. The mirror serves a CSP *header*
+# whose script-src lists other hashes (Chrome: "Executing inline script violates ... script-src 'self' 'sha256-JUE+...'"),
+# so the meta change alone cannot allow it. ws3 puts the same code at the top of /analytics.js, the page's own
+# same-origin, parser-blocking <head> script (index.html line 13, before the body): no new request, no HTML or CSP
+# change. The JS side is ws2's (window.__fwWheelOn / window.__fwWheel).
+ANALYTICS = 'analytics.js'
+def ws3(a):
+    ap = os.path.join(a, ANALYTICS); shutil.copyfile(os.path.join(os.environ.get('EOP_SITE', '/Users/<user>/source/fastwork-com-web-optimize/site-pretty'), ANALYTICS), ap)
+    s = open(ap).read()
+    open(ap, 'w').write('/* [eop ws3] small touch screens, motion not reduced: the end-of-page wheel jack listener is registered here,\n'
+                        '   before the body has any style, so adding it never rebuilds the document\'s style later (fixes/g0-box) */\n'
+                        + WS2_JS + ';\n' + s)
+    j = os.path.join(a, JS)
+    edit(j, '''d = !0),
+          window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),''', '''d = !0),
+          __wM || window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),''')
+    edit(j, '''d = !1),
+          window.removeEventListener(`wheel`, A, !0),''', '''d = !1),
+          __wM || window.removeEventListener(`wheel`, A, !0),''')
+    edit(j, '''      A = (e) => {
+        k(e.deltaY) &&''', '''      A = (e) => {
+        // [eop ws3] on small touch screens the head script's wheel listener (analytics.js) calls this from the first
+        // paint on, so it acts only while the jack is armed (d); elsewhere it is attached only while armed, as before
+        d &&
+          k(e.deltaY) &&''')
+    edit(j, '      R = y(),\n', '      // [eop ws3] small touch screens, motion not reduced: the wheel listener was registered by analytics.js in <head>\n'
+         '      __wM = !!window.__fwWheelOn,\n'
+         '      R = y(),\n')
+    edit(j, '    (R && te && te.observe(R), ', '    (R && te && te.observe(R), R && __wM && (window.__fwWheel = A) /* [eop ws3] */, ')
+    edit(j, '          P(),\n          ne(),', '          P(),\n          __wM && window.__fwWheel === A && (window.__fwWheel = null) /* [eop ws3] */,\n          ne(),')
+
+ALL = {'a1': [a1], 'a2': [a2], 'b': [b], 'a1b': [a1, b], 'a3': [a3], 'a3b': [a3, b], 'a4': [a4], 'a4b': [a4, b], 'a14b': [a1, a4, b], 'w': [w], 'ws': [ws], 'ws2': [ws2], 'ws3': [ws3]}
 # usage: python3 eop-build.py [OUT [arm ...]]   (default: out/g0box/eop with a1 a2 b a1b, as first built)
 if len(sys.argv) > 1: OUT = sys.argv[1]
 ARMS = {k: ALL[k] for k in (sys.argv[2:] or ['a1', 'a2', 'b', 'a1b'])}
@@ -205,7 +270,9 @@ for arm, parts in ARMS.items():
     for p in parts: p(a)
 lines = []
 for arm in ARMS:
-    for f in (JS, CSS): lines.append(f'{hashlib.sha256(open(os.path.join(OUT, arm, f), "rb").read()).hexdigest()}  {arm}/{f}')
+    for f in (JS, CSS, 'index.html', 'analytics.js'):
+        if f in ('index.html', 'analytics.js') and not os.path.exists(os.path.join(OUT, arm, f)): continue
+        lines.append(f'{hashlib.sha256(open(os.path.join(OUT, arm, f), "rb").read()).hexdigest()}  {arm}/{f}')
 open(os.path.join(OUT, 'HASHES.txt'), 'w').write('\n'.join(lines) + '\n')
 for arm in ARMS: print(arm, h(os.path.join(OUT, arm, JS)), h(os.path.join(OUT, arm, CSS)))
 print('HASHES.txt', h(os.path.join(OUT, 'HASHES.txt')))

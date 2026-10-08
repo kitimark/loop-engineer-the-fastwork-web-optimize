@@ -25,13 +25,14 @@ const LOG = `(() => { const L = window.__eopr = []; let y0 = null;
   return 'ok'; })()`;
 
 async function tabOn(port, key) {
-  for (let i = 0; i < 12; i++) {
-    let t; try { t = await openTab((u) => u.startsWith(`http://localhost:${port}/`)); } catch { await sleep(1000); continue; }
-    const nav = await t.evaluate("(performance.getEntriesByType('navigation')[0] || {}).name || ''").catch(() => '');
+  let last = '';
+  for (let i = 0; i < 20; i++) {
+    let t; try { t = await openTab((u) => u.startsWith(`http://localhost:${port}/`)); } catch (e) { last = `openTab: ${e?.message || e}`; await sleep(1000); continue; }
+    const nav = await t.evaluate("(performance.getEntriesByType('navigation')[0] || {}).name || ''").catch((e) => `ERR ${e?.message || e}`);
     const old = await t.evaluate('window.__eopOld === 1').catch(() => true);
-    if (String(nav).includes(key) && !old) return t; t.close(); await sleep(1000);
+    if ((key === '' || String(nav).includes(key)) && (key === '' || old !== true)) return t; last = `nav ${String(nav).slice(0, 90)} old ${old}`; t.close(); await sleep(1000);
   }
-  throw new Error('no tab');
+  throw new Error(`no tab on port ${port} with ${key} (last: ${last})`);
 }
 const ready = async (c) => { for (let i = 0; i < 60; i++) { if ((await c.evaluate("document.readyState === 'complete'").catch(() => false)) === true) return true; await sleep(250); } return false; };
 
@@ -43,7 +44,10 @@ try {
     const url = `http://localhost:${port}/?eopr=${arm}-${Date.now()}`; const key = url.split('?')[1];
     spawnSync('node', ['tools/sim.mjs', 'open', url], { cwd: WT, encoding: 'utf8' });
     process.env.FW_TAB_HOST = `localhost:${port}`;
-    let c = await tabOn(port, key); await ready(c); await sleep(3000);
+    // the first lookup takes the arm's tab whatever its URL (sim open's query was not always the tab's navigation URL), then
+    // navigates it to the keyed URL itself, so the probe's page is a fresh document it can recognise
+    let c = await tabOn(port, ''); await c.evaluate(`window.__eopOld = 1; setTimeout(() => location.replace(${JSON.stringify(url)}), 50); 1`); c.close(); await sleep(1500);
+    c = await tabOn(port, key); await ready(c); await sleep(3000);
     await c.evaluate(`scrollTo(0, ${Y}), 1`); await sleep(1500);
     const yBefore = await c.evaluate('Math.round(scrollY)');
     await c.evaluate('window.__eopOld = 1; setTimeout(() => location.reload(), 50); 1'); c.close(); await sleep(1500);

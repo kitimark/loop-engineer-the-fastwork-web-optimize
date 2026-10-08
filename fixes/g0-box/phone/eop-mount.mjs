@@ -23,6 +23,8 @@ const BOOT = `(() => { const L = window.__eops = { f: [], t: [], m: [] }; const 
   for (const k of ['touchstart', 'touchend', 'touchcancel']) addEventListener(k, (e) => L.t.push([performance.now(), k[5]]), { passive: true, capture: true });
   for (const [p, tag] of [['addEventListener', 'listen+'], ['removeEventListener', 'listen-']]) { const f0 = EventTarget.prototype[p];
     EventTarget.prototype[p] = function (k, f, o) { if (this === window && /^(touch|wheel)/.test(k) && f && !String(f).includes('L.t.push')) L.m.push([performance.now(), scrollY, 'window', tag + k + (o && typeof o === 'object' && o.passive === false ? ':active' : '')]); return f0.call(this, k, f, o); }; }
+  // the effect's mount point in both arms: te.observe(.start-selling-platform) (g0.0h JS 14478; ws adds the wheel listener in the same expression)
+  { const o0 = IntersectionObserver.prototype.observe; IntersectionObserver.prototype.observe = function (el) { if (el && el.classList && el.classList.contains('start-selling-platform')) L.m.push([performance.now(), scrollY, 'platform', 'io-observe']); return o0.call(this, el); }; }
   document.addEventListener('DOMContentLoaded', () => { L.m.push([performance.now(), scrollY, 'document', 'DOMContentLoaded']); });
   addEventListener('load', () => { L.m.push([performance.now(), scrollY, 'window', 'load']); });
 })();`;
@@ -74,13 +76,16 @@ try {
     const LP = F.filter((x) => x.pm < firstTouch), SP = F.filter((x) => x.pm >= firstTouch);
     const wheel = L.m.find((m) => /^listen\+wheel/.test(m[3]));
     const wf = wheel ? F.find((x) => x.pm <= wheel[0] && wheel[0] <= x.pm + x.dur) || F.find((x) => x.pm >= wheel[0]) : null;
+    const mnt = L.m.find((m) => m[3] === 'io-observe');
+    const mf = mnt ? F.find((x) => x.pm <= mnt[0] && mnt[0] <= x.pm + x.dur) || F.find((x) => x.pm >= mnt[0]) : null;
     const top = (A) => [...A].sort((a, b) => b.dur - a.dur)[0];
     const sum = (A) => ({ frames: A.length, gt34: A.filter((x) => x.dur > 34).length, gt50: A.filter((x) => x.dur > 50).length, longest: top(A) ? { dur: top(A).dur, ls: r1(ls(top(A))), js: top(A).js } : null, maxLS: r1(Math.max(0, ...A.map(ls))), sumLS: r1(A.reduce((a, x) => a + ls(x), 0)) });
     const r = { arm, n, auto, firstFramePm: F[0]?.pm ?? null, dcl: L.m.find((m) => m[3] === 'DOMContentLoaded')?.[0] ?? null, load: L.m.find((m) => m[3] === 'load')?.[0] ?? null,
+      mount: mnt ? { pm: r1(mnt[0]), frame: mf ? { pm: mf.pm, dur: mf.dur, ls: r1(ls(mf)), js: mf.js } : null } : null,
       wheelAdd: wheel ? { pm: r1(wheel[0]), y: wheel[1], frame: wf ? { pm: wf.pm, dur: wf.dur, ls: r1(ls(wf)), js: wf.js } : null } : null,
       loadPhase: sum(LP), scrollPhase: sum(SP), listeners: L.m.filter((m) => m[2] === 'window' && /^listen/.test(m[3])), frames: F };
     writeFileSync(file, JSON.stringify(r, null, 1));
     const a = r.loadPhase, s = r.scrollPhase;
-    console.log(`MOUNTLINE ${arm}-${n}: auto ${auto} | load phase (to first touch): frames ${a.frames}, >34 ${a.gt34}, >50 ${a.gt50}, longest ${a.longest?.dur} ms (L+S ${a.longest?.ls}), max L+S ${a.maxLS}, sum L+S ${a.sumLS} | wheel add ${wheel ? `@${r1(wheel[0])} ms y${wheel[1]} in a ${wf?.dur} ms frame (L+S ${wf ? r1(ls(wf)) : '-'})` : 'none before the drags'} | first scroll (3 drags): >34 ${s.gt34}, >50 ${s.gt50}, max L+S ${s.maxLS}`);
+    console.log(`MOUNTLINE ${arm}-${n}: auto ${auto} | load phase (to first touch): frames ${a.frames}, >34 ${a.gt34}, >50 ${a.gt50}, longest ${a.longest?.dur} ms (L+S ${a.longest?.ls}), max L+S ${a.maxLS}, sum L+S ${a.sumLS} | mount (te.observe) ${mnt ? `@${r1(mnt[0])} ms in a ${mf?.dur} ms frame (L+S ${mf ? r1(ls(mf)) : '-'}, js ${mf?.js})` : 'not seen'} | wheel add ${wheel ? `@${r1(wheel[0])} ms y${wheel[1]} in a ${wf?.dur} ms frame (L+S ${wf ? r1(ls(wf)) : '-'})` : 'none before the drags'} | first scroll (3 drags): >34 ${s.gt34}, >50 ${s.gt50}, max L+S ${s.maxLS}`);
   }
 } finally { await wda.close(); }

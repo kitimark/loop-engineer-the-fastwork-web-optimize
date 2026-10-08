@@ -1172,6 +1172,12 @@ and src do not.
   - What is left is the background level of the band. F-357/F-359 (fix-scrollcb-g0) explain the frames at y ~1627 and
     ~1810 with L ~42-64 in both arms: the sticky relayout of `.hero` and `.pain-sticky`.
   - So the touch pair, inert and src are not the spike (decisive local check for the touch half: OBSERVED cheap here).
+- **fix-scrollcb-g0's static cost map** (g0.0h, Simulator, 2026-10-09, OBSERVED; `out/sticky-walk/map.json` in its
+  worktree) agrees:
+  - Each viewport move at y 1600 and 1800 costs one 18-30 ms whole-view Layout while any sticky box exists.
+  - With `.hero` and `.pain-sticky` made relative, that Layout drops to 0.3-0.6 ms.
+  - w's remaining IO-frame Layout (22-24 ms) is that one sticky Layout. H's 72-77 ms is that Layout plus the
+    rebuild's.
 - **Negative ablations:** a1 (src off the drag) and a4 (inert off the drag) leave the spike in place: 130-144 ms,
   L+S 207-221.
 - **Relocation, not removal: b.** b moves the add to y ~3990, where it makes a new 82-117 ms frame that H doesn't
@@ -1207,9 +1213,78 @@ and src do not.
 - g0.0h reproduces that, with inert lifted at `b`. w and ws keep g0.0h's inert timing.
 - The a3/a4 arms (inert later) are dropped (lead 2026-10-09): inert is not the cost.
 
-### Jack parity (w vs g0.0h; Simulator G strokes, counts only)
+### From w to ws3: the shippable form (lead's D conditions, 2026-10-09)
 
-(see below; filled from `phone/eop-parity-read.mjs`)
+| arm | where the window wheel listener is added | outcome |
+|---|---|---|
+| w (eop7/w) | at the effect's mount, on every device | attribution arm (above) |
+| ws (eop8/ws, JS d0f48dc4f82e) | at mount, only under `(hover: none) and (pointer: coarse) and (max-width: 640px) and (prefers-reduced-motion: no-preference)` (PR-030 scope); elsewhere at g0.0h's te timing | **fails the mount gate** (below): the full style rebuild moves into the hydration frame |
+| ws2 (eop9/ws2) | from an inline `<head>` script (same scope) plus its sha256 in the CSP meta | **never runs**: the mirror also sends a CSP *header* whose script-src lacks the hash (Chrome: "Executing inline script violates ... script-src 'self' 'sha256-JUE+...'"; the Simulator shows no wheel add either), so ws2 behaves like g0.0h; its loads serve as an A/A read |
+| **ws3** (eop10/ws3, JS f4b28aaebb75, CSS 26d28a0a263b, analytics.js 7ed47cc67fee, HASHES a8c905e221f8) | prepended to `/analytics.js`, the page's own first-party, parser-blocking `<head>` script (index.html line 13), same scope; the component sets `window.__fwWheel = A` at mount and clears it at teardown; A acts only while the jack is armed (`d`) | the candidate |
+
+**ws3's only non-JS change** (`diff site-pretty/analytics.js out/g0box/eop10/ws3/analytics.js`): three added
+lines at the top, a comment and
+`(function(){if(!matchMedia("(hover: none) and (pointer: coarse) and (max-width: 640px) and (prefers-reduced-motion: no-preference)").matches)return;window.__fwWheelOn=1;addEventListener("wheel",function(e){var f=window.__fwWheel;f&&f(e)},{passive:false,capture:true})})();`.
+index.html and both CSPs (meta and header) are untouched.
+
+**Limitations (lead 2026-10-09):**
+- `serve.mjs --vendors=off` no-ops `/analytics.js`, so ws3 needs the default `--vendors=local`. The P-171 kit uses
+  that.
+- On the real site the fix would ride on an analytics file, which is a fragile home: a re-sync or a tag-manager change
+  could drop it. A shipping version belongs in the page's own head code.
+
+**Chrome scope check** (`phone/eop-desk.mjs`, headless, functional, no timing; `out/g0box/eop-desk3.log`):
+
+| viewport | arm | at the top | 1.5 viewports above the platform's end (past te) |
+|---|---|---|---|
+| desktop 1440x900 | H | media query false; no window wheel/touch listener | wheel (active, capture), touchstart (passive), touchmove (active) |
+| desktop 1440x900 | ws3 | the same: nothing registered, `__fwWheelOn` unset | the same as H |
+| phone 430x932, touch | H | no listener | the same three |
+| phone 430x932, touch | ws3 | wheel (active, capture) from the load, `__fwWheel` set | touchstart + touchmove added at te; wheel stays the head one |
+
+No console errors in any of the four.
+
+### Jack parity, g0.0h vs ws / ws3 (counts only)
+
+| check | H (g0.0h) | ws | ws3 |
+|---|---|---|---|
+| (1a) fling from y ~1600 to the end, then two finger-up drags (Simulator G, `g-fling1600-g0.json`, `eop-parity-read.mjs`) | HELD: 76 of 143 end moves prevented, opens | HELD: 76 of 143 | HELD: 68 of 130 (end-swipe started at y 4774 vs 4815; the same rule) |
+| (1b) reload with the page restored at the end, then one finger-up drag (headless Chrome, phone emulation, touch via `Input.dispatchTouchEvent`; `eop-reload-chrome.mjs`) | y 5345 -> 5344 after the reload; 12 of 12 moves cancelable and prevented; panel opens | not run | the same: 12 of 12, opens |
+
+- No approach move before the end-swipe was cancelable in any arm. That is expected: the fling starts below te, and
+  the touch pair is added at te in all three arms.
+- The Simulator form of (1b) (`eop-reload.mjs`) did not work: after Safari's reload the probe never found its keyed
+  tab ("no tab ... nav http://localhost:<port>/"). The reload went to Chrome instead.
+  - SvelteKit restores the scroll position itself (chunks/CzkAa0og.js:620), so the restore is the same code path in
+    both browsers.
+  - WebKit-only listener timing after a reload is not covered.
+
+### Mount cost, g0.0h vs ws3 (lead's gate: median mount-frame duration and L+S <= H + 4 ms; first 3 drags overlapping)
+
+`phone/eop-mount.mjs` (Simulator, functional):
+- Timeline auto-capture from the navigation, and a bootstrap logger that logs window wheel/touch listener adds and the
+  `te.observe` (mount) point.
+- The mount frame is the (giant, ~640 ms) hydration frame holding `te.observe`. In ws3 the head wheel add (at
+  363-378 ms) falls inside that same frame.
+
+| | H (g0.0h) | ws3 | ws (mount add, first attempt) |
+|---|---|---|---|
+| mount frame dur, n = 3 | 638.9, 648.4, 704.6 (median 648.4) | 635.2, 645.5, 670.5 (median 645.5, -2.9) | 776.3, 649.9, 641.1 (median 649.9 vs its own H 639.7: +10.2) |
+| mount frame L+S | 113.6, 108.4, 144.0 (median 113.6) | 114.7, 119.4, 122.5 (median 119.4, +5.8) | 188.3, 123.4, 120.5 (median 123.4 vs 114.4: +9.0) |
+| first 3 drags >50 / >34 | 9, 9, 11 / 21, 29, 26 | 10, 11, 10 / 23, 25, 23 | 10, 13, 14 / 23, 30, 27 |
+
+- **A/A read:** ws2 behaves like g0.0h. In the same sessions: mount frame 677.6 / 650.0 (H) vs 642.1 (ws2); L+S
+  124.0 / 119.3 vs 111.8. Equal builds differ by ~12 ms L+S at n = 1-2.
+- **ws3 at n = 3:**
+  - Duration passes.
+  - L+S misses the 4 ms margin by 1.8 ms, with fully overlapping ranges (H 108-144, ws3 115-123).
+  - The first 3 drags overlap.
+  - 3 more loads per arm are queued (n = 6) before the gate is read.
+- **Extension rule, fixed before the n = 6 data** (lead 2026-10-09, decided after the n = 3 near-miss above; written
+  while the extra loads were still running):
+  - The gate is read once, on all 6 loads per arm (`out/eopp/mount3`, loads 1-6): median(ws3) - median(H) must be
+    ≤ +4 ms for both the mount-frame duration and the mount-frame L+S. The first 3 drags must overlap.
+  - A miss on either is a FAIL, with no further extension.
 
 ### P-171 (phone card DRAFT for the lead's signature; written before any P-171 data; not signed, not run)
 
@@ -1240,9 +1315,22 @@ and src do not.
   - The risk: the phone's te-crossing frame may also hold other work (the avatar slide, F-357's sticky relayout), as some Simulator loads did.
 - **PARITY: holds, about 90 %.** The touch jack's timing is unchanged, and the wheel jack is attached earlier.
 
-**Decisions (the lead's to set; proposed):** GAIN -> ws joins the next best build after its README and parity are
-reviewed. NO GAIN -> ws stays attribution only. FAIL -> stop and report. OPEN -> at most one more block
-(sequential rule).
+**Signed by the lead 2026-10-09 as in 6b48fe58** (C = g0.0h, V = ws, snap5 HASHES ba2e2fc5457c, G 38d7fe5d7fa8,
+tool-serious like P-164 and P-170, so they compare; order and rules as written).
+
+**Decisions (the lead's, word for word):**
+- GAIN -> ws stacks with whatever wins P-170 (g0.0i candidate).
+- GAIN (threshold-sensitive) -> the lead's call.
+- NO GAIN -> research result; the frame stays named.
+- WORSE or PARITY FAIL -> drop ws.
+- OPEN -> at most one more block.
+
+**Gate before queuing:**
+- Conditions 1-2 must be committed with numbers, and both must pass:
+  - parity equal;
+  - the hydration-phase frame holding the wheel add is no worse than H's by more than 4 ms (median);
+  - the first 3 drags are no worse.
+- Queue only after P-170 ends, with fix-cm-return first if it is ready (priority 1), and ask the lead first.
 
 ## P-169 (phone card, window B only; written before any P-169 data)
 
