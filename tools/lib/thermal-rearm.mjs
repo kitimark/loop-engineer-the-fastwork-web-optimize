@@ -21,6 +21,9 @@
 // a hung xctrace is killed with its process group and retried once, XCTRACE TIMEOUT lines). A read that hung twice at
 // step 0 or after the settle: REARM TIMEOUT, exit 13 (step 0: nothing cleared or set; after the settle: the set stays);
 // during the wait it counts as "not clear yet".
+// I-249 (P-166 part A2, 2026-10-08 11:15Z): the clear met a transient RSD close (lib/rsd.mjs: the tunnel's RSD closed
+// before it listed its services, so nothing reached the phone). That error class only gets one retry after 20 s
+// (REARM CLEAR RETRY); twice, or any other clear error: ERROR, exit 1, nothing set.
 import { spawn, execFile } from 'node:child_process';
 import { mkdirSync, openSync, closeSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -33,6 +36,10 @@ export const MAX_WAIT_MS = 10 * 60000;
 export const SETTLE_MS = 120000;
 const THERMAL = join(REPO, 'tools', 'thermal.mjs');
 const SET_WAIT_MS = 150000; // thermal.mjs set's enable waits up to 120 s
+export const CLEAR_RETRY_MS = 20000; // I-249: the pause before the one retry of a clear that met a transient RSD close
+
+/** I-249: a clear that failed because RSD closed the connection before it listed its services (nothing reached the phone). */
+export const isTransientRsdClose = (e) => /RSD on \S+ closed the connection before it listed its services/.test(String(e?.message ?? e));
 
 const words = (r) => `${stateWords(r)}${typeof r?.battC === 'number' ? `, battery ${r.battC} C` : ''}`;
 const sleepReal = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -79,7 +86,7 @@ export async function thermalSet({ owner, env = process.env, waitMs = SET_WAIT_M
  * set}. Seams: read, clear, set, sleep, now (tests: fake phone and clock). Never posts a console step.
  */
 export async function rearm({ owner, hold = null, read = () => readThermal({ log }), clear = () => thermalClear({ owner }), set = () => thermalSet({ owner }),
-  sleep = sleepReal, now = Date.now, log = console.log, probeEveryMs = PROBE_EVERY_MS, maxWaitMs = MAX_WAIT_MS, settleMs = SETTLE_MS } = {}) {
+  sleep = sleepReal, now = Date.now, log = console.log, probeEveryMs = PROBE_EVERY_MS, maxWaitMs = MAX_WAIT_MS, settleMs = SETTLE_MS, clearRetryMs = CLEAR_RETRY_MS } = {}) {
   const reads = [];
   const done = (outcome, code, line, extra = {}) => { log(`${line} (exit ${code})`); return { outcome, code, reads, ...extra }; };
   // the profile read through the gate (no step, tool mode): it keeps a passing read as the hold's start read
@@ -104,7 +111,12 @@ export async function rearm({ owner, hold = null, read = () => readThermal({ log
     log(`REARM start: phone is ${words(r0)} (gate ${v0.profile} code ${v0.code}, reason ${t.reason}); clearing the condition, then reading the plain state once a minute for up to ${Math.round(maxWaitMs / 60000)} min (I-225)`);
 
     log('REARM CLEARING: node tools/thermal.mjs clear (stops the condition; up to 90 s)');
-    try { log(`REARM CLEAR ${(await clear()).line}`); } catch (e) { return done('error', 1, `REARM ERROR: thermal.mjs clear failed: ${e.message}; nothing set`); }
+    try { log(`REARM CLEAR ${(await clear()).line}`); } catch (e) {
+      if (!isTransientRsdClose(e)) return done('error', 1, `REARM ERROR: thermal.mjs clear failed: ${e.message}; nothing set`);
+      log(`REARM CLEAR RETRY: thermal.mjs clear failed with a transient RSD close (${e.message}); one retry in ${Math.round(clearRetryMs / 1000)} s (I-249)`);
+      await sleep(clearRetryMs);
+      try { log(`REARM CLEAR ${(await clear()).line}`); } catch (e2) { return done('error', 1, `REARM ERROR: thermal.mjs clear failed: ${e2.message}${isTransientRsdClose(e2) ? ' (after one retry, I-249)' : ''}; nothing set`); }
+    }
 
     const t0 = now();
     let last = null;

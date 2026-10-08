@@ -20,14 +20,15 @@ const ON = { state: 'Serious', induced: 'Yes', condition: 'Serious', battC: 34.2
 const XCODE_ON = { ...ON, holder: 'Xcode' };
 
 /** A fake phone: reads come from `seq` (the last one repeats); each read takes 25 s of fake time; every call is logged. */
-function rig(seq, { clearErr, setErr } = {}) {
+function rig(seq, { clearErr, clearErrs = [], setErr } = {}) {
   let t = Date.parse('2026-10-07T01:26:56Z');
   const calls = [], lines = [];
-  let i = 0;
+  let i = 0, nClear = 0;
   const h = {
     calls, lines, now: () => t,
     read: async () => { const at = t; calls.push({ fn: 'read', at }); t += 25000; const r = seq[Math.min(i++, seq.length - 1)]; return { at: new Date(at).toISOString(), ms: 25000, rows: 1, error: null, ...r }; },
-    clear: async () => { calls.push({ fn: 'clear', at: t }); if (clearErr) throw new Error(clearErr); t += 2000; return { line: 'CLEARED the active condition' }; },
+    // clearErrs: one error (or null) per clear call, in order (I-249); clearErr: every call fails
+    clear: async () => { calls.push({ fn: 'clear', at: t }); const e = clearErr || clearErrs[nClear++]; if (e) throw new Error(e); t += 2000; return { line: 'CLEARED the active condition' }; },
     set: async () => { calls.push({ fn: 'set', at: t }); if (setErr) throw new Error(setErr); t += 3000; return { pid: 4242, log: '/state/thermal/set-int-v11.log', line: 'SET ThermalCondition ThermalSerious (holding; SIGINT/SIGTERM or node tools/thermal.mjs clear ends it)' }; },
     sleep: async (ms) => { calls.push({ fn: 'sleep', at: t, ms }); t += ms; },
     log: (l) => lines.push(...String(l).split('\n')),
@@ -126,6 +127,35 @@ test('I-225 rearm: a phone that already fits is left alone (exit 0, nothing clea
   r = await h.run();
   assert.deepEqual([r.outcome, r.code], ['error', 1]);
   assert.match(h.lines.join('\n'), /^REARM ERROR: thermal\.mjs set serious failed: thermal\.mjs set exited 1 before SET; no condition on \(exit 1\)$/m);
+});
+
+// I-249 (P-166 part A2 start, 2026-10-08 11:15Z): rearm's first thermal.mjs clear met a transient RSD close (lib/rsd.mjs:
+// the tunnel's RSD closed before it listed its services, so nothing reached the phone) and rearm ended with ERROR exit 1;
+// restarting the part worked. That error class gets one retry after a 20 s pause; any other clear error stops at once.
+const RSD_CLOSE = 'thermal.mjs clear exit 1: RSD on <tunnel> closed the connection before it listed its services';
+test('I-249 rearm: a transient RSD close in the first clear: one retry after 20 s, then the sequence goes on (cleared, exit 0)', async () => {
+  const h = rig([ABOVE, { state: 'Nominal', induced: 'No', battC: 33 }, ON], { clearErrs: [RSD_CLOSE, null] });
+  const r = await h.run();
+  assert.deepEqual([r.outcome, r.code], ['cleared', 0]);
+  assert.deepEqual(h.calls.map((c) => c.fn), ['read', 'clear', 'sleep', 'clear', 'read', 'set', 'sleep', 'read']);
+  assert.equal(h.calls[2].ms, 20000, 'the pause before the one retry');
+  const out = h.lines.join('\n');
+  assert.match(out, /^REARM CLEAR RETRY: thermal\.mjs clear failed with a transient RSD close \(thermal\.mjs clear exit 1: RSD on <tunnel> closed the connection before it listed its services\); one retry in 20 s \(I-249\)$/m);
+  assert.match(out, /^REARM CLEAR CLEARED the active condition$/m);
+});
+
+test('I-249 rearm: the RSD close twice is an ERROR (exit 1, nothing set, one retry only); another clear error is not retried', async () => {
+  let h = rig([ABOVE], { clearErrs: [RSD_CLOSE, RSD_CLOSE, null] });
+  let r = await h.run();
+  assert.deepEqual([r.outcome, r.code], ['error', 1]);
+  assert.deepEqual(h.calls.map((c) => c.fn), ['read', 'clear', 'sleep', 'clear']);
+  assert.match(h.lines.join('\n'), /^REARM ERROR: thermal\.mjs clear failed: thermal\.mjs clear exit 1: RSD on <tunnel> closed the connection before it listed its services \(after one retry, I-249\); nothing set \(exit 1\)$/m);
+  h = rig([ABOVE], { clearErrs: ['thermal.mjs clear exit 1: RSD on <tunnel> refused the connection (HTTP/2 GOAWAY, error code 2)', null] });
+  r = await h.run();
+  assert.deepEqual([r.outcome, r.code], ['error', 1]);
+  assert.deepEqual(h.calls.map((c) => c.fn), ['read', 'clear'], 'only the transient close is retried');
+  assert.equal(R.isTransientRsdClose(new Error(RSD_CLOSE)), true);
+  assert.equal(R.isTransientRsdClose(new Error('thermal.mjs clear exit 1: no tunnel')), false);
 });
 
 test('I-225 the gate\'s tool mode (--condition tool / FW_PHONE_CONDITION=tool): no Xcode step; serious misfits point to iphone.mjs rearm, fair ones to thermal.mjs clear; exit 8 unchanged', async () => {
