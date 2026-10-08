@@ -14,8 +14,9 @@ import { spawnSync } from 'node:child_process';
 import { openTab, sleep, runAsync } from '../../../tools/lib/wip.mjs';
 
 const WT = new URL('../../..', import.meta.url).pathname;
-const D = join(WT, 'out/p167/sim'); mkdirSync(D, { recursive: true });
-export const ARMS = ['v0', 'e', 'ko1', 'ko2', 'ko3', 'ko123'];
+// P167_SIMDIR: the output dir (default out/p167/sim; the follow-up census with P167_DESCRIBE=1 writes out/p167/sim2)
+const D = join(WT, process.env.P167_SIMDIR || 'out/p167/sim'); mkdirSync(D, { recursive: true });
+export const ARMS = ['v0', 'e', 'ko1', 'ko2', 'ko3', 'ko123', 'ko4', 'ko5', 'ko245'];   // ko4/ko5/ko245: p167b-build.py (follow-up census)
 const log = (o) => appendFileSync(join(D, 'runs.jsonl'), JSON.stringify({ at: new Date().toISOString(), ...o }) + '\n');
 const errText = (e) => e?.message || JSON.stringify(e);
 const STEPS = (to) => `(async () => { const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -35,6 +36,23 @@ export function census(layers, y = 0, vh = 0) {
   return { n: layers.length, mb: Math.round(mem / 1e5) / 10, inView: inView.length, inViewMb: Math.round(inView.reduce((s, l) => s + (l.memory || 0), 0) / 1e5) / 10, big };
 }
 
+/** layers grouped by their element (tag.firstClass, or the nearest ancestor with an id/class), with count and MB; the
+ *  follow-up census asks WHICH layers g0.0e adds. DOM.resolveNode + Runtime.callFunctionOn per distinct nodeId (cap 300). */
+export async function describe(c, L) {
+  const ids = [...new Set(L.map((l) => l.nodeId).filter(Boolean))].slice(0, 300); const name = {};
+  for (const id of ids) {
+    try {
+      const o = (await c.send('DOM.resolveNode', { nodeId: id })).object;
+      const r = await c.send('Runtime.callFunctionOn', { objectId: o.objectId, returnByValue: true, functionDeclaration:
+        'function(){let e=this;for(let i=0;e&&i<6;i++,e=e.parentElement){const c=typeof e.className==="string"&&e.className.trim().split(/\\s+/).filter((x)=>!/^svelte-/.test(x))[0];if(e.id||c)return (i?"in ":"")+e.tagName.toLowerCase()+(e.id?"#"+e.id:"")+(c?"."+c:"");}return this.nodeName||"?";}' });
+      name[id] = r.result?.value ?? '?';
+    } catch { name[id] = '?'; }
+  }
+  const g = {};
+  for (const l of L) { const k = l.nodeId ? name[l.nodeId] ?? '?' : `(anonymous${l.pseudoElement ? ' ' + l.pseudoElement : ''})`; (g[k] ||= { n: 0, mb: 0 }); g[k].n++; g[k].mb += (l.memory || 0) / 1e6; }
+  return Object.entries(g).map(([k, v]) => ({ el: k, n: v.n, mb: Math.round(v.mb * 10) / 10 })).sort((a, b) => b.n - a.n || b.mb - a.mb);
+}
+
 async function layers(c) {
   const doc = await c.send('DOM.getDocument', { depth: 1 });
   const html = (doc.root.children || []).find((n) => n.nodeName === 'HTML') || doc.root;
@@ -51,12 +69,12 @@ async function runArm(c, arm) {
   const step = async (name, expr, y) => {
     ev.n = 0; let page = null;
     try { page = await runAsync(c, expr, { pollMs: 500, timeoutMs: 30000, key: `__p167${name}` }); } catch (e) { errors.push(`${name}: ${errText(e)}`); }
-    const churn = ev.n; let cs = null;
-    try { cs = census(await layers(c), page?.y ?? y, vh); } catch (e) { errors.push(`${name} census: ${errText(e)}`); }
-    out.windows[name] = { page, churn, census: cs };
+    const churn = ev.n; let cs = null, by = undefined;
+    try { const L = await layers(c); cs = census(L, page?.y ?? y, vh); if (process.env.P167_DESCRIBE && name === 'B') by = await describe(c, L); } catch (e) { errors.push(`${name} census: ${errText(e)}`); }
+    out.windows[name] = { page, churn, census: cs, byElement: by };
   };
   await sleep(2000);
-  try { out.windows.A0 = { census: census(await layers(c), 0, vh) }; } catch (e) { errors.push(`A0 census: ${errText(e)}`); }
+  try { const L = await layers(c); out.windows.A0 = { census: census(L, 0, vh) }; if (process.env.P167_DESCRIBE) out.windows.A0.byElement = await describe(c, L); } catch (e) { errors.push(`A0 census: ${errText(e)}`); }
   await step('A', STEPS(750), 750);
   await step('jumpB', JUMP(4000), 4000);
   await step('B', STEPS(5000), 5000);

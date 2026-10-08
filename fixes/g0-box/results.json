@@ -1855,5 +1855,215 @@
         "pre-hold restarts with nothing measured: I-249 (RSD close in rearm), I-250 (xctrace hang x2), WDA after re-plug x2 (CoreDeviceService restart, C-124)"
       ]
     }
+  },
+  "p167": {
+    "status": "done: window B KO2 no effect (reproduced, not threshold-sensitive); window A g0.0e no worse than v0 over the window (moved hitch); OBSERVED, within the block",
+    "signed": "lead 12:55Z (ed2a1924), budget 50 min, window B before A",
+    "when": "2026-10-08 12:57-13:40Z",
+    "profile": "tool-serious (iphone.mjs rearm + thermal.mjs set serious, gates --accept-induced, --profile serious); never pooled with P-165/P-166",
+    "arms": {
+      "v0": "JS 4606120cf392 CSS 27776f3d4138",
+      "g0.0e": "JS 5c39f7a96e41 CSS d4e684032482",
+      "e-ko2": "JS 43e9c65489bf CSS d4e684032482 (g0.0e, fwKick no-op, cE re-defers as baseline; diagnostic only)"
+    },
+    "kit": "ed2a1924 (card + kit), 0da788fb (servers stop after the last part); tools 98762cb1",
+    "holds": {
+      "valid": [
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H5",
+        "H6",
+        "H7",
+        "H8",
+        "H9"
+      ],
+      "countedRunsValid": 18
+    },
+    "sentinels": [
+      "SENTINEL AsC PASS batt 36.79 C {\"criterion\":\"bottom >= 58 fps and scroll >= 44 fps\",\"value\":{\"bottom\":60,\"scroll\":52}}",
+      "SENTINEL AsC PASS batt 37.79 C {\"criterion\":\"bottom >= 58 fps and scroll >= 44 fps\",\"value\":{\"bottom\":60.2,\"scroll\":52.7}}",
+      "SENTINEL BsC PASS batt 35 C {\"criterion\":\"bottom >= 58 fps and scroll >= 44 fps\",\"value\":{\"bottom\":60.1,\"scroll\":51.1}}",
+      "SENTINEL BsC PASS batt 37.19 C {\"criterion\":\"bottom >= 58 fps and scroll >= 44 fps\",\"value\":{\"bottom\":60,\"scroll\":52.1}}"
+    ],
+    "metric": "p167-wread.mjs: move phase [scroll start, hold end) per run: frames >34/>50 (twins 30/38, 46/54), max dt, Composite sum and max; medians of 3; binned spot frame secondary",
+    "arms_summary": {
+      "B0": {
+        "n": 3,
+        "move": {
+          "gt34": 1,
+          "gt50": 0,
+          "gt30": 1,
+          "gt38": 1,
+          "gt46": 0,
+          "gt54": 0,
+          "maxDt": 46,
+          "compSum": 1233.7,
+          "compMax": 42.3
+        },
+        "idle": {
+          "gt34": 0,
+          "gt50": 0,
+          "gt30": 0,
+          "gt38": 0,
+          "gt46": 0,
+          "gt54": 0,
+          "maxDt": 19,
+          "compSum": 442.2,
+          "compMax": 16.4
+        },
+        "spotDt": 46
+      },
+      "Be": {
+        "n": 3,
+        "move": {
+          "gt34": 1,
+          "gt50": 1,
+          "gt30": 1,
+          "gt38": 1,
+          "gt46": 1,
+          "gt54": 1,
+          "maxDt": 72,
+          "compSum": 370.3,
+          "compMax": 63.2
+        },
+        "idle": {
+          "gt34": 1,
+          "gt50": 0,
+          "gt30": 1,
+          "gt38": 0,
+          "gt46": 0,
+          "gt54": 0,
+          "maxDt": 37,
+          "compSum": 132.8,
+          "compMax": 34.5
+        },
+        "spotDt": 72
+      },
+      "Bk": {
+        "n": 3,
+        "move": {
+          "gt34": 1,
+          "gt50": 1,
+          "gt30": 1,
+          "gt38": 1,
+          "gt46": 1,
+          "gt54": 1,
+          "maxDt": 69,
+          "compSum": 360.5,
+          "compMax": 59.9
+        },
+        "idle": {
+          "gt34": 1,
+          "gt50": 0,
+          "gt30": 1,
+          "gt38": 1,
+          "gt46": 0,
+          "gt54": 0,
+          "maxDt": 39,
+          "compSum": 140.1,
+          "compMax": 29
+        },
+        "spotDt": 69
+      },
+      "A0": {
+        "n": 3,
+        "move": {
+          "gt34": 7,
+          "gt50": 2,
+          "gt30": 9,
+          "gt38": 4,
+          "gt46": 3,
+          "gt54": 1,
+          "maxDt": 61,
+          "compSum": 559.6,
+          "compMax": 41.3
+        },
+        "idle": {
+          "gt34": 2,
+          "gt50": 0,
+          "gt30": 3,
+          "gt38": 1,
+          "gt46": 1,
+          "gt54": 0,
+          "maxDt": 48,
+          "compSum": 367.8,
+          "compMax": 11.7
+        },
+        "spotDt": 36
+      },
+      "Ae": {
+        "n": 3,
+        "move": {
+          "gt34": 5,
+          "gt50": 3,
+          "gt30": 6,
+          "gt38": 4,
+          "gt46": 3,
+          "gt54": 2,
+          "maxDt": 60,
+          "compSum": 304.6,
+          "compMax": 32.8
+        },
+        "idle": {
+          "gt34": 0,
+          "gt50": 0,
+          "gt30": 0,
+          "gt38": 0,
+          "gt46": 0,
+          "gt54": 0,
+          "maxDt": 26,
+          "compSum": 272.8,
+          "compMax": 6.7
+        },
+        "spotDt": 57
+      },
+      "Ak": {
+        "n": 3,
+        "move": {
+          "gt34": 6,
+          "gt50": 3,
+          "gt30": 6,
+          "gt38": 5,
+          "gt46": 3,
+          "gt54": 2,
+          "maxDt": 59,
+          "compSum": 303.1,
+          "compMax": 33.7
+        },
+        "idle": {
+          "gt34": 0,
+          "gt50": 0,
+          "gt30": 0,
+          "gt38": 0,
+          "gt46": 0,
+          "gt54": 0,
+          "maxDt": 18,
+          "compSum": 271.6,
+          "compMax": 7.4
+        },
+        "spotDt": 58
+      }
+    },
+    "verdicts": {
+      "B": {
+        "reproduce": "g0.0e median max 72 >= v0 46 + 6: reproduced",
+        "ko2": "no effect: e-ko2 median max 69 > 52 (removes no) and only 3 ms below g0.0e (partial needs 6); twins agree"
+      },
+      "A": {
+        "rule": "g0.0e no worse over window A: median >34 5 <= v0 7 and median max 60 <= v0 61 + 6; twins 30/38 agree (6 <= 9, 4 <= 4)",
+        "ko2": "same reading (>34 6, max 59)",
+        "note": ">50 count 3 (g0.0e, e-ko2) vs 2 (v0), not part of the rule",
+        "scrollPhaseCaveat": "the pass depends on the 2 s end hold (v0: 2-3 frames >34 at y 999-1000, g0.0e/e-ko2: none); scroll phase alone >50 per run v0 1,1,1 / g0.0e 2,3,3 / e-ko2 3,3,3 (pooled 3/8/9): over the scrolling g0.0e is worse, by Layout at y 280-555 (two Layout records ~21-24 + 15-16 ms per frame, twice per run; v0 one frame of 24-29 ms in 2 of 3 runs), not Composite; KO2 leaves it unchanged"
+      }
+    },
+    "notes": [
+      "window B: g0.0e and e-ko2 add one 35-38 ms idle frame at y 4000; +is-play at y 4588-4618 vs v0 4562-4572",
+      "window A: v0 largest Composite ~41 ms at y ~735 and in the end hold (y ~1000); g0.0e/e-ko2 ~33 ms at the first step (y ~60), smaller (~23-28 ms) at y ~700",
+      "window A: g0.0e/e-ko2 have 52-63 ms frames at y ~300-550 with almost no Composite (main-thread or other; P-166 showed similar frames on both arms)",
+      "Composite sum over window A: v0 ~560 ms vs g0.0e ~305, e-ko2 ~303; window B: v0 ~1230 vs ~370/360",
+      "thermal clear after part A: set stopped, confirm hit RSD GOAWAY; status in a separate hold 13:41:56Z read NONE"
+    ]
   }
 }

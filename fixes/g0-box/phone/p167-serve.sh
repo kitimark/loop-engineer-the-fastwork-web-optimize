@@ -8,15 +8,20 @@
 #   ko2    g0.0e, no idle un-skip, cE re-defers as the baseline                 JS 43e9c65489bf  CSS d4e684032482
 #   ko3    g0.0e, no data-fw-wc will-change windows                             JS 213044665cd2  CSS d4e684032482
 #   ko123  all three                                                            JS 9f3958a06d59  CSS 533ce66d250b
+#   (follow-up census arms, p167b-build.py; served only when P167_ARMS names them:)
+#   ko4    g0.0e, countdown strips and cells unlayered (pixels change)          JS 5c39f7a96e41  CSS 9331d4959523
+#   ko5    g0.0e, no idle mount of the morph panel                              JS 56a47bcf38e7  CSS d4e684032482
+#   ko245  ko2 + ko4 + ko5                                                      JS eb2eaa4a13f1  CSS 9331d4959523
 # Usage: sh fixes/g0-box/phone/p167-serve.sh start|check|stop    State: out/p167/serve-<arm>.json, .pid, .log
 cd "$(dirname "$0")/../../.." || exit 2
 S=out/p167; OWNER=${FW_AGENT:-fix-g0-box}
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
 ARMS=${P167_ARMS:-"B v0 e ko1 ko2 ko3 ko123"}
 root() { case $1 in B|v0) echo "--root site-pretty" ;; e) echo "--root site-pretty --overlay out/g0box/g00e" ;;
-  ko1|ko2|ko3|ko123) echo "--root site-pretty --overlay out/g0box/p167/e-$1" ;; esac; }
+  ko1|ko2|ko3|ko123|ko4|ko5|ko245) echo "--root site-pretty --overlay out/g0box/p167/e-$1" ;; esac; }
 pin() { case $1 in B|v0) echo "4606120cf392 27776f3d4138" ;; e) echo "5c39f7a96e41 d4e684032482" ;; ko1) echo "5c39f7a96e41 533ce66d250b" ;;
-  ko2) echo "43e9c65489bf d4e684032482" ;; ko3) echo "213044665cd2 d4e684032482" ;; ko123) echo "9f3958a06d59 533ce66d250b" ;; esac; }
+  ko2) echo "43e9c65489bf d4e684032482" ;; ko3) echo "213044665cd2 d4e684032482" ;; ko123) echo "9f3958a06d59 533ce66d250b" ;;
+  ko4) echo "5c39f7a96e41 9331d4959523" ;; ko5) echo "56a47bcf38e7 d4e684032482" ;; ko245) echo "eb2eaa4a13f1 9331d4959523" ;; esac; }
 case "$1" in start|check|stop) ;; *) echo "usage: sh fixes/g0-box/phone/p167-serve.sh start|check|stop"; exit 2 ;; esac
 if [ "$1" = stop ]; then
   for A in $ARMS; do [ -f $S/serve-$A.pid ] && kill "$(cat $S/serve-$A.pid)" 2>/dev/null; rm -f $S/serve-$A.pid; done

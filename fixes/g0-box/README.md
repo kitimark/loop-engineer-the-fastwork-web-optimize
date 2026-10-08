@@ -799,6 +799,93 @@ How this fits the earlier data:
 | kit | `fixes/g0-box/phone/p167-{build.py,serve.sh,hold.sh,block.sh,run.sh,sim.mjs,wread.mjs}`. hold, block and run are P-166's final kit with only names, paths and arms changed. `p167-wread.mjs --selftest`: 4 cases ok. Dry runs of both parts (`CM_DRY=1`, k = ko123 at the time): every hold `HOLD DRY ok`, tools head 58bbc3b3 contains db884e9d, served hashes of B/v0/e/k ok. |
 | conditions before the first counted run | (1) a dry run with `P167_K=ko2` prints its pins; (2) the user's ready step is answered (posted from inside the phone hold); (3) parts start detached, with the watchdog (`out/g0box/watchdog2.sh`); (4) USB link, WDA and the thermal read work (P-166's restarts). |
 
+### P-167 result (phone, tool-serious, W + Timeline; 2026-10-08 12:57-13:40Z; `p167-wread.mjs out/p167ph`)
+
+**Signed by the lead 12:55Z, budget 50 min, B before A.** The card above is unchanged (ed2a1924), with k = e-ko2, and the user said ready at 12:55Z.
+
+**Run log.**
+- Part B ran first: H5-H9.
+- Part A ran second: H1-H4.
+- All 9 holds were VALID; 18 counted runs, with no re-runs and no BLOCK STOP. The only thing the kit repeated was the start-gate rearm.
+- Sentinels (`sC`, Timeline off, v0) all passed:
+
+  | sentinel | battery | bottom fps | scroll fps |
+  |---|---|---|---|
+  | BsC H5 | 35.0 °C | 60.1 | 51.1 |
+  | BsC H9 | 37.2 °C | 60.0 | 52.1 |
+  | AsC H1 | 36.8 °C | 60.0 | 52.0 |
+  | AsC H4 | 37.8 °C | 60.2 | 52.7 |
+
+- After part A, `thermal.mjs clear` stopped our `set` (pid 86227). Its confirming re-read hit an RSD GOAWAY (an I-249-class transient). The condition's state was re-read in a separate hold; see "Notes" below.
+- Phone time: about 43 min, inside the 50 min budget.
+- Every number below is OBSERVED, in our setup, within this block; nothing is pooled with P-165 or P-166.
+- The metric is the card's primary one: the move phase is [scroll start, hold end). Each cell is the median of 3 runs.
+- On the y range: the W runs scroll to y ≈ 995 (A) and ≈ 5240 (B) before the 2 s hold, so "window A 0-750" covers y 0-1000 in practice.
+
+**Window B (4000 → 5000).**
+
+| arm | > 34 (30/38) | > 50 (46/54) | max dt | Composite max | Composite sum | spot frame (binned, secondary) |
+|---|---|---|---|---|---|---|
+| v0 | 1 (1/1) | 0 (0/0) | 46 (46/52/44) | 42.3 | 1234 | 46 |
+| g0.0e | 1 (1/1) | 1 (1/1) | 72 (72/76/69) | 63.2 | 370 | 72 |
+| e-ko2 | 1 (1/1) | 1 (1/1) | 69 (69/68/71) | 59.9 | 361 | 69 |
+
+- **Reproduced:** 72 ≥ 46 + 6.
+- **KO2: no effect.**
+  - "Removes" fails: the max is 69 > 52, and the > 50 count is 1 vs v0's 0.
+  - "Partial" fails: 69 is only 3 ms below g0.0e's 72.
+  - The 46/54 twins give the same verdict: not threshold-sensitive.
+- **Mechanism line:** k's Composite max moves 3 of the 21 ms toward v0, so the early un-skip is not what makes spot B's flush longer.
+- Every slow move frame is the `+is-play` frame:
+  - v0 at y 4562-4572;
+  - g0.0e and e-ko2 at y 4588-4618.
+- Idle: g0.0e and e-ko2 add one 37-39 ms frame at y 4000 (Composite 29-35 ms) in every run; v0 has none.
+
+**Window A (0 → 750, scrolls to y ≈ 995).**
+
+| arm | > 34 (30/38) | > 50 (46/54) | max dt | Composite max | Composite sum | spot frame (binned, secondary) |
+|---|---|---|---|---|---|---|
+| v0 | 7 (9/4) | 2 (3/1) | 61 | 41.3 | 560 | 36 |
+| g0.0e | 5 (6/4) | 3 (3/2) | 60 | 32.8 | 305 | 57 |
+| e-ko2 | 6 (6/5) | 3 (3/2) | 59 | 33.7 | 303 | 58 |
+
+- **Moved-hitch rule as written: g0.0e is no worse over window A.** Its > 34 count is 5 ≤ 7 and its max is 60 ≤ 61 + 6. Both twins agree (6 ≤ 9, 4 ≤ 4). e-ko2 reads the same.
+- **The pass depends on the 2 s hold.**
+  - Each v0 run has 2-3 frames > 34 in the hold at y 999-1000: Composite 37-39 ms + Layout 13 ms, or a 26-31 ms Layout.
+  - g0.0e and e-ko2 have none there.
+- Scroll phase alone, per run:
+
+  | arm | > 34 | > 50 |
+  |---|---|---|
+  | v0 | 2, 5, 4 | 1, 1, 1 |
+  | g0.0e | 5, 4, 5 | 2, 3, 3 |
+  | e-ko2 | 6, 5, 6 | 3, 3, 3 |
+
+  Pooled > 50 is 3 / 8 / 9. Over the scrolling itself, g0.0e has more long frames than v0.
+
+**Slow frames by y** (Timeline self time inside each frame, `out/g0box/tlmid.mjs`).
+
+| arm | first step, y 20-71 | y 280-555 | y 678-745 | y 914-937 | hold, y 999-1000 |
+|---|---|---|---|---|---|
+| v0 | 36-41 ms in 2 of 3 runs (Composite 15-30 / Layout 16-28) | 35-44 ms, 2 of 3 runs, **Layout 24-29**, no Composite | 47-49 (Composite 24 + Layout 13-15) and **58-61 (Composite 36-38 + Layout 12)** | — | 52-57 (Composite 37-39 + Layout 13-15), plus 35-42 Layout frames |
+| g0.0e | **52-59 ms, every run (Composite 30-31 + RecalculateStyles 9 + Layout 5)** | **two frames per run, 37-63 ms, Layout 21-24 + 15-16 (≈ 37-40 ms)**, no Composite | 49-55 (Composite 21-25 + Layout 16-17) | 38-39 (Composite 30) | none |
+| e-ko2 | 56-65 ms, every run (Composite 31-39 + RecalculateStyles 9) | two frames per run, 36-59 ms, Layout ≈ 22-40 | 49-54 + 38-39 | 37-40 | none |
+
+**Reading.**
+- **Composite: a moved hitch (OBSERVED).**
+  - v0's largest flushes are at y ≈ 735 and in the end hold.
+  - g0.0e's are at the first step and at y ≈ 930.
+  - g0.0e's Composite sum is about half of v0's (305 vs 560 in window A; 370 vs 1234 in window B). The cost is concentrated in fewer, larger flushes, the largest being the `+is-play` frame at spot B.
+- **Layout: new cost (OBSERVED).**
+  - At y 280-555, g0.0e and e-ko2 run two Layout records of about 21-24 + 15-16 ms in one frame, twice per run.
+  - v0 has one such frame in 2 of 3 runs, with 24-29 ms of Layout.
+  - KO2 leaves this unchanged, so it does not come from the early un-skip. It is also no layer cost.
+  - This is what makes g0.0e's > 50 count higher than v0's in the scroll phase.
+  - The next question for g0.0e at the top is which layout roots these two records cover. That needs a Chrome/Simulator layout probe, not a phone block.
+- **KO2 is ruled out for both spots.** The census candidates ko4 and ko5 (`p167b-build.py`) target the remaining layers and memory at the top. They do not target this Layout cost.
+
+Data: `out/p167ph/wread.json`, `out/p167ph/runs/{w,tl}-*.json`, `out/g0box/p167-part{A,B}.log`. `fixes/g0-box/results.json` key `p167`.
+
 ## P-164 (phone card; written before any P-164 data)
 
 **Pre-data check 2, with the g0 program (2026-10-08 03:47-03:55Z, before any P-164 data). Result: START-STATE
@@ -1159,6 +1246,9 @@ scored beyond the A/A pair. Scenes were open and close at steps 0, 100, 200, 300
 
 ## Notes
 
+- **P-167 thermal clear:**
+  - After part A, `thermal.mjs clear` stopped our `set` but could not confirm (RSD GOAWAY).
+  - A separate `lock.mjs run iphone -- node tools/thermal.mjs status` at 13:41:56Z read `NONE`: the induced condition is off.
 - **Measurement code:** I changed no tool. The gate scripts in `fixes/g0-box/gates/` are copies of fix-g0-gpu's,
   plus `avscan.mjs` (a two-arm scan, diagnostic only), `top-sim.mjs` and `t2.mjs` (the T2 report with the flat and
   edge maxima split; no browser). Everything ran in the shared lane
