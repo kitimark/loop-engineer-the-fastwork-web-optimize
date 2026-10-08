@@ -138,6 +138,19 @@ test('I-220: classifyStart reads a start\'s runner.log and iproxy.log segments (
   assert.equal(classifyStart({}), 'launch');
 });
 
+// I-251 (2026-10-08 ~11:15-11:52Z): after a link loss, Xcode's CoreDeviceService kept a stale device-preparation error;
+// every runner start waited ~60 s for the destination and xcodebuild exited with this text, while the phone was
+// connected and unlocked. Not a launch failure, not a re-plug case: its own reason key.
+test('I-251: classifyStart names a stale CoreDeviceService preparation error (coredevice-stale), not a plain launch failure', async () => {
+  const { classifyStart } = await import('../../tools/lib/wda-runner.mjs');
+  const TIMEOUT = 'xcodebuild: error: Timed out waiting for all destinations matching the provided destination specifier to become available\n';
+  const DEST = '\t\t{ platform:iOS, arch:arm64e, id:00008130-0011223344556677, name:Kitchen Phone 7, error:Kitchen Phone 7 may need to be unlocked to recover from previously reported preparation errors }\n';
+  assert.equal(classifyStart({ runner: NOISE + TIMEOUT + DEST, iproxy: 'waiting for connection\n' }), 'coredevice-stale');
+  assert.equal(classifyStart({ runner: NOISE + DEST }), 'coredevice-stale', 'the destination\'s error alone');
+  assert.equal(classifyStart({ runner: NOISE + TIMEOUT }), 'coredevice-stale', 'the destination timeout alone');
+  assert.equal(classifyStart({ runner: NOISE + '** TEST EXECUTE FAILED **\n' }), 'launch', 'any other failed start stays launch');
+});
+
 test('I-220: forwardWaitSec waits longer for the USB forward on a loaded Mac; parseUsbList counts usbmux USB devices', async () => {
   const { forwardWaitSec, parseUsbList, EXIT_REPLUG, scrubAddr } = await import('../../tools/lib/wda-runner.mjs');
   assert.equal(scrubAddr('ServerURLHere->http://10.0.0.9:8100<-ServerURLHere at 127.0.0.1:8100'), 'ServerURLHere->http://<addr>:8100<-ServerURLHere at 127.0.0.1:8100', 'the phone\'s LAN address never printed');

@@ -9,6 +9,8 @@
 // $FAKE_XCODEBUILD_LOG.runs; the last mode repeats): `automation` prints XCTest's "Timed out while enabling automation
 // mode" after FAKE_AUTOMATION_MS (default 200) and then hangs like the real runner; FAKE_RUNNER_PORT makes the runner
 // listen there instead of on $FW_WDA_URL's port, so the fake iproxy forwards to it (tests/fixtures/fake-iproxy.mjs).
+// I-251: `coredevice` prints xcodebuild's "Timed out waiting for all destinations ... previously reported preparation
+// errors" after FAKE_COREDEVICE_MS (default 200) and exits 70, like the real one when CoreDeviceService kept a stale error.
 // Every test-without-building prints the real runner's harmless "Supported platforms ... is empty" line. Both failures print what real xcodebuild prints there: the device's UDID and name, the team id,
 // the runner's bundle id, the Apple Account e-mail and the signing identity's person name (review-gesture 2:
 // the tools must scrub all of them before printing a log tail). All of these ids are made up.
@@ -71,6 +73,16 @@ if (a.includes('test-without-building')) {
     console.log('2026-10-06 16:49:00.499953+0700 WebDriverAgentRunner-Runner[23050:3494038] [Default] Failed to initialize for UI testing: Error Domain=com.apple.dt.XCTest.XCTFuture Code=1000 "Timed out while enabling automation mode." UserInfo={NSLocalizedDescription=Timed out while enabling automation mode.}');
     setInterval(() => {}, 1 << 30); // the real xcodebuild stays up until it is stopped
     await new Promise(() => {});
+  }
+  if (mode === 'coredevice') {
+    // I-251: CoreDeviceService kept a stale device-preparation error; xcodebuild waits ~60 s for the destination, then
+    // exits with this text (the real one names the phone in the error field, so the tools must scrub the tail)
+    await new Promise((r) => setTimeout(r, Number(process.env.FAKE_COREDEVICE_MS) || 200));
+    console.log('2026-10-08 18:41:28.359 xcodebuild[20034:187466116] Writing error result bundle to /var/folders/xx/T/ResultBundle_x.xcresult');
+    console.log('xcodebuild: error: Timed out waiting for all destinations matching the provided destination specifier to become available\n\n');
+    console.log('\tAvailable destinations for the "WebDriverAgentRunner" scheme:');
+    console.log(`\t\t{ platform:iOS, arch:arm64e, id:${dest}, name:Kitchen Phone 7, error:Kitchen Phone 7 may need to be unlocked to recover from previously reported preparation errors }`);
+    process.exit(70);
   }
   if (process.env.FAKE_XCODEBUILD_RUN_FAIL) { leaky(); console.log('** TEST EXECUTE FAILED **'); process.exit(65); }
   const { startFakeWda } = await import(join(dirname(fileURLToPath(import.meta.url)), 'fake-wda.mjs'));

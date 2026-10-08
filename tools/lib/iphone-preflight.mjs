@@ -92,6 +92,7 @@ export async function preflightCmd({ opt, flag = () => false, requireLease, log 
   if (ens.code === 4) return ens.why === 'automation-timeout'
     ? verdict('auth', `XCTest could not enable automation mode on the iPhone: ${USER_FIX.authTimeout}`)
     : verdict('replug', `the iPhone left USB while WDA started: ${USER_FIX.replug}`);
+  if (ens.code !== 0 && ens.cause === 'coredevice-stale') return verdict('wda', `WDA is not ready (${ens.why}): Xcode's CoreDeviceService kept a stale device-preparation error; a re-plug or unlock does not fix it: see the WDA NOT READY line above (ask the user's OK, then restart CoreDeviceService), then re-run`); // I-251
   if (ens.code !== 0) return verdict('wda', `WDA is not ready (${ens.why}): check the runner is trusted on the iPhone (Settings > General > VPN & Device Management), then re-run`);
   const restarted = ens.how !== 'kept';
   if (restarted && settle > 0) { say(`SETTLE ${settle} s after the WDA restart (I-225)`); await sleep(settle * 1000); }

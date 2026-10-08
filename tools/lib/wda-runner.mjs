@@ -35,6 +35,9 @@
 //                                --retry-wait s. The forward gets --forward-wait s once the runner is up (default 30,
 //                                60 when load1 > cores). Last line, exit: `WDA READY (kept|restarted...)` 0,
 //                                `WDA REPLUG NEEDED: <why>` 4 (post a re-plug step, then re-run), `WDA NOT READY: <why>` 3
+//                                I-251: xcodebuild "Timed out waiting for all destinations ... previously reported
+//                                preparation errors" (a stale CoreDeviceService) is NOT READY with its own hint: the
+//                                user's OK, then restart CoreDeviceService by hand (never by a tool); no retry, no re-plug
 //   wda stop                     kill our runner and iproxy (no lease: cleanup must always work)
 // I-227: every runner start records the phone's USB attach (usbmuxd DeviceID, lib/usbmux.mjs) in its pidfile
 // (usbAttach), so `iphone.mjs preflight` (lib/iphone-preflight.mjs) can tell a runner that predates a re-plug.
@@ -246,6 +249,9 @@ const SIG = {
   serverUrl: /ServerURLHere->/,
   noUsb: /No connected\/matching device found/,
   usbConn: /Requesting connection to USB device|Error connecting to device/,
+  // I-251: xcodebuild waited ~60 s for the phone as a destination and gave up, the destination listed with "may need to
+  // be unlocked to recover from previously reported preparation errors", while the phone was connected and unlocked
+  coreDevice: /previously reported preparation errors|Timed out waiting for all destinations/,
 };
 /**
  * What a runner start looked like, from this start's runner.log and iproxy.log text: 'automation-timeout' (XCTest
@@ -254,6 +260,7 @@ const SIG = {
  */
 export function classifyStart({ runner = '', iproxy = '' } = {}) {
   if (SIG.automation.test(runner)) return 'automation-timeout';
+  if (SIG.coreDevice.test(runner)) return 'coredevice-stale';
   const dev = String(iproxy).split('\n').filter((l) => SIG.noUsb.test(l) || SIG.usbConn.test(l));
   if (dev.length && SIG.noUsb.test(dev.at(-1))) return 'no-usb';
   return SIG.serverUrl.test(runner) ? 'forward' : 'launch';
@@ -263,7 +270,14 @@ const REASON = {
   'no-usb': 'the iPhone is not on USB for usbmux (iproxy: "No connected/matching device found")',
   forward: 'the runner is up (ServerURLHere) but the USB forward does not answer',
   launch: 'the runner did not report its server (no ServerURLHere)',
+  'coredevice-stale': 'xcodebuild timed out waiting for the iPhone as a destination ("may need to be unlocked to recover from previously reported preparation errors"): Xcode\'s CoreDeviceService kept a stale device-preparation error (I-251)',
 };
+/**
+ * I-251: the way out of 'coredevice-stale' (OBSERVED 2026-10-08: a re-plug, an unlocked phone and Xcode's Devices window
+ * did not clear it; restarting the user's CoreDeviceService, up 7 days, did). The user's process: only with the user's
+ * OK, never by a tool.
+ */
+export const coreDeviceHint = (again) => `A re-plug or unlocking the phone does not fix this. Workaround: ask the user's OK first (CoreDeviceService is the user's process; no tool kills it), then quit it: killall CoreDeviceService (no sudo; it relaunches on demand), wake it: xcrun devicectl list devices, then re-run: ${again}`;
 /** How long to give the USB forward once the runner is up: twice as long when load1 exceeds the core count (I-220, 09:53Z at load1 70-95). */
 export function forwardWaitSec({ base = 30, load1 = loadavg()[0], cpus: n = cpus().length } = {}) {
   return load1 > n ? base * 2 : base;
@@ -317,7 +331,7 @@ async function waitUp({ run, timeoutSec, fwdSec }) {
     const st = await wdaStatus().catch(() => null);
     if (st?.ready) return { ready: true, st };
     const kind = classifyStart(startText(run, readPid('iproxy')));
-    if (kind === 'automation-timeout') return { ready: false, kind };
+    if (kind === 'automation-timeout' || kind === 'coredevice-stale') return { ready: false, kind };
     if (kind === 'forward' || kind === 'no-usb') upAt ??= Date.now();
     const alive = readPid('runner');
     if (!alive || alive.dead || Date.now() > deadline || (upAt && Date.now() - upAt > fwdSec * 1000)) return { ready: false, kind };
@@ -357,12 +371,12 @@ export async function ensureRunner({ opt, flag = () => false, requireLease, log,
   const noRetry = flag('no-retry');
   const again = `node tools/iphone.mjs wda ensure --owner ${owner}`;
   const replug = async (why, kind = 'no-usb') => { await cleanStop(log); log(`WDA REPLUG NEEDED: ${why}. Re-plug the iPhone cable (phone unlocked), then re-run: ${again}`); return { code: EXIT_REPLUG, kind: 'replug', why: kind }; };
-  const notReady = async (why, run) => {
+  const notReady = async (why, run, cause = null) => {
     await cleanStop(log);
     const t = run ? startText(run, null).runner.trim().split('\n').filter((l) => l.trim()).slice(-8) : [];
     for (const l of t) log(`  | ${scrubAddr(l)}`);
-    log(`WDA NOT READY: ${why}. Unlocked phone? UI Automation enabled? Runner trusted? Re-run: ${again}`);
-    return { code: 3, kind: 'not-ready', why };
+    log(`WDA NOT READY: ${why}. ${cause === 'coredevice-stale' ? coreDeviceHint(again) : `Unlocked phone? UI Automation enabled? Runner trusted? Re-run: ${again}`}`);
+    return { code: 3, kind: 'not-ready', why, ...(cause ? { cause } : {}) };
   };
   // 1. usbmux first: without the phone on USB, iproxy has nothing to forward to, whatever xcodebuild manages
   let usb = usbList(cfg.udid);
@@ -393,7 +407,7 @@ export async function ensureRunner({ opt, flag = () => false, requireLease, log,
     }
     log(`WDA start ${attempt} failed: ${REASON[r.kind] || r.kind}`);
     if (r.kind === 'no-usb') return replug(`${REASON['no-usb']}${SIG.serverUrl.test(startText(run, null).runner) ? ' while the runner is up' : ''}`);
-    if (r.kind !== 'automation-timeout') return notReady(REASON[r.kind] || r.kind, run);
+    if (r.kind !== 'automation-timeout') return notReady(REASON[r.kind] || r.kind, run, r.kind === 'coredevice-stale' ? r.kind : null);
     if (noRetry) return replug('XCTest timed out enabling automation mode (no retry)', 'automation-timeout');
     if (attempt >= 2) return replug('XCTest timed out enabling automation mode twice (a start and one retry after a clean stop)', 'automation-timeout');
     why = REASON['automation-timeout'];
@@ -493,7 +507,8 @@ async function wdaCmdInner({ sub, opt, flag = () => false, requireLease, log }) 
     }
     if (!st?.ready) {
       await stopOne('runner', log); await stopOne('iproxy', log);
-      throw new Error(`WDA did not come up at ${WDA_URL()}; last lines of ${rlog}:\n${tail(rlog)}\nUnlocked phone? UI Automation enabled? Runner trusted? ${SETUP}`);
+      const tl = tail(rlog);
+      throw new Error(`WDA did not come up at ${WDA_URL()}; last lines of ${rlog}:\n${tl}\n${SIG.coreDevice.test(tl) ? `${REASON['coredevice-stale']}. ${coreDeviceHint(`node tools/iphone.mjs wda ensure --owner ${owner}`)}` : `Unlocked phone? UI Automation enabled? Runner trusted? ${SETUP}`}`);
     }
     const s = await createSession();
     try { await s.activate(SAFARI); } finally { await s.close(); }

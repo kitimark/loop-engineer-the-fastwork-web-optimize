@@ -159,3 +159,22 @@ test('I-220: a runner that fails to launch (no known signature): exit 3 WDA NOT 
   assert.equal(w.pid('runner'), null);
   for (const s of IDS) assert.doesNotMatch(r.out, s);
 });
+
+// I-251: CoreDeviceService (the user's, up 7 days) kept a stale device-preparation error after a link loss; every start
+// timed out waiting for the destination, a re-plug and an unlocked phone did not help, restarting the service did.
+test('I-251: xcodebuild times out waiting for the destination (stale CoreDeviceService preparation error): exit 3 WDA NOT READY naming the shape and the user-approved workaround; no retry, nothing killed', async () => {
+  const w = await setup({ FAKE_XCODEBUILD_RUN_MODES: 'coredevice' });
+  const r = await w.ensure();
+  assert.equal(r.code, 3, r.out);
+  assert.equal(w.runs(), 1, 'no retry: a second start meets the same stale error');
+  assert.match(r.stdout, /^WDA start 1 failed: xcodebuild timed out waiting for the iPhone as a destination/m);
+  assert.match(r.stdout, /^ {2}\| xcodebuild: error: Timed out waiting for all destinations/m, 'the log tail is shown');
+  const last = lastLine(r.stdout);
+  assert.match(last, /^WDA NOT READY: xcodebuild timed out waiting for the iPhone as a destination \("may need to be unlocked to recover from previously reported preparation errors"\): Xcode's CoreDeviceService kept a stale device-preparation error \(I-251\)\./);
+  assert.match(last, /A re-plug or unlocking the phone does not fix this\./);
+  assert.match(last, /ask the user's OK first \(CoreDeviceService is the user's process; no tool kills it\)/);
+  assert.match(last, /killall CoreDeviceService.*xcrun devicectl list devices.*node tools\/iphone\.mjs wda ensure --owner me$/);
+  assert.doesNotMatch(last, /Unlocked phone\?/, 'not the generic hint: unlocking does not help here');
+  assert.equal(w.pid('runner'), null);
+  for (const s of IDS) assert.doesNotMatch(r.out, s);
+});

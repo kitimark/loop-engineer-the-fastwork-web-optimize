@@ -691,6 +691,20 @@ test('wda start: a runner that fails to launch is a clean error whose xcodebuild
   assert.ok(!existsSync(join(env.FW_STATE_DIR, 'wda', 'runner.json')), 'the failed runner was cleaned up');
 });
 
+test('I-251: wda start whose xcodebuild timed out waiting for the destination (a stale CoreDeviceService) names the shape and the user-approved workaround, not "Unlocked phone?"', async () => {
+  const w = wdaEnv();
+  mkdirSync(join(w.home, 'WebDriverAgent', 'WebDriverAgent.xcodeproj'), { recursive: true });
+  lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me');
+  assert.equal(heldBuild(w, ['--team', 'ABCDE12345', '--udid', '00008130-0011223344556677']).code, 0);
+  const r = await nodeAsync(IPHONE, ['wda', 'start', '--owner', 'me', '--timeout', '20'], { env: { ...w.env, FAKE_XCODEBUILD_RUN_MODES: 'coredevice' }, timeout: 60000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stderr, /last lines of .*runner\.log:\n.*Timed out waiting for all destinations/s);
+  assert.match(r.stderr, /Xcode's CoreDeviceService kept a stale device-preparation error \(I-251\)\. A re-plug or unlocking the phone does not fix this\. Workaround: ask the user's OK first .*killall CoreDeviceService.*xcrun devicectl list devices, then re-run: node tools\/iphone\.mjs wda ensure --owner me/);
+  assert.doesNotMatch(r.stderr, /Unlocked phone\?/);
+  for (const s of IDS) assert.doesNotMatch(r.out, s, `${s} printed:\n${r.stderr}`);
+  assert.ok(!existsSync(join(env.FW_STATE_DIR, 'wda', 'runner.json')), 'the failed runner was cleaned up');
+});
+
 test('wda start (lease) runs the runner and iproxy, activates Safari; status sees them; stop kills only them', async () => {
   const w = wdaEnv();
   w.env.FAKE_IPROXY_DELAY_MS = '700'; // the fake runner is ready without iproxy, so its argv log may come late (I-055)

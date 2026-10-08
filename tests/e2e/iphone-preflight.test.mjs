@@ -162,6 +162,17 @@ test('I-227: a fresh runner whose start meets Code 41, or XCTest timing out enab
   clean(r);
 });
 
+test('I-251: a stale CoreDeviceService preparation error at the runner start: PREFLIGHT WDA points to the user-approved CoreDeviceService restart, not to trusting the runner', async () => {
+  const w = await setup({ FAKE_XCODEBUILD_RUN_MODES: 'coredevice' });
+  const r = await w.preflight();
+  assert.notEqual(r.code, 0, r.out);
+  assert.match(r.stdout, /^WDA NOT READY: .*CoreDeviceService/m);
+  assert.match(lastLine(r.stdout), /^PREFLIGHT WDA: WDA is not ready \(xcodebuild timed out waiting for the iPhone as a destination.*\): Xcode's CoreDeviceService kept a stale device-preparation error; a re-plug or unlock does not fix it: see the WDA NOT READY line above \(ask the user's OK, then restart CoreDeviceService\), then re-run$/);
+  assert.doesNotMatch(lastLine(r.stdout), /trusted/);
+  assert.equal(w.runs(), 1);
+  clean(r);
+});
+
 test('I-227: Safari restored a second tab (AMBIGUOUS for open, I-037): exit 11 PREFLIGHT TABS; blank views never count; proxy down: exit 12', async () => {
   const w = await setup();
   w.setTabs([
