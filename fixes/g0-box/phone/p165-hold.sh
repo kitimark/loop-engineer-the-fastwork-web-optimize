@@ -208,17 +208,22 @@ esac
 # heat margin (lead 07:3xZ; P-165 H1 07:27-07:31Z: start gate Serious at 38.0 C, end gate Fair at 37.9 C, hold VOID):
 # after a passing start gate, while the battery reads under MARGIN_C, fling heat runs on the mirror (uncounted, HEATRATE
 # lines; no re-gate, the end gate still decides): at most 2 in an item hold, more in a heat hold (PW: aim at MARGIN_C,
-# not only at a passing gate), each only while it and the hold's items still fit in the 600 s hold (a run ~150 s, an S
-# item ~75 s, a G item ~200 s, the end gate ~60 s)
+# not only at a passing gate), each only while it (~160 s) and the hold's items still pass their time checks (NEED)
 MARGIN_C=39.5
 case " $* " in *" PW "*) MMAX=6 ;; *) MMAX=2 ;; esac
-NEED=60; for I in "$@"; do case $I in PW) ;; *) case $(kind $I) in G) NEED=$((NEED + 200)) ;; *) NEED=$((NEED + 75)) ;; esac ;; esac; done
+# NEED mirrors the per-item time check below (item i starts only if elapsed + its budget + 30 <= 600): the largest
+# (estimated time of the items before i) + (i's budget: S $BUDGET_S, G $sE) + 30 (P-165 H4 07:57Z: the old sum, G at
+# ~200 s, let a second margin run in and the G warm-up then failed the time check, VOID time)
+NEED=0; PRE=0
+for I in "$@"; do case $I in PW) ;; *)
+  case $(kind $I) in G) b=$sE; e=200 ;; *) b=$BUDGET_S; e=75 ;; esac
+  [ $((PRE + b + 30)) -gt $NEED ] && NEED=$((PRE + b + 30)); PRE=$((PRE + e)) ;; esac; done
 below() { [ -n "$1" ] && node -e 'process.exit(Number(process.argv[1]) < Number(process.argv[2]) ? 0 : 1)' "$1" "$MARGIN_C"; }
 NM=0
 if [ $HFOK = 1 ]; then
   while [ $NM -lt $MMAX ]; do
     bt=$(hread); below "$bt" || break
-    [ $(( $(date +%s) - T0 + 150 + NEED )) -le 600 ] || { echo "MARGIN battery $bt C < $MARGIN_C C, but no time for a heat run ($NM done)"; break; }
+    [ $(( $(date +%s) - T0 + 160 + NEED )) -le 600 ] || { echo "MARGIN battery $bt C < $MARGIN_C C, but no time for a heat run ($NM done)"; break; }
     NM=$((NM + 1)); echo "MARGIN $NM: battery $bt C < $MARGIN_C C: fling heat run on the mirror before the first item"
     HPAGE_FORCE=mirror; prewarm; HPAGE_FORCE=; hflush "?"
   done
