@@ -128,6 +128,10 @@ for I in "$@"; do
     node tools/iphone.mjs gesture $FS $PROF $EX $TL --owner "$R" --label "p165-$H-$I" --out "$O/$F.json" > "$O/$F.log" 2>&1; r=$?
     node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
   fi
+  # exit 8: the run's own profile read refused (the phone left real Serious, or hit the ceiling, between the gate and
+  # the run): no data; the hold is VOID as too cool and runs again after a heat hold (a ceiling then shows at its gate)
+  if [ $r -eq 8 ]; then node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
+    echo "HOLD $H VOID profile misfit at $I ($(grep -m1 -E 'PROFILE|refus' "$O/$F.log" | cut -c1-100)) (TOOCOOL)"; exit 5; fi
   echo "RUN $I arm $A exit $r $(date -u +%TZ) load1 $(sysctl -n vm.loadavg | cut -d' ' -f2)"
   case $I in
     w?|W?) [ $r -ne 0 ] && echo "ITEM $I exit $r (warm-up, uncounted; the hold goes on)" ;;

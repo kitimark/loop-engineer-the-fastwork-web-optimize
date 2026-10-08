@@ -383,7 +383,7 @@ The kit is in `fixes/g0-box/phone/`, committed with this paragraph (sha256/12):
 |---|---|
 | `p165-run.sh` | 0132f929acb9 |
 | `p165-block.sh` | 55ec25c30b71 |
-| `p165-hold.sh` | 1dd03dd46818 |
+| `p165-hold.sh` | 1451857b284a (after the dry run: a run's own profile refusal, exit 8, now ends the hold VOID TOOCOOL instead of reading as a failed sentinel; dry-run paths unchanged) |
 | `p165-serve.sh` | de3381ca66f5 |
 | `p165-score.mjs` | ac951bcba999 |
 | `p129-gates-g0b.mjs` | b60fb1bcfe8d |
