@@ -664,6 +664,29 @@ Dry run of part A (`CM_DRY=1`) after the change:
 - served hashes are as in condition 1;
 - PLAN lines show `--profile serious` and gates `--accept-induced`.
 
+**Lead ruling 11:1xZ (after BLOCK STOP 8 in H1; no further round).**
+
+What happened in H1 (11:03-11:09Z, tool-serious; both gates PASS, Serious, induced, 36.0-36.3 °C):
+- The kit judged the counted, Timeline-on W run A01 as a heat sentinel. It read bottom 56 / scroll 51.5 fps and failed the 58 fps bottom.
+- That judgement was against protocol §5.2 ("Timeline blocks"). The sentinel is an uncounted Timeline-OFF control run. A Timeline-on run may stand in only when it passes, and its failure voids nothing.
+- A W run's "bottom" phase is the window end (y 750 at spot A), not the page bottom. H1's own Timeline-OFF v0 warm-up Aw0 also reads 56 fps in that phase, so that phase measures the page there, not heat.
+
+The ruling:
+- H1 stays VALID: A01 and Ae1 count.
+- Counted W runs are never judged as sentinels.
+- The sentinel is `<S>sC`: one uncounted Timeline-OFF S control run on v0 (`iphone.mjs run --driver scroll --probe std --profile serious --arm C --heat-sentinel`, to the page bottom, budget 100 s). It runs at each part's start after the warm-ups, and in the TAIL. Only a failing sC stops the block (BLOCK STOP 8).
+
+New holds:
+
+| part | holds |
+|---|---|
+| A2 (resume from H2) | `H2:AsC,An1,Ae2,An2,A02  H3:An3,A03,Ae3  H4:TAILA` |
+| B | `H5:Bw0,Bwe,Bwf,BsC  H6:B01,Be1,Bf1,Be2  H7:Bf2,B02,Bf3  H8:B03,Be3  H9:TAILB` |
+
+The Latin square order is unchanged. Both dry runs printed `HOLD DRY ok` for every hold.
+
+Our runner had already ended the condition with `thermal.mjs clear` when part A ended, so part A2's part-start `iphone.mjs rearm` sets it again. H1's results (spot-frame dt, OBSERVED, not read against any rule yet): v0 17 ms (A01) and g0.0e 42 ms (Ae1).
+
 Conditions 1, 2 and 4 stand as checked above. For condition 3, C-119 was answered before the kit was ready. The console refused a late ack on the answered step, so the lead tells the user that the test starts a few minutes later.
 
 ## P-164 (phone card; written before any P-164 data)

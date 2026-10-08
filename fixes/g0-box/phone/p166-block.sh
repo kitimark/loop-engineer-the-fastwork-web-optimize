@@ -11,8 +11,9 @@
 #     post no Xcode step; Xcode is never touched. The runner (p166-run.sh) ends the condition with `node tools/thermal.mjs
 #     clear` right after `lock.mjs run iphone` returns (not in this script's exit trap).
 #   - no heat phase, no margin, no cooling by state (the amendment);
-#   - a failing heat sentinel (hold exit 8: a counted v0 run's W sentinel or the spot's control sentinel): BLOCK STOP 8,
-#     the lead decides;
+#   - a failing heat sentinel (hold exit 8): only the uncounted Timeline-OFF S control run on v0 (<S>sC, at the part's
+#     start after the warm-ups and in the TAIL) is judged (lead ruling 11:1xZ, protocol §5.2); BLOCK STOP 8, the lead
+#     decides. Counted Timeline-on W runs are never judged as sentinels;
 #   - H<n>:TAIL<S> re-runs the spot's RERUN-NEEDED counted items once each (as <item>x), then the spot's control sentinel.
 # Kept: served check at the part start, wda ensure + Safari restart, Safari parked before every hold and on exit, the
 # time-guard re-run (exit 7), the end-gate re-run (exit 3), USB link loss (re-plug, re-arm, then one W warm-up per arm port
@@ -21,7 +22,7 @@
 # hold; one phone step at a time) and waits for its Done (the signature's condition 3). P166_READY=0 skips it when the
 # user already answered the ready step (C-119, 10:41Z).
 #   CM_TICKET=P-166 CM_THERMAL=serious node tools/lock.mjs run iphone --owner fix-g0-box --block P-166 --max-seconds 3600 \
-#     --keep 120 -- sh fixes/g0-box/phone/p166-block.sh H1:Aw0,Awe,Awn,A01,Ae1 H2:An1,Ae2,An2,A02 H3:An3,A03,Ae3 H4:TAILA
+#     --keep 120 -- sh fixes/g0-box/phone/p166-block.sh H2:AsC,An1,Ae2,An2,A02 H3:An3,A03,Ae3 H4:TAILA
 # Logs: out/p166ph/hold-<H>.log, out/p166ph/order.log, out/p166ph/rearm-*.log. CM_DRY=1: p166-hold.sh dry.
 cd "$(dirname "$0")/../../.." || exit 2
 [ -n "$CM_TICKET" ] || { echo "CM_TICKET is not set: no run"; exit 2; }
@@ -164,10 +165,11 @@ for spec in "$@"; do
     TAIL[AB])
       S=${items#TAIL}
       XS=$(ls $LG/hold-H*.log 2>/dev/null | while read f; do sed -n 's/^RERUN-NEEDED \(.*\)$/\1/p' "$f"; done | tr ' ' '\n' | grep -E "^$S[0enf][1-3]$" | awk '!s[$0]++' | sed 's/$/x/' | tr '\n' ' ')
-      echo "TAIL$S: re-runs ${XS:-none}; then the control sentinel ${S}s0"
+      echo "TAIL$S: re-runs ${XS:-none}; then the S heat sentinel ${S}sC"
       CURW=$(grep -h -o "${S}w[0enf]" $LG/hold-*.log 2>/dev/null | awk '!s[$0]++' | tr '\n' ' ')
-      run1 $H $XS ${S}s0 ;;
-    *) case $items in *[AB]w*) CURW=$(echo "$items" | tr ' ' '\n' | grep -E '^[AB]w' | tr '\n' ' ') ;; esac
+      run1 $H $XS ${S}sC ;;
+    *) case $items in *[AB]w*) CURW=$(echo "$items" | tr ' ' '\n' | grep -E '^[AB]w' | tr '\n' ' ') ;;
+         *) [ -n "$CURW" ] || CURW=$(grep -h -o "$(echo "$items" | cut -c1)w[0enf]" $LG/hold-*.log 2>/dev/null | awk '!s[$0]++' | tr '\n' ' ') ;; esac
        run1 $H $items ;;
   esac
 done

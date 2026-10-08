@@ -20,7 +20,11 @@
 #   <S>w<a>    W warm-up at spot S on arm a's port (--warmup, Timeline off, uncounted)  -> w-<S>w<a>-<H>.json
 #   <S><a><n>  W counted run n (1-3), Timeline on (--timeline), v0 runs judged as the heat sentinel (--arm C)
 #                                                                                       -> w-<S><a><n>.json + tl-<S><a><n>.json
-#   <S>s0      the Timeline-off v0 control sentinel at the spot's end (uncounted, --heat-sentinel, never --warmup)
+#   <S>sC      the heat sentinel (lead ruling 11:1xZ, protocol §5.2 "Timeline blocks"): ONE uncounted Timeline-OFF S
+#              control run on v0 (iphone.mjs run --driver scroll --probe std --arm C --heat-sentinel, to the page bottom,
+#              never --warmup), at each part's start after the warm-ups and in the TAIL         -> s-<S>sC-<H>.json
+#   Counted W runs (Timeline on) are never judged as sentinels (a W "bottom" is the window end, not the page bottom;
+#   v0's W end phase at spot A reads 56 fps with Timeline off too: H1's Aw0). Only a failing sC stops the block.
 # Lines: RUN <item> arm <a> exit <r> ... | SENTINEL <item> PASS|FAIL ... | ITEM <item> VOID ... | RERUN-NEEDED <items> |
 #   HOLD <H> VALID <s> s [SENTINEL-FAIL <items>] (exit 0 / 8) | HOLD <H> VOID <why> (3 end gate/sleep, 4 setup,
 #   5 start gate or MISFIT, 7 time, 11 LINK). CM_DRY=1: pins, served hashes, the tools head and the plan only.
@@ -37,13 +41,13 @@ TOOLS_MIN=db884e9d   # iphone.mjs run --timeline (I-247); the signature's condit
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
 BUDGET_W=${CM_BUDGET_W:-75}
 mkdir -p $O
-for I in "$@"; do case $I in [AB]w[0enf]|[AB][0enf][1-3]|[AB][0enf][1-3]x|[AB]s0) ;; *) echo "HOLD $H VOID unknown item $I (no run)"; exit 4 ;; esac; done
+for I in "$@"; do case $I in [AB]w[0enf]|[AB][0enf][1-3]|[AB][0enf][1-3]x|[AB]sC) ;; *) echo "HOLD $H VOID unknown item $I (no run)"; exit 4 ;; esac; done
 srv() { case $1 in 0) echo v0 ;; e) echo e ;; n) echo enohe ;; f) echo f ;; B) echo B ;; esac; }
 pin() { case $1 in B|0) echo "4606120cf392 27776f3d4138" ;; e) echo "5c39f7a96e41 d4e684032482" ;; n) echo "779fc9f36fc1 d4e684032482" ;; f) echo "30fd80ccbb3f 1d1e5d62a2c4" ;; esac; }
 alet() { case $1 in 0) echo C ;; e) echo A ;; n) echo B ;; f) echo V ;; esac; }
 port() { node -e "console.log(JSON.parse(require('fs').readFileSync('$SV/serve-$1.json','utf8')).port)" 2>/dev/null; }
 served() { curl -s "http://127.0.0.1:$1/$2" | shasum -a 256 | cut -c1-12; }
-ARMS_USED="B"; for I in "$@"; do a=$(echo "$I" | cut -c2); [ "$a" = w ] || [ "$a" = s ] && a=$(echo "$I" | cut -c3); case " $ARMS_USED " in *" $a "*) ;; *) ARMS_USED="$ARMS_USED $a" ;; esac; done
+ARMS_USED="B"; for I in "$@"; do a=$(echo "$I" | cut -c2); [ "$a" = w ] && a=$(echo "$I" | cut -c3); [ "$a" = s ] && a=0; case " $ARMS_USED " in *" $a "*) ;; *) ARMS_USED="$ARMS_USED $a" ;; esac; done
 for a in B 0 e n f; do eval "P_$a=\$(port $(srv $a))"; done
 hashok() { for a in $ARMS_USED; do eval "p=\$P_$a"; [ -n "$p" ] || return 1; [ "$(served $p $JS) $(served $p $CSS)" = "$(pin $a)" ] || return 1; done; }
 hashline() { for a in $ARMS_USED; do eval "p=\$P_$a"; printf ' %s(%s) %s/%s' "$a" "$(srv $a)" "$(served $p $JS)" "$(served $p $CSS)"; done; }
@@ -59,11 +63,14 @@ echo "TOOLS head $HEAD contains $TOOLS_MIN (run --timeline) ok"
 hashok || { echo "HOLD $H VOID served hashes$(hashline) (no run)"; exit 4; }
 echo "SERVED$(hashline) ok"
 spot() { echo "$1" | cut -c1; }
-armof() { case $1 in ?w?) echo "$1" | cut -c3 ;; ?s0) echo 0 ;; *) echo "$1" | cut -c2 ;; esac; }
+armof() { case $1 in ?w?) echo "$1" | cut -c3 ;; ?sC) echo 0 ;; *) echo "$1" | cut -c2 ;; esac; }
 range() { case $(spot $1) in A) echo "--from 0 --to 750" ;; B) echo "--from 4000 --to 5000" ;; esac; }
-desc() { case $1 in ?w?) echo "W warm-up (--warmup, Timeline off, uncounted)" ;; ?s0) echo "Timeline-off v0 control sentinel (uncounted)" ;; ?0*) echo "W counted, Timeline on, heat sentinel" ;; *) echo "W counted, Timeline on" ;; esac; }
+BUDGET_S=${CM_BUDGET_S:-100}
+budget() { case $1 in ?sC) echo $BUDGET_S ;; *) echo $BUDGET_W ;; esac; }
+desc() { case $1 in ?w?) echo "W warm-up (--warmup, Timeline off, uncounted)" ;; ?sC) echo "S heat sentinel on v0 (--driver scroll, Timeline off, uncounted, --heat-sentinel)" ;; *) echo "W counted, Timeline on (no sentinel judgement)" ;; esac; }
 if [ "$CM_DRY" = 1 ]; then
-  for I in "$@"; do echo "PLAN $I spot $(spot $I) arm $(armof $I) ($(srv $(armof $I))) $(range $I) $(desc $I) $PROF (budget $BUDGET_W s)"; done
+  for I in "$@"; do case $I in ?sC) rg="to the page bottom" ;; *) rg=$(range $I) ;; esac
+    echo "PLAN $I spot $(spot $I) arm $(armof $I) ($(srv $(armof $I))) $rg $(desc $I) $PROF (budget $(budget $I) s)"; done
   echo "PLAN gates thermal-gate.mjs --expect serious --max-c 44 --accept-induced at the start and the end (tool-serious)"
   echo "HOLD $H DRY ok"; exit 0
 fi
@@ -103,15 +110,15 @@ echo "START GATE PASS (tool-serious)"
 RERUN=""; SFAIL=""
 late() { [ $(( $(date +%s) - T0 + $1 + 30 )) -gt 600 ]; }
 for I in "$@"; do
-  if late "$BUDGET_W"; then echo "HOLD $H VOID time: $I would start at $(( $(date +%s) - T0 )) s (+ $BUDGET_W + 30 > 600), items from $I on skipped; re-run the hold whole"
+  if late "$(budget $I)"; then echo "HOLD $H VOID time: $I would start at $(( $(date +%s) - T0 )) s (+ $(budget $I) + 30 > 600), items from $I on skipped; re-run the hold whole"
     node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; exit 7; fi
   hashok || { echo "HOLD $H VOID served hash changed before $I"; exit 4; }
   a=$(armof $I); eval "p=\$P_$a"; U=$(node tools/lan.mjs --url --port "$p") || { echo "HOLD $H VOID no LAN url at $I"; exit 4; }
   TL=""
   case $I in
     ?w?) F=w-$I-$H; EX="--warmup" ;;
-    ?s0) F=w-$I-$H; EX="--arm C --heat-sentinel --run $I-$H" ;;
-    *) F=w-$I; TL="--timeline $O/tl-$I.json"; EX="--arm $(alet $a) --run $I"; [ $a = 0 ] && EX="$EX --heat-sentinel" ;;
+    ?sC) F=s-$I-$H; EX="--arm C --heat-sentinel --run $I-$H" ;;
+    *) F=w-$I; TL="--timeline $O/tl-$I.json"; EX="--arm $(alet $a) --run $I" ;;
   esac
   for f in "$O/$F.json" "$O/tl-$I.json"; do
     [ "$f" = "$O/tl-$I.json" ] && [ -z "$TL" ] && continue
@@ -119,15 +126,19 @@ for I in "$@"; do
   done
   node tools/iphone.mjs open "$U" --owner "$R" > /dev/null || { echo "HOLD $H VOID open failed at $I"; exit 4; }
   ts=$(date +%s)
-  node tools/iphone.mjs run --driver window --probe std $(range $I) --hold 2 --sentinel 3 $PROF $EX $TL --build "$(srv $a)" \
-    --owner "$R" --block "$CM_TICKET" --label "p166-$H-$I" --out "$O/$F.json" > "$O/$F.log" 2>&1; r=$?
+  case $I in
+    ?sC) node tools/iphone.mjs run --driver scroll --probe std $PROF $EX --build "$(srv $a)" \
+           --owner "$R" --block "$CM_TICKET" --label "p166-$H-$I" --out "$O/$F.json" > "$O/$F.log" 2>&1; r=$? ;;
+    *) node tools/iphone.mjs run --driver window --probe std $(range $I) --hold 2 --sentinel 3 $PROF $EX $TL --build "$(srv $a)" \
+         --owner "$R" --block "$CM_TICKET" --label "p166-$H-$I" --out "$O/$F.json" > "$O/$F.log" 2>&1; r=$? ;;
+  esac
   if [ $r -eq 8 ]; then node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
     echo "HOLD $H VOID profile misfit at $I ($(grep -m1 -E 'PROFILE|refus' "$O/$F.log" | cut -c1-100)) (MISFIT)"; exit 5; fi
   echo "RUN $I arm $a ($(srv $a)) spot $(spot $I) exit $r $(date -u +%TZ) $(( $(date +%s) - ts )) s load1 $(sysctl -n vm.loadavg | cut -d' ' -f2)"
   case $I in
     ?w?) [ $r -ne 0 ] && echo "ITEM $I exit $r (warm-up, uncounted; the hold goes on)" ;;
-    ?s0|?0[1-3]|?0[1-3]x)
-      if [ $r -ne 0 ] || [ ! -s "$O/$F.json" ]; then echo "SENTINEL $I FAIL no record (exit $r)"; SFAIL="$SFAIL $I"; case $I in ?s0) ;; *) RERUN="$RERUN $I" ;; esac
+    ?sC)
+      if [ $r -ne 0 ] || [ ! -s "$O/$F.json" ]; then echo "SENTINEL $I FAIL no record (exit $r)"; SFAIL="$SFAIL $I"
       else
         sl=$(node -e "const j=JSON.parse(require('fs').readFileSync('$O/$F.json','utf8'));const m=j.meta||{},s=m.sentinel||{};const b=m.battery||{};const t=(b.end&&b.end.temperatureC)??(b.start&&b.start.temperatureC)??null;console.log((s.pass===true?'PASS':'FAIL')+' batt '+t+' C '+JSON.stringify({criterion:s.criterion,value:s.value})+(m.error?' error':''))")
         echo "SENTINEL $I $sl"
