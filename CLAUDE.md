@@ -681,7 +681,7 @@ Phone blocks (protocol v2 §5; queue and slot tickets: `fixes/LEAD.md` "Stages a
   (S/W) or held m=1 p95 ≤18 ms (M). A failing control voids every run since the last passing one; under a real-heat
   profile the phone cools until the battery temperature is at or below the last passing sentinel's minus 0.5 °C, 38 if
   none today (`wait.mjs phone-temp --below <°C>`), at most 10 min; under `xcode-serious` (the default since user T-162 #3,
-  memory "phone-checks-start-warm") there is no heat pre-warm and no cooling wait; the sentinel still decides validity;
+  memory "phone-checks-start-warm") there is no heat pre-warm and no cooling wait (real heat: `iphone.mjs … --profile real-serious`, I-246); the sentinel still decides validity;
   then the block restarts. Every ticket names its profile; profiles never pool (ops-handover "Phone ticket profile"). **Timeline blocks** (every counted run captures Timeline): the sentinel is one
   uncounted Timeline-OFF control run after the warm-up(s) and one at the block end (only the end one if Timeline-on
   control data already meets both criteria, bottom ≥58 and scroll ≥44); counted runs keep Timeline on in every arm

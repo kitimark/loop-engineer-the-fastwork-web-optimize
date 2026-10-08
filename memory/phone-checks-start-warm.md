@@ -12,7 +12,8 @@ Is Induced = Yes with `--accept-induced`, profile `xcode-serious`). No heat pre-
 arm port (A3/U5) stays. Why: on 10-04, 41 of 109 hold starts were not at real Serious and 4 pre-warms took 1.4-31 min.
 Whether induced Serious also slows CPU/GPU is UNRESOLVED (one decisive check, owner mgmt-devices). Real heat runs only
 once, for the final best build. xcode-serious and real-heat blocks never pool. Blocks already signed for real heat (P-118)
-keep it. The text below is the earlier rule.
+keep it. Real-heat blocks name `--profile real-serious` in iphone.mjs (I-246, 2026-10-08, 8f2d9e8c; an induced
+condition is refused there, and `--warmup` runs warm the phone by use). The text below is the earlier rule.
 
 **Rule (user decision, T-039 #19-#21, 2026-10-03 10:06-10:08Z: option B, as an experiment; replaces the 38-40 °C band of
 T-029 #30).** If B hits a blocker (e.g. the state won't hold at Serious, or holds keep failing the gate), the lead reports it

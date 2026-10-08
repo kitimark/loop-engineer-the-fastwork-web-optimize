@@ -28,6 +28,9 @@ rejected.
 - `profile: xcode-serious | real-serious | real-fair`.
   - xcode-serious: Xcode-induced Serious, no heat pre-warm. This is the default phone profile from the v9 block on.
   - real-serious, real-fair: real heat, as before.
+    Tool flag (I-246, 8f2d9e8c): `iphone.mjs scroll|gesture|run|profile --profile real-serious` (gate real-serious, no
+    `--accept-induced`; exit codes 2 too cool, 3 ceiling, 4 induced refused). A `--warmup` run passes "too cool", so a
+    real-heat block warms the phone by use. P-165 (final build, g0.0f) is the first block on it.
 - **Blocks of different profiles never pool.** A ticket that pools counted runs across profiles (one score over
   two profiles, one C median over two profiles) is rejected. Each profile is its own block with its own C.
 - Checks for an `xcode-serious` ticket (all four, each named in the card):
