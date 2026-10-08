@@ -7,15 +7,17 @@
 #   enohe  knock-out: g0.0e with heCss false (out/g0box/p166/e-nohe)         JS 779fc9f36fc1  CSS d4e684032482
 #   fnowc  knock-out: g0.0f without [data-fw-wc="0"] (out/g0box/p166/f-nowc) JS 30fd80ccbb3f  CSS 0e2950034f24
 #   fnogl  knock-out: g0.0f, glint not animated (out/g0box/p166/f-noglint)   JS 30fd80ccbb3f  CSS f5239e3f348d
+#   B      stage 2 only: the plain baseline on its own port, the heat page and the gate's timer page (as P-165's B)
+#                                                                            JS 4606120cf392  CSS 27776f3d4138
 # The knock-outs are built by fixes/g0-box/phone/p166-build.py (diagnostic only, never a candidate build).
 # Usage: sh fixes/g0-box/phone/p166-serve.sh start|check|stop    State: out/p166/serve-<arm>.json, .pid, .log
 cd "$(dirname "$0")/../../.." || exit 2
 S=out/p166; OWNER=${FW_AGENT:-fix-g0-box}
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
-ARMS="v0 e f enohe fnowc fnogl"
-root() { case $1 in v0) echo "--root site-pretty" ;; e) echo "--root site-pretty --overlay out/g0box/g00e" ;; f) echo "--root site-pretty --overlay out/g0box/snap4/V" ;;
+ARMS=${P166_ARMS:-"B v0 e f enohe fnowc fnogl"}
+root() { case $1 in B|v0) echo "--root site-pretty" ;; e) echo "--root site-pretty --overlay out/g0box/g00e" ;; f) echo "--root site-pretty --overlay out/g0box/snap4/V" ;;
   enohe) echo "--root site-pretty --overlay out/g0box/p166/e-nohe" ;; fnowc) echo "--root site-pretty --overlay out/g0box/p166/f-nowc" ;; fnogl) echo "--root site-pretty --overlay out/g0box/p166/f-noglint" ;; esac; }
-pin() { case $1 in v0) echo "4606120cf392 27776f3d4138" ;; e) echo "5c39f7a96e41 d4e684032482" ;; f) echo "30fd80ccbb3f 1d1e5d62a2c4" ;;
+pin() { case $1 in B|v0) echo "4606120cf392 27776f3d4138" ;; e) echo "5c39f7a96e41 d4e684032482" ;; f) echo "30fd80ccbb3f 1d1e5d62a2c4" ;;
   enohe) echo "779fc9f36fc1 d4e684032482" ;; fnowc) echo "30fd80ccbb3f 0e2950034f24" ;; fnogl) echo "30fd80ccbb3f f5239e3f348d" ;; esac; }
 case "$1" in start|check|stop) ;; *) echo "usage: sh fixes/g0-box/phone/p166-serve.sh start|check|stop"; exit 2 ;; esac
 if [ "$1" = stop ]; then

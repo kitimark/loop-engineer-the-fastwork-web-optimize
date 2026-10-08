@@ -597,6 +597,48 @@ recorded here before the first counted run (no second lead round):
 3. The user's console step is answered (posted from inside the phone hold; one phone step at a time).
 4. Part runners start detached (nohup), as in P-165.
 
+**Stage-2 kit and the self-checks (fix-g0-box, 10:0x-10:1xZ, before the first counted run).**
+
+The kit lives in `phone/`; all of it is new for stage 2 except `p166-serve.sh`, which only gains arm B.
+
+| file | what it does |
+|---|---|
+| `p166-serve.sh` | gains arm **B**: the plain baseline on its own port, used as the heat page and the gate's timer page, as P-165's B |
+| `p166-hold.sh` | one hold, copied from P-165's final `p165-hold.sh`. Gate without `--accept-induced`, GRIDCHECK restart on every exit 6, heat-fling runs on the mirror's B port with a HEATRATE line each, margin 39.0 °C (none at ≥ 39.0). W items: warm-ups `<S>w<a>` (Timeline off), counted `<S><a><n>` with `--timeline`, the Timeline-off v0 control `<S>s0`. v0 counted runs are judged as heat sentinels, and served hashes are checked before every item |
+| `p166-block.sh` | one part. Ceiling cooling is by state: a `--no-timer` read every ~3 min, ≤ 15 min, else BLOCK STOP 6. A failing sentinel is BLOCK STOP 8 (the lead decides; simpler than P-165's TAIL voiding). `TAIL<S>` re-runs the spot's RERUN-NEEDED items once, then runs the control sentinel |
+| `p166-run.sh` | part A = spot A with the user's ready step and a first heat; part B = spot B. Each part is one phone hold with `--block P-166` |
+| `p166-simtl.sh` | the Simulator `--timeline` check (condition 2 and the card's pre-data check) |
+| `p166-wread.mjs` | the stage-2 reader: spot frame, its segments, the owner rule. Written before any stage-2 data; `--selftest`: 6 cases ok |
+
+Spot frames in the reader:
+- **A:** the first frame whose yEnd passes 30, the stage-1 rule.
+- **B:** the `+is-play` crossing frame.
+
+Segments are the Timeline records' self time inside the frame interval (t − dt, t]: Script, Layout (with style), Paint+Composite, and Other. The reader also gives gap − frame.
+
+Spot orders (Latin square per spot):
+
+| part | spot | holds | order |
+|---|---|---|---|
+| A | A | H1-H4 | warm-ups, A01 Ae1 An1 · Ae2 An2 A02 · An3 A03 Ae3, TAILA |
+| B | B | H5-H8 | the same with f in place of n |
+
+Self-checks against the four conditions above:
+1. **OK.** The dry run of both parts (`CM_DRY=1`) printed:
+   - the tools head 41b8b179, which contains db884e9d (`git merge-base --is-ancestor`);
+   - the served hashes of every stage-2 arm: B and v0 4606120cf392 / 27776f3d4138, g0.0e 5c39f7a96e41 / d4e684032482, e-nohe 779fc9f36fc1 / d4e684032482, g0.0f 30fd80ccbb3f / 1d1e5d62a2c4;
+   - the plan of every hold.
+2. **OK.** One uncounted W run per spot with `--timeline` on the Simulator (`p166-simtl.sh`, 10:08-10:11Z; a normal session, because a functional session refuses W):
+
+   | run | Timeline | `meta.timeline` | spot frame |
+   |---|---|---|---|
+   | g0.0e, spot A | kind run-timeline, 563 records, 517 RenderingFrame | stopped, no errors | `+he-css` at y 61, step 1 |
+   | v0, spot B | 653 records, 652 RenderingFrame | stopped, no errors | `+is-play` at y 4599, inside the 4500-4750 step |
+
+   The reader found both spot frames and their Timeline segments. No dt was read.
+3. Checked at the start of part A: the ready step is posted from inside the phone hold, and no hold starts before its Done.
+4. **OK.** Parts start with `nohup sh fixes/g0-box/phone/p166-run.sh P-166 A|B`, detached.
+
 ## P-164 (phone card; written before any P-164 data)
 
 **Pre-data check 2, with the g0 program (2026-10-08 03:47-03:55Z, before any P-164 data). Result: START-STATE
