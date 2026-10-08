@@ -71,7 +71,48 @@ def append_css(rule, tag):
         p = os.path.join(a, CSS); s = open(p).read(); assert rule not in s
         open(p, 'w').write(s + f'/* [P-168 {tag}] de-offscreen knock-out (b28ac944), diagnostic only */\n' + rule)
     return f
-ARMS = {'g': [g], 'f-ko3': [ko3], 'f-ko25': [ko2, ko5], 'f-cv25': [ko2, cv], 'f-B': [append_css(KOB, 'f-B')], 'f-C': [append_css(KOC, 'f-C')]}
+# Lead 16:2xZ (f+B proposal): f-B2 = f-B made pixel-identical. KO B removes the paused scene's col-track animation, so
+# the hidden panel's tracks stop compositing (WebKit main 94a902b223 RenderLayerCompositor.cpp 3902-3910: a keyframe
+# effect "currently affecting" transform composites, paused or not), but a re-opened menu then starts the columns from
+# 0 instead of where they paused. f-B2 keeps the phase: right before the morph scene flips to paused, each track keeps
+# its current frame as a static inline transform (translateY only: 2D, no compositing, RenderLayerCompositor.cpp
+# 3949-3951) and gets animation-delay = -(its phase); on resume the animation starts again at that phase, as the
+# original's paused animation resumes there. Phase = currentTime - the track's own delay (a second pause adds up).
+# The first call (the mount, scene paused) keeps the frame too (phase ~0): without it the hidden track sat at 0 instead of
+# the original's paused phase-0 frame (colphase.mjs: a 56 px jump at the first resume; invisible, but kept exact).
+FWCOL = ('// [colpause f-B2] keep the morph columns\' phase across a paused scene (KO B removes the paused animation so the\n'
+         '// hidden panel\'s tracks stop compositing): on pause each track keeps its frame as a static 2D transform and its\n'
+         '// next animation starts at the same phase (negative animation-delay), as the original\'s paused animation resumes.\n'
+         'function fwColScene(el, on) {\n'
+         '  if (!el || el.__fwColOn === on) return;\n'
+         '  el.__fwColOn = on;\n'
+         '  for (const tr of el.querySelectorAll(`.start-selling-morph-col-track`)) {\n'
+         '    if (on) {\n'
+         '      tr.style.removeProperty(`transform`);\n'
+         '      continue;\n'
+         '    }\n'
+         '    const an = tr.getAnimations().find((x) => x.animationName);\n'
+         '    if (!an || an.currentTime == null) continue;\n'
+         '    const ph = an.currentTime - (an.effect.getTiming().delay || 0);\n'
+         '    tr.style.transform = getComputedStyle(tr).transform;\n'
+         '    tr.style.animationDelay = `${-ph}ms`;\n'
+         '  }\n'
+         '}\n')
+def b2js(a):
+    edit(os.path.join(a, JS), 'function cE(e, t) {\n', FWCOL + 'function cE(e, t) {\n')
+    edit(os.path.join(a, JS), '            k(a, `data-start-selling-scene`, s(E) ? `active` : `paused`),\n',
+         '            fwColScene(a, s(E)) /* [colpause f-B2] before the attribute flips */,\n'
+         '            k(a, `data-start-selling-scene`, s(E) ? `active` : `paused`),\n')
+# Before the first open no animation exists to read (the mount's paused scene comes first), so the hidden tracks would
+# sit at 0 instead of the original's paused phase-0 frame (the keyframes' 0 %: +56 px odd, -56 px even); this rule gives
+# them that frame (a captured inline frame overrides it). Reduced motion has no animation in the original: no rule there.
+KOB2 = KOB + ('@media (prefers-reduced-motion: no-preference) {\n'
+              '  .start-selling [data-start-selling-scene="paused"] .start-selling-morph-col:nth-child(odd) .start-selling-morph-col-track {\n'
+              '    transform: translateY(56px);\n  }\n'
+              '  .start-selling [data-start-selling-scene="paused"] .start-selling-morph-col:nth-child(2n) .start-selling-morph-col-track {\n'
+              '    transform: translateY(-56px);\n  }\n}\n')
+ARMS = {'g': [g], 'f-ko3': [ko3], 'f-ko25': [ko2, ko5], 'f-cv25': [ko2, cv], 'f-B': [append_css(KOB, 'f-B')], 'f-C': [append_css(KOC, 'f-C')],
+        'f-B2': [append_css(KOB2, 'f-B2'), b2js]}
 lines = [f'g0.0f JS {h(os.path.join(F, JS))} CSS {h(os.path.join(F, CSS))} (base)']
 for arm, eds in ARMS.items():
     a = copy(arm)

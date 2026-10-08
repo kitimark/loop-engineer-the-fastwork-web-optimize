@@ -10,15 +10,16 @@
 #   fcv25  g0.0f + ko2 + panel content-visibility: hidden until its trigger      JS b700ddaf88b4  CSS fa5888cfa299
 #   fB     g0.0f + de-offscreen KO B (paused col-track animations off; diag.)  JS 30fd80ccbb3f  CSS cafb80014f69
 #   fC     g0.0f + de-offscreen KO C (paused row-title sweeps off; diag.)      JS 30fd80ccbb3f  CSS a94dbaa09b27
+#   fB2    f-B made pixel-identical: the columns keep their phase (colpause)      JS 9162843e750f  CSS 26d28a0a263b
 # Usage: sh fixes/g0-box/phone/p168-serve.sh start|check|stop    State: out/p168/serve-<arm>.json, .pid, .log
 cd "$(dirname "$0")/../../.." || exit 2
 S=out/p168; OWNER=${FW_AGENT:-fix-g0-box}
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
 ARMS=${P168_ARMS:-"v0 f g fko3"}
 root() { case $1 in B|v0) echo "--root site-pretty" ;; f) echo "--root site-pretty --overlay out/g0box/snap4/V" ;;
-  g) echo "--root site-pretty --overlay out/g0box/p168/g" ;; fko3) echo "--root site-pretty --overlay out/g0box/p168/f-ko3" ;; fko25) echo "--root site-pretty --overlay out/g0box/p168/f-ko25" ;; fcv25) echo "--root site-pretty --overlay out/g0box/p168/f-cv25" ;; fB) echo "--root site-pretty --overlay out/g0box/p168/f-B" ;; fC) echo "--root site-pretty --overlay out/g0box/p168/f-C" ;; esac; }
+  g) echo "--root site-pretty --overlay out/g0box/p168/g" ;; fko3) echo "--root site-pretty --overlay out/g0box/p168/f-ko3" ;; fko25) echo "--root site-pretty --overlay out/g0box/p168/f-ko25" ;; fcv25) echo "--root site-pretty --overlay out/g0box/p168/f-cv25" ;; fB) echo "--root site-pretty --overlay out/g0box/p168/f-B" ;; fB2) echo "--root site-pretty --overlay out/g0box/p168/f-B2" ;; fC) echo "--root site-pretty --overlay out/g0box/p168/f-C" ;; esac; }
 pin() { case $1 in B|v0) echo "4606120cf392 27776f3d4138" ;; f) echo "30fd80ccbb3f 1d1e5d62a2c4" ;;
-  g) echo "30fd80ccbb3f 2390e4715327" ;; fko3) echo "3778b38a6fe8 1d1e5d62a2c4" ;; fko25) echo "120386db2e02 1d1e5d62a2c4" ;; fcv25) echo "b700ddaf88b4 fa5888cfa299" ;; fB) echo "30fd80ccbb3f cafb80014f69" ;; fC) echo "30fd80ccbb3f a94dbaa09b27" ;; esac; }
+  g) echo "30fd80ccbb3f 2390e4715327" ;; fko3) echo "3778b38a6fe8 1d1e5d62a2c4" ;; fko25) echo "120386db2e02 1d1e5d62a2c4" ;; fcv25) echo "b700ddaf88b4 fa5888cfa299" ;; fB) echo "30fd80ccbb3f cafb80014f69" ;; fB2) echo "9162843e750f 26d28a0a263b" ;; fC) echo "30fd80ccbb3f a94dbaa09b27" ;; esac; }
 case "$1" in start|check|stop) ;; *) echo "usage: sh fixes/g0-box/phone/p168-serve.sh start|check|stop"; exit 2 ;; esac
 if [ "$1" = stop ]; then
   for A in $ARMS; do [ -f $S/serve-$A.pid ] && kill "$(cat $S/serve-$A.pid)" 2>/dev/null; rm -f $S/serve-$A.pid; done

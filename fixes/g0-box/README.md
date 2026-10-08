@@ -1086,6 +1086,44 @@ Files: `out/g0box/p168/px-*/px.json`.
    - The next question for window B is what that one Composite costs: the layers that commit at `+is-play`. That is de-offscreen's area (layer census, KO B).
    - On the Simulator, f+B was the one arm that cut the window-B Composite max (−2.8 ms, see "Composite count" above), so the later f+B block (after the proposal decision) asks the right question.
 
+## colpause: the menu columns' paused animation (proposal PR-039, lead 16:2xZ)
+
+**Why.** g0.0f idle-mounts the morph panel. Its 4 col tracks run a 16 s alternate `translateY` animation, which the
+morph scene pauses (`[data-start-selling-scene="paused"]`: `animation-play-state: paused`) while the menu is closed.
+- A paused keyframe effect that "currently affects" transform keeps its element composited (CONFIRMED, WebKit main
+  94a902b223, `RenderLayerCompositor.cpp` 3902-3910, `requiresCompositingForAnimation`).
+- de-offscreen's KO B (`animation: none !important` while paused) drops those layers, but a re-opened menu then starts
+  the columns from 0. The probe measures 56 px at every resume.
+
+**f-B2 (pixel-identical variant)** = KO B plus `fwColScene` (built by `phone/p168-build.py`, arm f-B2;
+JS 9162843e750f, CSS 26d28a0a263b). The helper is called in the morph scene's effect (JS ~14693) just before the
+attribute flips.
+- **On pause:** each track keeps its current frame as a static inline `transform` and gets `animation-delay: -(phase)`,
+  where phase = `currentTime` minus its own delay, so pauses add up.
+- **On resume:** the inline transform is removed and the animation restarts at that phase.
+- **Before the first opening:** no animation exists to read, so a CSS rule gives the paused tracks the keyframes' 0 %
+  frame (±56 px), but only under `prefers-reduced-motion: no-preference`.
+- A 2D transform alone does not composite (CONFIRMED, `RenderLayerCompositor.cpp` 3949-3951, `has3DTransformOperation`).
+
+**Checks** (`gates/colphase.mjs`: morph driver, 3 open/close cycles, rAF log of the scene state and 4 tracks' translateY;
+Chrome 430x932 2 loads, Simulator 1 load; `phone/p168-tree.mjs` for layers):
+
+| arm | jump at re-open, Chrome / Sim (px) | jump at pause | drift while paused | top layers / MB (Sim) |
+|---|---|---|---|---|
+| g0.0f | 0-0.19 / 0-0.36 | 0-0.02 | 0 | 158 / 27.6 |
+| f-B (KO B) | 56 / 56 | 47 | 0 | 152 / 13.0 |
+| f-B2 | 0-0.18 / 0-0.34 | 0-0.02 | 0 | 152 / 12.4 |
+
+One frame of normal column motion is 0.14-0.16 px. The first f-B2 build (without the 0 % rule) jumped 56 px at the
+first opening only (a hidden state). It was rebuilt and re-checked: the table shows the rebuilt arm.
+
+- **Not claimed:** any window-B frame gain. de-offscreen's `+is-play` census (86b474a2) finds nothing KO B removes from
+  that commit except tree size.
+- **New suspect for window B, g0.0f only:** the glint `.is-active` start (setTimeout 1e3, JS 13285). It adds +4
+  layers and +5 overlap re-composites (+2.4 MB) about 1 s after `+is-play`.
+- **Proposal PR-039:** option restart = f-B, option keep-phase = f-B2 (recommended). Try-it A = g0.0f; overlays are
+  local in `fixes/colpause-{a,b,b2}/overlay`, never committed. Shots: `gates/colshot.mjs` (the menu's second opening + 0.8 s).
+
 ## P-164 (phone card; written before any P-164 data)
 
 **Pre-data check 2, with the g0 program (2026-10-08 03:47-03:55Z, before any P-164 data). Result: START-STATE
