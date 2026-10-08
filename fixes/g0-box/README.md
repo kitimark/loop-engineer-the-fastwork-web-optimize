@@ -1337,7 +1337,15 @@ No console errors in any of the four.
 **Signed by the lead 2026-10-09 as in 6b48fe58** (rev 1: C = g0.0h, V = ws, snap5 HASHES ba2e2fc5457c, G 38d7fe5d7fa8,
 tool-serious like P-164 and P-170, so they compare; order and rules as written). The lead then approved V = ws3 if the
 gates pass (parity on ws3, no HTML or CSP change, desktop Chrome unchanged). All three pass above, and the n = 6 mount
-gate passes. **Rev 2 (V = ws3, snap6 HASHES 48da4450e4ce) awaits the lead's signature.**
+gate passes.
+
+**Rev 2 signed by the lead 2026-10-08 ~22:0xZ** (C = g0.0h, V = ws3, snap6 HASHES 48da4450e4ce, analytics.js in
+the hash checks; the rest as rev 1). The mount gate passed as read: n = 6 by the pre-set rule, with a small margin
+on L+S (+3.5 against +4).
+
+**Queue condition (lead):** depends on the user's decision on PR-040 (cm-return).
+- The user keeps g0.0h's end or rejects PR-040: queue P-171 after P-170b ends and after any cm-return phone work.
+- The user accepts PR-040: P-171 is void. The next step is a card for B vs B + head wheel (mount only).
 
 **Decisions (the lead's, word for word):**
 - GAIN -> ws stacks with whatever wins P-170 (g0.0i candidate).
