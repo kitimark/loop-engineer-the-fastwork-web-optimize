@@ -320,6 +320,28 @@ valid for a decision only if the lead rules G6 a pin error, since the card names
   has a median of 8.5 per run against C's 6 (> 34: 32 against 30); with 4 runs a side this decides nothing.
 - Records: `out/g0bp/runs/` (gitignored); reader output `out/g0bp/p164-read.json`; run log `out/g0bp/p164-run.log`.
 
+**Lead ruling (2026-10-08, after the block): option (a), G6 was a stale pin.** G6 exists to prove that the signed
+program ran. The signed card names 38d7fe5d7fa8, and every record carries it, so the gate's intent is met; it failed
+on the kit's stale pin, not on data. The condition was a shown re-read, not an assumed one:
+- **The g0 gates copy:** `fixes/g0-box/phone/p129-read-g0.mjs` is `research/serious-heat/p129-read.mjs` with one line
+  changed (line 66, `FS_HASH = '38d7fe5d7fa8'`; `diff` shows only that line).
+  `fixes/g0-box/phone/p129-gates-g0.mjs` is `research/serious-heat/phone/p129-gates.mjs` with only its import pointed at
+  that copy (and its usage line). `g0b-hold.sh` now uses it, for future g0 tickets.
+- **Re-read of every P-164 record through it** (`node fixes/g0-box/phone/p129-gates-g0.mjs out/g0bp/runs EC1 … S1`, exit 0):
+  G1-G6 ok on EC1-EC4, EV1-EV4, EC1r and EV1r (idle 4.68-4.86 s); **SENTINEL S1 PASS** (54.3 fps, 3.9 % slow).
+- **D1-D3 re-read:** `g0b-read.mjs` gives byte-identical output (`out/g0bp/p164-read2.json` = `p164-read.json`): D1 0,
+  D2 0, D3 0/0/0, triggers 13/12 in every run. **P-164: PASS.**
+- **What counts:** the planned runs EC1-EC4 and EV1-EV4, as the card says. The re-runs EC1r and EV1r were spent on the
+  stale G6 and are **descriptive only**:
+
+| re-run (descriptive) | triggers open/close | O1 f1 / f2 | later-open n, median dt, share > 34/30/38 | close median, > 34 | finger-down > 50 (46/54), > 34 (30/38) |
+|---|---|---|---|---|---|
+| EC1r (C) | 13 / 12 | 12 / 17 ms | 516, 17 ms, 0/0/0 | 17 ms, 0.2 % | 9 (9/4), 32 (56/19) |
+| EV1r (V) | 13 / 12 | 11 / 17 ms | 513, 17 ms, 0/0/0 | 17 ms, 0 % | 6 (7/3), 29 (63/17) |
+
+- Lesson (posted as a pitfall finding): re-pinning a program needs the reader's FS_HASH too; the dry run doesn't
+  exercise the gates.
+
 ### Options considered after the stop (the lead chose (a))
 
 - (a) A T3 look-alike proposal: the outline differs mid-motion only. **Taken.**

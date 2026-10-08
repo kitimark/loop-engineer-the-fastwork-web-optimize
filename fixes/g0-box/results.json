@@ -46,7 +46,7 @@
   },
   "land": "fixes/v3w-g00e/patch.diff (g0.0f, baseline-relative, CSS 1d1e5d62a2c4 / JS 30fd80ccbb3f)"
  },
- "verdict": "ACCEPTED T3 (PR-038, user 03:04Z). g0.0f = g0.0e + v3-W reproduces the PR-038 gates against g0.0e: Chrome T0 within A/A, Simulator the same 6 outline stops and maxima (max 218), Reduce Motion T0, Join clip corners/over-EN 0, logo flip jump <= 0.14 px. T3 look-alike PROPOSAL (lead decision after 043143d2): WebKit misses T2 only on the nav outline anti-aliasing mid-motion (edge max 218 > 128 at 6 of 144 stops; flat max 31; rests identical); Chrome T0 by construction (148 stops within A/A); Reduce Motion T0 (v3-W steps aside). Gain (Simulator, 2 sessions, counts only): opening adds ~11 MB less layer memory (open minus closed 16.2-17.9 -> 5.4-7.1 MB; the nav backing store at panel size, 11.6 MB); redraw area per open -5 % / -16 %, per close +10 % / -6 % (mixed); bar repaints after a close 86-88 -> 0, top scroll 65 -> 0 (area -12 %); layers per open equal; top/mid/end memory within 1 MB. Not timed, not on the phone.",
+ "verdict": "P-164 PASS (lead ruling (a), re-read shown): g0.0f no worse than g0.0e on the phone (D1 0, D2 0, D3 0/0/0; 4+4 planned runs). ACCEPTED T3 (PR-038, user 03:04Z). g0.0f = g0.0e + v3-W reproduces the PR-038 gates against g0.0e: Chrome T0 within A/A, Simulator the same 6 outline stops and maxima (max 218), Reduce Motion T0, Join clip corners/over-EN 0, logo flip jump <= 0.14 px. T3 look-alike PROPOSAL (lead decision after 043143d2): WebKit misses T2 only on the nav outline anti-aliasing mid-motion (edge max 218 > 128 at 6 of 144 stops; flat max 31; rests identical); Chrome T0 by construction (148 stops within A/A); Reduce Motion T0 (v3-W steps aside). Gain (Simulator, 2 sessions, counts only): opening adds ~11 MB less layer memory (open minus closed 16.2-17.9 -> 5.4-7.1 MB; the nav backing store at panel size, 11.6 MB); redraw area per open -5 % / -16 %, per close +10 % / -6 % (mixed); bar repaints after a close 86-88 -> 0, top scroll 65 -> 0 (area -12 %); layers per open equal; top/mid/end memory within 1 MB. Not timed, not on the phone.",
  "gates": {
   "seek": [
    {
@@ -950,7 +950,7 @@
   }
  },
  "p164": {
-  "status": "block run 2026-10-08 04:00-05:08Z; VOID as run by the kit (gate G6 pinned to v1 8737f212c0ff, a kit error), every other gate passes; reading PASS conditional on the lead ruling G6 a pin error",
+  "status": "PASS after the lead ruling (a): G6 was a stale pin (signed program 38d7fe5d7fa8 in every record); re-read through the g0 gates copy passes",
   "preData1": {
    "program": "fixes/morph-scroll/g-fastshort-v1.json (8737f212c0ff)",
    "result": "STOP: both arms abort at the first non-optional `until atEnd` (scrollY 5213/5214): g0 pins the opened page where its jack fired and opening grows docH 5999 -> 6035 (maxY 5260); no E stroke reached"
@@ -1213,6 +1213,39 @@
     },
     "order": "EC1 EC2 EC3 EC4 / EV1 EV2 EV3 EV4"
    }
+  },
+  "leadRuling": {
+   "ruling": "(a) G6 stale pin: the signed card names 38d7fe5d7fa8 and every record carries it",
+   "gatesCopy": "fixes/g0-box/phone/p129-read-g0.mjs (= research/serious-heat/p129-read.mjs with only line 66 FS_HASH = 38d7fe5d7fa8) + fixes/g0-box/phone/p129-gates-g0.mjs (import pointed at it); g0b-hold.sh uses them",
+   "reRead": "G1-G6 ok on EC1-EC4, EV1-EV4, EC1r, EV1r (idle 4.68-4.86 s); SENTINEL S1 PASS 54.3 fps, slow 0.039; g0b-read output byte-identical: D1 0, D2 0, D3 0/0/0",
+   "counted": "EC1-EC4 / EV1-EV4 (planned runs, as the card says)",
+   "descriptiveOnly": {
+    "EC1r": {
+     "triggers": "13/12",
+     "f1": 12,
+     "f2": 17,
+     "openN": 516,
+     "openMedian": 17,
+     "share": "0/0/0",
+     "closeMedian": 17,
+     "close34": 0.002,
+     "fingerDown50": "9 (9/4)",
+     "fingerDown34": "32 (56/19)"
+    },
+    "EV1r": {
+     "triggers": "13/12",
+     "f1": 11,
+     "f2": 17,
+     "openN": 513,
+     "openMedian": 17,
+     "share": "0/0/0",
+     "closeMedian": 17,
+     "close34": 0,
+     "fingerDown50": "6 (7/3)",
+     "fingerDown34": "29 (63/17)"
+    }
+   },
+   "verdict": "PASS"
   }
  }
 }

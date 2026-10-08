@@ -45,7 +45,7 @@ JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
 C_JS=5c39f7a96e41; V_JS=30fd80ccbb3f; C_CSS=d4e684032482; V_CSS=1d1e5d62a2c4
 GM=${CM_GATE:-both}
 case $GM in start|end|both|none) ;; *) echo "CM_GATE must be start, end, both or none (got $GM): no run"; exit 2 ;; esac
-SELF=fixes/g0-box/phone/g0b-hold.sh; GATES=research/serious-heat/phone/p129-gates.mjs
+SELF=fixes/g0-box/phone/g0b-hold.sh; GATES=fixes/g0-box/phone/p129-gates-g0.mjs   # P-164 lead ruling: the g0 copy (FS_HASH 38d7fe5d7fa8)
 mkdir -p $O
 for I in "$@"; do case $I in WC|WV|S1|E[CV][1-4]|E[CV][1-4]r) ;; *) echo "HOLD $H VOID unknown item $I (no run)"; exit 4 ;; esac; done
 port() { node -e "console.log(JSON.parse(require('fs').readFileSync('$SV/serve-$1.json','utf8')).port)"; }
@@ -57,7 +57,7 @@ T0=$(date +%s)
 echo "HOLD $H ($CM_TICKET) start $(date -u +%FT%TZ) items $* gates $GM"
 echo "PIN $H $CM_TICKET profile ${CM_PROFILE:-xcode-serious} checkout $(pwd | sed 's|.*/\.claude/worktrees/||') head $(git rev-parse --short=8 HEAD 2>/dev/null)$(pins \
   $SELF fixes/g0-box/phone/g0b-block.sh fixes/g0-box/phone/g0b-serve.sh fixes/compositor-morph/phone/cm-read.mjs \
-  $GATES research/serious-heat/p129-read.mjs $FS $PR research/phone-thermal-gate/thermal-gate.mjs \
+  $GATES fixes/g0-box/phone/p129-read-g0.mjs $FS $PR research/phone-thermal-gate/thermal-gate.mjs \
   fixes/rest-script/tools/pmcheck.mjs out/g0box/snap4/C/$JS out/g0box/snap4/V/$JS out/g0box/snap4/C/$CSS out/g0box/snap4/V/$CSS)"
 hashok || { echo "HOLD $H VOID served hashes C $(served $PC $JS)/$(served $PC $CSS) V $(served $PV $JS)/$(served $PV $CSS); pinned C $C_JS/$C_CSS V $V_JS/$V_CSS (no run)"; exit 4; }
 echo "SERVED C $C_JS/$C_CSS ok, V $V_JS/$V_CSS ok"
