@@ -26,3 +26,5 @@ Related: [[user-steps-first]], [[one-phone-step-at-a-time]], [[trace-before-aski
 - When you sign a phone ticket or give a "go" that has a precondition (a Simulator dry run, cooling, a pending build),
   set the owner's row in the same step: `status.mjs set <id> --by lead --phone-next <ticket> --phone-needs "<what>"`.
   An unmarked row whose next step names the phone raises a false idle alarm (10-07: T-236, T-237).
+- When a block ends, clear or move the owner's phone mark in the same step (`--phone-next <next ticket>
+  --phone-needs "<what>"` or `--phone-next none`): a finished ticket left as "startable" raised T-246 (10-08 05:12Z).
