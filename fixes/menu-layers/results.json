@@ -136,7 +136,7 @@
   }
  },
  "phone": {
-  "status": "P-170 void (end sentinel S1 FAIL: 49.4 fps, slow 0.075, battery 43.0 C); P-170b signed (S0 + S1, C V V C), starts on fix-cm-return's proposal or 22:00Z",
+  "status": "P-170 void (S1 FAIL, heat); P-170b: S0 and S1 PASS, all holds VALID, C = V on every rule by hand (n = 2), g0b-read OPEN (its n >= 3 floor); lead rules",
   "P-170": {
    "driver": "G g-fastshort-g0, program 38d7fe5d7fa8",
    "profile": "tool-serious",
@@ -206,6 +206,69 @@
    "failedStarts": "tries 1-3: WDA terminate timeout, then XCTDaemonErrorDomain Code=41 (incident I-254); WDA restarted by the lead 19:11:36Z",
    "simWindowGap": "void: the 6-min I-160 window after H6 stayed shut because the lock counts the stopped block shell as a live phone run (tools/lib/lock.mjs 1249-1252); paused 19:53:38-19:56:20Z between holds, H7 re-gated",
    "logs": "out/mlp-p170 (gitignored)"
+  },
+  "P-170b": {
+   "order": "H1:WC H2:WV H3:S0 H4:EC1 H5:EV1 H6:EV2 H7:EC2 H8:TAIL(S1)",
+   "run": "2026-10-08 22:00-22:50Z",
+   "holds": "H1-H8 VALID",
+   "triggers": "13 open / 12 close in every run",
+   "byRuleN2": {
+    "D1_O1f2_ms": {
+     "C": "16.5 (16-17)",
+     "V": "16.5 (16-17)",
+     "diff": 0,
+     "verdict": "within +4"
+    },
+    "D2_openTweenMedian_ms": {
+     "C": "17 (17-17)",
+     "V": "17 (17-17)",
+     "diff": 0,
+     "verdict": "within +4"
+    },
+    "D3_share_gt34_30_38": {
+     "C": [
+      0,
+      0.00095,
+      0
+     ],
+     "V": [
+      0,
+      0.00095,
+      0
+     ],
+     "verdict": "V <= C at all three"
+    },
+    "openTween_gt50": {
+     "C": 0,
+     "V": 0
+    },
+    "closeTweenMedian_ms": {
+     "C": 17,
+     "V": 17
+    }
+   },
+   "readerDecision": "OPEN (D1/D2 INSUFFICIENT, D3 open: g0b-read decides only with >= 3 runs per arm, lines 49/51/55)",
+   "sentinels": {
+    "S0": {
+     "fps": 54.4,
+     "slowShare": 0.037,
+     "result": "PASS"
+    },
+    "S1": {
+     "fps": 54,
+     "slowShare": 0.044,
+     "result": "PASS"
+    }
+   },
+   "batteryTrend_C": {
+    "H1": 33.5,
+    "H3": 37.3,
+    "H5": 39.4,
+    "H7": 41.2,
+    "H8": 41.7,
+    "H8end": 41.9
+   },
+   "notes": "started 21:59:59Z at the 22:00Z deadline (fix-cm-return's go came ~4 s later); the launcher shell was killed by the 30-min background limit right after H8 finished (VALID); cleanup (park, thermal clear, servers) done by hand"
   }
  }
 }

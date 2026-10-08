@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured (Simulator counts, Chrome + Simulator pixel gates). Phone no-worse block P-170: counted read PASS, but the end sentinel failed (heat), which voids the block; the lead decides
+**Status:** measured (Simulator counts; Chrome, iPhone Simulator and iPad desktop pixel gates). Phone: P-170 void (end sentinel, heat); P-170b both sentinels pass, C = V on every rule (n = 2), the reader says OPEN for n < 3; the lead rules
 **Stage:** F (build card and phone card below; the lead signs the phone card)
 **Device class / gate:** render-bound, WebKit only → less-work landing rule (memory "less-work-landing-rule"): Simulator counts per morph state, pixel T2, one short phone no-worse check (G)
 **Driver(s) behind the claims:** Simulator census (stepped tween, counts only); seek pixel gates (Chrome headless, iOS Simulator); phone G (P-170 below: counted read PASS, void by S1)
@@ -206,6 +206,33 @@ program 38d7fe5d7fa8, profile tool-serious, the D1-D3 rules and the gates.
 - A sentinel fails again: the topic lands on the less-work rule with the Simulator counts and P-170's descriptive read.
   The phone no-worse check is then recorded as not achieved.
 - The read is FAIL with both sentinels passing: the card's decisions above apply.
+
+### P-170b result (run 2026-10-08 22:00-22:50Z)
+
+**Both sentinels passed, and all 8 holds were VALID. C and V are equal on every rule. `g0b-read` still prints DECISION OPEN,
+because it decides only with ≥ 3 runs per arm** (`g0b-read.mjs` 49, 51, 55). The P-170b delta set n = 2 without catching
+that floor. The lead rules on it.
+
+| rule | C (EC1, EC2) | V (EV1, EV2) | V − C | by the rule (applied by hand to n = 2) | reader |
+|---|---|---|---|---|---|
+| triggers per run (open / close) | 13 / 12 ×2 | 13 / 12 ×2 | equal | ok | ok |
+| D1 O1.f2, median (range) | 16.5 (16-17) ms | 16.5 (16-17) ms | 0 | within +4 | INSUFFICIENT |
+| D2 open-tween median dt | 17 (17-17) ms | 17 (17-17) ms | 0 | within +4 | INSUFFICIENT |
+| D3 open-tween share > 34 / 30 / 38 | 0 / 0.00095 / 0 | 0 / 0.00095 / 0 | equal | V ≤ C at all three | open |
+| open-tween frames > 50 | 0 | 0 | – | – | – |
+| close tween median dt (descriptive) | 17 | 17 | 0 | – | – |
+| **S0** (after the warm-ups) | 54.4 fps, slow 3.7 % → **PASS** | | | | |
+| **S1** (end) | 54.0 fps, slow 4.4 % → **PASS** | | | | |
+
+- The > 30 ms share is one frame of 515 in EC2 and one in EV1.
+- **Heat.** The battery rose from 33.5 °C at H1's start to 41.9 °C at H8's end (Xcode-induced Serious throughout, no
+  cooling between holds). S1 passed at 41.6-41.9 °C; P-170's S1 had failed at 42.7-43.0 °C.
+- **Start.** The block was due to start on fix-cm-return's "proposal posted" or at 22:00Z, whichever came first. The
+  22:00Z deadline fired at 21:59:59Z; cm-return's message arrived about 4 s later.
+- **Cleanup.** The launcher shell hit Claude Code's 30 min background limit and was killed right after H8 had finished
+  (VALID). No run was lost. Safari was parked, the tool-held thermal condition cleared and the servers stopped by hand.
+- Read: `node fixes/g0-box/phone/g0b-read.mjs out/mlp/runs --runs EC1,EC2,EV1,EV2` (`out/menu-layers/p170b-read.txt`,
+  gitignored).
 
 ## Risks, conflicts, follow-ups
 
