@@ -235,7 +235,7 @@ function fakeConsole() {
     steps,
     post: async (p) => { const s = { id: `C-${String(++n).padStart(3, '0')}`, status: 'pending', ...p }; steps.set(s.id, s); return s; },
     get: (id) => { const s = steps.get(id); if (!s) throw new Error(`no console step ${id}`); return s; },
-    cancel: async (id) => { steps.get(id).status = 'cancelled'; },
+    cancel: async (id, o) => { steps.get(id).status = 'cancelled'; steps.get(id).cancelNote = o?.note; },
     open: (s) => s.status === 'pending' || s.status === 'active',
   };
 }
@@ -283,7 +283,101 @@ test('replugStepPass: one step after 60 s of loss, none while ours is open, canc
   assert.deepEqual(audit.map((a) => a.event), ['replug-step', 'replug-step-closed', 'replug-step', 'replug-step']);
 });
 
-test('I-242 attachChange: a new usbmux attach number between two samples that both list the phone is a re-attach; a seen drop resets it', () => {
+// ---- I-252: no re-plug step while the user holds the iPhone ----------------------------------------------------------
+// 2026-10-08: the user took the phone off the cable on purpose under a `user` lease (16:23:02Z); the watch posted C-127
+// "Re-plug the iPhone's USB cable" at 16:24:35Z anyway, and its text said "the cable is in" for an unplugged phone.
+
+test('I-252 userPhoneHold: the iphone lock held by `user` / `user-*` (a live lease) is the user\'s; anyone else, or none, is not', async () => {
+  const K = await import('../../tools/lib/lock.mjs');
+  assert.equal(await L.userPhoneHold(), null, 'no holder');
+  let h = await K.acquire('iphone', { owner: 'lead', kind: 'lease', ttlSec: 60, timeoutSec: 5, log: () => {} });
+  assert.equal(await L.userPhoneHold(), null, 'an agent / the lead holds it');
+  await h.release();
+  for (const owner of ['user', 'user-try']) {
+    h = await K.acquire('iphone', { owner, kind: 'lease', ttlSec: 60, timeoutSec: 5, log: () => {} });
+    const u = await L.userPhoneHold();
+    assert.equal(u?.owner, owner);
+    assert.equal(u?.since, Date.parse(h.holder.acquiredAt));
+    await h.release();
+  }
+  assert.equal(await L.userPhoneHold(), null, 'released');
+  assert.equal(await L.userPhoneHold({ holder: { owner: 'user', acquiredAt: new Date(at(0)).toISOString() }, stale: 'lease expired' }), null, 'a stale lease is nobody\'s');
+  assert.equal(await L.userPhoneHold({ holder: { owner: 'userx', acquiredAt: new Date(at(0)).toISOString() }, stale: null }), null, 'not a user owner');
+});
+
+test('I-252 replugStepPass: no step while the user holds the iPhone (one note per hold), an open step cancelled, the next counted from the lease end', async () => {
+  const c = fakeConsole(), by = 'lead', afterMs = 60000;
+  const user = { owner: 'user', since: at(0) };
+  const pass = async (st, now, userHold = null) => {
+    const r = await replugStepPass(st, { by, now: at(now), afterMs, console: c, userHold });
+    return [r, { ...st, step: r.step, stepClosedAt: r.stepClosedAt, userHeld: r.userHeld ?? null, userHoldEnd: r.userHoldEnd ?? null, userNoted: !!r.userNoted }];
+  };
+  // the 2026-10-08 case: the lease from 16:23:02Z, unplugged from 16:23:35Z, the step at +60 s
+  let st = { state: 'unplugged', since: at(33), step: null, stepClosedAt: null };
+  let r;
+  [r, st] = await pass(st, 93, user);
+  assert.equal(r.posted, undefined, 'the user holds the iPhone: no re-plug step');
+  assert.equal(r.userHoldNote, 'user', 'one note for the caller to log');
+  assert.equal(c.steps.size, 0);
+  for (const t of [94, 300, 600]) {
+    [r, st] = await pass(st, t, user);
+    assert.equal(r.posted, undefined, `still held at ${t} s`);
+    assert.equal(r.userHoldNote, undefined, `the note once per hold, not at ${t} s`);
+  }
+  // the lease ends with the phone still off USB: the step only --step-after s after the lease end
+  [r, st] = await pass(st, 700);
+  assert.equal(r.posted, undefined, 'the lease just ended');
+  assert.equal(st.userHoldEnd, at(700));
+  [r, st] = await pass(st, 759);
+  assert.equal(r.posted, undefined, '59 s after the lease end');
+  [r, st] = await pass(st, 760);
+  assert.equal(r.posted, 'C-001', '60 s after the lease end');
+  // I-252 #4: the unplugged text does not claim the cable is in
+  assert.doesNotMatch(c.steps.get('C-001').instructions, /cable is in/);
+  assert.match(c.steps.get('C-001').instructions, /no iPhone on USB/i);
+
+  // the user takes the lease while our step is open: cancelled with a note, and no new step during the hold
+  [r, st] = await pass(st, 800, { owner: 'user-try', since: at(800) });
+  assert.equal(r.cancelled, 'C-001');
+  assert.equal(c.steps.get('C-001').status, 'cancelled');
+  assert.match(c.steps.get('C-001').cancelNote, /user holds the iPhone/);
+  assert.equal(r.userHoldNote, 'user-try');
+  assert.equal(st.step, null);
+  [r, st] = await pass(st, 900, { owner: 'user-try', since: at(800) });
+  assert.equal(r.posted, undefined);
+  assert.equal(r.userHoldNote, undefined);
+  // the link comes back during the hold, the lease ends: nothing to post
+  [r, st] = await pass({ ...st, state: 'ok', since: at(950) }, 950, { owner: 'user-try', since: at(800) });
+  [r, st] = await pass(st, 1000);
+  assert.equal(r.posted, undefined);
+  assert.equal(c.steps.size, 1);
+
+  // a new hold: the phone on USB first (no note), off USB later in the hold (the note then), usb-lost text
+  st = { state: 'ok', since: at(1000), step: null, stepClosedAt: null };
+  [r, st] = await pass(st, 1100, user);
+  assert.equal(r.userHoldNote, undefined, 'link ok: nothing to note');
+  [r, st] = await pass({ ...st, state: 'usb-lost', since: at(1150) }, 1150, user);
+  assert.equal(r.userHoldNote, 'user');
+  [r, st] = await pass(st, 1300);
+  [r, st] = await pass(st, 1360);
+  assert.equal(r.posted, 'C-002');
+  assert.match(c.steps.get('C-002').instructions, /the cable is in/, 'usb-lost (the phone on the bus): the old wording');
+  // without a user hold nothing changed: the I-222 rule (the test above) and an ok link drops the lease-end mark
+  [r, st] = await pass({ ...st, state: 'ok', since: at(1400) }, 1400);
+  assert.equal(r.closed, 'C-002');
+  assert.equal(st.userHoldEnd, null);
+  const ev = readFileSync(auditFile(), 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((a) => /user/.test(a.event));
+  assert.deepEqual(ev.map((a) => [a.event, a.step ?? null, a.owner]), [['replug-step-cancelled-user', 'C-001', 'user-try']]);
+});
+
+test('I-252 replugText: "the cable is in" only for usb-lost (IOUSB has the iPhone); unplugged says no iPhone on USB', () => {
+  assert.match(L.replugText('usb-lost'), /the cable is in/);
+  assert.equal(L.replugText('usb-lost'), L.REPLUG_TEXT);
+  assert.doesNotMatch(L.replugText('unplugged'), /cable is in/);
+  assert.match(L.replugText('unplugged'), /no iPhone on USB/i);
+});
+
+test('I-242 attachChange:a new usbmux attach number between two samples that both list the phone is a re-attach; a seen drop resets it', () => {
   const on = (id) => ({ at: at(0), iousb: IO, mux: { count: 1, listed: true, id }, proxy: { count: 1 } });
   assert.deepEqual(attachChange(null, on(135)), { attach: 135, reattach: null }, 'the first sample: nothing to compare');
   assert.deepEqual(attachChange(135, on(135)), { attach: 135, reattach: null });

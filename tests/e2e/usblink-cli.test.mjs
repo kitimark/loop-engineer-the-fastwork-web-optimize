@@ -226,6 +226,37 @@ test('watch --post-step: usb-lost past --step-after posts ONE re-plug action ste
   noIds(r.out + JSON.stringify(s), 'post-step');
 });
 
+test('I-252 watch --post-step: no re-plug step while the user holds the iPhone (one line per hold), ours cancelled when the user takes it; after the lease the step counts from its end', async () => {
+  io('none'); mux.set([]); // unplugged: the user took the phone off the cable (2026-10-08 16:23Z)
+  const lock = (...a) => nodeAsync(tool('lock.mjs'), a, { env, timeout: 30000 });
+  let l = await lock('acquire', 'iphone', '--owner', 'user', '--ttl', '120');
+  assert.equal(l.code, 0, l.out);
+  const w = nodeAsync(USBLINK, ['watch', '--every', '1', '--post-step', '--step-after', '2', '--by', 'lead', '--seconds', '16'], { env, timeout: 50000 });
+  const stateOf = () => { try { return JSON.parse(readFileSync(join(dir, 'state', 'usblink', 'state.json'), 'utf8')); } catch { return null; } };
+  for (let i = 0; i < 100 && stateOf()?.state !== 'unplugged'; i++) await sleep(100);
+  await sleep(4000); // past --step-after: before I-252 the step came here
+  assert.equal(stateOf()?.step, null, 'no step while the user holds the iPhone');
+  l = await lock('release', 'iphone', '--owner', 'user');
+  assert.equal(l.code, 0, l.out);
+  const relAt = Date.now();
+  let step = null;
+  for (let i = 0; i < 80 && !step; i++) { step = stateOf()?.step ?? null; if (!step) await sleep(100); }
+  assert.match(String(step), /^C-\d+$/, 'the lease ended, the phone still off USB: the step');
+  assert.ok(Date.now() - relAt >= 1900, `counted from the lease end (${Date.now() - relAt} ms), not from the loss`);
+  l = await lock('acquire', 'iphone', '--owner', 'user-try', '--ttl', '120'); // the user takes the phone again
+  assert.equal(l.code, 0, l.out);
+  const r = await w;
+  assert.equal(r.code, 0, r.out);
+  const body = r.stdout.trim().split('\n').map((x) => x.replace(/^\S+ /, ''));
+  assert.deepEqual(body.filter((x) => / while the user holds the iPhone /.test(x)), ['USBLINK unplugged while the user holds the iPhone (user): no step', 'USBLINK unplugged while the user holds the iPhone (user-try): no step'], r.stdout);
+  assert.deepEqual(body.filter((x) => /^(POSTED|CANCELLED|CLOSED)/.test(x)), [`POSTED ${step}: Re-plug the iPhone's USB cable (unplugged)`, `CANCELLED ${step}: the user holds the iPhone (user-try)`], r.stdout);
+  const s = JSON.parse(readFileSync(join(dir, 'state', 'console', `${step}.json`), 'utf8'));
+  assert.equal(s.status, 'cancelled');
+  assert.doesNotMatch(s.instructions, /cable is in/, 'unplugged: no claim that the cable is in');
+  assert.equal(stateOf().step, null);
+  noIds(r.out + JSON.stringify(s), 'I-252');
+});
+
 test('I-242 watch: a re-attach between two polls (attach #135 -> #136, both ok) is one REATTACH line and one audit line; no step, no state line', async () => {
   mux.set([{ id: 135, udid: UDID }]);
   proxyList([PHONE]);

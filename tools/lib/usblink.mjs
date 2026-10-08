@@ -349,35 +349,74 @@ export async function restartProxy({ by, reason = null } = {}) {
 // ---- the re-plug console step (watch --post-step, the lead's) --------------------------------------------------------
 
 export const REPLUG_TITLE = "Re-plug the iPhone's USB cable";
+/** usb-lost: the Mac's USB bus still has the iPhone, usbmux does not (the cable is in). */
 export const REPLUG_TEXT = 'The Mac lost the iPhone on USB (the cable is in, but the phone tools cannot reach it). Unplug the cable from the iPhone, wait 3 s, plug it back in, unlock the phone, then press Done. This step closes by itself when the link is back.';
+/** unplugged: no iPhone on the Mac's USB bus at all (I-252: never claim the cable is in). */
+export const REPLUG_TEXT_UNPLUGGED = 'The Mac sees no iPhone on USB (the cable is out, or it lost contact). Plug the cable into the iPhone (if it looks plugged in: unplug it, wait 3 s, plug it back in), unlock the phone, then press Done. This step closes by itself when the link is back.';
+/** The re-plug step's text for link state `state` (I-252). */
+export const replugText = (state) => (state === 'unplugged' ? REPLUG_TEXT_UNPLUGGED : REPLUG_TEXT);
+
+/**
+ * I-252: the user's own hold of the iPhone: {owner, since} while the iphone lock's holder is `user` / `user-*`
+ * (lib/lock.mjs isUserOwner) and not stale, else null. `st`: a lock status('iphone') (read from the lock dir if absent).
+ */
+export async function userPhoneHold(st) {
+  try {
+    const K = await import('./lock.mjs'); // loaded on use: the status/proxy paths of usblink never need the lock library
+    const s = st ?? K.status('iphone');
+    const h = s?.holder;
+    if (!h || s.stale || !K.isUserOwner(h.owner)) return null;
+    const since = Date.parse(h.acquiredAt);
+    return { owner: h.owner, since: Number.isFinite(since) ? since : null };
+  } catch { return null; }
+}
 
 /**
  * One pass of the re-plug step rule: usb-lost (or unplugged) for longer than `afterMs` -> post one action step, unless
  * the one we posted is still open, or the user finished ours less than `afterMs` ago (a re-plug that did not help gets
  * the next step only after another `afterMs`); the link ok again -> cancel our step if it is still open. `st` is the
- * watch's state ({state, since, step, stepClosedAt}); `console` = {post, get, cancel, open(step)} (tools/lib/console.mjs).
- * Returns {step, stepClosedAt, posted?, closed?, error?}: the next step and stepClosedAt for the state.
+ * watch's state ({state, since, step, stepClosedAt, userHeld, userHoldEnd, userNoted}); `console` = {post, get, cancel,
+ * open(step)} (tools/lib/console.mjs).
+ * I-252: `userHold` ({owner, since} from userPhoneHold, or null): while the user holds the iPhone no step is posted and
+ * an open one of ours is cancelled with a note; `userHoldNote: <owner>` is returned once per hold, on the first pass with
+ * the link lost (the caller logs it); after the hold, the step comes `afterMs` after the lease end (userHoldEnd), not
+ * after the start of the loss.
+ * Returns {step, stepClosedAt, posted?, closed?, cancelled?, error?, userHeld?, userHoldEnd?, userNoted?, userHoldNote?}:
+ * the next step, stepClosedAt, userHeld, userHoldEnd and userNoted for the state.
  */
-export async function replugStepPass(st, { by, now, afterMs = LINK_DEFAULTS.replugStepSec * 1000, console: c }) {
+export async function replugStepPass(st, { by, now, afterMs = LINK_DEFAULTS.replugStepSec * 1000, console: c, userHold = null }) {
   const lost = st.state === 'usb-lost' || st.state === 'unplugged';
+  const held = userHold?.owner ?? null;
+  const holdEnd = held || st.state === 'ok' ? null : st.userHeld ? now : (st.userHoldEnd ?? null);
+  const note = held && lost && !st.userNoted ? { userHoldNote: held } : {};
+  const x = { ...(held && { userHeld: held }), ...(holdEnd !== null && { userHoldEnd: holdEnd }), ...(held && (st.userNoted || lost) && { userNoted: true }) };
   let cur = null;
   if (st.step) { try { cur = c.get(st.step); } catch { cur = null; } }
   if (cur && c.open(cur)) {
-    if (st.state !== 'ok') return { step: st.step, stepClosedAt: null };
+    if (held) {
+      try {
+        await c.cancel(st.step, { by, note: `the user holds the iPhone (lease ${held}): no re-plug step while they use it (usblink.mjs, I-252)` });
+        audit({ event: 'replug-step-cancelled-user', by, step: st.step, owner: held, state: st.state });
+        return { step: null, stepClosedAt: null, cancelled: st.step, ...x, ...note };
+      } catch (e) { return { step: st.step, stepClosedAt: null, error: e.message, ...x }; }
+    }
+    if (st.state !== 'ok') return { step: st.step, stepClosedAt: null, ...x };
     try {
       await c.cancel(st.step, { by, note: 'the USB link is back (usblink.mjs: ok)' });
       audit({ event: 'replug-step-closed', by, step: st.step });
       return { step: null, stepClosedAt: null, closed: st.step };
     } catch (e) { return { step: st.step, stepClosedAt: null, error: e.message }; }
   }
-  if (st.state === 'ok') return { step: null, stepClosedAt: null };
+  if (st.state === 'ok') return { step: null, stepClosedAt: null, ...x };
   const closedAt = st.step ? now : (st.stepClosedAt ?? null); // ours was finished (Done) or withdrawn elsewhere
-  if (lost && now - st.since >= afterMs && (closedAt === null || now - closedAt >= afterMs)) {
+  if (held) return { step: null, stepClosedAt: closedAt, ...x, ...note };
+  const from = Math.max(st.since, holdEnd ?? -Infinity); // I-252: counted from the user's lease end
+  if (lost && now - from >= afterMs && (closedAt === null || now - closedAt >= afterMs)) {
     try {
-      const s = await c.post({ by, kind: 'action', title: REPLUG_TITLE, instructions: REPLUG_TEXT });
-      audit({ event: 'replug-step', by, step: s.id, state: st.state, since: new Date(st.since).toISOString() });
-      return { step: s.id, stepClosedAt: null, posted: s.id };
-    } catch (e) { return { step: null, stepClosedAt: closedAt, error: e.message }; }
+      const s = await c.post({ by, kind: 'action', title: REPLUG_TITLE, instructions: replugText(st.state) });
+      audit({ event: 'replug-step', by, step: s.id, state: st.state, since: new Date(st.since).toISOString(), ...(holdEnd !== null && { userHoldEnd: new Date(holdEnd).toISOString() }) });
+      return { step: s.id, stepClosedAt: null, posted: s.id, ...x };
+    } catch (e) { return { step: null, stepClosedAt: closedAt, error: e.message, ...x }; }
   }
-  return { step: null, stepClosedAt: closedAt };
+  return { step: null, stepClosedAt: closedAt, ...x };
 }

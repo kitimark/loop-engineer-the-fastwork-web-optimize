@@ -28,7 +28,12 @@
 //        #   that is one `REPAIR SKIPPED` line per episode.
 //        # --post-step (needs --by; the lead's): usb-lost or unplugged for more than --step-after s (60) posts ONE console action step
 //        #   "Re-plug the iPhone's USB cable" (never a second while ours is open; after the user's Done, the next only
-//        #   after another 60 s of loss), cancelled by itself once the link is ok.
+//        #   after another 60 s of loss), cancelled by itself once the link is ok. The text says "the cable is in" only for
+//        #   usb-lost (the iPhone on the USB bus); unplugged asks to plug the cable in.
+//        #   I-252: while the user holds the iPhone (the iphone lock's holder is `user` / `user-*`, their own use, the phone
+//        #   off the cable on purpose) no step: one `USBLINK <state> while the user holds the iPhone (<owner>): no step`
+//        #   line per hold instead, and an open step of ours is cancelled with a note (`CANCELLED C-…` line). After the
+//        #   lease ends with the link still lost, the step comes --step-after s after the lease end.
 //        # One watch at a time (a second refuses, exit 2). Exit 0 on SIGINT/SIGTERM or after --seconds.
 //   node tools/usblink.mjs proxy start|stop|restart|show --by <you> [--reason "<why>"]
 //        # start: `ios_webkit_debug_proxy -c null:9221,:9222-9322` detached ($FW_IWDP_PHONE), its pid, -c argument and
@@ -40,7 +45,7 @@
 //        # refused with nothing killed. show: the record, whether it is still ours, and where it listens now. Each action
 //        # is audited. exit 0 done, 1 refused or failed, 2 usage.
 // Ports: $FW_IPHONE_DEVICE_PORT (9221, the device list) and $FW_IPHONE_PORT (9222, the first tab port), as iphone.mjs.
-import { LINK_EXIT, LINK_DEFAULTS, sample, evaluate, sampleFacts, attachChange, readLinkState, writeLinkState, audit, startProxy, stopProxy, restartProxy, readProxyRecord, isOurProxy, replugStepPass, proxyPorts, listenAddrs, isLoopback } from './lib/usblink.mjs';
+import { LINK_EXIT, LINK_DEFAULTS, sample, evaluate, sampleFacts, attachChange, readLinkState, writeLinkState, audit, startProxy, stopProxy, restartProxy, readProxyRecord, isOurProxy, replugStepPass, userPhoneHold, proxyPorts, listenAddrs, isLoopback } from './lib/usblink.mjs';
 import { pidAlive } from './lib/wait.mjs';
 import { runMain } from './lib/exit.mjs';
 import { exitOnHelp } from './lib/help.mjs';
@@ -138,11 +143,14 @@ async function watch() {
         } else if (!skipped) { log(`REPAIR GIVEN UP after ${repairs} restarts: the proxy still lists nothing; look by hand`); skipped = true; }
       }
       if (consoleApi) {
-        const r = await replugStepPass(st, { by, now: Date.now(), afterMs: stepAfterSec * 1000, console: consoleApi });
+        const r = await replugStepPass(st, { by, now: Date.now(), afterMs: stepAfterSec * 1000, console: consoleApi, userHold: await userPhoneHold() });
+        if (r.userHoldNote) log(`USBLINK ${st.state} while the user holds the iPhone (${r.userHoldNote}): no step`);
+        if (r.cancelled) log(`CANCELLED ${r.cancelled}: the user holds the iPhone (${r.userHeld})`);
         if (r.posted) log(`POSTED ${r.posted}: Re-plug the iPhone's USB cable (${st.state})`);
         if (r.closed) log(`CLOSED ${r.closed}: the USB link is back`);
         if (r.error) log(`STEP ERROR ${r.error}`);
         st.step = r.step; st.stepClosedAt = r.stepClosedAt;
+        st.userHeld = r.userHeld ?? null; st.userHoldEnd = r.userHoldEnd ?? null; st.userNoted = !!r.userNoted; // I-252
       }
       writeLinkState({ watch: true, pid: process.pid, startedAt, every, at: new Date().toISOString(), state: st.state, since: st.since, emptySince: st.emptySince, line: e.line, step: st.step, stepClosedAt: st.stepClosedAt });
     } catch (err) { log(`ERROR ${err.message || err}`); }
