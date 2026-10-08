@@ -209,7 +209,8 @@ esac
 # after a passing start gate, while the battery reads under MARGIN_C, fling heat runs on the mirror (uncounted, HEATRATE
 # lines; no re-gate, the end gate still decides): at most 2 in an item hold, more in a heat hold (PW: aim at MARGIN_C,
 # not only at a passing gate), each only while it (~160 s) and the hold's items still pass their time checks (NEED)
-MARGIN_C=39.5
+# lead 08:5xZ (after the H10 ceiling stop): 39.0 for the rest of P-165, so G holds stop adding flings near the ceiling
+MARGIN_C=39.0
 case " $* " in *" PW "*) MMAX=6 ;; *) MMAX=2 ;; esac
 # NEED mirrors the per-item time check below (item i starts only if elapsed + its budget + 30 <= 600): the largest
 # (estimated time of the items before i) + (i's budget: S $BUDGET_S, G $sE) + 30 (P-165 H4 07:57Z: the old sum, G at

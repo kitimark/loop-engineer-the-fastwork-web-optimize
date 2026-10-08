@@ -32,7 +32,10 @@ if [ "$1" = start ]; then
     [ -f $S/serve-$A.pid ] && kill "$(cat $S/serve-$A.pid)" 2>/dev/null
     rm -f $S/serve-$A.json
     case $A in V) R="--root site-pretty --overlay $D/V" ;; *) R="--root site-pretty" ;; esac
-    node tools/serve.mjs $R --port 0 --state $S/serve-$A.json --vendors=local --latency 150 > $S/serve-$A.log 2>&1 &
+    # P165_PORTS ("B:59969 C:59968 V:59967"): part 3b restarts the servers on the block's own ports (A3/U5: the
+    # warm-ups are per arm port), after part 3 stopped them at the H10 ceiling stop
+    PT=0; for x in $P165_PORTS; do [ "${x%%:*}" = $A ] && PT=${x#*:}; done
+    node tools/serve.mjs $R --port $PT --state $S/serve-$A.json --vendors=local --latency 150 > $S/serve-$A.log 2>&1 &
     echo $! > $S/serve-$A.pid
   done
   for A in B C V; do

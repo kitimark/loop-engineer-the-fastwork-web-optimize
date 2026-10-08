@@ -424,6 +424,31 @@ step C-116 handed the iPhone to the user ("press Done when you hand it back"). A
 P-165 2b`: H8 alone, with a first heat because the phone cooled), then part 3, both detached. Their heat holds re-warm
 the phone, and their start gates (with the GRIDCHECK Safari restart) re-check real Serious, so nothing from before the
 break is assumed. The stopped H8 has no VALID line, so the scorer reads none of its runs.
+Part 2b ran 08:28-08:37Z: one heat hold (82 s), then H8 VALID (327 s). The stopped H8's partial records are kept aside as
+`*.prev-H8-*`.
+
+**Ceiling stop in part 3 (lead ruling 08:5xZ):**
+- H9 (EC2) was VALID. Its start gate read 39.4 → 39.1 °C, below the margin target of 39.5 °C, so one margin fling ran
+  first (39.1 → 39.6 °C). The end gate read 41.1-41.3 °C, Serious.
+- H10 (sC, EC3) started Serious at 41.2 °C. Its end gate read **Critical at 41.5 °C**, below the 44 °C battery
+  ceiling.
+- Three re-gates in a row still read Critical (41.5, 41.3, 41.0 °C), and part 3 ended with BLOCK STOP at H10. The kit's
+  ceiling cooling (`wait.mjs phone-temp --below 42`) returned at once, because the battery was already below 42 °C.
+  Waiting on the battery temperature does not reach the end of Critical. The first cooling read (09:0xZ) was still
+  Critical at **39.2 °C**. In our setup (OBSERVED, cause unknown), the phone's Critical state does not follow the
+  battery temperature.
+- **Lead ruling:**
+  - The ceiling worked as a safety stop. It is not a sentinel failure, so H4-H9 stay valid.
+  - Cool with the phone idle, then resume from H10.
+  - Margin target 39.0 °C for the rest of P-165 (it was 39.5): no margin fling when the start gate reads 39.0 °C or more.
+  - Critical again means BLOCK STOP. The lead then decides between scoring the runs we have (≥ 3 valid per arm per leg,
+    the card's minimum) and a later block.
+- **Part 3b** (`p165-run.sh P-165 3b`) does this in three steps:
+  1. `p165-cool.sh`: Safari parked, no runs. One `thermal-gate.mjs --no-timer` state read every ~3 min, each in its own
+     short phone hold, so the lease is free between reads; at most 15 min. It ends when a read is no longer Critical.
+  2. Restarts the servers on the block's own ports (`P165_PORTS`; part 3 had stopped them), so the warm-ups stay per
+     arm port.
+  3. Runs H10-H13 and the TAIL.
 
 ### P-165 S leg (complete 07:51Z; interim until the block ends; `p165-score.mjs out/p165`)
 

@@ -17,13 +17,19 @@ case $P in
   # 2b (user T-248, lead 08:2xZ): part 2 was stopped in H8 to hand the iPhone to the user; H8 re-runs alone after the
   # user's Done, with a first heat (the phone cooled), before part 3
   2b) SPECS="H8:sC,EV2"; RD=0; FH=1 ;;
-  *) echo "part must be 1, 2, 2b or 3"; exit 2 ;;
+  # 3b (lead 08:5xZ): part 3 stopped at H10 (start gate Critical at 41.0 C; the ceiling, not a sentinel failure: H9 and
+  # before stay valid). Cool first (p165-cool.sh: Safari parked, a state read every ~3 min, <= 15 min, until not Critical),
+  # restart the servers on the block's ports, then H10 again and the rest of part 3
+  3b) SPECS="H10:sC,EC3 H11:EV3 H12:sC,EV4 H13:EC4 H14:TAIL"; RD=0; FH=0 ;;
+  *) echo "part must be 1, 2, 2b, 3 or 3b"; exit 2 ;;
 esac
 # P165_READY=0: part 1 again after the user already answered its ready step in this block (no second step)
 RD=${P165_READY:-$RD}
 # the servers keep their ports for the whole block (the warm-ups are per arm port, A3/U5): part 1 starts them, parts 2
 # and 3 only check them, part 3 stops them (or: sh fixes/g0-box/phone/p165-serve.sh stop)
-if [ "$P" = 1 ] || [ "$CM_DRY" = 1 ]; then sh fixes/g0-box/phone/p165-serve.sh start || { echo "BLOCK STOP: servers"; exit 4; }
+if [ "$P" = 3b ] && [ "$CM_DRY" != 1 ]; then sh fixes/g0-box/phone/p165-cool.sh "$T" || { echo "BLOCK STOP: still Critical after the cooling"; echo "EXIT 3"; exit 3; }
+  P165_PORTS=${P165_PORTS:-"B:59969 C:59968 V:59967"} sh fixes/g0-box/phone/p165-serve.sh start || { echo "BLOCK STOP: servers"; exit 4; }
+elif [ "$P" = 1 ] || [ "$CM_DRY" = 1 ]; then sh fixes/g0-box/phone/p165-serve.sh start || { echo "BLOCK STOP: servers"; exit 4; }
 else sh fixes/g0-box/phone/p165-serve.sh check || { echo "BLOCK STOP: the part 1 servers are not up with the pinned hashes (ports must stay for the block)"; exit 4; }; fi
 if [ "$CM_DRY" = 1 ]; then
   CM_TICKET=$T CM_DRY=1 CM_FIRSTHEAT=$FH sh fixes/g0-box/phone/p165-block.sh $SPECS; rc=$?
@@ -34,6 +40,6 @@ else
   rc=$?
 fi
 echo "part $P ended (exit $rc)"
-{ [ "$P" = 3 ] || [ "$CM_DRY" = 1 ]; } && sh fixes/g0-box/phone/p165-serve.sh stop
+{ [ "$P" = 3 ] || [ "$P" = 3b ] || [ "$CM_DRY" = 1 ]; } && sh fixes/g0-box/phone/p165-serve.sh stop
 echo "EXIT $rc"
 exit $rc
