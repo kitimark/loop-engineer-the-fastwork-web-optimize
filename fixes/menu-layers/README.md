@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** measured (Simulator counts; Chrome, iPhone Simulator and iPad desktop pixel gates). Phone: P-170 void (end sentinel, heat); P-170b both sentinels pass, C = V on every rule (n = 2), the reader says OPEN for n < 3; the lead rules
+**Status:** done. Simulator counts; Chrome, iPhone Simulator and iPad desktop pixel gates T2 PASS. Phone: P-170 void (end sentinel, heat); P-170b PASS (n = 2, lead ruling, rules applied by hand). Lands as best build g0.0i (fixes/g0-0i)
 **Stage:** F (build card and phone card below; the lead signs the phone card)
 **Device class / gate:** render-bound, WebKit only → less-work landing rule (memory "less-work-landing-rule"): Simulator counts per morph state, pixel T2, one short phone no-worse check (G)
 **Driver(s) behind the claims:** Simulator census (stepped tween, counts only); seek pixel gates (Chrome headless, iOS Simulator); phone G (P-170 below: counted read PASS, void by S1)
@@ -209,9 +209,12 @@ program 38d7fe5d7fa8, profile tool-serious, the D1-D3 rules and the gates.
 
 ### P-170b result (run 2026-10-08 22:00-22:50Z)
 
-**Both sentinels passed, and all 8 holds were VALID. C and V are equal on every rule. `g0b-read` still prints DECISION OPEN,
-because it decides only with ≥ 3 runs per arm** (`g0b-read.mjs` 49, 51, 55). The P-170b delta set n = 2 without catching
-that floor. The lead rules on it.
+**Verdict: PASS (n = 2, lead ruling 2026-10-08 ~23:00Z; the reader's n ≥ 3 floor is not met, so the rules were applied
+by hand).**
+- Both sentinels passed, all 8 holds were VALID, and C and V are equal on every rule.
+- `g0b-read` itself prints DECISION OPEN, because it decides only with ≥ 3 runs per arm (`g0b-read.mjs` 49, 51, 55).
+- The lead's signed delta allowed n = 2, so D1-D3 were applied by hand to the pre-set rules: every diff is 0, and no
+  frame is over 50 ms.
 
 | rule | C (EC1, EC2) | V (EV1, EV2) | V − C | by the rule (applied by hand to n = 2) | reader |
 |---|---|---|---|---|---|
@@ -233,6 +236,23 @@ that floor. The lead rules on it.
   (VALID). No run was lost. Safari was parked, the tool-held thermal condition cleared and the servers stopped by hand.
 - Read: `node fixes/g0-box/phone/g0b-read.mjs out/mlp/runs --runs EC1,EC2,EV1,EV2` (`out/menu-layers/p170b-read.txt`,
   gitignored).
+
+### Lessons from P-170 / P-170b
+
+1. **Check the reader's minimum n before cutting a block's n.** The P-170b delta set n = 2 per arm to keep the block
+   short. `g0b-read` decides only from n = 3 (D1, D2 INSUFFICIENT; D3 open), and neither the delta nor the dry run
+   caught that. A delta that changes n should run the reader on the dry-run's planned run names, or say up front that
+   the rules will be applied by hand.
+2. **Give every phone-block launcher an explicit Bash `timeout` (7200000 ms).** Claude Code's default background
+   limit (30 min) killed the P-170b wrapper right after its last hold. The same thing hit P-159 (incident I-240). This
+   time it cost no run, but the exit trap (park Safari, `thermal.mjs clear`, stop the servers) did not run and was done
+   by hand. Reported as I-256, a duplicate of I-240.
+3. **Heat over a long block decides the end sentinel.** P-170's 9 holds ran the battery from 36.1 to 43.0 °C, and S1
+   failed at 49.4 fps. P-170b's 8 holds started at 33.5 °C, ended at 41.9 °C, and both sentinels passed (54.4 / 54.0 fps).
+   A start sentinel (S0) right after the warm-ups shows the heat baseline before any counted run.
+4. **SIGSTOP on the block shell does not open an I-160 Simulator window.** The lock counts the iphone hold's run (the
+   whole block shell, stopped but alive) as a live phone run (`tools/lib/lock.mjs` 1249-1252). The lead opened a tool
+   incident for it.
 
 ## Risks, conflicts, follow-ups
 

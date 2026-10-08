@@ -136,7 +136,7 @@
   }
  },
  "phone": {
-  "status": "P-170 void (S1 FAIL, heat); P-170b: S0 and S1 PASS, all holds VALID, C = V on every rule by hand (n = 2), g0b-read OPEN (its n >= 3 floor); lead rules",
+  "status": "P-170b PASS (n = 2, lead ruling; the reader's n >= 3 floor not met, rules applied by hand); P-170 void (end sentinel, heat)",
   "P-170": {
    "driver": "G g-fastshort-g0, program 38d7fe5d7fa8",
    "profile": "tool-serious",
@@ -268,7 +268,10 @@
     "H8": 41.7,
     "H8end": 41.9
    },
-   "notes": "started 21:59:59Z at the 22:00Z deadline (fix-cm-return's go came ~4 s later); the launcher shell was killed by the 30-min background limit right after H8 finished (VALID); cleanup (park, thermal clear, servers) done by hand"
+   "notes": "started 21:59:59Z at the 22:00Z deadline (fix-cm-return's go came ~4 s later); the launcher shell was killed by the 30-min background limit right after H8 finished (VALID); cleanup (park, thermal clear, servers) done by hand",
+   "verdict": "PASS (n = 2, lead ruling 2026-10-08; the reader's n >= 3 floor not met, rules applied by hand)",
+   "incident": "I-256 (duplicate of I-240): launcher killed by the 30-min background limit after H8"
   }
- }
+ },
+ "landsAs": "g0.0i best-build candidate (fixes/g0-0i): g0.0h + this CSS"
 }
