@@ -19,7 +19,8 @@
 #   V  c3b-a + K6 (pre, WebKit only)    JS d23ee885d54f  CSS 4fafb83f1e72   out/g0bp/serve-V.json
 #   B  the plain baseline (the thermal gate's timer page)               out/g0bp/serve-B.json
 #   P  the probe page (out/cm/probe; ?v=none|sda|raf)                    out/g0bp/serve-P.json
-# Script fs = fixes/morph-scroll/g-fastshort-v1.json (the E procedure of P-152/P-155, compiled program 8737f212c0ff);
+# Script fs = fixes/g0-box/phone/g-fastshort-g0.json (P-164: g-fastshort-v1, the E procedure of P-152/P-155, made to run on g0
+# builds: optional atEnd, approach capped at 12, re-approach at 2; compiled program 38d7fe5d7fa8; v1 8737f212c0ff aborts on g0);
 # probe script pr = fixes/compositor-morph/phone/g-probe-v1.json (compiled program pinned at the dry run, $PROG_PR).
 # Items:
 #   WC / WV        uncounted warm-up on C's / V's port: E procedure, Timeline off, --warmup     -> g-W<a>-<H>.json
@@ -38,7 +39,7 @@ H=$1; shift
 [ -n "$H" ] && [ $# -gt 0 ] || { echo "usage: CM_TICKET=P-NNN sh fixes/g0-box/phone/g0b-hold.sh <H> <items>"; exit 2; }
 R=${RUNNER:-fix-g0-box}
 O=out/g0bp/runs; SV=out/g0bp
-FS=fixes/morph-scroll/g-fastshort-v1.json; PROG_FS=8737f212c0ff
+FS=fixes/g0-box/phone/g-fastshort-g0.json; PROG_FS=38d7fe5d7fa8
 PR=fixes/compositor-morph/phone/g-probe-v1.json; PROG_PR=${CM_PROG_PR:-7ff27a2413c8}
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
 C_JS=5c39f7a96e41; V_JS=30fd80ccbb3f; C_CSS=d4e684032482; V_CSS=1d1e5d62a2c4

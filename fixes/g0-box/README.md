@@ -159,7 +159,7 @@ paint outside the nav) and of the logo (stays inside the box).
 - It carries the P-161/P-163 lessons: tool-serious via `iphone.mjs rearm`, Safari parked before the rearm,
   `thermal.mjs clear` after the hold, the get-ready step on preflight AUTH, and `--block`.
 - `g0b-read.mjs` reuses p161-read's decision code, with opens taken from touch rows: g0 opens are a time tween on a
-  held page, never a scroll crossing (selftest 7 checks ok).
+  held page, never a scroll crossing (selftest 8 checks ok; since P-164 the triggers are prevented touchmoves, see "P-164").
 - Pins (re-snapped after PR-038's acceptance, on the new best build): C = **g0.0e** (JS 5c39f7a96e41 / CSS
   d4e684032482), V = **g0.0f** = g0.0e + v3-W (JS 30fd80ccbb3f / CSS 1d1e5d62a2c4); snapshot `out/g0box/snap4` (C from
   `out/g0box/g00e`, V from `out/g0box/g00f`, read-only), HASHES 3412a08fa9ac. Earlier snapshots (snap3: g0.0c against
@@ -167,11 +167,120 @@ paint outside the nav) and of the logo (stays inside the box).
 - Dry run 2026-10-08 03:10Z (`out/g0box/kitdry4.log`): 3 of 3 servers up, served hashes C 5c39f7a96e41/d4e684032482 and
   V 30fd80ccbb3f/1d1e5d62a2c4 ok, H1-H4 and H11 DRY ok, programs fs 8737f212c0ff (budget 229 s) and pr 7ff27a2413c8
   ok, exit 0.
-- Still to check before any block: I-244's WDA check, and that the reader finds touch rows in a real G record.
-- Card (for the lead to sign): g0.0f against g0.0e, driver G fast-short (8737f212c0ff), tool-serious, C V V C order,
+- Still to check before any block: I-244's WDA check (the lead's hold). The reader finding touch rows in a G record is checked (P-164 pre-data check 2).
+- Card: see "P-164" below (it supersedes this draft: the G program is now g-fastshort-g0, 38d7fe5d7fa8). Order
   H1:WC H2:WV EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4 H11:TAIL. Decision D1-D3 as P-163: D1 O1.f2 V−C ≤ +4 ms, D2 open
   median dt V−C ≤ +4 ms, D3 share > 34 / 30 / 38 ms. Command: `sh fixes/g0-box/phone/g0b-run.sh <ticket>`.
 - The user accepted PR-038, so this test is next; the lead signs the card and books the phone with the user.
+
+## P-164 (phone card; written before any P-164 data)
+
+**Pre-data check 2, with the g0 program (2026-10-08 03:47-03:55Z, before any P-164 data). Result: START-STATE
+MATCH.** The lead chose option (a) below. The program is `fixes/g0-box/phone/g-fastshort-g0.json` (made by
+`out/g0box/mkprog.mjs` from v1), **compiled program 38d7fe5d7fa8**, GESTURE_BUDGET_S 229. Changes from v1:
+- every `until atEnd` is optional with a 1500 ms timeout, followed by a non-optional `until y>=3000` (the compiler's
+  pull-to-refresh guard needs a guaranteed scrollY before a down stroke, and the run aborts if the page is lost);
+- the approach repeat is capped at 12 passes and each re-approach repeat at 2;
+- strokes, marks, profiles and pauses are v1's.
+
+I ran it as before: one functional Simulator session per arm, shared lane, served from snap4, `--count-only`
+(`out/sim/fix-g0-box-gesture-p164g0-{C,V}-*.json`).
+
+| | C (g0.0e) | V (g0.0f) |
+|---|---|---|
+| run | complete, 52 strokes, no abort | complete, 52 strokes, no abort |
+| start of the first E stroke (E20) | y 5213 (m 0.939 at ih 775), the pin | y 5214 (m 0.941) |
+| stroke order | 12 approach drags, then s2 … s31 (E20-E31 with their re-approaches and 450 px down drags) | identical |
+| settle ys | 509 1019 … 5099, then 5213 for every later stroke | 510 1020 … 5100, then 5214 for every later stroke |
+| moving frames, total | 529 | 518 (-2.1 %) |
+| toolbar transitions / flings | 1 / 0 | 1 / 0 |
+| reader triggers (`g0b-read.mjs`) | **13 opens, 12 closes**, every one a prevented move at the pin | **13 opens, 12 closes**, the same |
+
+- Verdict: **START-STATE MATCH** (`fe-start.mjs`): the same program, geometry, stroke and mark order, every settle y
+  within 1 px, moving frames within 3 %.
+- **E strokes are reached.** The page never leaves the pin after the first open: the 450 px down drags close the
+  menu inside the jack, and the re-approach drags re-open it.
+- **Opens per run.** O1 plus 12 later opens, i.e. 12 open windows for D2/D3 per run. That meets the lead's floor
+  (≥ 10 opens per run), and the closes (12) are the descriptive population. The per-stroke split is: O1 on approach
+  drag 12; then each E-close fling closes, the re-approach's first drag re-opens, each 450 px down drag closes, and
+  each E-open fling opens. g0's pin does not cut the count. It changes what opens the menu: on g0 every flick or drag
+  opens or closes fully, so "fast short flick" is not the question here (unlike PR-018 on v14).
+- Kit dry run with the new program, 03:54Z (`out/g0box/kitdry5.log`): 3 of 3 servers, served hashes ok, H1-H4 and H11 DRY ok, PROG fs 38d7fe5d7fa8 ok (budget 229 s), pr 7ff27a2413c8 ok, exit 0.
+
+**Pre-data check 1: Simulator start state per arm with the P-163 program (2026-10-08 03:45Z, before any
+P-164 data). Result: STOP.** I ran one functional Simulator session per arm (shared lane, weight simulator), each arm
+served from snap4 by `g0b-serve.sh start` (served hashes ok). Each session ran `sim.mjs gesture
+fixes/morph-scroll/g-fastshort-v1.json --count-only` (`out/g0box/p164pre.sh`). Records:
+`out/sim/fix-g0-box-gesture-p164-{C,V}-*.json` (gitignored); read with `research/end-of-page-fresh/phone/fe-start.mjs`
+and `out/g0box/p164prev.mjs`. Counts only, no timing.
+
+| | C (g0.0e) | V (g0.0f) |
+|---|---|---|
+| run | **aborted**: "until atEnd not reached in 4000 ms (scrollY 5213)", after 30 strokes | **aborted**, the same way (scrollY 5214) |
+| start of the first E stroke | never reached | never reached |
+| stroke order | 30 approach drags (520 px up), the repeat's maximum; no E stroke | identical |
+| settle ys | 500 1010 … 5090, then 5213 ×19 | 510 1020 … 5100, then 5214 ×19 (the Simulator's own 10 px drag variance from stroke 1) |
+| where g0's jack takes over | drag 12, first prevented move at y 5213 (drag 11 ended in a rubber band to 5391 and settled at 5213) | drag 12, y 5214 |
+| prevented touchmoves | 1370 of 2006, every one at y 5213 | 1386 of 2038, at y 5214 |
+| moving frames, total / toolbar transitions | 511 / 1 | 560 / 1 |
+
+Why the G program cannot run on g0 builds (OBSERVED, both arms; mechanism from the code):
+- g0's jack (g0.0f JS 14402-14413: `k(n)`, then `preventDefault`) opens the menu on the first upward move at the end.
+- `L` (14431-14433) pins the page at the scrollY where the jack fired (5213). Opening grows docH from 5999 to 6035,
+  so maxY becomes 5260.
+- The driver's `atEnd` (y >= maxY - 2, `tools/lib/gesture-run.mjs` 132) can never hold while the menu is open or
+  pinned.
+- The approach repeat runs all 30 passes (19 of them prevented drags), then the program's first non-optional `until
+  atEnd` aborts the run. On the phone, H1 would abort the same way. The arms themselves match (same path, same pin
+  within 1 px), so the stop comes from the driver, not from an arm difference.
+
+**Reader check (the open point): the touch rows are there, and the reader now finds the open.**
+- Count-only records keep the touch rows (2066 / 2098) but no frame rows.
+- `g0b-read.mjs`'s end rule (scrollY >= docH - ih - 8) found no open: the pin is 39-47 px under that line. With ih
+  taken from vh0, it fired falsely on drag 11's rubber band (y 5260, not prevented), one drag before the jack.
+- **Pre-data change** (before any P-164 data): triggers now come from prevented touchmoves. An open is an upward move
+  the page prevented while closed; a close is a prevented downward move while open. g0's jack prevents every move that
+  opens or closes it, and the recorder sees that. The end rule stays only as the fallback for a record with no
+  prevented move at all, and ih falls back to vh0. Selftest: 8 checks ok, including the P-164 Simulator shape.
+- On the two records the reader finds the real open: C open@35886 (y 5213, prevented), V open@35014 (y 5214); 1 open
+  and 0 closes per arm, since the program died before E20. f1/f2 are null because count-only keeps no frames.
+
+**Driver options after check 1** (message to the lead 2026-10-08; the lead chose (a), checked above as pre-data check 2):
+- (a) **Taken:** a g0 copy of the program, `fixes/g0-box/phone/g-fastshort-g0.json`. It keeps the same strokes,
+  marks and profiles. Each `until atEnd` becomes optional with a short timeout, the approach repeat is capped at 12,
+  and the 11 re-approach repeats run 1-2 passes (on g0 the page never leaves the end, and one up-drag re-opens). It
+  is a new program hash, so a Simulator pre-data check per arm, as above, comes before signing.
+- (b) v1 with only `optional: true` on its 12 `until atEnd` steps. That adds about 190 s of prevented drags and
+  timeouts per run.
+
+**Card** (P-163's form; everything not named here is as P-163):
+
+| item | value |
+|---|---|
+| ticket | P-164 (for the lead to sign; driver option (a) chosen by the lead, its pre-data check 2 above passed) |
+| question | Does g0.0f (g0.0e + v3-W) open and close the end-of-page menu no worse than g0.0e under a G finger gesture on the phone? This is a no-worse check for an accepted look (PR-038), not a "smoother" claim. |
+| arms + pins | C = g0.0e (g0.0c + join-fade + logo-close, main 8bc50d29), JS 5c39f7a96e41 / CSS d4e684032482 (`out/g0box/g00e`). V = g0.0f = g0.0e + v3-W (`fixes/v3w-g00e/patch.diff`, main 214617dd), JS 30fd80ccbb3f / CSS 1d1e5d62a2c4 (`out/g0box/g00f`). |
+| snapshot + HASHES | `out/g0box/snap4` (C from g00e, V from g00f, read-only), HASHES 3412a08fa9ac, checked by the kit before every start and every hold |
+| kit | `fixes/g0-box/phone/`: g0b-serve.sh, g0b-hold.sh, g0b-block.sh and g0b-run.sh are copies of the P-163 kit with these pins and the P-161/P-163 lessons (tool-serious through `iphone.mjs rearm`, Safari parked before every rearm, `thermal.mjs clear` after the hold, the unlock step on preflight AUTH, `--block`). The hold script pins the g0 program (`FS=fixes/g0-box/phone/g-fastshort-g0.json`, `PROG_FS=38d7fe5d7fa8`). Dry run 03:54Z: 3 of 3 servers serve the pinned hashes; H1-H4 and H11 DRY ok; programs fs 38d7fe5d7fa8 and pr 7ff27a2413c8 ok. Reader: `g0b-read.mjs` (opens and closes from prevented touchmoves, above; selftest 8 checks ok) on `out/g0bp/runs`. |
+| driver, profile, order | G **`fixes/g0-box/phone/g-fastshort-g0.json`, compiled program 38d7fe5d7fa8** (GESTURE_BUDGET_S 229): g-fastshort-v1's strokes, marks and profiles, with optional `until atEnd` (1500 ms) plus `until y>=3000`, the approach capped at 12 passes, the re-approaches at 2. **The G program changed against P-161/P-163 (v1, 8737f212c0ff, which aborts on g0), so P-164's numbers do not compare with those tickets.** Per run: 13 opens (O1 + 12 later) and 12 closes in the Simulator check. Timeline on in every counted run. Profile tool-serious (`CM_THERMAL=serious`, `CM_COOL=0`). Order H1:WC H2:WV, then EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4 (C V V C C V V C), then H11:TAIL with the end sentinel. Link loss as P-161. |
+| command | `sh fixes/g0-box/phone/g0b-run.sh P-164` as a Bash background job (timeout 7200000 ms). It starts the servers, runs the block under `lock.mjs run iphone --owner fix-g0-box --block P-164 --max-seconds 3600 --keep 120`, then `thermal.mjs clear`, then stops the servers. |
+| metrics and decision | P-163's rules, with g0's open: an open is a time tween on a held page, triggered by the first prevented upward touchmove. D1: median V O1.f2 - median C O1.f2 <= +4 ms (O1 = the first open after load). D2: median over runs of the per-run median dt of all later open-tween frames (700 ms windows), V - C <= +4 ms. D3: the share of those frames over T, T in {34, 30, 38}. PASS / FAIL / OPEN as in P-160/P-163; each run's open and close trigger counts must match between the arms. |
+| descriptive (no verdict) | The close-tween frames (median dt, share > 34 with twins); per-run finger-down frames > 50 and > 34 with twins, per arm. |
+
+**Prediction (frozen with this commit, before any P-164 data).**
+- **D1: PASS, about 65 %.** v3-W builds its two fills at setup and adds no layer per open (Simulator census), so the
+  first open's second frame should not cost more. The risk is that WebKit's first `clip-path` mask on a still-small
+  box costs one extra commit.
+- **D2: PASS, about 70 %.** v3-W removes the nav root's per-frame repaint and its 11.6 MB backing store; Simulator
+  redraw area per open is 5-16 % lower. Simulator counts have not predicted phone frame time well before (M6).
+- **D3: PASS, about 60 %.** The same direction, but the share is the noisier measure.
+- **Overall: PASS, about 50 %.** OPEN (threshold-sensitive) is the most likely other outcome.
+
+**Decisions (the lead's, word for word):**
+- **PASS:** g0.0f (g0.0e + v3-W) becomes the best build; the lead updates BEST_BUILDS and T-228.
+- **FAIL by D1 alone, D2 and D3 passing:** by the user's T-228 #30 ruling it may still land; the lead decides from the later-open numbers.
+- **FAIL on D2 or D3:** g0.0e stays best; v3-W stays a research result, and the user is told the no-worse check failed despite the accepted look.
+- **OPEN (threshold-sensitive):** at most one more block (sequential rule); the lead decides.
 
 ### Options considered after the stop (the lead chose (a))
 

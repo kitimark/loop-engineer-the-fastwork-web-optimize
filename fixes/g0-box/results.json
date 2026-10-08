@@ -597,7 +597,7 @@
    "leadRule": "end-open memory >= 10 MB as open minus closed (lead): passes both runs; no new layers per open; top not worse -> T3 proposal"
   },
   "stacking": "v3-W + fix-join-fade block + fix-logo-close delta apply on g0.0c in either order, same bytes; all three: CSS e434bb66fa5c, JS 7f7d83162ef6",
-  "phoneKit": "fixes/g0-box/phone/, pinned C g0.0e 5c39f7a96e41/d4e684032482, V g0.0f 30fd80ccbb3f/1d1e5d62a2c4, snapshot out/g0box/snap4 HASHES 3412a08fa9ac; dry run ok 03:10Z (out/g0box/kitdry4.log); not run (lead signs the card, I-244 WDA check first)"
+  "phoneKit": "P-164 card in README \"P-164\": fixes/g0-box/phone/, pinned C g0.0e 5c39f7a96e41/d4e684032482, V g0.0f 30fd80ccbb3f/1d1e5d62a2c4, snapshot out/g0box/snap4 HASHES 3412a08fa9ac, G program fixes/g0-box/phone/g-fastshort-g0.json 38d7fe5d7fa8 (v1 8737f212c0ff aborts on g0); dry run ok 03:54Z (out/g0box/kitdry5.log); not run"
  },
  "v3": {
   "build": "M3-B v3 (lead option 3) on g0.0: v0 box and card untouched; nav colour as two composited solid fills (light #ffffff1a, dark #131922 at opacity --morph), corner as clip-path inset(0 round 32-12m px); phones <= 640 px",
@@ -947,6 +947,25 @@
     "openJump": 0.14
    },
    "result": "unchanged, <= 1 px"
+  }
+ },
+ "p164": {
+  "status": "card written before any P-164 data, for the lead to sign; block not run",
+  "preData1": {
+   "program": "fixes/morph-scroll/g-fastshort-v1.json (8737f212c0ff)",
+   "result": "STOP: both arms abort at the first non-optional `until atEnd` (scrollY 5213/5214): g0 pins the opened page where its jack fired and opening grows docH 5999 -> 6035 (maxY 5260); no E stroke reached"
+  },
+  "readerChange": "g0b-read.mjs: triggers from prevented touchmoves (open = prevented upward move while closed, close = prevented downward move while open); end rule only as fallback for a record with no prevented move; ih falls back to vh0; selftest 8 checks ok; made before any P-164 data",
+  "preData2": {
+   "program": "fixes/g0-box/phone/g-fastshort-g0.json (38d7fe5d7fa8)",
+   "result": "START-STATE MATCH: both arms complete (52 strokes), first E stroke at the pin y 5213/5214, identical stroke order, settle ys within 1 px, moving frames 529/518 (-2.1 %), toolbar 1/1; reader 13 opens and 12 closes per arm, all prevented moves at the pin"
+  },
+  "comparability": "the G program changed against P-161/P-163 (v1): P-164 numbers do not compare with those tickets",
+  "prediction": {
+   "D1": "PASS ~65 %",
+   "D2": "PASS ~70 %",
+   "D3": "PASS ~60 %",
+   "overall": "PASS ~50 %, OPEN (threshold-sensitive) the most likely other outcome"
   }
  }
 }

@@ -11,10 +11,21 @@
 // OPEN on g0 (this reader): in a run's segment 0, walk the touch rows [t, kind, n, cancelable, defaultPrevented, scrollY,
 // clientY, timeStamp] in order, with the state closed at the start:
 //   - a touchmove ('m') whose clientY is lower than the previous touch row's of the same contact (finger moves up,
-//     content would scroll down) while the state is closed and scrollY >= docH - innerHeight - 8 (the page end) is an
-//     OPEN TRIGGER at its t; the state becomes open;
-//   - a touchmove whose clientY is higher (finger moves down) while the state is open is a CLOSE TRIGGER; state closed.
-//   defaultPrevented is not used: the recorder's listener may run before the page's capture listener.
+//     content would scroll down) while the state is closed, and that the page prevented (defaultPrevented 1: g0's jack
+//     M took it), is an OPEN TRIGGER at its t; the state becomes open;
+//   - a prevented touchmove whose clientY is higher (finger moves down) while the state is open is a CLOSE TRIGGER;
+//     the state becomes closed.
+//   Fallback, only for a record with no prevented touchmove at all (a recorder that does not see the page's
+//   preventDefault): the rule before P-164, open = upward move at scrollY >= docH - innerHeight - 8, close = any
+//   downward move while open.
+//   P-164 pre-data change (2026-10-08, before any P-164 data): the end rule alone found no open in the Simulator G
+//   records (out/sim/fix-g0-box-gesture-p164-{C,V}-*.json). g0 pins the opened page at the scrollY where its jack fired
+//   (5213/5214 there, L's scrollTo), and opening grows docH 5999 -> 6035, so scrollY stays 39-47 px under
+//   docH - ih - 8. Count-only records keep no frames either, so ih falls back to seg.vh0 when no frame row has it.
+//   With ih from vh0 the end rule fires on a rubber-band overscroll (y 5260, not prevented) one stroke BEFORE g0's
+//   jack opens the menu. The recorder does see the page's preventDefault (1370 prevented moves in those records, every
+//   one at the pin), and g0's jack prevents every move that opens or closes it (k(n) then preventDefault, g0.0f JS 14402,
+//   14409-14413), so prevented moves define the triggers; the end rule is only the fallback.
 // Per trigger the TWEEN WINDOW is [t, t + 700 ms]; its frames are the segment's rAF rows with t inside (all of them:
 // the page is still, so p161's "y changed" filter would drop every frame).
 // METRICS (per counted run)
@@ -50,16 +61,17 @@ export function decide(C, V) { // C, V: arrays of per-run { f2, medianDt, share 
 }
 export const WINDOW_MS = 700, END_SLACK = 8;
 export function triggers(seg) {
-  const docH = seg.docH1 ?? seg.docH ?? 0, ih = Math.max(...(seg.frames ?? []).map((r) => r[3]), 0);
+  const docH = seg.docH1 ?? seg.docH ?? 0, ih = Math.max(...(seg.frames ?? []).map((r) => r[3]), 0) || seg.vh0 || 0;
   const out = []; let open = false, prevY = null;
+  const usePv = (seg.touches ?? []).some((r) => r[1] === 'm' && r[4] === 1); // the recorder saw the page's preventDefault
   for (const r of seg.touches ?? []) {
-    const [t, kind, , , , sy, cy] = r;
+    const [t, kind, , , pv, sy, cy] = r;
     if (kind === 's') { prevY = cy; continue; }
     if (kind === 'e' || kind === 'c') { prevY = null; continue; }
     if (kind !== 'm' || prevY == null || cy == null) continue;
     const d = prevY - cy; prevY = cy;
-    if (!open && d > 0 && sy >= docH - ih - END_SLACK) { out.push({ t, kind: 'open' }); open = true; }
-    else if (open && d < 0) { out.push({ t, kind: 'close' }); open = false; }
+    if (!open && d > 0 && (usePv ? pv === 1 : sy >= docH - ih - END_SLACK)) { out.push({ t, kind: 'open' }); open = true; }
+    else if (open && d < 0 && (usePv ? pv === 1 : true)) { out.push({ t, kind: 'close' }); open = false; }
   }
   return out;
 }
@@ -93,6 +105,11 @@ function selftest() {
     ['later open frames', JSON.stringify(m.dts) === JSON.stringify([16, 31, 39]) && m.medianDt === 31],
     ['shares', m.share[34] === 0.3333 && m.share[30] === 0.6667 && m.share[38] === 0.3333],
     ['close window', m.close.n === 3 && m.close.medianDt === 16],
+    ['prevented open below the end (P-164 Simulator shape)', JSON.stringify(triggers({ docH: 5999, docH1: 6035, vh0: 775,
+      touches: [[-30, 's', 1, 0, 0, 5200, 700], [-20, 'm', 1, 0, 0, 5260, 650], [-10, 'e', 0, 0, 0, 5260, 650],
+        [0, 's', 1, 0, 0, 5213, 681], [10, 'm', 1, 1, 1, 5213, 681], [20, 'm', 1, 1, 1, 5213, 680], [30, 'e', 0, 0, 0, 5213, 600],
+        [40, 's', 1, 0, 0, 5213, 300], [50, 'm', 1, 1, 1, 5213, 330], [60, 'e', 0, 0, 0, 5213, 330],
+        [70, 's', 1, 0, 0, 4000, 500], [80, 'm', 1, 0, 0, 4000, 450], [90, 'e', 0, 0, 0, 4000, 450]] }).map((x) => x.kind + '@' + x.t)) === JSON.stringify(['open@20', 'close@50'])],
     ['decide pass', decide([P(30, 20, 0.1), P(28, 21, 0.1), P(30, 19, 0.2)], [P(32, 22, 0.1), P(31, 20, 0.0), P(33, 23, 0.1)]).decision === 'PASS'],
     ['decide fail', decide([P(30, 20, 0.1), P(28, 21, 0.1), P(30, 19, 0.2)], [P(45, 20, 0.1), P(44, 20, 0.0), P(46, 20, 0.1)]).decision === 'FAIL'],
   ];
