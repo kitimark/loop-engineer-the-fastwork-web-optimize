@@ -3,12 +3,12 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** draft
-**Stage:** D LOCATED, signed by the lead 2026-10-09 (~20:5xZ). Upgrade to NAMED (fast path) if `sw-drag.mjs` shows fixcq removing the finger-down layouts >= 5 ms in G drags, 3 loads per arm, non-overlapping with base; only then F with fixcq.
-**Open item (own, outside the deck):** the y 0-600 residual, ~19 ms per nudge in every arm including fixcq (see "Residual").
+**Status:** F gates done; phone card drafted, waiting for the lead's signature (no phone before it)
+**Stage:** D NAMED (lead, fast path, 2026-10-09 ~21:2xZ, after the drag check). F: build `fixcq`, restacked on g0.0i; gates in "F: build fixcq".
+**Open item (own, outside the deck):** the y 0-600 static-nudge residual (~19 ms per nudge, `sw-map.mjs`, every knock-out arm). In G drags with the served fixcq CSS it is gone (0 big layouts at y < 1000); it appears only when the fixcq rules are injected after load (see "F: build fixcq", gate 5).
 **Device class / gate:** touch-only (G) for the gain; Simulator counts for attribution
-**Driver(s) behind the claims:** Simulator static nudge map (`sw-map.mjs`); Simulator G knock-outs from scrollcb-g0 (`out/scrollcb-g0/kog/`)
-**Base:** g0.0h (main 03a46dc5; JS 9162843e750f / CSS 26d28a0a263b), immutable copy `out/sticky-walk/snap/C`
+**Driver(s) behind the claims:** Simulator static nudge map (`sw-map.mjs`); Simulator G approach (`sw-drag.mjs`); G knock-outs from scrollcb-g0 (`out/scrollcb-g0/kog/`)
+**Base:** D and gates 1-5 on g0.0h (JS 9162843e750f / CSS 26d28a0a263b, `out/sticky-walk/snap/C`). The build is restacked on **g0.0i** (main 8d726460; JS 9162843e750f / CSS adb875d94c1f, `out/sticky-walk/snap-i/C`); the CSS edits do not overlap (lead 2026-10-09: the gates carry over, plus a Simulator spot check).
 **Topic history:** started as sticky-far (un-stick a sticky box while its container is far off-screen). The G knock-outs predicted no gain from that, so it was dropped (F-358 correction) and renamed (lead 2026-10-09).
 
 ## D card
@@ -95,7 +95,120 @@ Data: `out/sticky-walk/drag-base.json`, `drag-fixcq.json`.
 5. **Counts.** Simulator G approach counts (layouts >= 5 ms, frames delivered) vs g0.0h, 3 loads per arm.
 6. **Phone.** Only with the lead's signature.
 
+## F: build fixcq
+
+**The change** (`delta.diff`, CSS only, inside the mobile / coarse-pointer media rule `(width<=860px), (device-width<=500px),
+(hover: none) and (pointer: coarse) and (width<=1200px)`; motion settings untouched):
+- `.start-selling-profile-deck` gets `container-type: inline-size`.
+- `.start-selling-profile-shell` (and its `.is-rail-in` twin selector): `aspect-ratio: 353/764` removed, `height: auto` becomes
+  `height: calc(100cqi * 764 / 353)`. 100cqi is the deck's content width, which is also the shell's width
+  (`flex: 0 0 100%; width: 100%`), so the box is the same 353:764 box: 844.078125 px at 430 wide, as in g0.0h.
+- Containment added: WebKit's `container-type: inline-size` adds style and inline-size containment only, no layout or
+  paint containment (CONFIRMED: `Source/WebCore/style/computed/StyleComputedStyle.cpp` 458-468, `usedContain()`,
+  WebKit main e8c36a19). So the only new constraint is that the deck's inline size ignores its children; gate 4 checks it.
+
+**Builds** (immutable copies, hashes in each `HASHES.txt`):
+
+| build | JS | CSS | copy |
+|---|---|---|---|
+| g0.0h (gates 1-5 control) | 9162843e750f | 26d28a0a263b | `out/sticky-walk/snap/C` |
+| g0.0h + fixcq (gates 1-5) | 9162843e750f | 2d1a1995fd2b | `out/sticky-walk/snap/V` |
+| **g0.0i** (phone control) | 9162843e750f | adb875d94c1f | `out/sticky-walk/snap-i/C` |
+| **g0.0i + fixcq** (phone build; `patch.diff`, baseline-relative) | 9162843e750f | bee7fce9ad56 | `out/sticky-walk/snap-i/V` |
+
+**Gates** (A = control, V = build; each check loads A, V, A2, V2 on separate servers and origins; "consistent" = over 8
+levels in all four cross pairs while neither A/A pair is):
+
+| # | gate | tool | result |
+|---|---|---|---|
+| 2 | IO callbacks fire at the same y (wrapped IntersectionObserver, 25 px steps down and back, Chrome 430x775) | `gates/io-chrome.mjs` | **PASS**: 52 targets, A~V 0 differ (A/A 0). The `.hero` / `.pain-sticky` watchers flip at the same y. |
+| 1 | Chrome pixels, phone 430x932, 13 stops, carousel frozen, commission fee aligned | `gates/px-chrome.mjs mobile` | **PASS**: consistent 0 at every stop. One V load showed 182 css px² in the fee bar at y 3875 (V/V the same, A2~V2 0): loop phase. |
+| 1, 3 | Chrome pixels, desktop 1440 | `px-chrome.mjs desktop` | **PASS**: consistent 0 at all 13 stops (the media rule does not match there). |
+| 3 | Chrome pixels, tablet 768x1024 and 1024x1366 (coarse pointer, inside the rule) | `px-chrome.mjs tablet / tablet1024` | **PASS**: 768 consistent 0 everywhere. 1024: clusters at y 3177 (206 css px²) and 3781 (6595) sit on the pain-note stack, a timer shuffle the gate does not freeze (A/A 11-17 % there; all four loads show a different stack). Deck geometry and document height at 1024 are equal (gate 4). |
+| 3 | Chrome pixels, reduced motion (430x932) | `PX_RM=1 px-chrome.mjs mobile` | **PASS**: consistent 0 at all 13 stops. |
+| 1 | Simulator pixels, 13 stops | `gates/px-sim.mjs` | **PASS**: consistent 0, except the iOS status-bar clock at y 0/300 (04:40 / 04:41 / 04:42 across loads; standard exclusion, lead 2026-10-09) and 15 css px² at max level 19 at y 3384 (commission card). |
+| 4 | Deck in Chrome: geometry, `scrollLeft` after a touch swipe to each shell and back, deck crop at each position; 430x775, 430x815, 390x844, 768, 1024, 1440 | `gates/deck-chrome.mjs`, `deck-score.mjs` | **PASS**: geometry, snap positions (392 px steps at 430, 352 at 390, 730 at 768, 914 at 1024) and every deck crop equal (0 px over 8 levels), all four pairs. |
+| 4 | Deck in the Simulator (real WDA swipes) | `gates/deck-sim.mjs` | Geometry **PASS** (deck 462 wide, `scrollWidth` 2422, shells 844.078125 px; snaps 0/392/784/1176/1568/1960 and back, all loads). Pixels: see "Simulator deck: image sharpness" below. |
+| 4 | PR-013 avatar slider (keep-st6): behaviour and pixels | `gates/avatar-gate.mjs --engine chrome|sim` | **PASS**. Chrome: slide period 1021-1026 ms in all four loads, the same state sequence, aligned to the mount state (x = 0) and stepped through 4 slides; rest and mid-slide crops (6 slide animations paused at 110 ms) 0 px over 8 levels A~V and A/A. Simulator: periods 1023-1033 ms, same keyed captures, A~V max level 1, consistent 0. |
+| 5 | Simulator G approach counts, 3 loads per arm, served CSS (not injected) | `sw-drag.mjs --driver g` | **PASS**, table below. |
+
+Gate 5 (data `out/sticky-walk/drag-f.json`; interleaved C:1 V:1 C:2 V:2 C:3 V:3, one load per arm per session order):
+
+| arm | layouts >= 5 ms per run | at y < 1000 | at y >= 1000 | finger-down at y 1000-3400 | frames delivered | layouts (all) |
+|---|---|---|---|---|---|---|
+| g0.0h | 169, 142, 129 | 76, 64, 60 | 93, 78, 69 | 73, 65, 56 | 1051, 1087, 1101 | 853, 888, 880 |
+| g0.0h + fixcq | 2, 2, 4 | 0, 0, 0 | 2, 2, 4 | 2, 2, 2 | 1197, 1203, 1180 | 955, 951, 934 |
+
+- The ranges do not overlap on any column (OBSERVED, Simulator; Simulator timing is not a verdict, F-084; the counts are).
+- The served build also removes the y < 1000 big layouts. The earlier drag check injected the fixcq rules after settle and kept
+  34-47 there. A no-op style sheet injected the same way leaves V clean (`drag-vnoop.json`: 2 and 2 big layouts, 0 at
+  y < 1000), so it is not injection as such; why the injected fixcq rules differ from the served ones is UNRESOLVED and
+  does not affect the build.
+- The 2-4 left are at y 1707 and 3602 in every V load.
+
+**Simulator deck: image sharpness after a swipe (for the lead's T2 call).**
+- In the Simulator only, at some deck positions after a swipe, the shells' photos are painted at a different resampling
+  quality in C and V: no offset (the best shift is 0,0), only edges inside bitmaps differ.
+- V is as sharp or sharper at every such step, never blurrier (edge energy, e.g. f3 10.86 vs 10.46, b3 11.06 vs 10.47).
+- It is settled, not transient: a second shot 1.5 s later is identical. Stalling the avatar slider does not remove it.
+- Which positions show it changes from session to session (run 1: f3/f5/b3/b0; stalled: f2/f3/f4/b1/b0/b4; late: s0/f2/f5/b2).
+  Within a session A matches A2 and V matches V2.
+- Numbers: largest consistent shade 42-91, or 206 on the vinyl-record image at one step (there the A/A pair differs too);
+  up to 1,897 css px² per step (0.47 % of the screen); all inside the deck; static.
+- Chrome shows none of it (deck crops 0 px at every position).
+- Cause UNRESOLVED. Candidates: WebKit's page-wide ImageQualityController paints scaled bitmaps at Low quality while any
+  bitmap changes its drawn size within 500 ms, and repaints at high quality only afterwards (CONFIRMED as code:
+  `Source/WebCore/rendering/ImageQualityController.cpp` 46, 196-228, WebKit main e8c36a19; that it explains these shots
+  is OBSERVED, cause unknown); or a different decode size.
+- Reading: this is a rendering-quality state, not a layout change; by the PR-010 numbers it is T2 except the one 206-level step.
+  The lead decides T2 or proposal.
+
+**Restack on g0.0i (lead 2026-10-09).** `fix.mjs apply sticky-walk --from g0-0i --reset`, then `delta.diff` applied (the
+edits do not overlap: g0.0i adds rules at the end of the CSS). Simulator pixel spot check, g0.0i vs g0.0i + fixcq
+(`px-sim.mjs` with `PX_SNAP=out/sticky-walk/snap-i`, stops 548, 1400, 2400, 3384, 4856, 5260; carousel frozen, fee
+aligned): **PASS**. Consistent 0 at 548, 2400, 4856 and 5260 (the end of the page, where g0.0i's rules sit). At 1400: 57 css px² at max
+level 23, inside the deck (the photo-sharpness state above). At 3384: 15 css px² at max level 19, the commission-card spot
+already seen on g0.0h. The status-bar clock falls inside the A/A mask.
+
+## Phone card (draft for the lead's signature; P-id from the lead)
+
+```
+TICKET sticky-walk · g0.0i + fixcq: JS 9162843e750f / CSS bee7fce9ad56 (out/sticky-walk/snap-i/V)
+       control g0.0i: JS 9162843e750f / CSS adb875d94c1f (out/sticky-walk/snap-i/C), same base
+driver G (WDA gesture, the g0 G approach program: 10 strokes, 520 px up in 1200 ms, profile drag, x 215, 300 ms pause)
+profile xcode-serious (default, T-162 #3)
+question: does fixcq remove the finger-down long frames at y 1000-3400 that the deck's aspect-ratio walk causes?
+prediction P-<id>
+primary metric: finger-down frames dt > 50 ms at y 1000-3400 (and dt > 34), with twins (dt > 46 / 54, dt > 30 / 38);
+  near bands (30, 38] / (46, 54] flagged; minShift 4 ms
+secondary: whole-run > 50 / > 34; Timeline Layout records >= 5 ms (count and total ms) finger-down at y 1000-3400
+decisions: if V < C at y 1000-3400 on > 50 with separated ranges (twins agree) -> F done, V review, land on the
+  less-work rule; if within noise -> keep the Simulator counts as the cost card and land on the no-worse rule if
+  whole-run > 50 is not worse; if V worse -> stop, back to D (the walk is not the phone's drag cost)
+probe set: std + timeline (every counted run captures Timeline; sentinel = one uncounted Timeline-OFF control run after the
+  warm-ups and one at the block end)
+order: warm-up per arm port (uncounted), then C V V C C V V C (8 counted runs)
+per run: battery temperature, charging state, thermal state
+expected minutes: ~35
+```
+
+```
+PREDICTION P-<id> · fix-scrollcb-g0 · 2026-10-09
+1 g0.0i + fixcq (bee7fce9ad56) vs g0.0i (adb875d94c1f) · driver G · finger-down >50 / >34 at y 1000-3400, plus twins
+2 baseline: no phone G baseline for g0.0h/g0.0i at y 1000-3400 within 24 h; the block's own C runs are the baseline
+3 closure: Simulator G, g0.0h: 56-73 finger-down layouts >= 5 ms at y 1000-3400 per run (20-35 ms each in the static map);
+  phone closure not available (phone-only segment card owed if the lead asks)
+4 terms removed: | the deck shells' relayout per dirty-sticky layout | 20-35 ms per layout (Simulator static map) |
+  calibrated on the Simulator (fixpx / fixcq knock-outs, drag check) | platform claims: setViewportConstrainedObjectsNeedLayout
+  marks every sticky renderer (CONFIRMED); the link from a sticky's walk to the deck (UNRESOLVED; the knock-out carries it) |
+5 prediction: Layout records >= 5 ms finger-down at y 1000-3400 drop by >= 80 % (Simulator: 56-73 -> 2); frames > 50 ms
+  there fall in V vs C, size unknown (no phone baseline) · visible to rAF gaps and Timeline
+6 falsified if: the Timeline shows no drop of big Layout records at y 1000-3400 in V, or > 50 counts are not lower in V
+7 decision: as in the ticket
+```
+
 ## Probes
 
 - `sw-map.mjs`: static nudge cost map, knock-out arms in `KO`, `SW_DUMP=<selector>` subtree dump, `--selftest`.
-- `sw-drag.mjs`: a copy of `fixes/scrollcb-g0/sim-approach.mjs` on g0.0h, with window resize and visualViewport event stamps.
+- `sw-drag.mjs`: a copy of `fixes/scrollcb-g0/sim-approach.mjs` with window resize and visualViewport event stamps; arms C (g0.0h) and V (g0.0h + fixcq) from the immutable copies.
+- `gates/`: `px-chrome.mjs`, `px-sim.mjs` (copies of g0-box's pixel gates; `PX_SNAP`, `PX_ALIGN_FEE`, `PX_RM`, tablet viewports), `io-chrome.mjs`, `deck-chrome.mjs` + `deck-score.mjs`, `deck-sim.mjs` (`DECK_STALL`, `DECK_LATE`), `avatar-gate.mjs`.

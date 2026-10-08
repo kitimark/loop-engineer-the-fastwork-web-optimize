@@ -1,0 +1,29 @@
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -3792,13 +3792,16 @@
+     gap: 2px;
+     display: flex;
+     overflow: auto hidden;
++    /* [sticky-walk] the shells take their height from the deck's content width (100cqi) instead of aspect-ratio:
++       same 353/764 box, but WebKit no longer re-lays out all six shells on every layout a dirty sticky box
++       triggers (Simulator: 20-35 ms -> ~0.5 ms per viewport move). The deck's width is already definite. */
++    container-type: inline-size;
+   }
+   .start-selling-profile-shell,
+   .start-selling-profile-chrome.is-rail-in .start-selling-profile-shell {
+     z-index: 0;
+     box-sizing: border-box;
+     contain: paint;
+-    aspect-ratio: 353/764;
+     scroll-snap-align: center;
+     opacity: 1;
+     transform-origin: 50%;
+@@ -3809,7 +3812,7 @@
+     flex: 0 0 100%;
+     width: 100%;
+     max-width: none;
+-    height: auto;
++    height: calc(100cqi * 764 / 353);
+     min-height: 0;
+     max-height: none;
+     padding: 0;
