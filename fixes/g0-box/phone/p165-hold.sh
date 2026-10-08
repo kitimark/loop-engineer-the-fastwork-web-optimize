@@ -45,6 +45,8 @@ SV=out/p165; O=out/p165/runs
 FS=fixes/g0-box/phone/g-fastshort-g0b.json; PROG_FS=31fc66329daf
 PROF="--profile real-serious"
 HEAT_URL=https://fastwork.com/   # heat source of PW and pre-warm runs (user T-247); gates and counted runs stay on the mirror
+HF=fixes/g0-box/phone/heat-fling.json; PROG_HF=137ef5c2c60a   # heat method (user T-247 #3): WDA flings, uncounted
+HM=out/p165/heat-method.txt; HR=out/p165/heatrate.log   # the experiment's choice (mirror|live) and its HEATRATE lines (T-247 #7)
 GATES=fixes/g0-box/phone/p129-gates-g0b.mjs
 SELF=fixes/g0-box/phone/p165-hold.sh
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
@@ -69,14 +71,48 @@ B=$(node tools/iphone.mjs gesture $FS --owner "$R" --timeline $O/dry-tl.json --d
 h=$(echo "$B" | sed -n 's/^GESTURE_HASH \(.\{12\}\).*/\1/p'); sE=$(echo "$B" | sed -n 's/^GESTURE_BUDGET_S \([0-9]*\).*/\1/p')
 [ "$h" = "$PROG_FS" ] && [ -n "$sE" ] || { echo "HOLD $H VOID compiled program $FS ${h:-none} (pinned $PROG_FS), budget ${sE:-none} (no run)"; exit 4; }
 echo "PROG fs $PROG_FS ok, GESTURE_BUDGET_S $sE"
+# heat method (user T-247 #3): pre-warm runs are the heat-fling program when it is present and compiles to its pinned
+# hash; else the live-page scroll run as before. Never a reason to void a hold: it is an uncounted heat run.
+HFOK=0; HF_EST=
+if [ -f "$HF" ]; then
+  HB=$(node tools/iphone.mjs gesture $HF --owner "$R" --dry-run 2>&1)
+  hh=$(echo "$HB" | sed -n 's/^GESTURE_HASH \(.\{12\}\).*/\1/p'); HF_EST=$(echo "$HB" | head -1 | sed -n 's/.*~\([0-9]*\) s$/\1/p')
+  if [ "$hh" = "$PROG_HF" ]; then HFOK=1; BUDGET_PW=120; echo "HEAT fling $PROG_HF ok (static est ~${HF_EST:-?} s, planned 120 s per run)"
+  else echo "HEAT fling ${hh:-none} (pinned $PROG_HF): not used, live-page scroll runs instead"; fi
+fi
 arm() { case $1 in wV|V*|WV|EV*) echo V ;; PW) echo B ;; *) echo C ;; esac; }
 kind() { case $1 in wC|wV|[CV][1-8]|[CV][1-8]x|sC) echo S ;; PW) echo P ;; *) echo G ;; esac; }
 desc() { case $1 in w?) echo "warm-up (--warmup)" ;; sC) echo "heat sentinel, uncounted" ;; C*) echo "counted, heat sentinel" ;; [V]*) echo "counted" ;; W?) echo "warm-up (--warmup), Timeline off" ;; E*) echo "counted, Timeline on" ;; esac; }
+# heat probe (user T-247 #7): one HEATRATE line per heat run, battery read right before the open and right after the run
+# (heatread.mjs), states from the run's own PROFILE read (state0) and the next read, the next run's or the gate's (state1)
+hread() { node fixes/g0-box/phone/heatread.mjs 2>/dev/null; }
+HP=   # the pending HEATRATE line (waits for state1)
+hflush() { [ -n "$HP" ] || return 0; L="$HP state1=${1:-?}"; echo "$L"; echo "$(date -u +%FT%TZ) $H $L" >> $HR; HP=; }
+gstate() { tail -1 out/thermal-gate/gates.jsonl 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).state||"?")}catch{console.log("?")}})'; }
+# the heat-method experiment (user T-247 #7): with the fling program, alternate its page, mirror (B port) then live, until
+# both have >= 3 runs with a rate; then keep the faster page (median rate; live only when > 1.2x the mirror's and
+# > 0.05 C/min more; equal = mirror: no network, the same page as C) in $HM for every later heat run of the block
+hpage() {
+  [ $HFOK = 1 ] || { echo live; return; }
+  [ -s $HM ] && { cat $HM; return; }
+  nm=$(grep -c 'method=fling page=mirror .*ok=1' $HR 2>/dev/null); nl=$(grep -c 'method=fling page=live .*ok=1' $HR 2>/dev/null)
+  if [ "${nm:-0}" -ge 3 ] && [ "${nl:-0}" -ge 3 ]; then
+    node -e '
+const L=require("fs").readFileSync(process.argv[1],"utf8").split("\n").filter(l=>/method=fling .*ok=1/.test(l));
+const med=a=>{a=[...a].sort((x,y)=>x-y);const n=a.length;return n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):NaN};
+const r=p=>L.filter(l=>l.includes("page="+p+" ")).map(l=>Number((l.match(/rate=(-?[0-9.]+)/)||[])[1])).filter(Number.isFinite);
+const m=med(r("mirror")),v=med(r("live"));const pick=(v>1.2*m&&v-m>0.05)?"live":"mirror";
+require("fs").writeFileSync(process.argv[2],pick+"\n");
+console.error(`HEATMETHOD chose ${pick}: fling median rate mirror ${m.toFixed(3)} C/min (n ${r("mirror").length}), live ${v.toFixed(3)} C/min (n ${r("live").length})`);' $HR $HM 2>&1 | tee -a $HR >&2
+    cat $HM; return
+  fi
+  [ "${nm:-0}" -le "${nl:-0}" ] && echo mirror || echo live
+}
 if [ "$CM_DRY" = 1 ]; then
   for I in "$@"; do case $(kind $I) in
     S) echo "PLAN $I S on $(arm $I) $(desc $I) $PROF (budget $BUDGET_S s)" ;;
     G) echo "PLAN $I G on $(arm $I) $(desc $I) $PROF (budget $sE s)" ;;
-    P) echo "PLAN $I heat hold: pre-warm S runs on the live page $HEAT_URL (--warmup $PROF, uncounted; user T-247), the gate after every 3rd run, until the gate passes or the hold runs out of time" ;; esac; done
+    P) echo "PLAN $I heat hold: pre-warm runs, $([ $HFOK = 1 ] && echo "heat-fling $PROG_HF gesture, page $(hpage) (experiment mirror B vs live, T-247 #7)" || echo "S scroll on the live page $HEAT_URL") (--warmup $PROF, uncounted; user T-247), the gate after every 3rd run, until the gate passes or the hold runs out of time" ;; esac; done
   echo "PLAN gates thermal-gate.mjs --expect serious --max-c 44 (no --accept-induced) at the start and the end; run gates $GATES"
   echo "HOLD $H DRY ok"; exit 0
 fi
@@ -103,13 +139,27 @@ NPW=0
 # `iphone.mjs scroll --warmup` there. (HEAT_URL is set at the top, next to PROF.)
 prewarm() {
   NPW=$((NPW + 1))
-  node tools/iphone.mjs open "$HEAT_URL" --owner "$R" > "$O/pw-$H-$NPW-open.log" 2>&1 || { echo "HOLD $H VOID open of the heat page failed (pre-warm, HEATOPEN): $(tail -1 "$O/pw-$H-$NPW-open.log" | cut -c1-100)"; exit 10; }
-  node tools/iphone.mjs run --driver scroll --probe std $PROF --warmup --owner "$R" --block "$CM_TICKET" --label "p165-$H-pw$NPW" --out "$O/pw-$H-$NPW.json" > "$O/pw-$H-$NPW.log" 2>&1; pr=$?
+  PG=$(hpage); [ $PG = mirror ] && PU=$BU || PU=$HEAT_URL
+  M=$([ $HFOK = 1 ] && echo fling || echo scroll)
+  t0=$(hread); s0=$(date +%s)
+  node tools/iphone.mjs open "$PU" --owner "$R" > "$O/pw-$H-$NPW-open.log" 2>&1 || { hflush "?"; echo "HOLD $H VOID open of the heat page ($PG) failed (pre-warm, HEATOPEN): $(tail -1 "$O/pw-$H-$NPW-open.log" | cut -c1-100)"; exit 10; }
+  if [ $HFOK = 1 ]; then
+    node tools/iphone.mjs gesture $HF --warmup $PROF --owner "$R" --label "p165-$H-pw$NPW-fling-$PG" --out "$O/pw-$H-$NPW.json" > "$O/pw-$H-$NPW.log" 2>&1; pr=$?
+  else
+    node tools/iphone.mjs run --driver scroll --probe std $PROF --warmup --owner "$R" --block "$CM_TICKET" --label "p165-$H-pw$NPW" --out "$O/pw-$H-$NPW.json" > "$O/pw-$H-$NPW.log" 2>&1; pr=$?
+  fi
+  ok=1
   if [ $pr -ne 0 ] && [ $pr -ne 8 ]; then
-    node tools/iphone.mjs open "$HEAT_URL" --owner "$R" > /dev/null 2>&1
+    ok=0; [ $HFOK = 1 ] && pr="fling $pr" || pr="run $pr"
+    node tools/iphone.mjs open "$PU" --owner "$R" > /dev/null 2>&1
     node tools/iphone.mjs scroll --warmup $PROF --owner "$R" --label "p165-$H-pw$NPW-s" > "$O/pw-$H-$NPW-s.log" 2>&1; pr="$pr, scroll fallback $?"
   fi
-  echo "PREWARM $NPW (live page) exit $pr $(date -u +%TZ) $(grep -m1 -E 'batt|temperature' "$O/pw-$H-$NPW.log" | cut -c1-80)"
+  t1=$(hread); s1=$(date +%s); st0=$(grep -m1 -o 'phone is [A-Za-z]*' "$O/pw-$H-$NPW.log" | sed 's/phone is //')
+  hflush "${st0:-?}"
+  rate=$(node -e 'const [a,b,s]=process.argv.slice(1).map(Number);console.log(Number.isFinite(a)&&Number.isFinite(b)&&s>0&&process.argv[1]!==""&&process.argv[2]!==""?((b-a)/s*60).toFixed(3):"?")' "$t0" "$t1" "$((s1 - s0))")
+  [ "$rate" = "?" ] && ok=0
+  HP="HEATRATE method=$M page=$PG t0=${t0:-?} t1=${t1:-?} sec=$((s1 - s0)) rate=$rate state0=${st0:-?} ok=$ok"
+  echo "PREWARM $NPW ($M on $PG) exit $pr $(date -u +%TZ) $(grep -m1 -E 'batt|temperature' "$O/pw-$H-$NPW.log" | cut -c1-80)"
 }
 late() { [ $(( $(date +%s) - T0 + $1 + 30 )) -gt 600 ]; }
 # the start gate, with the heat pre-warm
@@ -119,8 +169,9 @@ case " $* " in *" PW "*) PWMAX=12; PWEVERY=3 ;; *) PWMAX=2; PWEVERY=1 ;; esac
 gate start; g=$?
 while [ $g -eq 2 ] && [ $NPW -lt $PWMAX ] && ! late $BUDGET_PW; do
   prewarm
-  if [ $((NPW % PWEVERY)) -eq 0 ] || [ $NPW -ge $PWMAX ] || late $BUDGET_PW; then gate start; g=$?; fi
+  if [ $((NPW % PWEVERY)) -eq 0 ] || [ $NPW -ge $PWMAX ] || late $BUDGET_PW; then gate start; g=$?; hflush "$(gstate)"; fi
 done
+hflush "?"
 case $g in
   0) echo "START GATE PASS after $NPW pre-warm run(s)" ;;
   2) node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "HOLD $H VOID start gate too cool after $NPW pre-warm run(s) (TOOCOOL)"; exit 5 ;;
