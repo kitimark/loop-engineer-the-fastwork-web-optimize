@@ -61,7 +61,7 @@ const RECT = `JSON.stringify((() => { const r = ${ROW}.getBoundingClientRect(); 
 const CENTER = `(() => { const r = ${ROW}.getBoundingClientRect(); scrollTo({ top: Math.round(r.top + scrollY + r.height / 2 - innerHeight / 2), behavior: 'instant' }); return Math.round(scrollY); })()`;
 
 // ---- engines: ev(js) -> value, shot(rect css) -> pixels {w,h,bpp,px}
-let chrome, cdp, S, cfg, openTab;
+let chrome, cdp, S, cfg, openTab, calTop = null;
 if (ENGINE === 'chrome') {
   const L = await import(join(WT, 'tools/lib/cdp.mjs'));
   chrome = await L.launchChrome({ port: 0, profileDir: L.tempProfileDir(join(WT, 'out/sticky-walk/chrome'), 'avatar'), headless: true, windowSize: '430,775' });
@@ -80,13 +80,21 @@ async function openLoad(url, host) {
     await page.send('Emulation.setDeviceMetricsOverride', { width: 430, height: 775, deviceScaleFactor: 3, mobile: true });
     await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
     await gotoAndSettle(page, url, { quietMs: 1500, maxMs: 45000 });
-    return { ev: async (js) => page.eval(js), shot: async (r) => { const { data } = await page.send('Page.captureScreenshot', { format: 'png', clip: { x: r[0], y: r[1], width: r[2], height: r[3], scale: 1 } }); return pngPixels(Buffer.from(data, 'base64')); }, close: () => page.close?.() };
+    return { ev: async (js) => page.eval(js), shot: async (r, name = 'tmp') => { const { data } = await page.send('Page.captureScreenshot', { format: 'png' }); const b = Buffer.from(data, 'base64'); writeFileSync(join(OUT, name + '.png'), b); return crop(pngPixels(b), r[0] * 3, r[1] * 3, r[2] * 3, r[3] * 3); }, close: () => page.close?.() };
   }
   process.env.FW_TAB_HOST = host;
   execFileSync(process.execPath, [join(WT, 'tools/sim.mjs'), 'open', url], { cwd: WT, stdio: ['ignore', 'ignore', 'inherit'], env: { ...process.env } });
   const c = await openTab(host);
   for (let i = 0; i < 40 && (await c.evaluate('document.readyState')) !== 'complete'; i++) await sleep(500);
-  return { ev: async (js) => c.evaluate(js), shot: async (r, name = 'tmp') => { const f = join(OUT, name + '.png'); S.simctl(['io', cfg.udid, 'screenshot', f]); return crop(pngPixels(readFileSync(f)), r[0] * 3, r[1] * 3, r[2] * 3, r[3] * 3); }, close: () => c.close() };
+  // magenta calibration (as px-sim.mjs): the web view's top edge in the screenshot (Safari's status bar / toolbar above it)
+  await c.evaluate(`(() => { const b = document.createElement('div'); b.id = '__avcal'; b.style.cssText = 'position:fixed;left:0;top:100px;width:100%;height:6px;background:#ff00ff;z-index:2147483647'; document.body.appendChild(b); return 1; })()`); await sleep(400);
+  const cf = join(OUT, 'calibration.png'); S.simctl(['io', cfg.udid, 'screenshot', cf]);
+  await c.evaluate(`(document.getElementById('__avcal').remove(), 1)`); await sleep(300);
+  const CP = pngPixels(readFileSync(cf)); let top = -1;
+  for (let y = 0; y < CP.h && top < 0; y++) { let m = 0; for (let x = 0; x < CP.w; x++) { const i = (y * CP.w + x) * CP.bpp; if (CP.px[i] > 230 && CP.px[i + 1] < 40 && CP.px[i + 2] > 230) m++; } if (m > CP.w * 0.9) top = y; }
+  if (top < 0) throw new Error('calibration bar not found');
+  top -= 300; calTop = top; // bar at css top 100: below the status bar, which Safari tints with the bar's colour (row 0 read as magenta, 2026-10-09)
+  return { ev: async (js) => c.evaluate(js), shot: async (r, name = 'tmp') => { const f = join(OUT, name + '.png'); S.simctl(['io', cfg.udid, 'screenshot', f]); return crop(pngPixels(readFileSync(f)), r[0] * 3, top + r[1] * 3, r[2] * 3, r[3] * 3); }, close: () => c.close() };
 }
 
 const res = { tool: 'fixes/sticky-walk/gates/avatar-gate.mjs', engine: ENGINE, startedAt: new Date().toISOString(), loads: [], scores: [] };
@@ -125,7 +133,7 @@ try {
         await pg.ev('window.__av.step()');
       }
       load.aligned = aligned; if (!aligned) throw new Error('could not align to the mount state');
-      const rect = JSON.parse(await pg.ev(RECT)); load.rect = rect;
+      const rect = JSON.parse(await pg.ev(RECT)); load.rect = rect; load.calTop = calTop;
       load.caps = [];
       for (let k = 0; k < NCAP; k++) {
         if (!(await waitQ())) throw new Error('no helper timer queued (rest ' + k + ')');
@@ -167,6 +175,15 @@ for (const [ck, C] of Object.entries(crops)) {
     res.scores.push(row); console.log(`${ck.padEnd(6)} A~V beyond A/A ${beyond} px  consistent ${cons} px (${row.consistentPct} %)  max ${max}  A/A over8 ${aaO}  V/V over8 ${vvO}  (crop ${C.A.w}x${C.A.h})`);
   } catch (e) { console.log(ck, 'score error', e.message); }
 }
+// sanity: the crops must show the row moving (rest k ~ mid k, rest k ~ rest k+1 over 8 levels), else the crop missed it
+res.motion = {};
+for (const arm of ['A', 'V', 'A2', 'V2']) {
+  const m = []; for (let k = 0; k < NCAP; k++) { const r0 = crops['rest' + k]?.[arm], m0 = crops['mid' + k]?.[arm], r1 = crops['rest' + (k + 1)]?.[arm];
+    const over = (x, y) => (x && y ? delta(x, y).filter((v) => v > 8).length : null); m.push({ k, restMid: over(r0, m0), restNext: over(r0, r1) }); }
+  res.motion[arm] = m; console.log(`motion ${arm.padEnd(2)} rest~mid ${m.map((x) => x.restMid).join(',')}  rest~nextRest ${m.map((x) => x.restNext).join(',')}`);
+}
+res.motionOk = Object.values(res.motion).every((m) => m.every((x) => x.restMid > 0) && m.slice(0, -1).every((x) => x.restNext > 0));
+console.log('motionOk', res.motionOk);
 res.endedAt = new Date().toISOString();
 writeFileSync(join(OUT, 'avatar.json'), JSON.stringify(res, null, 1));
 console.log('wrote', join(OUT, 'avatar.json'));
