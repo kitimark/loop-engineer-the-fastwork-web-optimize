@@ -140,6 +140,65 @@ test('readThermal: xcrun xctrace record (device, all processes, 10 s) + export o
   assert.equal(typeof r.battC, 'number');
 });
 
+// I-250: on 2026-10-08 11:17Z the xctrace record of a thermal read hung (0 % CPU, ignored SIGTERM and SIGINT, only
+// SIGKILL ended it ~9.5 min later); execFile's timeout sent SIGTERM to xcrun only and waited for its pipes.
+const alive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+const gone = async (pids, ms = 3000) => { for (const t0 = Date.now(); Date.now() - t0 < ms;) { if (!pids.some(alive)) return true; await new Promise((r) => setTimeout(r, 50)); } return !pids.some(alive); };
+test('I-250 readThermal: a hung xctrace record (ignores SIGTERM and SIGINT, a helper in its group keeps stdout open) is killed with its whole process group at the bound and retried once; a second hang is the read\'s error (timedOut), each with one XCTRACE TIMEOUT line', { timeout: 30000 }, async () => {
+  const d = tempDir('fw-i250-');
+  const env = { FW_XCTRACE: FAKE_THERMAL, FW_THERMAL_BATTERY: FAKE_THERMAL, FW_THERMAL_UDID: 'SYNTH-UDID', FAKE_THERMAL_STATE: 'Fair', FAKE_THERMAL_INDUCED: 'No',
+    FAKE_THERMAL_RECORD_HANG: '2', FAKE_THERMAL_HANG_COUNT: join(d, 'count'), FAKE_THERMAL_HANG_PIDS: join(d, 'pids') };
+  const pids = () => readFileSync(env.FAKE_THERMAL_HANG_PIDS, 'utf8').trim().split('\n').map(Number);
+  let lines = [];
+  let t0 = Date.now();
+  let r = await P.readThermal({ env, log: (l) => lines.push(l), recordTimeoutMs: 400, killGraceMs: 300 });
+  assert.ok(Date.now() - t0 < 8000, `bounded: ${Date.now() - t0} ms`);
+  assert.equal(r.timedOut, true);
+  assert.equal(r.state, null);
+  assert.equal(r.error, 'xctrace record timeout after 0.4 s, twice (process group killed, I-250)');
+  assert.equal(P.profileVerdict('serious', r).code, 1, 'no read');
+  assert.equal(typeof r.battC, 'number', 'the battery read still runs');
+  assert.deepEqual(lines, [
+    'XCTRACE TIMEOUT after 0.4 s (thermal read: xctrace record, attempt 1 of 2; its process group killed, I-250); retrying once',
+    'XCTRACE TIMEOUT after 0.4 s (thermal read: xctrace record, attempt 2 of 2; its process group killed, I-250)',
+  ]);
+  assert.equal(pids().length, 4, 'two hung records, each with its helper');
+  assert.ok(await gone(pids()), `every hung process is gone (SIGKILL to the group): ${pids().filter(alive)}`);
+  assert.doesNotMatch(JSON.stringify(r) + lines.join('\n'), /SYNTH-UDID/, 'the device id is never printed or kept');
+  // the first record hangs, the retry reads
+  writeFileSync(env.FAKE_THERMAL_HANG_COUNT, '1');
+  lines = [];
+  t0 = Date.now();
+  r = await P.readThermal({ env, log: (l) => lines.push(l), recordTimeoutMs: 400, killGraceMs: 300 });
+  assert.deepEqual([r.state, r.induced, r.error, r.timedOut], ['Fair', 'No', null, undefined]);
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /^XCTRACE TIMEOUT after 0\.4 s \(thermal read: xctrace record, attempt 1 of 2; .*\); retrying once$/);
+  assert.ok(await gone(pids()));
+  // the default bound is the time limit plus 60 s; $FW_XCTRACE_TIMEOUT_MS / $FW_XCTRACE_KILL_GRACE_MS (tests) set both calls'
+  const seen = [];
+  const exec = async (cmd, args, o) => { seen.push([args.includes('record') ? 'record' : args.includes('export') ? 'export' : 'battery', o.timeout, o.killGraceMs]); return { code: 0, error: null, stdout: args.includes('export') ? thermalXml([{ state: 'Fair', induced: 'No' }]) : '' }; };
+  await P.readThermal({ env: {}, udid: 'D', exec });
+  assert.deepEqual(seen.slice(0, 2), [['record', 70000, 5000], ['export', 60000, 5000]]);
+  seen.length = 0;
+  await P.readThermal({ env: { FW_XCTRACE_TIMEOUT_MS: '900', FW_XCTRACE_KILL_GRACE_MS: '100' }, udid: 'D', exec });
+  assert.deepEqual(seen.slice(0, 2), [['record', 900, 100], ['export', 900, 100]]);
+});
+
+test('I-250 execBounded: stdout and exit code of a normal child; a missing binary is an error; a timed-out child whose helper holds the pipe resolves after SIGKILL to the group', { timeout: 20000 }, async () => {
+  let r = await P.execBounded(process.execPath, ['-e', 'process.stdout.write("hi"); process.exit(3)'], { timeout: 5000 });
+  assert.deepEqual([r.code, r.error, r.stdout, r.timedOut], [3, null, 'hi', false]);
+  r = await P.execBounded('/nonexistent/fw-i250-binary', [], { timeout: 5000 });
+  assert.deepEqual([r.code, r.error, r.timedOut], [1, 'ENOENT', false]);
+  const d = tempDir('fw-i250-exec-');
+  const env = { ...process.env, FAKE_THERMAL_RECORD_HANG: '1', FAKE_THERMAL_HANG_PIDS: join(d, 'pids') };
+  const t0 = Date.now();
+  r = await P.execBounded(process.execPath, [FAKE_THERMAL, 'record', '--device', 'X', '--output', join(d, 't')], { timeout: 300, killGraceMs: 200, env });
+  assert.deepEqual([r.code, r.error, r.timedOut], [1, 'timeout', true]);
+  assert.ok(Date.now() - t0 < 4000, `${Date.now() - t0} ms`);
+  const pids = readFileSync(join(d, 'pids'), 'utf8').trim().split('\n').map(Number);
+  assert.ok(await gone(pids), `left: ${pids.filter(alive)}`);
+});
+
 const hold = (token = 'tok1', resource = 'chrome-measure') => ({ resource, token, owner: 'runner' });
 const counter = (read) => { const c = { n: 0 }; c.read = async () => { c.n++; return { at: new Date().toISOString(), ms: 25000, error: null, rows: 1, ...read() }; }; return c; };
 

@@ -12,7 +12,12 @@
 // $FAKE_THERMAL_RECORD_EXIT makes record fail. Each call appends {cmd} to $FAKE_THERMAL_LOG.
 // I-225: $FAKE_THERMAL_SEQ, a file of such lines, one per read: each `record` moves to the next line (counter in
 // <file>.n; the last line repeats), and that read's export and battery calls use it (overrides FAKE_THERMAL_FILE).
+// I-250: $FAKE_THERMAL_RECORD_HANG=N makes the first N `record` calls hang as xctrace did on 2026-10-08 11:17Z: it
+// ignores SIGTERM and SIGINT (only SIGKILL ends it), starts a helper child in its process group that keeps stdout open,
+// and never exits (counter in $FAKE_THERMAL_HANG_COUNT, a file; without it every record hangs). Both pids are appended
+// to $FAKE_THERMAL_HANG_PIDS. A safety exit after 120 s keeps a broken test from leaving it behind.
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
 /**
@@ -40,6 +45,15 @@ ${body}
 </node></trace-query-result>`;
 }
 
+/** I-250: does this record call hang? The first $FAKE_THERMAL_RECORD_HANG calls (counted in $FAKE_THERMAL_HANG_COUNT). */
+function hangThisRecord(env) {
+  const max = Number(env.FAKE_THERMAL_RECORD_HANG);
+  if (!env.FAKE_THERMAL_HANG_COUNT) return true;
+  const n = existsSync(env.FAKE_THERMAL_HANG_COUNT) ? Number(readFileSync(env.FAKE_THERMAL_HANG_COUNT, 'utf8')) || 0 : 0;
+  writeFileSync(env.FAKE_THERMAL_HANG_COUNT, String(n + 1));
+  return n < max;
+}
+
 function main() {
   const args = process.argv.slice(2);
   const env = process.env;
@@ -60,6 +74,14 @@ function main() {
     [state, induced] = [f[0] || state, f[1] || induced];
     if (f[2]) batt = f[2];
     condition = f[3] || undefined;
+  }
+  if (args[0] === 'record' && env.FAKE_THERMAL_RECORD_HANG && hangThisRecord(env)) {
+    process.on('SIGTERM', () => {});
+    process.on('SIGINT', () => {});
+    const helper = spawn(process.execPath, ['-e', "process.on('SIGTERM',()=>{});process.on('SIGINT',()=>{});setTimeout(()=>{},120000)"], { stdio: ['ignore', 'inherit', 'inherit'] });
+    if (env.FAKE_THERMAL_HANG_PIDS) appendFileSync(env.FAKE_THERMAL_HANG_PIDS, `${process.pid}\n${helper.pid}\n`);
+    setTimeout(() => process.exit(0), 120000);
+    return;
   }
   if (args[0] === 'record') {
     if (env.FAKE_THERMAL_RECORD_EXIT) process.exit(Number(env.FAKE_THERMAL_RECORD_EXIT));

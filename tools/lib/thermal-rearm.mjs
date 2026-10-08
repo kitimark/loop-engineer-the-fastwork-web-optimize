@@ -16,6 +16,11 @@
 //      hold's start read, so the hold's first run reads nothing more): CLEARED exit 0, STILL-CRITICAL exit 8 (Critical),
 //      MISFIT exit 8 (any other misfit); the set stays running either way.
 // Errors (a failed read at step 0, clear or set): ERROR, exit 1. No console step at any point.
+// I-250 (2026-10-08 11:17Z: the step-0 read hung 8+ min with an empty log): a progress line before every step (REARM READ,
+// REARM CLEARING, REARM WAIT probe n, REARM SETTING, REARM SETTLE, REARM READ final); each read is bounded (readThermal:
+// a hung xctrace is killed with its process group and retried once, XCTRACE TIMEOUT lines). A read that hung twice at
+// step 0 or after the settle: REARM TIMEOUT, exit 13 (step 0: nothing cleared or set; after the settle: the set stays);
+// during the wait it counts as "not clear yet".
 import { spawn, execFile } from 'node:child_process';
 import { mkdirSync, openSync, closeSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -73,15 +78,17 @@ export async function thermalSet({ owner, env = process.env, waitMs = SET_WAIT_M
  * The re-arm sequence (header). Returns {outcome: not-needed|took-over|cleared|still-critical|misfit|timeout|error, code, reads,
  * set}. Seams: read, clear, set, sleep, now (tests: fake phone and clock). Never posts a console step.
  */
-export async function rearm({ owner, hold = null, read = () => readThermal(), clear = () => thermalClear({ owner }), set = () => thermalSet({ owner }),
+export async function rearm({ owner, hold = null, read = () => readThermal({ log }), clear = () => thermalClear({ owner }), set = () => thermalSet({ owner }),
   sleep = sleepReal, now = Date.now, log = console.log, probeEveryMs = PROBE_EVERY_MS, maxWaitMs = MAX_WAIT_MS, settleMs = SETTLE_MS } = {}) {
   const reads = [];
   const done = (outcome, code, line, extra = {}) => { log(`${line} (exit ${code})`); return { outcome, code, reads, ...extra }; };
   // the profile read through the gate (no step, tool mode): it keeps a passing read as the hold's start read
   const gate = (r) => startGate({ profile: 'serious', owner, hold, force: true, read: async () => r, log, postStep: null, now, condition: 'tool' });
 
+  log('REARM READ: reading the thermal state (xctrace Thermal State, about 25 s; a hung xctrace is killed and retried once, I-250)');
   const r0 = await read();
   reads.push(r0);
+  if (r0.timedOut) return done('timeout', EXIT_REARM_TIMEOUT, `REARM TIMEOUT: the thermal read hung (${r0.error}); nothing cleared or set; run rearm again, and if it hangs again tell the lead (I-250)`);
   const v0 = profileVerdict('serious', r0);
   if (v0.code === 1) return done('error', 1, `REARM ERROR: could not read the thermal state (${v0.why}); nothing cleared or set`);
   // I-233: Serious under a condition that is not ours (Xcode left on; P-158 03:07Z) is no NOT-NEEDED in a tool block:
@@ -96,12 +103,14 @@ export async function rearm({ owner, hold = null, read = () => readThermal(), cl
     const t = refusalText('serious', r0, v0);
     log(`REARM start: phone is ${words(r0)} (gate ${v0.profile} code ${v0.code}, reason ${t.reason}); clearing the condition, then reading the plain state once a minute for up to ${Math.round(maxWaitMs / 60000)} min (I-225)`);
 
+    log('REARM CLEARING: node tools/thermal.mjs clear (stops the condition; up to 90 s)');
     try { log(`REARM CLEAR ${(await clear()).line}`); } catch (e) { return done('error', 1, `REARM ERROR: thermal.mjs clear failed: ${e.message}; nothing set`); }
 
     const t0 = now();
     let last = null;
     for (let k = 0; ; k++) {
       const start = now();
+      log(`REARM WAIT probe ${k + 1}: reading the plain state (until Nominal or Fair with no condition, up to ${Math.round(maxWaitMs / 60000)} min after the clear)`);
       const r = await read();
       reads.push(r);
       last = r;
@@ -119,13 +128,16 @@ export async function rearm({ owner, hold = null, read = () => readThermal(), cl
   }
 
   let s;
+  log('REARM SETTING: node tools/thermal.mjs set serious (detached; waits up to 150 s for the device\'s SET)');
   try { s = await set(); } catch (e) { return done('error', 1, `REARM ERROR: thermal.mjs set serious failed: ${e.message}; no condition on`); }
   log(`REARM SET ${s.line} (thermal.mjs set pid ${s.pid}, log ${s.log}; it holds the condition until node tools/thermal.mjs clear --owner ${owner})`);
   log(`REARM SETTLE ${Math.round(settleMs / 1000)} s before the profile read`);
   await sleep(settleMs);
 
+  log('REARM READ final: the profile read after the settle');
   const r = await read();
   reads.push(r);
+  if (r.timedOut) return done('timeout', EXIT_REARM_TIMEOUT, `REARM TIMEOUT: the profile read after the settle hung (${r.error}); the condition stays set by thermal.mjs (pid ${s.pid}; end it: node tools/thermal.mjs clear --owner ${owner}); read it again: node tools/iphone.mjs profile --owner ${owner} --condition tool`, { set: s });
   try {
     await gate(r);
     return done(takeover ? 'took-over' : 'cleared', 0, `REARM CLEARED: phone is ${words(r)}; the condition stays set by thermal.mjs (pid ${s.pid})`, { set: s });

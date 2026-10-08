@@ -17,9 +17,15 @@
 // "Induced" row, as research/phone-thermal-gate's parseThermalRows after 023caa54; I-201: plus `condition`, the Induced
 // row's own level, kept in the read and the ledger's start/end records), plus one battery read
 // (idevicediagnostics AppleSmartBattery).
+// I-250 (2026-10-08 11:17Z: a record hung 8+ min, ignored SIGTERM and SIGINT): every child runs in its own process group
+// under a hard bound (record: --time-limit + 60 s = 70 s, export 60 s, battery 15 s); at the bound the group gets SIGTERM,
+// 5 s later SIGKILL (execBounded). A timed-out xctrace prints `XCTRACE TIMEOUT after N s (thermal read: ...)` (to the
+// caller's log; stderr by default) and the read is retried ONCE; a second timeout is the read's error with `timedOut:
+// true` (gate code 1, no read; iphone.mjs rearm: REARM TIMEOUT, exit 13). Worst case ~2.5 min instead of unbounded.
 // It installs nothing and does not touch Safari. Test seams: $FW_XCTRACE (stands in for `xcrun xctrace`),
 // $FW_THERMAL_BATTERY (for idevicediagnostics; else $FW_IDEVICEDIAGNOSTICS), $FW_THERMAL_UDID (else the WDA runner
-// config's udid). The device id is passed to xctrace only, never printed or stored.
+// config's udid), $FW_XCTRACE_TIMEOUT_MS / $FW_XCTRACE_KILL_GRACE_MS (I-250: the bound of both xctrace calls, the
+// SIGTERM-to-SIGKILL grace). The device id is passed to xctrace only, never printed or stored.
 //
 // The verdict (gateVerdict) is a port of research/phone-thermal-gate/verdict.mjs (8e4eacbb), same codes:
 //   0 PASS; 1 no read; 2 too cool; 3 ceiling (Critical or battery >= maxC); 4 induced by a condition (fair, real-serious:
@@ -45,7 +51,7 @@
 // `CLEAR … node tools/thermal.mjs clear` (toolHint). I-233: a read under a condition carries `holder` (holderName:
 // 'thermal.mjs' while our live set holds that level, else 'Xcode'); the words name it (stateWords, refusalText); in tool
 // mode a passing Serious read whose holder is not thermal.mjs refuses (reason condition-not-ours, gate code 0).
-import { execFile } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -196,16 +202,60 @@ export function parseThermalTable(xml) {
 }
 
 // ---- the read -----------------------------------------------------------------------------------------------------
-const execAsync = (cmd, args, { timeout }) => new Promise((res) => {
-  execFile(cmd, args, { encoding: 'utf8', timeout, maxBuffer: 64 << 20 }, (error, stdout) => res({ code: error ? (typeof error.code === 'number' ? error.code : 1) : 0, error: error && typeof error.code !== 'number' ? (error.killed ? 'timeout' : error.code || 'failed') : null, stdout: stdout || '' }));
-});
+/** I-250: SIGTERM to SIGKILL grace of a timed-out read's process group. */
+export const KILL_GRACE_MS = 5000;
+/** I-250: one xctrace record may run its --time-limit plus this much before it is killed. */
+export const XCTRACE_SLACK_MS = 60000;
+const LIVE = new Set(); // process groups of reads still running: killed if this process exits first
+let exitHook = false;
+const killGroup = (pid, sig) => { try { process.kill(-pid, sig); } catch { try { process.kill(pid, sig); } catch {} } };
+
+/**
+ * I-250: run one child of a thermal read with a hard wall-clock bound: {code, error, stdout, timedOut, ms}. The child
+ * runs in its own process group (xcrun -> xctrace -> its helpers); at `timeout` the whole group gets SIGTERM, after
+ * `killGraceMs` SIGKILL, and the promise resolves at most 1 s later whether or not the child's pipes ever close (on
+ * 2026-10-08 11:17Z a hung xctrace ignored SIGTERM and SIGINT and only SIGKILL ended it, ~9.5 min later; execFile's
+ * timeout sends SIGTERM to its direct child only and waits for its pipes). Never throws.
+ */
+export function execBounded(cmd, args, { timeout, killGraceMs = KILL_GRACE_MS, env } = {}) {
+  return new Promise((res) => {
+    const t0 = Date.now();
+    let child, stdout = '', timedOut = false, settled = false, hard = null, last = null, timer = null;
+    const finish = (r) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer); clearTimeout(hard); clearTimeout(last);
+      if (child?.pid) LIVE.delete(child.pid);
+      try { child?.stdout?.destroy(); child?.unref(); } catch {}
+      res({ ...r, stdout, timedOut, ms: Date.now() - t0 });
+    };
+    try { child = spawn(cmd, args, { detached: true, stdio: ['ignore', 'pipe', 'ignore'], ...(env ? { env } : {}) }); } catch (e) { finish({ code: 1, error: e.code || 'failed' }); return; }
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', (d) => { if (stdout.length < (64 << 20)) stdout += d; });
+    child.on('error', (e) => finish({ code: 1, error: e.code || 'failed' }));
+    if (!child.pid) return;
+    LIVE.add(child.pid);
+    if (!exitHook) { exitHook = true; process.on('exit', () => { for (const p of LIVE) killGroup(p, 'SIGKILL'); }); }
+    child.on('exit', () => { if (timedOut) { killGroup(child.pid, 'SIGKILL'); finish({ code: 1, error: 'timeout' }); } });
+    child.on('close', (code, signal) => finish(timedOut ? { code: 1, error: 'timeout' } : { code: typeof code === 'number' ? code : 1, error: signal ? 'failed' : null }));
+    if (timeout > 0) {
+      timer = setTimeout(() => {
+        timedOut = true;
+        killGroup(child.pid, 'SIGTERM');
+        hard = setTimeout(() => { killGroup(child.pid, 'SIGKILL'); last = setTimeout(() => finish({ code: 1, error: 'timeout' }), 1000); }, killGraceMs);
+      }, timeout);
+    }
+  });
+}
+const execAsync = execBounded;
 const nodeOr = (bin, args) => (/\.m?js$/.test(bin) ? [process.execPath, [bin, ...args]] : [bin, args]);
 
 /**
  * One thermal read of the phone: {at, ms, state, induced, battC, rows, error}. Never throws; `error` names what failed
  * (exit codes only: xctrace's stderr may name the device). `exec` (tests) replaces the process runner.
  */
-export async function readThermal({ env = process.env, udid, timeLimitSec = 10, exec = execAsync, now = Date.now, holder = () => liveHolder() } = {}) {
+export async function readThermal({ env = process.env, udid, timeLimitSec = 10, exec = execAsync, now = Date.now, holder = () => liveHolder(), log = (s) => console.error(s),
+  recordTimeoutMs, exportTimeoutMs, killGraceMs } = {}) {
   const t0 = now();
   const at = new Date(t0).toISOString();
   const done = (x) => ({ at, ms: now() - t0, state: null, induced: null, condition: null, battC: null, rows: 0, error: null, holder: null, ...x });
@@ -213,21 +263,35 @@ export async function readThermal({ env = process.env, udid, timeLimitSec = 10, 
   if (!id) { try { id = (await import('./wda-runner.mjs')).readConfig().udid; } catch {} }
   if (!id) return done({ error: 'no device: the WDA runner config has no udid (node tools/iphone.mjs wda status)' });
   const xc = env.FW_XCTRACE ? (args) => nodeOr(env.FW_XCTRACE, args) : (args) => ['xcrun', ['xctrace', ...args]];
-  const dir = mkdtempSync(join(tmpdir(), 'fw-thermal-'));
-  const trace = join(dir, 'gate.trace');
+  // I-250: hard bounds (tests: $FW_XCTRACE_TIMEOUT_MS for both calls, $FW_XCTRACE_KILL_GRACE_MS)
+  const recMs = recordTimeoutMs ?? (Number(env.FW_XCTRACE_TIMEOUT_MS) || timeLimitSec * 1000 + XCTRACE_SLACK_MS);
+  const expMs = exportTimeoutMs ?? (Number(env.FW_XCTRACE_TIMEOUT_MS) || 60000);
+  const grace = killGraceMs ?? (Number(env.FW_XCTRACE_KILL_GRACE_MS) || KILL_GRACE_MS);
+  const childEnv = env === process.env ? undefined : { ...process.env, ...env }; // a test's env reaches its fake
+  const once = async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fw-thermal-'));
+    const trace = join(dir, 'gate.trace');
+    try {
+      const rec = await exec(...xc(['record', '--instrument', 'Thermal State', '--device', id, '--all-processes', '--time-limit', `${timeLimitSec}s`, '--output', trace, '--no-prompt']), { timeout: recMs, killGraceMs: grace, env: childEnv });
+      if (rec.timedOut) return { timedOut: 'record', limitMs: recMs };
+      if (rec.code !== 0 || rec.error) return { error: `xctrace record ${rec.error ? `failed (${rec.error})` : `exit ${rec.code}`}` };
+      const ex = await exec(...xc(['export', '--input', trace, '--xpath', '/trace-toc/run[@number="1"]/data/table[@schema="device-thermal-state-intervals"]']), { timeout: expMs, killGraceMs: grace, env: childEnv });
+      if (ex.timedOut) return { timedOut: 'export', limitMs: expMs };
+      if (ex.code !== 0 || ex.error) return { error: `xctrace export ${ex.error ? `failed (${ex.error})` : `exit ${ex.code}`}` };
+      const t = parseThermalTable(ex.stdout);
+      return { state: t.state, induced: t.induced, condition: t.condition, rows: t.rows.length, ...(t.error ? { error: t.error } : {}) };
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  };
+  // I-250: a hung xctrace (record or export) is killed at its bound and the read retried once; a second hang is the
+  // read's error, with timedOut: true (rearm: REARM TIMEOUT, exit 13)
   let out = {};
-  try {
-    const rec = await exec(...xc(['record', '--instrument', 'Thermal State', '--device', id, '--all-processes', '--time-limit', `${timeLimitSec}s`, '--output', trace, '--no-prompt']), { timeout: 90000 });
-    if (rec.code !== 0 || rec.error) out = { error: `xctrace record ${rec.error ? `failed (${rec.error})` : `exit ${rec.code}`}` };
-    else {
-      const ex = await exec(...xc(['export', '--input', trace, '--xpath', '/trace-toc/run[@number="1"]/data/table[@schema="device-thermal-state-intervals"]']), { timeout: 60000 });
-      if (ex.code !== 0 || ex.error) out = { error: `xctrace export ${ex.error ? `failed (${ex.error})` : `exit ${ex.code}`}` };
-      else {
-        const t = parseThermalTable(ex.stdout);
-        out = { state: t.state, induced: t.induced, condition: t.condition, rows: t.rows.length, ...(t.error ? { error: t.error } : {}) };
-      }
-    }
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    out = await once();
+    if (!out.timedOut) break;
+    const s = +(out.limitMs / 1000).toFixed(1);
+    log(`XCTRACE TIMEOUT after ${s} s (thermal read: xctrace ${out.timedOut}, attempt ${attempt} of 2; its process group killed, I-250)${attempt < 2 ? '; retrying once' : ''}`);
+    if (attempt === 2) out = { error: `xctrace ${out.timedOut} timeout after ${s} s, twice (process group killed, I-250)`, timedOut: true };
+  }
   out.battC = await readBatteryC({ env, exec });
   if (out.induced === 'Yes') out.holder = holderName(holder(), out.condition);
   return done(out);
@@ -245,7 +309,7 @@ export function holderName(h, condition) {
 /** Battery temperature (C) from idevicediagnostics' AppleSmartBattery, or null. */
 export async function readBatteryC({ env = process.env, exec = execAsync } = {}) {
   const bin = env.FW_THERMAL_BATTERY || env.FW_IDEVICEDIAGNOSTICS || 'idevicediagnostics';
-  const r = await exec(...nodeOr(bin, ['ioregentry', 'AppleSmartBattery']), { timeout: 15000 });
+  const r = await exec(...nodeOr(bin, ['ioregentry', 'AppleSmartBattery']), { timeout: 15000, ...(env === process.env ? {} : { env: { ...process.env, ...env } }) });
   if (r.code !== 0 || r.error) return null;
   const { parseBattery } = await import('./iphone-run.mjs');
   const b = parseBattery(r.stdout);

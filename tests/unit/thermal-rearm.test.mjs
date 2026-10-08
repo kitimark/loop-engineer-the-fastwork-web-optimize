@@ -232,3 +232,43 @@ test('I-233 liveHolder / readThermal: the holder file names our set only while i
   r = await P.readThermal({ env: {}, udid: 'D', exec: plain, holder: () => ours });
   assert.equal(r.holder, null, 'no condition, no holder');
 });
+
+// I-250: on 2026-10-08 11:17Z rearm's first read hung 8+ min (xctrace) with an empty log. Now every step prints a progress
+// line before it starts, and a read that timed out twice (readThermal: timedOut) ends rearm with TIMEOUT, exit 13.
+const HUNG = { error: 'xctrace record timeout after 70 s, twice (process group killed, I-250)', timedOut: true, state: null, induced: null, battC: 33 };
+test('I-250 rearm: a progress line before every step (read, clear, each wait probe, set, settle, final read), so the log is never silent for a step', async () => {
+  const h = rig([ABOVE, { state: 'Critical', induced: 'No', battC: 34.09 }, { state: 'Nominal', induced: 'No', battC: 34.19 }, ON]);
+  const trace = [];
+  const wrap = (fn, name) => async (...a) => { trace.push(`<${name}>`); return fn(...a); };
+  const r = await R.rearm({ owner: 'int-v11', hold: hold(), read: wrap(h.read, 'read'), clear: wrap(h.clear, 'clear'), set: wrap(h.set, 'set'), sleep: wrap(h.sleep, 'sleep'), now: h.now, log: (l) => trace.push(String(l).split('\n')[0]) });
+  assert.deepEqual([r.outcome, r.code], ['cleared', 0]);
+  const before = (name, re) => trace.forEach((x, i) => { if (x === `<${name}>` && !(name === 'sleep' && !re)) assert.match(String(trace[i - 1]), re, `${name} at ${i}: ${trace.slice(Math.max(0, i - 2), i + 1).join(' | ')}`); });
+  before('clear', /^REARM CLEARING: node tools\/thermal\.mjs clear/);
+  before('set', /^REARM SETTING: node tools\/thermal\.mjs set serious/);
+  const reads = trace.flatMap((x, i) => (x === '<read>' ? [trace[i - 1]] : []));
+  assert.equal(reads.length, 4);
+  assert.match(reads[0], /^REARM READ: reading the thermal state \(xctrace Thermal State, about 25 s; a hung xctrace is killed and retried once, I-250\)$/);
+  assert.match(reads[1], /^REARM WAIT probe 1: reading the plain state \(until Nominal or Fair with no condition, up to 10 min after the clear\)$/);
+  assert.match(reads[2], /^REARM WAIT probe 2: /);
+  assert.match(reads[3], /^REARM READ final: the profile read after the settle$/);
+  const iSettle = trace.findIndex((x) => /^REARM SETTLE 120 s/.test(x));
+  assert.equal(trace[iSettle + 1], '<sleep>');
+});
+
+test('I-250 rearm: a hung first read (timedOut) ends with REARM TIMEOUT, exit 13, nothing cleared or set; a hung read after the settle is TIMEOUT 13 too (the set stays); a hung probe read is "not clear yet"', async () => {
+  let h = rig([HUNG]);
+  let r = await h.run();
+  assert.deepEqual([r.outcome, r.code], ['timeout', 13]);
+  assert.deepEqual(h.calls.map((c) => c.fn), ['read']);
+  assert.match(h.lines.join('\n'), /^REARM TIMEOUT: the thermal read hung \(xctrace record timeout after 70 s, twice \(process group killed, I-250\)\); nothing cleared or set; run rearm again, and if it hangs again tell the lead \(I-250\) \(exit 13\)$/m);
+  h = rig([ABOVE, { state: 'Nominal', induced: 'No', battC: 33 }, HUNG]);
+  r = await h.run();
+  assert.deepEqual([r.outcome, r.code], ['timeout', 13]);
+  assert.deepEqual(h.calls.map((c) => c.fn), ['read', 'clear', 'read', 'set', 'sleep', 'read']);
+  assert.match(h.lines.join('\n'), /^REARM TIMEOUT: the profile read after the settle hung \(xctrace record timeout .*\); the condition stays set by thermal\.mjs \(pid 4242; end it: node tools\/thermal\.mjs clear --owner int-v11\); read it again: node tools\/iphone\.mjs profile --owner int-v11 --condition tool \(exit 13\)$/m);
+  assert.equal(P.readLedger(P.ledgerKey(hold(), 'serious')), null, 'no start read kept');
+  h = rig([ABOVE, HUNG, { state: 'Fair', induced: 'No', battC: 33 }, ON]);
+  r = await h.run();
+  assert.deepEqual([r.outcome, r.code], ['cleared', 0]);
+  assert.match(h.lines.join('\n'), /^REARM PROBE 1 \(0 min after the clear\): phone is unknown, battery 33 C: not clear yet \(.*\)$/m);
+});

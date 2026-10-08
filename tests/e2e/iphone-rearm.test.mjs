@@ -142,3 +142,26 @@ test('I-233 tool mode with Xcode\'s Serious left on (P-158 03:07Z): profile --co
   assert.equal(r.code, 0, r.out);
   assert.match(r.stdout, /phone is Serious \(induced by thermal\.mjs\)/);
 });
+
+test('I-250 rearm: a hung xctrace (ignores SIGTERM and SIGINT, a helper keeps its stdout open) is killed with its process group at the bound, retried once, then REARM TIMEOUT exit 13; the read printed a line first; nothing cleared or set; no process left', async () => {
+  const pidsFile = join(dir, 'hung-pids');
+  const henv = { ...env, FAKE_THERMAL_RECORD_HANG: '2', FAKE_THERMAL_HANG_COUNT: join(dir, 'hang-count'), FAKE_THERMAL_HANG_PIDS: pidsFile, FW_XCTRACE_TIMEOUT_MS: '500', FW_XCTRACE_KILL_GRACE_MS: '300' };
+  writeFileSync(env.FAKE_THERMAL_SEQ, 'Critical Yes 34.5 Serious\n');
+  holdPhone();
+  const t0 = Date.now();
+  const r = await nodeAsync(IPHONE, ['rearm', '--owner', OWNER, '--settle', '0'], { env: henv, timeout: 60000 });
+  assert.equal(r.code, 13, r.out);
+  assert.ok(Date.now() - t0 < 20000, `bounded: ${Date.now() - t0} ms`);
+  const lines = r.stdout.trim().split('\n');
+  assert.match(lines[0], /^REARM READ: reading the thermal state/);
+  assert.match(lines[1], /^XCTRACE TIMEOUT after 0\.5 s \(thermal read: xctrace record, attempt 1 of 2; its process group killed, I-250\); retrying once$/);
+  assert.match(lines[2], /^XCTRACE TIMEOUT after 0\.5 s \(thermal read: xctrace record, attempt 2 of 2; its process group killed, I-250\)$/);
+  assert.match(lines[3], /^REARM TIMEOUT: the thermal read hung \(xctrace record timeout after 0\.5 s, twice \(process group killed, I-250\)\); nothing cleared or set; .*\(exit 13\)$/);
+  assert.equal(lines.length, 4, r.stdout);
+  assert.equal(reads(), 2, 'two record attempts, no export');
+  assert.doesNotMatch(r.out, /FAKE-UDID/);
+  const pids = readFileSync(pidsFile, 'utf8').trim().split('\n').map(Number);
+  assert.equal(pids.length, 4);
+  for (let t = 0; t < 3000 && pids.some(alive); t += 50) await new Promise((res) => setTimeout(res, 50));
+  assert.deepEqual(pids.filter(alive), [], 'the hung xctrace and its helper are gone');
+});

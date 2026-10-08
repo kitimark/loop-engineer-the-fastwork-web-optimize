@@ -138,10 +138,15 @@
 //        # detached: it HOLDS the condition after rearm exits (the block runner ends it: node tools/thermal.mjs clear);
 //        # settle --settle s (its own, whatever a preflight settled); the profile read (the hold's start read):
 //        # REARM CLEARED exit 0, REARM STILL-CRITICAL (Critical) or REARM MISFIT exit 8; REARM ERROR exit 1. No user step.
+//        # I-250: a line before every step (REARM READ / CLEARING / WAIT probe n / SETTING / SETTLE / READ final); every
+//        # thermal read (rearm, profile, the run gates) bounds xctrace at --time-limit + 60 s, kills its process group
+//        # (SIGTERM, SIGKILL 5 s later), prints XCTRACE TIMEOUT after N s (thermal read: ...) and retries once; a read
+//        # that hung twice ends rearm with REARM TIMEOUT, exit 13 (at the start: nothing cleared or set).
 // Exit codes: 0 ok, 1 error or WAIT, 2 refused in a shared slot, 3 WDA NOT READY (wda check|ensure), 4 WDA REPLUG NEEDED
 // (wda ensure: re-plug the cable, then re-run), 6 PARTIAL (record),
 // 8 PROFILE (the phone's thermal state does not fit --profile), preflight (I-227): 3 WDA, 4 REPLUG, 10 AUTH, 11 TABS, 12 PROXY,
-// rearm (I-225): 0 cleared / not needed, 8 still Critical (or another misfit), 13 timeout (no clear read), 1 error, 2 usage.
+// rearm (I-225): 0 cleared / not needed, 8 still Critical (or another misfit), 13 timeout (no clear read, or a thermal read
+// that hung twice, I-250), 1 error, 2 usage.
 import { mkdirSync, writeFileSync, renameSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { openTab, navigate, safariTab, sleep, parkSafari, connect, findParkedTab } from './lib/wip.mjs';
