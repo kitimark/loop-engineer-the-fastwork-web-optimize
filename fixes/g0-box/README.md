@@ -1142,6 +1142,29 @@ first opening only (a hidden state). It was rebuilt and re-checked: the table sh
 | kit | `phone/p169-{run,block,hold}.sh` (copies of P-168's, logs `out/p169ph`), `phone/p169-wread.mjs`; servers `p168-serve.sh` (B v0 f fB2, `out/p168`). Start detached with `out/g0box/watchdog2.sh`: `nohup sh fixes/g0-box/phone/p169-run.sh P-169 B > out/g0box/p169-partB.log 2>&1 &`. |
 | conditions before the first counted run | (1) a dry run (`CM_DRY=1`) prints every pin; (2) the user's ready step (the lead's); (3) USB link, WDA and the thermal read work; (4) the servers are not restarted after the dry run. |
 
+### P-169 result (block run 2026-10-08 17:05-17:32Z): not tree size
+
+**Validity.** Signed at d318fa31; GO after the user's ready step C-130. Holds H5-H9 were all VALID. The BsC sentinel
+passed at the start (60.1 / 51.5 fps) and at the end (60.1 / 52). No re-runs. Battery 36.9-37.5 °C, tool-serious.
+Read with the reader committed before data (`p169-wread.mjs out/p169ph`):
+
+| arm | Composite in the `+is-play` frame, per run (ms) | median | frame dt, median | y | scroll > 34 / > 50 (median) |
+|---|---|---|---|---|---|
+| v0 | 39.5, 42.7, 42.5 | **42.5** | 48 | 4562 | 1 / 0 |
+| g0.0f | 62, 60.9, 59.8 | **60.9** | 71 | 4606-4609 | 1 / 1 |
+| f-B2 | 57.2, 59.2, 62.2 | **59.2** | 69 | 4578-4609 | 1 / 1 |
+
+- **Reproduced:** g0.0f is v0 + 18.4 ms (rule: ≥ v0 + 10).
+- **Tree size: "not tree size".** d = f-B2 − g0.0f = **−1.7 ms**. Both twins (6/2 and 14/10) give the same verdict,
+  so it is not threshold-sensitive.
+  - f-B2 has v0's layer count after the flip (50, Simulator census), but the flip frame keeps g0.0f's extra Composite.
+  - The +18 ms therefore does not scale with how many layers the tree holds. It is other commit work that g0.0f's own
+    page state brings to the flip (UNRESOLVED which; the volatile-buffer path read in the card's mechanism line remains
+    the candidate, untested).
+- **PR-039 line: "same frame".** f-B2's frame is 2 ms shorter than g0.0f's (69 vs 71). It neither helps nor hurts
+  this frame, and its counts are no worse at any threshold (> 30 … > 54 all ≤ g0.0f).
+- Records: `out/p169ph/runs/` (gitignored); reader output `out/g0box/p169-read.json`; `results.json` key `p169`.
+
 ## P-164 (phone card; written before any P-164 data)
 
 **Pre-data check 2, with the g0 program (2026-10-08 03:47-03:55Z, before any P-164 data). Result: START-STATE
