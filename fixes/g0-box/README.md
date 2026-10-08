@@ -586,6 +586,17 @@ elsewhere):
   the first question is which build brings the extra ~10 ms. The phone S data compared only v0 and g0.0f. If g0.0f is
   the owner, a knock-out follows in a second block (the sequential rule allows 2 per question).
 
+**Lead signature for stage 2 (2026-10-08 10:06Z, after stage 1, before any stage-2 data).** Signed with the proposed arm
+change: spot A = v0 · g0.0e · e-nohe, spot B = v0 · g0.0e · g0.0f (Latin square, 3 counted per arm, 1 uncounted warm-up per
+port). The decision row stands. Amendments: profile real-serious with P-165's final heat rules (margin target 39.0 °C, no
+margin at a start gate >= 39.0 °C, GRIDCHECK Safari restart on every exit 6, cooling by thermal state on Critical); every
+counted run uses `iphone.mjs run --driver window --timeline` from main db884e9d (rebase first). Self-checked conditions,
+recorded here before the first counted run (no second lead round):
+1. The kit's dry run prints the served hashes of all 5 stage-2 arms (v0, g0.0e, g0.0f, e-nohe) and the tools head >= db884e9d.
+2. One uncounted `--timeline` run on the Simulator writes a Timeline file with RenderingFrame records and meta.timeline.
+3. The user's console step is answered (posted from inside the phone hold; one phone step at a time).
+4. Part runners start detached (nohup), as in P-165.
+
 ## P-164 (phone card; written before any P-164 data)
 
 **Pre-data check 2, with the g0 program (2026-10-08 03:47-03:55Z, before any P-164 data). Result: START-STATE
