@@ -375,6 +375,35 @@ hold; fix-g0-box checks them itself and records them here before part 1 (no seco
 5. The user's console step is answered "ready" before phone hold 1 (posted by fix-g0-box from inside its phone hold; one phone step at a time).
 If a condition fails, message the lead with the line; do not run.
 
+**Kit and the signature's conditions (checked by fix-g0-box 2026-10-08 06:16Z, before any P-165 data).**
+
+The kit is in `fixes/g0-box/phone/`, committed with this paragraph (sha256/12):
+
+| file | sha256/12 |
+|---|---|
+| `p165-run.sh` | 0132f929acb9 |
+| `p165-block.sh` | 55ec25c30b71 |
+| `p165-hold.sh` | 1dd03dd46818 |
+| `p165-serve.sh` | de3381ca66f5 |
+| `p165-score.mjs` | ac951bcba999 |
+| `p129-gates-g0b.mjs` | b60fb1bcfe8d |
+| `p129-read-g0b.mjs` | 9d08b2e66980 |
+| `g-fastshort-g0b.json` | 9024b8a6bc1e (compiled 31fc66329daf) |
+
+- **Copies:** the hold and block scripts copy g0b-hold.sh and g0b-block.sh (P-164's lessons kept), with P-116's heat
+  pre-warm. The scorer imports P-105's scorer (b9a29ffcc7bb, refused if changed).
+- **Servers:** they start in part 1 and keep their ports through part 3, so the warm-ups stay per arm port.
+- **Parts:** each part runs detached (`nohup sh fixes/g0-box/phone/p165-run.sh P-165 <n> > out/g0box/p165-part<n>.log
+  2>&1 &`, the I-221 workaround, the lead's order), and is watched with `wait.mjs file … --match '^EXIT' --pid`.
+
+| condition | check | result |
+|---|---|---|
+| 1. dry run `PROG fs 31fc66329daf ok`, PIN names `p129-gates-g0b.mjs` | `CM_DRY=1` run of all 3 parts in a `--no-timing` hold (`out/g0box/p165dry.log`): 14 holds H1-H14, each `HOLD DRY ok` | **ok**: every hold prints `PROG fs 31fc66329daf ok, GESTURE_BUDGET_S 334`; every PIN line names `fixes/g0-box/phone/p129-gates-g0b.mjs=b60fb1bcfe8d` and `p129-read-g0b.mjs=9d08b2e66980`. PLAN lines: S items on the right arm with `--profile real-serious`, C counted runs as heat sentinels, the G items with Timeline on (counted) or off (warm-ups), gates `--expect serious --max-c 44 (no --accept-induced)` |
+| 2. served hashes | `p165-serve.sh check` at every part start and before every item | **ok**: B 4606120cf392 / 27776f3d4138, C 4606120cf392 / 27776f3d4138, V 30fd80ccbb3f / 1d1e5d62a2c4 in all 3 parts and all 14 holds |
+| 3. `p165-score.mjs --selftest` with a NEW-cluster and a twin-flip case | `node fixes/g0-box/phone/p165-score.mjs --selftest` | **ok**, 8 cases: PASS + BETTER; NEW CLUSTER (V's > 50 frame at y 4100 in every run, none in C within ±250 px: FAIL while DS1 stays no-worse); DS1 twin flip (52 ms frames: WORSE at > 50 and > 46, not at > 54: threshold-sensitive); DS3 twin flip; OPEN by a DS2 twin (a 48 ms cluster); the sentinel chain with re-runs; served and profile voids; G run gates plus a failing sC |
+| 4. no thermal condition set; `--profile real-serious` on every run | `grep -n -E "thermal\.mjs set\|rearm\|accept-induced\|FW_PHONE_CONDITION\|Xcode" p165-*.sh`; every `iphone.mjs run\|gesture` line checked for `$PROF` | **ok**: no `thermal.mjs set`, no `rearm`, no `--accept-induced`, no Xcode step. The only hits are `unset FW_PHONE_CONDITION` (block.sh) and the PLAN text. `thermal.mjs clear` runs once before part 1 (run.sh). Every run and gesture line carries `$PROF` = `--profile real-serious`; the only line without it is the compile-only `gesture --dry-run` |
+| 5. the user's "ready" step | posted by `p165-block.sh` (`CM_READY=1`, part 1) from inside the phone hold, after preflight: "about 2 hours, don't use the iPhone, keep it plugged in", with `console.mjs wait --until redo` armed in the background | pending: the iPhone's USB link has been down since 06:07Z (usbmux does not list it; the re-plug step C-114 is open). Per the lead, the ready step is posted only after `iphone.mjs status` lists the device and `wda check` passes |
+
 **Follow-ups (listed only; each is its own ticket after P-165):**
 - **A short no-worse check at Fair** (`memory/phone-checks-start-warm.md`: before the goal is called done, the final
   build gets one short no-worse check on a cooler phone). Profile real-fair (`--profile fair`, gate `--expect fair`),
