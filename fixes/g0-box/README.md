@@ -639,6 +639,33 @@ Self-checks against the four conditions above:
 3. Checked at the start of part A: the ready step is posted from inside the phone hold, and no hold starts before its Done.
 4. **OK.** Parts start with `nohup sh fixes/g0-box/phone/p166-run.sh P-166 A|B`, detached.
 
+**Lead amendment 10:4xZ, user T-247 #12 (before any counted stage-2 data).** Stage 2 runs under **tool-serious**, not
+real-serious. Spots and arms are unchanged.
+
+What changed and why:
+- **Profile.** The kit uses P-164's induced Serious through our tool. There is no manual Xcode step (user T-228 #15), no heat phase, no margin, and no cooling by state.
+- **Reproduce rule (new, checked before the owner rule).** A spot is "reproduced under induced Serious" when the median spot-frame dt of its test arm is at least v0's median + 6 ms. The test arm is g0.0e at spot A and g0.0f at spot B.
+  - If a spot is not reproduced, it reads "not reproduced under induced" and gets no owner. It then needs a real-heat block later (the lead's call).
+- **No pooling.** Profiles never pool. P-166 numbers compare only within this block, never with P-165's.
+- **What was already run.** Part A had started under real-serious. C-119 (the ready step) was Done at 10:41:12Z, the link re-check passed (attach #150), and the first heat hold H0h1 had begun (gate: Fair, 37.3 °C). I stopped it at about 10:43Z, inside H0h1. No counted or warm-up W run had started. Its logs are kept aside in `out/p166ph-realserious-1043Z` and enter nothing.
+
+Kit changes (copied from P-164's `g0b-block.sh` condition handling):
+
+| file | change |
+|---|---|
+| `p166-run.sh` | runs the block with `CM_THERMAL=serious`, with no first heat. Right after `lock.mjs run iphone` returns, whatever its exit code, it runs `node tools/thermal.mjs clear` (not in the block's exit trap). `P166_READY=0` skips the ready step when the user has already answered it |
+| `p166-block.sh` | exports `CM_PROFILE=tool-serious FW_PHONE_CONDITION=tool`. One owner of the condition, `iphone.mjs rearm --settle 120` (Safari parked first). It runs:<br>• at the part start, after the preflight and the ready step;<br>• after a re-plug;<br>• when a hold voids at its start gate (exit 3 Critical, or exit 2 too cool, meaning the condition is gone) or on a profile misfit; that hold then runs again, with at most 2 re-arms per hold.<br>A rearm exit ≠ 0 is BLOCK STOP 10 (message the lead). Removed: the first heat, heat holds, ceiling cooling by state, and the heat-rate log |
+| `p166-hold.sh` | both gates run `thermal-gate.mjs --expect serious --max-c 44 --accept-induced`. Every run passes `--profile serious` with `FW_PHONE_CONDITION=tool`; the hold refuses without it. Removed: pre-warm, margin, and GRIDCHECK. Kept:<br>• the link and attach check;<br>• served hashes before every item;<br>• heat sentinels on the v0 counted runs and the control `<S>s0`;<br>• `--timeline` on counted runs;<br>• the time guard;<br>• pmcheck |
+| `p166-wread.mjs` | validity requires profile `serious` (a real-serious record is void here). Adds the reproduce rule and a `REPRODUCE <spot>` line. `--selftest`: 10 cases ok (new: not reproduced at +5 ms, reproduced and owned at +7 ms, exactly +6 ms counts as reproduced, a real-serious record is void) |
+
+Dry run of part A (`CM_DRY=1`) after the change:
+- every hold prints `HOLD DRY ok`;
+- tools head 6240f85e contains db884e9d;
+- served hashes are as in condition 1;
+- PLAN lines show `--profile serious` and gates `--accept-induced`.
+
+Conditions 1, 2 and 4 stand as checked above. For condition 3, C-119 was answered before the kit was ready. The console refused a late ack on the answered step, so the lead tells the user that the test starts a few minutes later.
+
 ## P-164 (phone card; written before any P-164 data)
 
 **Pre-data check 2, with the g0 program (2026-10-08 03:47-03:55Z, before any P-164 data). Result: START-STATE

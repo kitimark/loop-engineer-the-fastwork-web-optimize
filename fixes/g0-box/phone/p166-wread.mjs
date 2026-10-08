@@ -12,8 +12,12 @@
 //   is > 50 ms in >= 2 of 3 runs AND one Timeline segment's median rise over the previous arm is >= 2/3 of the median dt
 //   rise; none: "not attributed". Twins 46 / 54 decide threshold-sensitivity. Spot A's knock-out e-nohe "removes" the
 //   frame when its spot frame is <= 50 ms in >= 2 of 3 runs.
-// Run validity: a RUN line in a VALID hold (out/p166ph/order.log), a record with no meta.error, profile real-serious
-//   without drift, the served JS/CSS of the arm's pin (meta.served, when present), a Timeline file with recs, stopped
+// Reproduce rule (lead amendment 10:4xZ, user T-247 #12; profile tool-serious): a spot is "reproduced under induced
+//   Serious" when the median spot-frame dt of its test arm (A: g0.0e, B: g0.0f) is >= v0's median + 6 ms; otherwise the
+//   spot reads "not reproduced under induced" and gets no owner (it needs a real-heat block later, the lead's call).
+//   Checked before the owner rule. Profiles never pool: these numbers compare only within this block, never with P-165.
+// Run validity: a RUN line in a VALID hold (out/p166ph/order.log), a record with no meta.error, profile serious
+//   (tool-serious: the induced condition held by thermal.mjs) without drift, the served JS/CSS of the arm's pin (meta.served, when present), a Timeline file with recs, stopped
 //   true and a finite offsetMs. A re-run <item>x replaces a void <item>.
 //   node fixes/g0-box/phone/p166-wread.mjs [out/p166ph] [--json out.json]     node fixes/g0-box/phone/p166-wread.mjs --selftest
 import { readFileSync, existsSync, writeFileSync } from 'node:fs';
@@ -23,6 +27,8 @@ const PIN = { 0: ['4606120cf392', '27776f3d4138'], e: ['5c39f7a96e41', 'd4e68403
 const NAME = { 0: 'v0', e: 'g0.0e', n: 'e-nohe', f: 'g0.0f' };
 const ORDER = { A: ['0', 'e'], B: ['0', 'e', 'f'] };
 const KNOCK = { A: 'n' };
+const TEST = { A: 'e', B: 'f' }; const REPRO_MS = 6;
+const PROFILE = 'serious';
 const SEG = (t) => /^(FunctionCall|EvaluateScript|TimerFire|TimerInstall|TimerRemove|EventDispatch|FireAnimationFrame|RequestAnimationFrame|CancelAnimationFrame|ObserverCallback|ConsoleProfile|MicrotaskCheckpoint|ScheduleStyleRecalculation|GCEvent)$/.test(t) ? 'Script'
   : /^(Layout|RecalculateStyles|InvalidateLayout|InvalidateStyle|ForcedLayout)$/.test(t) ? 'Layout' : /^(Paint|Composite)$/.test(t) ? 'PaintComposite' : 'Other';
 const med = (a) => { const s = a.filter(Number.isFinite).sort((x, y) => x - y); const n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : NaN; };
@@ -60,7 +66,7 @@ export function readRun(j, tl, spot, arm) {
   const why = []; const m = j?.meta || {};
   if (!j) why.push('no record');
   if (m.error) why.push(`error ${String(m.error).slice(0, 60)}`);
-  if (j && m.profile && m.profile.name !== 'real-serious') why.push(`profile ${m.profile.name}`);
+  if (j && m.profile && m.profile.name !== PROFILE) why.push(`profile ${m.profile.name}`);
   if (m.profileDrift === true || m.profile?.drift === true) why.push('profile drift');
   const sv = m.served || {}; const js = Object.entries(sv).find(([k]) => /2\.DyWL8TcE\.js/.test(k)); const css = Object.entries(sv).find(([k]) => /2\.gBuqKVzi\.css/.test(k));
   const h = (v) => String(typeof v === 'string' ? v : v?.sha256 || v?.hash || '').slice(0, 12);
@@ -93,9 +99,11 @@ export function decide(spot, rows) {
     steps.push({ from: NAME[ord[k - 1]], to: NAME[ord[k]], dtRise: r1(rise), segRise, top: top[0], accounts, gt50: a.gt50, pass });
     if (pass && !owner) owner = NAME[ord[k]];
   }
+  const tm = S[TEST[spot]].med, vm = S['0'].med;
+  const repro = { test: NAME[TEST[spot]], v0Med: vm, testMed: tm, rise: r1(tm - vm), reproduced: tm >= vm + REPRO_MS };
   let knock = null;
   if (KNOCK[spot]) { const kn = S[KNOCK[spot]]; knock = { arm: NAME[KNOCK[spot]], le50: kn.dts.filter((d) => d <= 50).length, removes: kn.dts.filter((d) => d <= 50).length >= 2, med: kn.med }; }
-  return { spot, enough, owner: enough ? owner || 'not attributed' : 'insufficient', thresholdSensitive: ts, steps, knock, stats: Object.fromEntries(Object.entries(S).map(([a, s]) => [NAME[a], s])) };
+  return { spot, enough, repro, owner: !enough ? 'insufficient' : !repro.reproduced ? 'not reproduced under induced' : owner || 'not attributed', thresholdSensitive: ts, steps, knock, stats: Object.fromEntries(Object.entries(S).map(([a, s]) => [NAME[a], s])) };
 }
 
 function load(dir) {
@@ -119,7 +127,7 @@ function load(dir) {
 function selftest() {
   const bad = []; const ok = (c, m) => { if (!c) bad.push(m); };
   const F = ['t', 'dt', 'yStart', 'yEnd', 'innerHeight', 'm', 'rafJsMs', 'probeMs', 'docH'];
-  const rec = (dtSpot, spot) => ({ meta: { profile: { name: 'real-serious' } }, fields: F,
+  const rec = (dtSpot, spot) => ({ meta: { profile: { name: 'serious' } }, fields: F,
     frames: spot === 'A' ? [[1000, 16, 0, 0], [1016, 16, 0, 10], [1016 + dtSpot, dtSpot, 10, 61], [1100 + dtSpot, 16, 61, 80]] : [[1000, 16, 0, 4400], [1000 + dtSpot, dtSpot, 4400, 4520]],
     crossings: spot === 'A' ? [{ frame: 2, kind: 'class', id: 'section.hero-track', value: '+he-css' }] : [{ frame: 1, kind: 'class', id: 'div.x', value: '+is-play' }] });
   const tl = (lo, paint) => ({ offsetMs: 0, stopped: true, recs: [{ type: 'RenderingFrame', startTime: lo / 1000, endTime: (lo + 10 + paint) / 1000, children: [{ type: 'Layout', startTime: lo / 1000, endTime: (lo + 10) / 1000 }, { type: 'Paint', startTime: (lo + 10) / 1000, endTime: (lo + 10 + paint) / 1000 }] }] });
@@ -137,7 +145,16 @@ function selftest() {
   ok(d.owner === 'not attributed', `4 slow but no segment accounts ${JSON.stringify(d.steps)}`);
   ok(decide('B', rowsB.slice(0, 7)).owner === 'insufficient', '5 insufficient');
   ok(spotFrame(rec(50, 'B'), 'B').dt === 50, '6 spot B frame');
-  console.log(bad.length ? `SELFTEST FAIL\n- ${bad.join('\n- ')}` : 'SELFTEST ok (6 cases: frame + segments, owner A + knock-out, owner B twin flip, not attributed, insufficient, spot B)');
+  const rowsB3 = [...[44, 45, 46].map((d) => mk('0', d, 10)), ...[45, 44, 46].map((d) => mk('e', d, 10)), ...[49, 51, 50].map((d) => mk('f', d, 22))];
+  d = decide('B', rowsB3);
+  ok(d.owner === 'not reproduced under induced' && d.repro.rise === 5 && !d.repro.reproduced, `7 not reproduced (rise 5 < 6) ${JSON.stringify(d.repro)} ${d.owner}`);
+  const rowsB4 = rowsB3.map((r) => (r.arm === 'f' ? { ...r, frame: { dt: r.frame.dt + 2 } } : r));
+  d = decide('B', rowsB4);
+  ok(d.repro.reproduced && d.repro.rise === 7 && d.owner === 'g0.0f', `8 reproduced (rise 7) and owned ${JSON.stringify(d.repro)} ${d.owner}`);
+  const rowsB5 = rowsB3.map((r) => (r.arm === 'f' ? { ...r, frame: { dt: r.frame.dt + 1 } } : r));
+  ok(decide('B', rowsB5).repro.reproduced === true, '9 reproduced at exactly +6 ms');
+  ok(readRun({ ...rec(55, 'A'), meta: { profile: { name: 'real-serious' } } }, tl(1020, 30), 'A', 'e').why.includes('profile real-serious'), '10 a real-serious record is void here');
+  console.log(bad.length ? `SELFTEST FAIL\n- ${bad.join('\n- ')}` : 'SELFTEST ok (10 cases: frame + segments, owner A + knock-out, owner B twin flip, not attributed, insufficient, spot B, not reproduced, reproduced + owned, +6 exact, profile)');
   return bad.length ? 1 : 0;
 }
 
@@ -152,6 +169,7 @@ for (const spot of ['A', 'B']) { const d = decide(spot, rows.filter((r) => r.spo
   console.log(`SPOT ${spot}: ${Object.entries(d.stats).map(([a, s]) => `${a} dt ${s.dts.join('/')} (med ${s.med}, >50 ${s.gt50}/3) seg ${JSON.stringify(s.seg)} gap ${s.gap}`).join(' | ')}`);
   for (const s of d.steps) console.log(`  ${s.from} -> ${s.to}: dt rise ${s.dtRise}, segment rise ${JSON.stringify(s.segRise)} (top ${s.top}, accounts ${s.accounts}), >50 ${s.gt50}/3 -> ${s.pass ? 'OWNER' : 'no'}`);
   if (d.knock) console.log(`  knock-out ${d.knock.arm}: <= 50 ms in ${d.knock.le50}/3 (median ${d.knock.med}) -> ${d.knock.removes ? 'removes the frame' : 'does not remove it'}`);
+  console.log(`REPRODUCE ${spot}: ${d.repro.test} median ${d.repro.testMed} vs v0 ${d.repro.v0Med} (rise ${d.repro.rise}, need >= ${REPRO_MS}) -> ${d.repro.reproduced ? 'reproduced under induced Serious' : 'not reproduced under induced'}`);
   console.log(`OWNER ${spot}: ${d.owner}${d.thresholdSensitive ? ' (threshold-sensitive)' : ''}`); }
 if (ji >= 0) writeFileSync(args[ji + 1], JSON.stringify({ rows, decision: res }, null, 1));
 }

@@ -1,29 +1,35 @@
 #!/bin/sh
-# P-166 stage 2 phone kit (card: fixes/g0-box/README.md "P-166", stage 2 signed 41b8b179): the block driver inside ONE
-# phone hold (one part = one spot). A copy of p165-block.sh (P-165's final rules) for the W attribution block:
-#   - no thermal condition: every hold reads the real state with the gate (p166-hold.sh); a TOOCOOL hold (exit 5) is
-#     followed by a heat hold (H<n>h<k>: PW) and runs again; pre-warm time capped at CM_PW_MAX s per part (default 2400);
-#   - a ceiling (exit 6) cools BY STATE (lead ruling after P-165 H10: Critical came below 42 C): Safari parked, no runs,
-#     one thermal-gate --no-timer read every ~3 min inside this hold, at most 15 min, until the read is not Critical;
-#     still Critical: BLOCK STOP 6 (message the lead); at most 2 ceiling coolings per hold;
+# P-166 stage 2 phone kit (card: fixes/g0-box/README.md "P-166", stage 2 signed 41b8b179; lead amendment 10:4xZ, user
+# T-247 #12): the block driver inside ONE phone hold (one part = one spot), profile tool-serious (P-164's path, a copy of
+# g0b-block.sh's condition handling):
+#   - CM_THERMAL=serious: ONE owner of the condition, `iphone.mjs rearm` (I-225): it reads the phone, clears, waits for a
+#     plain Nominal/Fair read, starts its own detached `thermal.mjs set serious` (which holds the condition after rearm
+#     exits) and settles 120 s; this script never starts a set of its own. It runs once at the part's start (after the
+#     preflight and the ready step), after a re-plug, and when a hold voids at its start gate (Critical, exit 3, or too
+#     cool, exit 2: the condition is gone) or on a profile misfit (MISFIT); that hold then runs once more (at most 2
+#     re-arms per hold). Rearm exit != 0: BLOCK STOP 10, message the lead. FW_PHONE_CONDITION=tool: the iphone.mjs gates
+#     post no Xcode step; Xcode is never touched. The runner (p166-run.sh) ends the condition with `node tools/thermal.mjs
+#     clear` right after `lock.mjs run iphone` returns (not in this script's exit trap).
+#   - no heat phase, no margin, no cooling by state (the amendment);
 #   - a failing heat sentinel (hold exit 8: a counted v0 run's W sentinel or the spot's control sentinel): BLOCK STOP 8,
-#     the lead decides (a simplification of P-165's TAIL voiding; the scorer voids by the chain in any case);
+#     the lead decides;
 #   - H<n>:TAIL<S> re-runs the spot's RERUN-NEEDED counted items once each (as <item>x), then the spot's control sentinel.
 # Kept: served check at the part start, wda ensure + Safari restart, Safari parked before every hold and on exit, the
-# time-guard re-run (exit 7), the end-gate re-run (exit 3), USB link loss (re-plug, then one W warm-up per arm port of
-# the current spot), the unlock / close-tabs steps on preflight, the first heat (CM_FIRSTHEAT=1) as its own phase.
-# CM_READY=1 (the first part): ONE console action step asks the user to get the phone ready and not use it (posted from
-# inside this phone hold; one phone step at a time) and waits for its Done (the signature's condition 3).
-#   CM_TICKET=P-166 node tools/lock.mjs run iphone --owner fix-g0-box --block P-166 --max-seconds 3600 --keep 120 -- \
-#     sh fixes/g0-box/phone/p166-block.sh H1:Aw0,Awe,Awn,A01,Ae1 H2:An1,Ae2,An2,A02 H3:An3,A03,Ae3 H4:TAILA
-# Logs: out/p166ph/hold-<H>.log, out/p166ph/order.log. CM_DRY=1: p166-hold.sh dry (pins, hashes, tools head, plan).
+# time-guard re-run (exit 7), the end-gate re-run (exit 3), USB link loss (re-plug, re-arm, then one W warm-up per arm port
+# of the current spot), the unlock / close-tabs steps on preflight.
+# CM_READY=1: ONE console action step asks the user to get the phone ready and not use it (posted from inside this phone
+# hold; one phone step at a time) and waits for its Done (the signature's condition 3). P166_READY=0 skips it when the
+# user already answered the ready step (C-119, 10:41Z).
+#   CM_TICKET=P-166 CM_THERMAL=serious node tools/lock.mjs run iphone --owner fix-g0-box --block P-166 --max-seconds 3600 \
+#     --keep 120 -- sh fixes/g0-box/phone/p166-block.sh H1:Aw0,Awe,Awn,A01,Ae1 H2:An1,Ae2,An2,A02 H3:An3,A03,Ae3 H4:TAILA
+# Logs: out/p166ph/hold-<H>.log, out/p166ph/order.log, out/p166ph/rearm-*.log. CM_DRY=1: p166-hold.sh dry.
 cd "$(dirname "$0")/../../.." || exit 2
 [ -n "$CM_TICKET" ] || { echo "CM_TICKET is not set: no run"; exit 2; }
-[ $# -gt 0 ] || { echo "usage: CM_TICKET=P-166 sh fixes/g0-box/phone/p166-block.sh H<n>:<item>[,<item>...] ... [H<n>:TAIL<S>]"; exit 2; }
+[ $# -gt 0 ] || { echo "usage: CM_TICKET=P-166 CM_THERMAL=serious sh fixes/g0-box/phone/p166-block.sh H<n>:<item>[,<item>...] ... [H<n>:TAIL<S>]"; exit 2; }
 ALL="$*"; R=${RUNNER:-fix-g0-box}; LG=out/p166ph; HS=fixes/g0-box/phone/p166-hold.sh; SS=fixes/g0-box/phone/p166-serve.sh
 mkdir -p $LG
-unset FW_PHONE_CONDITION
-[ "$CM_DRY" = 1 ] || trap 'node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "Safari parked (exit trap)"' EXIT
+[ "$CM_DRY" = 1 ] || [ "$CM_THERMAL" = serious ] || { echo "BLOCK STOP: CM_THERMAL=serious is not set (P-166 stage 2 runs tool-serious, lead amendment 10:4xZ)"; exit 2; }
+[ "$CM_DRY" = 1 ] || trap 'node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "Safari parked (exit trap); now run: node tools/thermal.mjs clear"' EXIT
 { echo "== $(date -u +%FT%TZ) part start: $*"; sh $SS check; } >> $LG/serve-check.log 2>&1 \
   || { echo "BLOCK STOP: p166-serve.sh check failed (see $LG/serve-check.log)"; exit 4; }
 echo "SERVE CHECK ok: $(tail -7 $LG/serve-check.log | grep -c ' ok$') of 7 servers"
@@ -39,6 +45,16 @@ wdarestart() {
   node tools/iphone.mjs safari-restart --owner "$R" --url "$(node tools/lan.mjs --url --port "$PB")" --timeout 60 > $LG/safari-restart-$(date +%s).log 2>&1 \
     || { echo "BLOCK STOP: safari-restart failed (see $LG/safari-restart-*.log)"; exit 5; }
   echo "SAFARI restarted"
+}
+thermalrearm() {
+  [ "$CM_DRY" = 1 ] && { echo "REARM (dry) $1"; return 0; }
+  RL=$LG/rearm-$(date +%s).log
+  # P-161 lesson: wdarestart leaves Safari on B (the gate's timer page, animations running); park first, so the rearm
+  # waits on a still phone
+  node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
+  node tools/iphone.mjs rearm --owner "$R" --settle 120 > $RL 2>&1; re=$?
+  echo "$(grep -E '^REARM (CLEARED|NOT-NEEDED|STILL-CRITICAL|MISFIT|TIMEOUT|ERROR)' $RL | tail -1) (exit $re; $1)"
+  [ $re -eq 0 ] || { echo "BLOCK STOP 10: iphone.mjs rearm exit $re (8 still Critical or misfit, 13 timeout; see $RL): message the lead"; exit 10; }
 }
 needsready() { [ "$1" -eq 10 ] || { [ "$1" -eq 3 ] && grep -q 'Failed to initialize for UI testing' "$2"; }; }
 step() {
@@ -82,6 +98,7 @@ relink() {
   echo "LINK BACK after $(( $(date +%s) - t0 )) s: $(linkstate)"
   node tools/lock.mjs doing iphone --owner "$R" --clear > /dev/null 2>&1
   INRELINK=1; wdarestart; INRELINK=0
+  thermalrearm "after the re-plug"
   [ -n "$CURW" ] && { WH=Hlw$LN; echo "WARM-UP after the re-plug: $WH $CURW (uncounted)"; hold $WH $CURW || { linkok && { echo "BLOCK STOP: warm-up $WH failed with the link ok: message the lead"; exit 5; }; relink "in warm-up $WH"; }; }
   return 0
 }
@@ -99,51 +116,23 @@ hold() {
   else node tools/lock.mjs run chrome-measure --owner "$R" --no-timing --max-seconds 600 --doing "$CM_TICKET $h: $*" -- \
       caffeinate -i -s sh $HS $h "$@" > $LG/hold-$h.log 2>&1; e=$?; fi
   echo "$h ($*) exit $e: $(grep -E '^HOLD .* (VALID|VOID|DRY)' $LG/hold-$h.log | tail -1)"
-  grep -E '^(RERUN-NEEDED|SENTINEL|ITEM .* VOID|PLAN|START GATE|PREWARM|MARGIN|GRIDCHECK|TOOLS|SERVED)' $LG/hold-$h.log
+  grep -E '^(RERUN-NEEDED|SENTINEL|ITEM .* VOID|PLAN|START GATE|TOOLS|SERVED|ATTACH)' $LG/hold-$h.log
   if grep -q -E "^HOLD $h VALID" $LG/hold-$h.log; then grep -E '^(RUN|SENTINEL) ' $LG/hold-$h.log | sed "s/^/$h /" >> $LG/order.log; fi
   [ "$CM_DRY" = 1 ] || node tools/lock.mjs doing iphone --owner "$R" --between 1 > /dev/null 2>&1
   return $e
 }
-coolstate() { # lead ruling (P-165 H10): cool by state; Safari parked, no runs, a --no-timer read every ~3 min, <= 15 min
-  t0=$(date +%s); n=0
-  node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
-  while :; do
-    sleep 150; n=$((n + 1))
-    node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "p166-cool-$1-$n" --expect serious --max-c 44 --no-timer > $LG/cool-$1-$n.log 2>&1; c=$?
-    echo "COOL read $n ($1) at +$(( $(date +%s) - t0 )) s exit $c: $(grep '^GATE' $LG/cool-$1-$n.log | tail -1)"
-    case $c in 0|2) echo "COOLED by state ($1): not Critical"; return 0 ;; esac
-    [ $(( $(date +%s) - t0 + 180 )) -le 900 ] || { echo "BLOCK STOP 6: still Critical after $(( $(date +%s) - t0 )) s of cooling ($1): message the lead"; exit 6; }
-  done
-}
-PW0=0; NHEAT=0
-heat() {
-  NHEAT=$((NHEAT + 1)); t=$(date +%s)
-  prehold $1h$NHEAT; hold $1h$NHEAT PW; he=$?
-  PW0=$((PW0 + $(date +%s) - t))
-  echo "HEAT $1h$NHEAT exit $he (pre-warm so far ${PW0} s of ${CM_PW_MAX:-2400})"
-  case $he in
-    0) return 0 ;;
-    5) grep -q 'TOOCOOL' $LG/hold-$1h$NHEAT.log || { echo "BLOCK STOP at heat hold $1h$NHEAT exit 5 (not too cool): message the lead"; exit 5; } ;;
-    6) coolstate $1h$NHEAT ;;
-    7|3) ;;
-    9) echo "BLOCK STOP 9 at $1h$NHEAT: induced Serious: message the lead"; exit 9 ;;
-    *) echo "BLOCK STOP at heat hold $1h$NHEAT exit $he: message the lead"; exit $he ;;
-  esac
-  [ $PW0 -ge "${CM_PW_MAX:-2400}" ] && { echo "BLOCK STOP 12: not real Serious within ${CM_PW_MAX:-2400} s of pre-warm in this part: message the lead"; exit 12; }
-  return 1
-}
 run1() {
-  h=$1; shift; tries=0; ceil=0; e=1
+  h=$1; shift; tries=0; rearms=0; e=1
   while :; do
     tries=$((tries + 1))
     prehold $h; hold $h "$@"; e=$?
     case $e in
       0) return 0 ;;
       7|3) [ $tries -le 2 ] && { echo "RETRY $h (exit $e)"; continue; } ;;
-      5) if grep -q 'TOOCOOL' $LG/hold-$h.log; then until heat $h; do :; done; echo "RE-RUN $h after the heat hold"; continue; fi ;;
-      6) ceil=$((ceil + 1)); [ $ceil -le 2 ] && { coolstate $h; echo "RE-RUN $h after the cooling"; continue; } ;;
+      5) if grep -q -E "^HOLD $h VOID (start gate exit [23] |profile misfit)" $LG/hold-$h.log && [ $rearms -lt 2 ]; then
+           rearms=$((rearms + 1)); echo "CONDITION at $h's start ($(grep -E "^HOLD $h VOID" $LG/hold-$h.log | cut -c1-120)): re-arm $rearms"
+           thermalrearm "re-arm for $h"; echo "RE-RUN $h after the re-arm"; continue; fi ;;
       8) echo "BLOCK STOP 8: a failing heat sentinel in $h ($(grep '^SENTINEL' $LG/hold-$h.log | grep -v PASS | head -2 | tr '\n' ' ')): message the lead"; exit 8 ;;
-      9) echo "BLOCK STOP 9 at $h: induced Serious: message the lead"; exit 9 ;;
     esac
     if [ "$CM_DRY" != 1 ] && ! linkok; then relink "in $h (exit $e)"; echo "RE-RUN $h after the re-plug"; continue; fi
     if [ "$CM_DRY" != 1 ]; then
@@ -155,11 +144,12 @@ run1() {
   done
 }
 if [ "$CM_DRY" != 1 ]; then
+  export CM_PROFILE=tool-serious FW_PHONE_CONDITION=tool
   wdarestart
   preflight start || { echo "BLOCK STOP: preflight exit $pe: message the lead"; exit 9; }
   echo "PREFLIGHT ok"
   if [ "$CM_READY" = 1 ]; then
-    uid=$(step "$CM_TICKET: the iPhone test runs about 1 hour (real heat)" "Please don't use the iPhone for about 1 hour and keep it plugged in to the Mac. Unlock it, close any message on screen and leave Safari open. Press Done when the phone is ready; the test starts then.")
+    uid=$(step "$CM_TICKET: the iPhone test runs about 45 minutes" "Please don't use the iPhone for about 45 minutes and keep it plugged in to the Mac. Unlock it, close any message on screen and leave Safari open. Press Done when the phone is ready; the test starts then.")
     [ -n "$uid" ] || { echo "BLOCK STOP: ready step not posted"; exit 13; }
     echo "READY step $uid posted"
     node tools/console.mjs wait "$uid" --until done --timeout 3600 --quiet; w=$?
@@ -167,28 +157,7 @@ if [ "$CM_DRY" != 1 ]; then
     echo "READY $uid done $(date -u +%FT%TZ)"
   fi
 fi
-firstheat() {
-  t0=$(date +%s); k=0
-  while :; do
-    k=$((k + 1)); prehold H0h$k; hold H0h$k PW; fe=$?
-    case $fe in
-      0) echo "FIRST HEAT done in $(( $(date +%s) - t0 )) s ($k heat holds)"; return 0 ;;
-      5|7|3) ;;
-      6) coolstate H0h$k ;;
-      9) echo "BLOCK STOP 9 in the first heat: induced Serious: message the lead"; exit 9 ;;
-      10) echo "BLOCK STOP 10 in the first heat: the heat page did not open: message the lead"; exit 10 ;;
-      *) if [ "$CM_DRY" != 1 ] && ! linkok; then relink "in the first heat"; continue; fi
-         if [ "$CM_DRY" != 1 ]; then preflight H0h$k && continue; fi
-         echo "BLOCK STOP in the first heat at H0h$k exit $fe: message the lead"; exit $fe ;;
-    esac
-    if [ $(( $(date +%s) - t0 )) -ge "${CM_FIRSTHEAT_MAX:-3600}" ]; then
-      echo "BLOCK STOP 12: still not real Serious after $(( $(date +%s) - t0 )) s of first heat ($k heat holds): message the lead with the curve"
-      grep '"label":"p166-H0h' out/thermal-gate/gates.jsonl 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{for(const l of s.trim().split("\n")){try{const r=JSON.parse(l);console.log("CURVE",r.at,r.label,r.state,r.battC,"->",r.battEndC,"C")}catch{}}})'
-      exit 12
-    fi
-  done
-}
-[ "$CM_FIRSTHEAT" = 1 ] && { [ "$CM_DRY" = 1 ] && { prehold H0h1; hold H0h1 PW; } || firstheat; }
+thermalrearm "part start"
 for spec in "$@"; do
   H=${spec%%:*}; items=$(echo "${spec#*:}" | tr ',' ' ')
   case $items in
