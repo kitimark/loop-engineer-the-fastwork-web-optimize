@@ -1,0 +1,57 @@
+# g0.0h delta vs g0.0f (JS 30fd80ccbb3f / CSS 1d1e5d62a2c4) -> g0.0h (JS 9162843e750f / CSS 26d28a0a263b): PR-039 keep-phase
+# contains excerpts of Fastwork's code: local branches only, never push
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -12439,5 +12439,17 @@
+ @media (prefers-reduced-motion: no-preference) and (width<=640px) {
+   .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
+     gap: calc((1 - var(--jf-gone)) * 4px);
++  }
++}
++/* [P-168 f-B2] de-offscreen knock-out (b28ac944), diagnostic only */
++.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track {
++  animation: none !important;
++}
++@media (prefers-reduced-motion: no-preference) {
++  .start-selling [data-start-selling-scene="paused"] .start-selling-morph-col:nth-child(odd) .start-selling-morph-col-track {
++    transform: translateY(56px);
+   }
++  .start-selling [data-start-selling-scene="paused"] .start-selling-morph-col:nth-child(2n) .start-selling-morph-col-track {
++    transform: translateY(-56px);
++  }
+ }
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -2790,6 +2790,24 @@
+       }));
+   }
+ }
++// [colpause f-B2] keep the morph columns' phase across a paused scene (KO B removes the paused animation so the
++// hidden panel's tracks stop compositing): on pause each track keeps its frame as a static 2D transform and its
++// next animation starts at the same phase (negative animation-delay), as the original's paused animation resumes.
++function fwColScene(el, on) {
++  if (!el || el.__fwColOn === on) return;
++  el.__fwColOn = on;
++  for (const tr of el.querySelectorAll(`.start-selling-morph-col-track`)) {
++    if (on) {
++      tr.style.removeProperty(`transform`);
++      continue;
++    }
++    const an = tr.getAnimations().find((x) => x.animationName);
++    if (!an || an.currentTime == null) continue;
++    const ph = an.currentTime - (an.effect.getTiming().delay || 0);
++    tr.style.transform = getComputedStyle(tr).transform;
++    tr.style.animationDelay = `${-ph}ms`;
++  }
++}
+ function cE(e, t) {
+   (e.manageAnimations &&
+     e.element &&
+@@ -14690,6 +14708,7 @@
+         M(a),
+         l(() => {
+           ((a.inert = !(s(b) || s(E))),
++            fwColScene(a, s(E)) /* [colpause f-B2] before the attribute flips */,
+             k(a, `data-start-selling-scene`, s(E) ? `active` : `paused`),
+             k(a, `aria-hidden`, s(x) < 0.35),
+             t(m, s(o).header.future),
