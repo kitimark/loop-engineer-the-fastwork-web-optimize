@@ -396,6 +396,122 @@ The phone data cannot separate these. Options for the next check (no phone run p
 - a WebKit `RemoteLayerBuffers` log of the flip commit, which shows whether the sync prepare path is taken. That is
   a Simulator check, so it says nothing about timing.
 
+## 7. End of page, finger down: where P-164's frames over 50 ms come from (step 4, data only)
+
+The question (lead, user T-228 #98/#101): on g0.0f, P-164 counted 5, 10, 8, 9 finger-down frames over 50 ms per run
+(g0.0e: 7, 5, 6, 6). Which moments and code paths are they? The user's priority is first the drag down toward the
+end, second the close-start frame at the end.
+
+Data: fix-g0-box's `out/g0bp/runs` (P-164 G-gesture records with Timeline, EC1-EC4 = g0.0e, EV1-EV4 = g0.0f), read only.
+Reader: `p164-fingerdown-read.mjs` (data/phone-p164-fingerdown.json). Rules:
+- A frame is finger-down when its span overlaps a touchstart → touchend contact.
+- Timeline records are summed per frame at their own depth. "RF-other" is RenderingFrame time not covered by any
+  child record.
+
+The reader's counts match P-164's exactly (C 7, 5, 6, 6; V 5, 10, 8, 9). All results are OBSERVED, iPhone 15 Pro Max,
+tool-serious, G driver.
+
+### 7.1 Where they are
+
+- **Every finger-down frame over 50 ms is in the approach**: the 12 drags (520 px each) that scroll the page from the
+  top to the end, at y 25-4501, with the menu closed and no move prevented. That is 24 frames on g0.0e and 32 on g0.0f.
+- **At the end (the menu's open and close strokes) there are 0** in either arm.
+  - Over 34 ms at the end there are 5 per arm over 4 runs, in two kinds: the close-start frame (finger down
+    +237-253 ms, the frame of the jack's close trigger; 35-40 ms, Composite 33-45 ms) and a 35 ms frame at +1650 ms
+    in some close strokes (Composite 31-33 ms, RF-other 17 ms).
+  - Both are equal across the arms.
+
+| y (end of frame) | moment | g0.0e / g0.0f, sum of 4 runs | what fills the frame (Timeline) |
+|---|---|---|---|
+| 600-670 | 2nd drag, +335-430 ms: nav leaves the hero pill (`-is-hero-pill`), `#people +is-visible` (W crossings put both at y 625-632) | 7 / 7 | Composite 35-65 ms, the scroll engine's rAF 15-32 ms (`iE`, JS 2705, forcing a 12 ms Layout), transition-start and animation-end events |
+| 880-1030 | about 890: `pain +is-pain-dark` (W: y 903); about 1025: 3rd drag at +165 ms | 7 / 7 | at 890: Composite 40-66 ms with 13 ms style + 13 ms Layout. At 1025: two style+layout passes back to back (25 + 17 ms) |
+| 1750-1770 | 4th drag, +575-608 ms: the end-of-page IntersectionObserver fires | 4 / 4 (1 per run, every run) | ObserverCallback (JS 14437), then style recalc 25-52 ms with 16 ms Layout, then Composite 28-40 ms |
+| 1500, 2000-2020, 3010-3050, 3500 | the frame about 35 ms before the finger lifts | 4 / 7 | at 1500 / 2005: Layout 24-27 ms + RF-other 30-55 ms. At 3010 / 3500: RF-other 70-87 ms, almost nothing else |
+| 4495-4501 | 9th drag: platform `+is-play` (P-169) | 1 / 3 | Composite 55-78 ms (sections 5-6) |
+| 0-300 | 1st drag, +165-630 ms | 1 / 3 | Layout 36 ms or style 39 ms; mostly g0.0f, as in P-168 window A |
+
+g0.0f's +8 over g0.0e is entirely in the last three rows. The first three rows (18 of g0.0e's 24) are the same in
+both builds.
+
+### 7.2 What is behind them
+
+- **A. A ~13 ms style + layout pass, about 9 times per second, all through the approach** (both arms).
+  - Approach Timeline, per run: 308-314 Layout records ≥ 5 ms (9.2-9.4 per s), median 12.6-12.7 ms, together
+    4.1-4.2 s of 33 s. Every one has the viewport as its layout root.
+  - About 110-115 per run are outer `Layout → RecalculateStyles → Layout` records that sit next to touchmove/scroll
+    dispatches with no script around them. These are native layout flushes. Others are forced inside the scroll
+    engine's rAF (`iE`, g0.0f JS 2705).
+  - Something writes styles on every scroll frame, so each flush recalculates style and lays out the page again (a
+    full pass: ~12.7 ms).
+  - Frames over 50 ms in rows 1, 2 and the 1500 / 2005 drag ends are 2-3 of these passes stacked, plus Composite.
+  - The v12 notes already name "a ~13 ms forced layout still in the scroll loop on WebKit" (BEST_BUILDS, P-159).
+    This is the same cost, seen at every scroll position.
+  - The style writer is not identified. The decisive check is a Simulator probe (counts only, no timing):
+    - a MutationObserver on style and class attributes plus a CSSStyleDeclaration.setProperty hook, per scroll frame;
+    - the Timeline's RecalculateStyles initiator;
+    - run along 0 → 4600 on g0.0e and g0.0f.
+  - **Which WebKit path flushes layout after a touchmove on iOS: UNRESOLVED.** The iOS touch-event code is partly
+    outside the open source.
+- **B. Row y 1750-1770 is g0's own end-of-page arming** (g0.0f JS 14437-14443; g0.0e has the same code).
+  - The IntersectionObserver on `.start-selling-platform` (rootMargin 200 %) fires mid-drag. It sets `b`, which gives
+    every morph-panel column image its `src` (JS 14630) and lifts the panel's `inert` (JS 14692). It also calls
+    `N()`, which adds the non-passive capture `touchmove` and `wheel` jack (JS 14414-14420).
+  - Cost: one 25-52 ms style recalc + 16 ms layout + 28-40 ms Composite, in every run of both builds.
+  - From the next drag on (y ≥ about 2010), the first ~10 touchmoves of every drag arrive cancelable. Before that
+    point they are 0 of 91-105 per drag. So each drag's start now waits on the main thread.
+- **C. Row y 600-670 is the hero-pill exit.**
+  - `iE`'s callbacks force a 12 ms layout at the crossing, then the nav's morph transitions start (7
+    `transitionrun`, 4 `finish`).
+  - The Composite of 35-65 ms holds two more nested style+layout passes (A).
+- **D. Row y 880-1030** is the theme flip to dark (`section.pain +is-pain-dark`, y about 903) and, at about 1000,
+  `-he-css` (g0.0f) and the avatar carousel's `is-sliding` toggles. Both are followed by double style+layout
+  passes (A).
+- **E. Drag-end frames are mostly not page work.**
+  - Every drag has a 24-29 ms frame about 50 ms before the finger lifts. The finger is almost still there
+    (0.05-0.07 px/ms, the G drag profile's lift-off). The frame's RenderingFrame holds only touchmove dispatches,
+    3-8 ms of children.
+  - In some drags it stretches to 54 ms (RF-other 70-87 ms; at 3010 and 3500), or stacks with the layout tax (A).
+  - The web process's main thread is idle in these frames, so the time is spent outside it. Candidates: the next
+    rendering update waits for the previous commit (`RemoteLayerTreeDrawingArea::updateRendering` returns early
+    while `m_waitingForBackingStoreSwap`, RemoteLayerTreeDrawingArea.mm:331-334), or the UI process schedules no
+    update while the finger is nearly still.
+  - UNRESOLVED. The decisive check is the same frames in another build's G records, or under a finger (F) run. If
+    they appear on every build, they come from the driver or the OS, not the page.
+
+### 7.3 Candidates, ranked for the drag toward the end (the user's first priority)
+
+Gains are guesses on g0.0f's 32 frames over 50 ms per 4 runs. None is measured.
+
+| rank | candidate | code | expected gain | pixel-identical? | owner |
+|---|---|---|---|---|---|
+| 1 | **Arm the end-of-page off the drag** (B): set `b` (image `src`, un-inert) in idle time after load, or at a still moment, instead of from the 200 % IntersectionObserver mid-drag. Keep `N()` (the jack) attached only when the page can actually reach the end (e.g. a smaller rootMargin, or attach on the first still moment within 1 viewport) | g0.0f JS 14437-14443, 14414-14420, 14630, 14692 | −4 (one per run, every build), and drag starts no longer wait on the main thread from y 2010 on | yes: the panel is hidden (opacity 0) until the menu opens; the images only need to be loaded before then. Needs a check that the first open still finds them decoded | **g0-box** (g0.0 end-of-page code) |
+| 2 | **Find and remove the per-scroll style writer** (A), so the native flushes after touchmove/scroll find nothing to do | unknown; candidates: the nav state handler (`__nsOnScroll`, JS 14247), the scroll engine's `iE` callbacks (JS 2705), scene/class gates | largest: rows 1, 2 and part of the drag ends sit on 2-3 stacked 13 ms passes; guess −8 to −15 | yes if writes are skipped only when the value is unchanged | first the probe above (de-offscreen or fix-g0-box's Simulator harness); then the writer's topic (scroll-engine / nav-scroll-handler) |
+| 3 | **Shrink the full layout** (A): keep far sections and the hidden morph panel out of layout while the user is far from them (`content-visibility`; f-cv25 did it only near the top). Every remaining pass gets cheaper | CSS, fwDef / fwRender (JS 2709-2725) | guess −5 to −10, together with 2 | yes for `content-visibility: hidden` on off-screen, unpainted content; needs the f-cv25 pixel gate per section | g0-box (f-cv25) / scroll-engine |
+| 4 | **Hero-pill exit** (C): take the forced layout out of `iE`'s callback at the crossing (read geometry from cached values, as nav-hit-cache did for the theme) | JS 2705 → the nav callbacks around 14221-14350 | −1 to −2 per run on its own, more with 2 | likely (same transitions) | nav-hit-cache / nav-morph owners |
+| 5 | **Theme flip and hero-exit toggles** (D) | `pain +is-pain-dark`, `-he-css`, avatar `is-sliding` | −1 to −2 per run with 2 | likely | nav theme / hero-exit-threaded / avatar carousel |
+| 6 | `+is-play` frame (P-169 running), first-drag Layout at y 0-300 (g0.0f only, P-168 window A) | sections 5-6 | −2 each, g0.0f only | f-B2 yes | g0-box |
+| – | drag-end frames (E) | outside the page (UNRESOLVED) | probably none from page code | – | first a cross-build check of existing G records |
+
+**Three earlier prototypes, checked against these items** (the lead asked, for the user):
+- **v9.1d's scroll-cb ("faster scroll callback"):** it matches A, the largest group.
+  - `scbGate` gated the four side jobs behind `iE`: commission, future, platform and profile ran about 146 times per
+    second during a scroll, each reading 1-3 rects, with idempotent style writes on phones (fixes/scroll-cb-phone).
+  - It is not in g0.0f (no `scbGate`). It left v9 on a ruling, not a proven cause: a first fling stopped short in the
+    Simulator (fixes/v9-best).
+  - It does not match items 3 or 4. It is the strongest prior candidate for rank 2.
+- **fwreskip:** the hero's far re-skip at y≈2988 costs about 20 ms of relayout in the deck. It sits at the same y as
+  the 3010-3050 drag-end frames, but those frames hold no Layout (an idle main thread), so it does not match item 4.
+  P-064 saw 0 slow frames either way. Low.
+- **v13's c3 ("toolbar moves no longer force a full re-measure"):** it matches only the first drag's 13-15 toolbar
+  steps (innerHeight 775 → 815 at y 13-120; frames 27-44 ms, none over 50), not items 3 or 4. g0.0f's nav drops its
+  geometry cache on every resize (JS 14250-14252), so c3's guard appears not to have been kept (inferred). It might
+  trim the first drag's frames over 34; low for frames over 50.
+
+**For the end itself (second priority):** the close-start frame (35-40 ms, Composite 33-45 ms, both arms) is the
+first frame of the close tween, the jack's `E(0)` → `T` rAF (JS 14374-14390). Idea: keep the menu's layers
+composited between the open and the close, as v14's K6 did for the open. Likely pixel-identical; gain at most one
+frame over 34 ms per close; owner g0-box. The +1650 ms frame is not identified.
+
 ## Files
 
 - `layers-sim.mjs`, `layers-chrome.mjs`, `common.mjs`: the probes, which can be re-run (commands in their headers;
@@ -405,6 +521,8 @@ The phone data cannot separate these. Options for the next check (no phone run p
 - `data/sim-layers.json`, `data/chrome-layers.json`: one row per layer per build per position.
 - `data/sim-knockouts.json`: the knock-out diffs against g0.0e.
 - `data/sim-isplay.json` (section 5): per load, the flip commit's diff and the layer-set changes over the next 1.6 s.
+- `p164-fingerdown-read.mjs`, `data/phone-p164-fingerdown.json` (section 7): P-164's finger-down frames, their moment
+  and Timeline contents.
 - `p168-isplay-read.mjs`, `data/phone-p168-isplay.json` (section 6): the P-168 phone runs' flip frame, its Composite
   and nested Paint records, and the glint flips.
 
