@@ -315,7 +315,7 @@ Source: WebKit main @ f9dcd0ee93e4 (read with `gh api`). Status: CONFIRMED where
   - KO B does not test this. It removes 10 *other* layers, so g0.0f+B ends up at v0's count.
   - The row-title layers are KO C's (section 3).
 - **The phone flip lands 46 px later on g0.0f** (y 4608 vs 4562), but in the Simulator both arms flip at the same
-  step. So the phone frame may hold other work the Simulator's stepped scroll separates: an IntersectionObserver
+  step. Section 6 resolves this: the 46 px are mostly the long frame's own length. So the phone frame may hold other work the Simulator's stepped scroll separates: an IntersectionObserver
   delivery that is late by one or more frames, plus whatever else crosses at 4608. Inferred; not tested.
 - **The g0.0f-only layer restructure is the glint start, ~1 s after the flip.** It adds +9 layers, 2 animations,
   overlap re-composite of 5 siblings and a 2-layer rebuild at +0.2 s. KO B leaves it as it is.
@@ -323,6 +323,78 @@ Source: WebKit main @ f9dcd0ee93e4 (read with `gh api`). Status: CONFIRMED where
     `.is-active` flip next to `+is-play`.
   - A knock-out that removes it: in g0.0f, keep the glint's `.is-active` off (no CSS animation). That is not
     pixel-identical (no glint), so it is diagnostic only.
+
+## 6. The phone data (P-168, window B): what is in the `+is-play` frame
+
+The lead's follow-up: answer section 5.4's decisive check from P-168's own phone runs, before planning any new run.
+P-168 captured Timeline on every counted W run (iPhone 15 Pro Max, Safari 26.6.1, tool-serious). Source: fix-g0-box's
+`out/p168ph/runs/w-B{0,e,k}{1,2,3}.json` and `tl-*.json`, read only (arms: 0 = v0, e = g0.0f, k = g0.0g). Reader:
+`p168-isplay-read.mjs`, output `data/phone-p168-isplay.json`. The `+is-play` frame is p166-wread's `spotFrame`, and
+a frame covers (t − dt, t]. Composite and Paint records come from the run's Timeline, on the same clock as
+p168-wread uses.
+
+| run | arm | flip seen at y | flip frame (y range, dt) | Composite in it | Paint records nested in it: n / ms / area (CSS px²) | glint `.is-active` |
+|---|---|---|---|---|---|---|
+| B01 | v0 | 4516 | 4516-4562, 43 ms | 1 record, 39.5 ms | 10 / 1.3 ms / 275 000 | highlight +973 ms (59 frames later) |
+| B02 | v0 | 4516 | 4516-4562, 45 ms | 41.3 ms | 10 / 2.0 / 275 000 | highlight +972 ms |
+| B03 | v0 | 4516 | 4516-4562, 46 ms | 41.5 ms | 10 / 1.8 / 275 000 | highlight +971 ms |
+| Be1 | g0.0f | 4526 | 4526-4609, 74 ms | 63.5 ms | 8 / 2.6 / 271 326 | glint +943 ms (57 frames later) |
+| Be2 | g0.0f | 4526 | 4526-4609, 73 ms | 61.5 ms | 7 / 2.5 / 263 534 | glint +944 ms |
+| Be3 | g0.0f | 4525 | 4525-4608, 69 ms | 58.0 ms | 7 / 2.5 / 263 534 | glint +948 ms |
+| Bk1 | g0.0g | 4526 | 4526-4609, 71 ms | 60.0 ms | 7 / 2.9 / 263 534 | glint +946 ms |
+| Bk2 | g0.0g | 4526 | 4526-4608, 69 ms | 58.4 ms | 8 / 2.8 / 271 326 | glint +947 ms |
+| Bk3 | g0.0g | 4525 | 4525-4607, 69 ms | 59.4 ms | 7 / 3.2 / 263 534 | glint +948 ms |
+
+Answers, all OBSERVED on the phone, 3 runs per arm:
+
+1. **The glint does not land in or next to the flip frame.**
+   - g0.0f and g0.0g: the glint's `+is-active` comes 57 frames (943-948 ms) after the flip frame. The frame it lands
+     in is 16-17 ms long, with 0-0.3 ms Composite and no Paint record.
+   - v0: its `<animate>` highlight comes 59 frames (971-973 ms) later, in a 16-17 ms frame.
+   - So the g0.0f-only layer restructure of section 5.2 is not part of the slow frame on the phone, and it costs
+     nothing visible in its own frame.
+2. **The flip frame's extra Composite is not painting.**
+   - Each flip frame has exactly one Composite record. It holds 7-10 nested Paint records, together 1.3-3.2 ms,
+     over almost the same area in every arm (263-275 k CSS px²). The three largest boxes are identical:
+     343x380 @ y 5139, 360x312 @ y 5180, 104x115 @ y 5270.
+   - g0.0f's Composite is 58-64 ms against v0's 40-42, with **fewer** Paint records and about +1 ms of Paint time.
+     So ~95 % of the Composite record, and all of g0.0f's ~20 ms excess, is Composite time outside the Paint records.
+   - Source (section 5.3): this Composite bracket also holds the transaction walk, `prepareBackingStoresForDisplay`
+     and the commit encoding.
+   - CONFIRMED by source: `RemoteRenderingBackendProxy::endPreparingImageBufferSetsForDisplay` sends a **synchronous**
+     IPC to the GPU process (`PrepareImageBufferSetsForDisplaySync`) when any buffer set being prepared may have a
+     volatile front buffer. Otherwise it sends an async message (RemoteRenderingBackendProxy.cpp:604-650).
+     Idle backing stores are made volatile by a 200 ms repeating timer (RemoteLayerBackingStoreCollection.mm:45,
+     250-276, 354-391). Front buffers are made volatile only for stores that are not reachable in the latest flush.
+   - UNRESOLVED:
+     - Is DOM rendering in the GPU process on this iOS build? The default depends on the build flags
+       `GPU_PROCESS_BY_DEFAULT` and `GPU_PROCESS_DOM_RENDERING_BY_DEFAULT`, WebPreferencesDefaultValues.cpp:324-335.
+       If it is, Paint records time only the display-list recording, which would fit 1-3 ms for ~2.4 M device px.
+     - Does the flip commit take the sync path?
+   - A hypothesis, not tested: g0.0f's page is otherwise idle (its other move frames have a median Composite of
+     0.2 ms and 0 Paint records, against v0's 7-7.5 ms and 4 Paint records). So more of g0.0f's stores may be
+     volatile when the flip commit displays them, and that costs a GPU-process round trip.
+3. **Layer-tree size: not recorded** in the P-168 run records (`pre` / `post` hold docH, vh, finalY, fonts, resources).
+   The Simulator census (section 5.1) gives 50 layers after the flip on v0 and 60 on g0.0f.
+
+**Correction to "the flip lands 46 px later on g0.0f" (P-167, P-168).**
+- The MutationObserver sees the class flip at y 4516 (v0) and 4525-4526 (g0.0f, g0.0g): 10 px apart, under one
+  frame at the ~0.5-0.6 px/ms scroll just before it.
+- The quoted y (4562 vs 4608) is the flip frame's *end*. The window driver keeps scrolling during the long frame:
+  46 px in v0's 43 ms frame, 83 px in g0.0f's 74 ms frame.
+- So the 46 px gap is mostly a result of the frame's length, not a later trigger. The Simulator agrees: both builds
+  flip in the same 8 px step (section 5).
+
+**What this leaves for the +20 ms.** Inside the one Composite record, and not in its Paint records:
+- the transaction walk over 10 more unchanged layers;
+- the buffer preparation for the 7 new and the re-displayed stores, possibly a sync IPC;
+- the commit encoding.
+
+The phone data cannot separate these. Options for the next check (no phone run planned yet):
+- a phone W run of g0.0f+B, which has v0's layer count but g0.0f's idle page, as a third arm next to v0 and g0.0f
+  at window B with Timeline on. If its Composite stays at g0.0f's level, tree size is ruled out.
+- a WebKit `RemoteLayerBuffers` log of the flip commit, which shows whether the sync prepare path is taken. That is
+  a Simulator check, so it says nothing about timing.
 
 ## Files
 
@@ -333,5 +405,7 @@ Source: WebKit main @ f9dcd0ee93e4 (read with `gh api`). Status: CONFIRMED where
 - `data/sim-layers.json`, `data/chrome-layers.json`: one row per layer per build per position.
 - `data/sim-knockouts.json`: the knock-out diffs against g0.0e.
 - `data/sim-isplay.json` (section 5): per load, the flip commit's diff and the layer-set changes over the next 1.6 s.
+- `p168-isplay-read.mjs`, `data/phone-p168-isplay.json` (section 6): the P-168 phone runs' flip frame, its Composite
+  and nested Paint records, and the glint flips.
 
 No URLs, device ids or addresses are in `data/`.

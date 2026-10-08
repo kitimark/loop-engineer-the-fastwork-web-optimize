@@ -1,0 +1,695 @@
+{
+ "dir": "fix-g0-box out/p168ph/runs (read only)",
+ "runs": {
+  "B01": {
+   "arm": "v0",
+   "flipAt": {
+    "mutationY": 4516,
+    "yFrame": [
+     4516,
+     4562
+    ],
+    "frameYEnd": 4562,
+    "prevDt": 17,
+    "pxPerMs": 0.59
+   },
+   "play": {
+    "frame": 264,
+    "t": 15793,
+    "dt": 43,
+    "y": 4562,
+    "composites": 1,
+    "compMs": 39.5,
+    "paints": 10,
+    "paintMs": 1.3,
+    "paintArea": 275000,
+    "big": [
+     "343x380@y5139 0.4ms",
+     "360x312@y5180 0ms",
+     "104x115@y5270 0.7ms",
+     "140x39@y4621 0ms"
+    ]
+   },
+   "playCrossingsInFrame": [
+    "div.start-selling-platform-secure +is-play"
+   ],
+   "glint": [],
+   "glintFrame": null,
+   "highlight": [
+    {
+     "frame": 323,
+     "framesAfterPlay": 59,
+     "msAfterPlay": 973
+    },
+    {
+     "frame": 323,
+     "framesAfterPlay": 59,
+     "msAfterPlay": 973
+    }
+   ],
+   "highlightFrame": {
+    "t": 16766,
+    "dt": 16,
+    "y": 5249,
+    "composites": 1,
+    "compMs": 3.4,
+    "paints": 2,
+    "paintMs": 0.2,
+    "paintArea": 9087,
+    "big": [
+     "140x39@y5934 0ms",
+     "93x39@y5507 0.1ms"
+    ]
+   },
+   "othersMedian": {
+    "n": 208,
+    "dt": 17,
+    "compMs": 7.5,
+    "paints": 4,
+    "paintMs": 0.3,
+    "paintArea": 10120
+   },
+   "layerTree": null
+  },
+  "B02": {
+   "arm": "v0",
+   "flipAt": {
+    "mutationY": 4516,
+    "yFrame": [
+     4516,
+     4562
+    ],
+    "frameYEnd": 4562,
+    "prevDt": 17,
+    "pxPerMs": 0.59
+   },
+   "play": {
+    "frame": 264,
+    "t": 15791,
+    "dt": 45,
+    "y": 4562,
+    "composites": 1,
+    "compMs": 41.3,
+    "paints": 10,
+    "paintMs": 2,
+    "paintArea": 275000,
+    "big": [
+     "343x380@y5139 0.4ms",
+     "360x312@y5180 0ms",
+     "104x115@y5270 1.1ms",
+     "140x39@y4621 0.2ms"
+    ]
+   },
+   "playCrossingsInFrame": [
+    "div.start-selling-platform-secure +is-play"
+   ],
+   "glint": [],
+   "glintFrame": null,
+   "highlight": [
+    {
+     "frame": 323,
+     "framesAfterPlay": 59,
+     "msAfterPlay": 972
+    },
+    {
+     "frame": 323,
+     "framesAfterPlay": 59,
+     "msAfterPlay": 972
+    }
+   ],
+   "highlightFrame": {
+    "t": 16763,
+    "dt": 17,
+    "y": 5249,
+    "composites": 1,
+    "compMs": 3.1,
+    "paints": 2,
+    "paintMs": 0.1,
+    "paintArea": 9087,
+    "big": [
+     "140x39@y5934 0.1ms",
+     "93x39@y5507 0ms"
+    ]
+   },
+   "othersMedian": {
+    "n": 208,
+    "dt": 17,
+    "compMs": 6.9,
+    "paints": 4,
+    "paintMs": 0.3,
+    "paintArea": 10120
+   },
+   "layerTree": null
+  },
+  "B03": {
+   "arm": "v0",
+   "flipAt": {
+    "mutationY": 4516,
+    "yFrame": [
+     4516,
+     4562
+    ],
+    "frameYEnd": 4562,
+    "prevDt": 17,
+    "pxPerMs": 0.59
+   },
+   "play": {
+    "frame": 263,
+    "t": 15757,
+    "dt": 46,
+    "y": 4562,
+    "composites": 1,
+    "compMs": 41.5,
+    "paints": 10,
+    "paintMs": 1.8,
+    "paintArea": 275000,
+    "big": [
+     "343x380@y5139 0.3ms",
+     "360x312@y5180 0ms",
+     "104x115@y5270 1ms",
+     "140x39@y4621 0.2ms"
+    ]
+   },
+   "playCrossingsInFrame": [
+    "div.start-selling-platform-secure +is-play"
+   ],
+   "glint": [],
+   "glintFrame": null,
+   "highlight": [
+    {
+     "frame": 322,
+     "framesAfterPlay": 59,
+     "msAfterPlay": 971
+    },
+    {
+     "frame": 322,
+     "framesAfterPlay": 59,
+     "msAfterPlay": 971
+    }
+   ],
+   "highlightFrame": {
+    "t": 16728,
+    "dt": 17,
+    "y": 5249,
+    "composites": 1,
+    "compMs": 3.4,
+    "paints": 2,
+    "paintMs": 0.1,
+    "paintArea": 9087,
+    "big": [
+     "140x39@y5934 0ms",
+     "93x39@y5507 0.1ms"
+    ]
+   },
+   "othersMedian": {
+    "n": 208,
+    "dt": 17,
+    "compMs": 7.4,
+    "paints": 4,
+    "paintMs": 0.3,
+    "paintArea": 10733
+   },
+   "layerTree": null
+  },
+  "Be1": {
+   "arm": "g0.0f",
+   "flipAt": {
+    "mutationY": 4526,
+    "yFrame": [
+     4526,
+     4609
+    ],
+    "frameYEnd": 4609,
+    "prevDt": 16,
+    "pxPerMs": 0.5
+   },
+   "play": {
+    "frame": 279,
+    "t": 15867,
+    "dt": 74,
+    "y": 4609,
+    "composites": 1,
+    "compMs": 63.5,
+    "paints": 8,
+    "paintMs": 2.6,
+    "paintArea": 271326,
+    "big": [
+     "343x380@y5139 0.7ms",
+     "360x312@y5180 0ms",
+     "104x115@y5270 1.3ms",
+     "297x26@y4792 0.3ms"
+    ]
+   },
+   "playCrossingsInFrame": [
+    "div.start-selling-platform-secure +is-play"
+   ],
+   "glint": [
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 943,
+     "y": 5249
+    },
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 943,
+     "y": 5249
+    }
+   ],
+   "glintFrame": {
+    "t": 16810,
+    "dt": 17,
+    "y": 5249,
+    "composites": 1,
+    "compMs": 0.1,
+    "paints": 0,
+    "paintMs": 0,
+    "paintArea": 0,
+    "big": []
+   },
+   "highlight": [
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 943
+    },
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 943
+    }
+   ],
+   "highlightFrame": null,
+   "othersMedian": {
+    "n": 207,
+    "dt": 17,
+    "compMs": 0.2,
+    "paints": 0,
+    "paintMs": 0,
+    "paintArea": 0
+   },
+   "layerTree": null
+  },
+  "Be2": {
+   "arm": "g0.0f",
+   "flipAt": {
+    "mutationY": 4526,
+    "yFrame": [
+     4526,
+     4609
+    ],
+    "frameYEnd": 4609,
+    "prevDt": 16,
+    "pxPerMs": 0.53
+   },
+   "play": {
+    "frame": 279,
+    "t": 15843,
+    "dt": 73,
+    "y": 4609,
+    "composites": 1,
+    "compMs": 61.5,
+    "paints": 7,
+    "paintMs": 2.5,
+    "paintArea": 263534,
+    "big": [
+     "343x380@y5139 1.3ms",
+     "360x312@y5180 0.1ms",
+     "104x115@y5270 0.9ms",
+     "66x66@y5297 0.1ms"
+    ]
+   },
+   "playCrossingsInFrame": [
+    "div.start-selling-platform-secure +is-play"
+   ],
+   "glint": [
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 944,
+     "y": 5249
+    },
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 944,
+     "y": 5249
+    }
+   ],
+   "glintFrame": {
+    "t": 16787,
+    "dt": 16,
+    "y": 5249,
+    "composites": 0,
+    "compMs": 0,
+    "paints": 0,
+    "paintMs": 0,
+    "paintArea": 0,
+    "big": []
+   },
+   "highlight": [
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 944
+    },
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 944
+    }
+   ],
+   "highlightFrame": null,
+   "othersMedian": {
+    "n": 206,
+    "dt": 17,
+    "compMs": 0.2,
+    "paints": 0,
+    "paintMs": 0,
+    "paintArea": 0
+   },
+   "layerTree": null
+  },
+  "Be3": {
+   "arm": "g0.0f",
+   "flipAt": {
+    "mutationY": 4525,
+    "yFrame": [
+     4525,
+     4608
+    ],
+    "frameYEnd": 4608,
+    "prevDt": 16,
+    "pxPerMs": 0.52
+   },
+   "play": {
+    "frame": 279,
+    "t": 15825,
+    "dt": 69,
+    "y": 4608,
+    "composites": 1,
+    "compMs": 58,
+    "paints": 7,
+    "paintMs": 2.5,
+    "paintArea": 263534,
+    "big": [
+     "343x380@y5139 1.4ms",
+     "360x312@y5180 0.1ms",
+     "104x115@y5270 0.8ms",
+     "66x66@y5297 0.1ms"
+    ]
+   },
+   "playCrossingsInFrame": [
+    "div.start-selling-platform-secure +is-play"
+   ],
+   "glint": [
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 948,
+     "y": 5249
+    },
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 948,
+     "y": 5249
+    }
+   ],
+   "glintFrame": {
+    "t": 16773,
+    "dt": 16,
+    "y": 5249,
+    "composites": 0,
+    "compMs": 0,
+    "paints": 0,
+    "paintMs": 0,
+    "paintArea": 0,
+    "big": []
+   },
+   "highlight": [
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 948
+    },
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 948
+    }
+   ],
+   "highlightFrame": null,
+   "othersMedian": {
+    "n": 206,
+    "dt": 17,
+    "compMs": 0.2,
+    "paints": 0,
+    "paintMs": 0,
+    "paintArea": 0
+   },
+   "layerTree": null
+  },
+  "Bk1": {
+   "arm": "g0.0g",
+   "flipAt": {
+    "mutationY": 4526,
+    "yFrame": [
+     4526,
+     4609
+    ],
+    "frameYEnd": 4609,
+    "prevDt": 17,
+    "pxPerMs": 0.53
+   },
+   "play": {
+    "frame": 279,
+    "t": 15839,
+    "dt": 71,
+    "y": 4609,
+    "composites": 1,
+    "compMs": 60,
+    "paints": 7,
+    "paintMs": 2.9,
+    "paintArea": 263534,
+    "big": [
+     "343x380@y5139 1.2ms",
+     "360x312@y5180 0ms",
+     "104x115@y5270 1.2ms",
+     "66x66@y5297 0.1ms"
+    ]
+   },
+   "playCrossingsInFrame": [
+    "div.start-selling-platform-secure +is-play"
+   ],
+   "glint": [
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 946,
+     "y": 5249
+    },
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 946,
+     "y": 5249
+    }
+   ],
+   "glintFrame": {
+    "t": 16785,
+    "dt": 17,
+    "y": 5249,
+    "composites": 1,
+    "compMs": 0.1,
+    "paints": 0,
+    "paintMs": 0,
+    "paintArea": 0,
+    "big": []
+   },
+   "highlight": [
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 946
+    },
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 946
+    }
+   ],
+   "highlightFrame": null,
+   "othersMedian": {
+    "n": 206,
+    "dt": 17,
+    "compMs": 0.2,
+    "paints": 0,
+    "paintMs": 0,
+    "paintArea": 0
+   },
+   "layerTree": null
+  },
+  "Bk2": {
+   "arm": "g0.0g",
+   "flipAt": {
+    "mutationY": 4526,
+    "yFrame": [
+     4526,
+     4608
+    ],
+    "frameYEnd": 4608,
+    "prevDt": 17,
+    "pxPerMs": 0.5
+   },
+   "play": {
+    "frame": 280,
+    "t": 15830,
+    "dt": 69,
+    "y": 4608,
+    "composites": 1,
+    "compMs": 58.4,
+    "paints": 8,
+    "paintMs": 2.8,
+    "paintArea": 271326,
+    "big": [
+     "343x380@y5139 0.8ms",
+     "360x312@y5180 0.1ms",
+     "104x115@y5270 1.3ms",
+     "297x26@y4792 0.3ms"
+    ]
+   },
+   "playCrossingsInFrame": [
+    "div.start-selling-platform-secure +is-play"
+   ],
+   "glint": [
+    {
+     "frame": 337,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 947,
+     "y": 5249
+    },
+    {
+     "frame": 337,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 947,
+     "y": 5249
+    }
+   ],
+   "glintFrame": {
+    "t": 16777,
+    "dt": 16,
+    "y": 5249,
+    "composites": 1,
+    "compMs": 0.2,
+    "paints": 0,
+    "paintMs": 0,
+    "paintArea": 0,
+    "big": []
+   },
+   "highlight": [
+    {
+     "frame": 337,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 947
+    },
+    {
+     "frame": 337,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 947
+    }
+   ],
+   "highlightFrame": null,
+   "othersMedian": {
+    "n": 207,
+    "dt": 17,
+    "compMs": 0.2,
+    "paints": 0,
+    "paintMs": 0,
+    "paintArea": 0
+   },
+   "layerTree": null
+  },
+  "Bk3": {
+   "arm": "g0.0g",
+   "flipAt": {
+    "mutationY": 4525,
+    "yFrame": [
+     4525,
+     4607
+    ],
+    "frameYEnd": 4607,
+    "prevDt": 17,
+    "pxPerMs": 0.52
+   },
+   "play": {
+    "frame": 279,
+    "t": 15813,
+    "dt": 69,
+    "y": 4607,
+    "composites": 1,
+    "compMs": 59.4,
+    "paints": 7,
+    "paintMs": 3.2,
+    "paintArea": 263534,
+    "big": [
+     "343x380@y5139 1.2ms",
+     "360x312@y5180 0ms",
+     "104x115@y5270 1.5ms",
+     "66x66@y5297 0.1ms"
+    ]
+   },
+   "playCrossingsInFrame": [
+    "div.start-selling-platform-secure +is-play"
+   ],
+   "glint": [
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 948,
+     "y": 5249
+    },
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 948,
+     "y": 5249
+    }
+   ],
+   "glintFrame": {
+    "t": 16761,
+    "dt": 17,
+    "y": 5249,
+    "composites": 1,
+    "compMs": 0.3,
+    "paints": 0,
+    "paintMs": 0,
+    "paintArea": 0,
+    "big": []
+   },
+   "highlight": [
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 948
+    },
+    {
+     "frame": 336,
+     "framesAfterPlay": 57,
+     "msAfterPlay": 948
+    }
+   ],
+   "highlightFrame": null,
+   "othersMedian": {
+    "n": 206,
+    "dt": 17,
+    "compMs": 0.2,
+    "paints": 0,
+    "paintMs": 0,
+    "paintArea": 0
+   },
+   "layerTree": null
+  }
+ }
+}
