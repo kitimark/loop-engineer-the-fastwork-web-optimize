@@ -19,7 +19,7 @@
 #   WC / WV          G warm-up on that arm's port (--warmup)                                  -> g-W<a>-<H>.json
 #   EC<n> / EV<n>    G counted run n, Timeline on                                             -> g-E<a><n>.json + tl-E<a><n>.json
 #   E<a><n>r / E<a><n>x   the TAIL's one re-run (r: a run gate or error; x: voided by a failing sentinel)
-#   PW               a heat hold: pre-warm runs on B with the gate after each, at most 6, until the gate passes
+#   PW               a heat hold: pre-warm runs on B back to back, the gate after every 3rd, until the gate passes
 # Steps: served hashes; WDA check; the START GATE. Too cool (exit 2): up to 2 pre-warm runs on B (iphone.mjs run
 # --driver scroll --probe std --profile real-serious --warmup), the gate after each; still too cool: VOID TOOCOOL
 # (exit 5, no counted run; the block runs a PW hold, then this hold again). Ceiling (exit 3): VOID CEILING (exit 6).
@@ -75,7 +75,7 @@ if [ "$CM_DRY" = 1 ]; then
   for I in "$@"; do case $(kind $I) in
     S) echo "PLAN $I S on $(arm $I) $(desc $I) $PROF (budget $BUDGET_S s)" ;;
     G) echo "PLAN $I G on $(arm $I) $(desc $I) $PROF (budget $sE s)" ;;
-    P) echo "PLAN $I heat hold: pre-warm S runs on B (--warmup $PROF), the gate after each, at most 6" ;; esac; done
+    P) echo "PLAN $I heat hold: pre-warm S runs on B (--warmup $PROF), the gate after every 3rd run, until the gate passes or the hold runs out of time" ;; esac; done
   echo "PLAN gates thermal-gate.mjs --expect serious --max-c 44 (no --accept-induced) at the start and the end; run gates $GATES"
   echo "HOLD $H DRY ok"; exit 0
 fi
@@ -83,9 +83,18 @@ node tools/iphone.mjs wda check > "$O/$H-wda.log" 2>&1; w=$?
 [ $w -ne 0 ] && { echo "HOLD $H VOID wda check exit $w (no run)"; exit 5; }
 BU=$(node tools/lan.mjs --url --port "$PB") && CU=$(node tools/lan.mjs --url --port "$PC") && VU=$(node tools/lan.mjs --url --port "$PV") || { echo "HOLD $H VOID no LAN url (no run)"; exit 4; }
 gate1() { node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "p165-$H-$1" --expect serious --max-c 44 --url "$BU"; }
-# a gate that got no read (exit 1, e.g. "iphone.mjs open exit 1" right after a run parked Safari, P-165 H1 06:34Z) is
-# read once more after a park; only a second exit 1 counts
-gate() { gate1 "$1"; gr=$?; if [ $gr -eq 1 ]; then node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "GATE $1 no read (exit 1): once more"; gate1 "$1"; gr=$?; fi; return $gr; }
+# P-165 H1 06:34Z: a second Safari page (I-037) made the gate's open fail (exit 1, no read). Lead 06:4xZ: park before
+# every gate; a gate with no read gets one retry after a safari-restart, then the hold is VOID GATEERR (exit 4: the
+# block stops after its preflight check, which posts a close-tabs step when Safari has several pages)
+gate() {
+  node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
+  gate1 "$1"; gr=$?
+  if [ $gr -eq 1 ]; then echo "GATE $1 no read (exit 1): safari-restart, then once more"
+    node tools/iphone.mjs safari-restart --owner "$R" --url "$BU" --timeout 60 > "$O/$H-gate-restart.log" 2>&1
+    node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
+    gate1 "$1"; gr=$?; fi
+  return $gr
+}
 NPW=0
 prewarm() {
   NPW=$((NPW + 1))
@@ -95,14 +104,20 @@ prewarm() {
 }
 late() { [ $(( $(date +%s) - T0 + $1 + 30 )) -gt 600 ]; }
 # the start gate, with the heat pre-warm
-case " $* " in *" PW "*) PWMAX=6 ;; *) PWMAX=2 ;; esac
+# a heat hold (PW, lead 06:4xZ): pre-warm runs back to back, the gate after every 3rd run (and before the hold runs out
+# of time); an item hold: at most 2 pre-warm runs, the gate after each
+case " $* " in *" PW "*) PWMAX=12; PWEVERY=3 ;; *) PWMAX=2; PWEVERY=1 ;; esac
 gate start; g=$?
-while [ $g -eq 2 ] && [ $NPW -lt $PWMAX ] && ! late $BUDGET_PW; do prewarm; gate start; g=$?; done
+while [ $g -eq 2 ] && [ $NPW -lt $PWMAX ] && ! late $BUDGET_PW; do
+  prewarm
+  if [ $((NPW % PWEVERY)) -eq 0 ] || [ $NPW -ge $PWMAX ] || late $BUDGET_PW; then gate start; g=$?; fi
+done
 case $g in
   0) echo "START GATE PASS after $NPW pre-warm run(s)" ;;
   2) node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "HOLD $H VOID start gate too cool after $NPW pre-warm run(s) (TOOCOOL)"; exit 5 ;;
   3) node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "HOLD $H VOID start gate ceiling (CEILING: Critical or battery >= 44 C)"; exit 6 ;;
   4) node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "HOLD $H VOID start gate: Serious is induced (INDUCED): stop the block"; exit 9 ;;
+  1) node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "HOLD $H VOID start gate: no read twice (GATEERR)"; exit 4 ;;
   *) node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "HOLD $H VOID start gate exit $g (no run)"; exit 5 ;;
 esac
 RERUN=""; SFAIL=""

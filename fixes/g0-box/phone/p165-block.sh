@@ -49,6 +49,21 @@ wdarestart() { # I-220: wda ensure keeps a READY WDA, else restarts what is down
   echo "SAFARI restarted"
 }
 needsready() { [ "$1" -eq 10 ] || { [ "$1" -eq 3 ] && grep -q 'Failed to initialize for UI testing' "$2"; }; }
+tabsstep() { # preflight TABS (exit 11, I-037; P-165 H1 06:34Z): Safari has several pages; the user closes all but one
+  tid=$(step "$CM_TICKET: close the extra Safari tabs" "On the iPhone, open Safari's tab view and close every tab but one (leave one tab open, any page). Then press Done; the test goes on by itself.")
+  [ -n "$tid" ] || { echo "BLOCK STOP: close-tabs step not posted"; exit 11; }
+  echo "TABS step $tid posted ($1)"
+  node tools/console.mjs wait "$tid" --until done --timeout 3600 --quiet; w=$?
+  [ $w -eq 0 ] || { echo "BLOCK STOP: close-tabs step $tid not done (wait exit $w)"; exit 11; }
+  echo "TABS $tid done"
+}
+preflight() { # -> 0 ok, else the preflight's exit; posts the unlock or close-tabs step once each and re-runs
+  PL=$LG/preflight-$1-$(date +%s).log; node tools/iphone.mjs preflight --owner "$R" > $PL 2>&1; pe=$?
+  if needsready $pe $PL; then unlockstep "preflight exit $pe ($1)"; PL=$PL.2; node tools/iphone.mjs preflight --owner "$R" > $PL 2>&1; pe=$?; fi
+  if [ $pe -eq 11 ]; then tabsstep "preflight TABS ($1)"; PL=$PL.3; node tools/iphone.mjs preflight --owner "$R" > $PL 2>&1; pe=$?; fi
+  [ $pe -eq 0 ] || echo "PREFLIGHT exit $pe ($1): $(tail -1 $PL | cut -c1-160)"
+  return $pe
+}
 step() { # title instructions -> posts ONE phone action step from inside this hold and prints its id
   node tools/console.mjs post --by "$R" --kind action --phone --no-record --no-gate --topic g0-box --title "$1" --instructions "$2" 2>&1 \
     | sed -n 's/^POSTED \(C-[0-9]*\).*/\1/p'
@@ -150,16 +165,14 @@ run1() {
     if [ "$CM_DRY" != 1 ]; then
       PF=$LG/preflight-$h-$(date +%s).log; node tools/iphone.mjs preflight --owner "$R" > $PF 2>&1; pf=$?
       if needsready $pf $PF && [ $tries -le 3 ]; then unlockstep "in $h (exit $e)"; wdarestart; echo "RE-RUN $h after the unlock"; continue; fi
+      if [ $pf -eq 11 ] && [ $tries -le 3 ]; then tabsstep "in $h (exit $e)"; echo "RE-RUN $h after closing the tabs"; continue; fi
     fi
     echo "BLOCK STOP at $h exit $e"; exit $e
   done
 }
 if [ "$CM_DRY" != 1 ]; then
   wdarestart
-  PL=$LG/preflight-$(date +%s).log
-  node tools/iphone.mjs preflight --owner "$R" > $PL 2>&1; pe=$?
-  if needsready $pe $PL; then unlockstep "preflight exit $pe: $(tail -1 $PL | cut -c1-120)"; PL=$PL.2; node tools/iphone.mjs preflight --owner "$R" > $PL 2>&1; pe=$?; fi
-  [ $pe -eq 0 ] || { echo "BLOCK STOP: preflight exit $pe ($(tail -1 $PL)): message the lead"; exit 9; }
+  preflight start || { echo "BLOCK STOP: preflight exit $pe: message the lead"; exit 9; }
   echo "PREFLIGHT ok"
   if [ "$CM_READY" = 1 ]; then
     uid=$(step "$CM_TICKET: the iPhone test runs about 2 hours (real heat)" "Please don't use the iPhone for about 2 hours and keep it plugged in to the Mac. Unlock it, close any message on screen and leave Safari open. Press Done when the phone is ready; the test starts then.")
@@ -172,6 +185,27 @@ if [ "$CM_DRY" != 1 ]; then
     echo "READY $uid done $(date -u +%FT%TZ)"
   fi
 fi
+firstheat() { # P-165 lead 06:4xZ: the first heat as its own phase before H1 (heat holds H0h<k>: PW), at most CM_FIRSTHEAT_MAX s
+  t0=$(date +%s); k=0
+  while :; do
+    k=$((k + 1)); prehold H0h$k; hold H0h$k PW; fe=$?
+    case $fe in
+      0) echo "FIRST HEAT done in $(( $(date +%s) - t0 )) s ($k heat holds)"; return 0 ;;
+      5|7|3) ;;
+      6) node tools/wait.mjs phone-temp --below 42 --timeout 600 --every 60 --owner "$R" --reason "$CM_TICKET ceiling in the first heat" >> $LG/cooling.log 2>&1 ;;
+      9) echo "BLOCK STOP 9 in the first heat: induced Serious (a thermal condition is on): message the lead"; exit 9 ;;
+      *) if [ "$CM_DRY" != 1 ] && ! linkok; then relink "in the first heat"; continue; fi
+         if [ "$CM_DRY" != 1 ]; then preflight H0h$k && continue; fi
+         echo "BLOCK STOP in the first heat at H0h$k exit $fe: message the lead"; exit $fe ;;
+    esac
+    if [ $(( $(date +%s) - t0 )) -ge "${CM_FIRSTHEAT_MAX:-3600}" ]; then
+      echo "BLOCK STOP 12: still not real Serious after $(( $(date +%s) - t0 )) s of first heat ($k heat holds): message the lead with the curve"
+      grep '"label":"p165-H0h' out/thermal-gate/gates.jsonl 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{for(const l of s.trim().split("\n")){try{const r=JSON.parse(l);console.log("CURVE",r.at,r.label,r.state,r.battC,"->",r.battEndC,"C")}catch{}}})'
+      exit 12
+    fi
+  done
+}
+[ "$CM_FIRSTHEAT" = 1 ] && { [ "$CM_DRY" = 1 ] && { prehold H0h1; hold H0h1 PW; } || firstheat; }
 for spec in "$@"; do
   H=${spec%%:*}; items=$(echo "${spec#*:}" | tr ',' ' ')
   N0=${H#H}
