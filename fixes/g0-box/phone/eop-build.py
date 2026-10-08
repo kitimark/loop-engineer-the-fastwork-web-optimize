@@ -144,7 +144,58 @@ def a4(a):
       }
     );''')
 
-ALL = {'a1': [a1], 'a2': [a2], 'b': [b], 'a1b': [a1, b], 'a3': [a3], 'a3b': [a3, b], 'a4': [a4], 'a4b': [a4, b], 'a14b': [a1, a4, b]}
+# w (2026-10-09, WebKit source via bm-g0box-webkit): adding the first window `wheel` listener changes the root style's
+# eventListenerRegionTypes (style/StyleAdjuster.cpp:227-244, inherited), so Document::invalidateEventListenerRegions()
+# (dom/Document.cpp:6648-6663) calls scheduleFullStyleRebuild(), and every element's changed region types invalidate the
+# event region of its composited layer (rendering/RenderElement.cpp:1013-1028). N() did that mid-drag at y ~1700 (and
+# P() again on the way back up). On iOS the touch half returns early unless touch event regions are on
+# (Document.cpp:12723-12730, UNRESOLVED for shipping Safari). w: the wheel jack listener is added once when the effect
+# mounts (page load, with #platform present, as te.observe) and removed at teardown; A runs its body only while the jack
+# is armed (d), so the wheel behaviour is the same at every y. The touchstart/touchmove pair stays in N()/P() as before.
+# Decisive local check for the touch half: if w's IO frame loses the style spike, the touch pair is cheap here.
+def w(a):
+    j = os.path.join(a, JS)
+    edit(j, '''d = !0),
+          window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
+          window.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }),''', '''d = !0),
+          window.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }),''')
+    edit(j, '''d = !1),
+          window.removeEventListener(`wheel`, A, !0),
+          window.removeEventListener(`touchstart`, j, !0),''', '''d = !1),
+          window.removeEventListener(`touchstart`, j, !0),''')
+    edit(j, '''      A = (e) => {
+        k(e.deltaY) &&''', '''      A = (e) => {
+        // [eop w] attached from the mount (one root-style change at load, not mid-drag); acts only while the jack is armed
+        d &&
+          k(e.deltaY) &&''')
+    edit(j, '    (R && te && te.observe(R), ', '    (R && te && te.observe(R), R && window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }) /* [eop w] */, ')
+    edit(j, '          P(),\n          ne(),', '          P(),\n          window.removeEventListener(`wheel`, A, !0) /* [eop w] */,\n          ne(),')
+
+# ws (lead 2026-10-09): w only where it can't cost wheel/trackpad users: a non-passive window wheel listener from the
+# mount makes every wheel scroll wait for the main thread at every y in Chrome and desktop Safari (today only near the
+# end). Scoped like PR-030: touch screens (hover: none, pointer: coarse) up to 640 px wide, motion not reduced, read once
+# at mount (__wM). Everywhere else N()/P() add and remove the wheel listener at g0.0h's timing, unchanged.
+def ws(a):
+    j = os.path.join(a, JS)
+    edit(j, '''d = !0),
+          window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),''', '''d = !0),
+          __wM || window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),''')
+    edit(j, '''d = !1),
+          window.removeEventListener(`wheel`, A, !0),''', '''d = !1),
+          __wM || window.removeEventListener(`wheel`, A, !0),''')
+    edit(j, '''      A = (e) => {
+        k(e.deltaY) &&''', '''      A = (e) => {
+        // [eop ws] on small touch screens attached from the mount (one root-style change at load, not mid-drag), so it
+        // acts only while the jack is armed (d); elsewhere it is attached only while armed, as before
+        d &&
+          k(e.deltaY) &&''')
+    edit(j, '      R = y(),\n', '      // [eop ws] small touch screens, motion not reduced (PR-030 scope): the wheel jack listener lives from mount to teardown\n'
+         '      __wM = matchMedia(`(hover: none) and (pointer: coarse) and (max-width: 640px) and (prefers-reduced-motion: no-preference)`).matches,\n'
+         '      R = y(),\n')
+    edit(j, '    (R && te && te.observe(R), ', '    (R && te && te.observe(R), R && __wM && window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }) /* [eop ws] */, ')
+    edit(j, '          P(),\n          ne(),', '          P(),\n          __wM && window.removeEventListener(`wheel`, A, !0) /* [eop ws] */,\n          ne(),')
+
+ALL = {'a1': [a1], 'a2': [a2], 'b': [b], 'a1b': [a1, b], 'a3': [a3], 'a3b': [a3, b], 'a4': [a4], 'a4b': [a4, b], 'a14b': [a1, a4, b], 'w': [w], 'ws': [ws]}
 # usage: python3 eop-build.py [OUT [arm ...]]   (default: out/g0box/eop with a1 a2 b a1b, as first built)
 if len(sys.argv) > 1: OUT = sys.argv[1]
 ARMS = {k: ALL[k] for k in (sys.argv[2:] or ['a1', 'a2', 'b', 'a1b'])}

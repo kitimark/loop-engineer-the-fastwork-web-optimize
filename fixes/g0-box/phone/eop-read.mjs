@@ -19,7 +19,7 @@ import { join } from 'node:path';
 // triggers() and med() are copied verbatim from g0b-read.mjs (lines 45, 62-77): importing it runs its main.
 const med = (a) => { const s = a.filter((x) => x != null).sort((x, y) => x - y); const n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; };
 const END_SLACK = 8;
-function triggers(seg) {
+export function triggers(seg) {
   const docH = seg.docH1 ?? seg.docH ?? 0, ih = Math.max(...(seg.frames ?? []).map((r) => r[3]), 0) || seg.vh0 || 0;
   const out = []; let open = false, prevY = null;
   const usePv = (seg.touches ?? []).some((r) => r[1] === 'm' && r[4] === 1); // the recorder saw the page's preventDefault
@@ -57,7 +57,7 @@ export function tlSpans(tl) { // [a, b, kind] leaf-ish spans: Composite, Layout,
   for (const r of tl.recs || []) walk(r, false);
   return out;
 }
-function inSpan(spans, lo, hi) { // per kind: the union of its records' spans clipped to (lo, hi] (nested records count once)
+export function inSpan(spans, lo, hi) { // per kind: the union of its records' spans clipped to (lo, hi] (nested records count once)
   const by = {};
   for (const [a, b, k] of spans) { const x = Math.max(a, lo), y = Math.min(b, hi); if (y > x) (by[k] ||= []).push([x, y]); }
   const o = {};

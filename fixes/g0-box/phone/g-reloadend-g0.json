@@ -1,0 +1,22 @@
+{
+ "name": "eop-reloadend-g0",
+ "version": 1,
+ "screen": [430, 932],
+ "about": "Candidate 1 parity (1b), lead 2026-10-09: after a reload that Safari restores at the end of the page, is the touch jack attached before the first swipe? Approach drags to y>=4600 (below the g0 hold at ~5213 on the Simulator, so nothing opens before the reload), reload (Safari restores the scroll position), 3 s, then two finger-up drags (520 px, 1200 ms) into the hold: it must be held (touchmoves cancelable and prevented, the morph opens) like on g0.0h. Counts only.",
+ "params": { "x": 215 },
+ "steps": [
+  { "type": "reload", "scrollAfterMs": 0 },
+  { "type": "pause", "ms": 3000 },
+  { "type": "mark", "name": "approach" },
+  { "type": "repeat", "times": 12, "until": "y>=4600", "steps": [
+   { "type": "stroke", "dir": "up", "px": 520, "ms": 1200, "profile": "drag" },
+   { "type": "pause", "ms": 300 }
+  ] },
+  { "type": "until", "cond": "settled", "timeoutMs": 3000, "optional": true },
+  { "type": "reload", "scrollAfterMs": 0 },
+  { "type": "pause", "ms": 3000 },
+  { "type": "mark", "name": "end-swipe" },
+  { "type": "repeat", "times": 2, "steps": [ { "type": "stroke", "dir": "up", "px": 520, "ms": 1200, "profile": "drag" }, { "type": "pause", "ms": 300 } ] },
+  { "type": "pause", "ms": 2000 }
+ ]
+}

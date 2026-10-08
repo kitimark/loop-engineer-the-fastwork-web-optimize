@@ -1124,6 +1124,126 @@ first opening only (a hidden state). It was rebuilt and re-checked: the table sh
 - **Proposal PR-039:** option restart = f-B, option keep-phase = f-B2 (recommended). Try-it A = g0.0f; overlays are
   local in `fixes/colpause-{a,b,b2}/overlay`, never committed. Shots: `gates/colshot.mjs` (the menu's second opening + 0.8 s).
 
+## Candidate 1: arm the end of the page off the drag (D card, attribution; lead 2026-10-09, user T-228 #98/#101)
+
+The approach drags (y 0 -> ~4600, finger down) come first. de-offscreen's P-164 read puts one approach cluster at
+y ~1750 on the phone. At that y the platform IntersectionObserver `te` (g0.0h JS 14453-14460, rootMargin 200 %) does
+three things in one callback:
+- `z(b, !0)`: 21 panel images get their `src`.
+- It lifts the panel's `inert` (JS 14710).
+- `I()` -> `N()` (JS 14432-14438) adds three window capture listeners: `wheel` (non-passive), `touchstart` (passive) and
+  `touchmove` (non-passive). `P()` (JS 14439-14444) removes them again when the platform leaves the zone.
+
+Kit: `phone/eop-build.py` (arms on g0.0h with `EOP_BASE=h`), `phone/eop-sim.mjs` (Simulator approach drags: 10 real
+WDA-sim drags, own Timeline, a MutationObserver plus a window touch/wheel listener log), `phone/g-fling1600-g0.json`,
+`phone/g-reloadend-g0.json` and `phone/eop-parity-read.mjs` (jack parity).
+- Simulator numbers are counts and direction only, read within one arm set on a shared host. They are never phone ms.
+
+### Pipeline stage and code (NAMED)
+
+The cost in the IO frame is a whole-document style rebuild. Adding the first window `wheel` listener causes it; inert
+and src do not.
+
+| claim | status | reference |
+|---|---|---|
+| the first window `wheel` listener changes the root style's `eventListenerRegionTypes`, and `Document::invalidateEventListenerRegions()` then calls `scheduleFullStyleRebuild()` | CONFIRMED | WebKit main, `page/LocalDOMWindow.cpp:2150-2172` (L2161-2163 wheel), `dom/Document.cpp:6648-6663` (latest commit on the file 6cb05bb86a71, 2026-10-08) |
+| the types are inherited by every element (`style/StyleAdjuster.cpp:227-244`, 810), and a renderer whose types changed invalidates its composited layer's event region (`rendering/RenderElement.cpp:1013-1028`, `rendering/RenderLayer.cpp:6730-6762`) | CONFIRMED (code read; the per-element cascade is INFERRED from inheritance) | same |
+| passive and non-passive listeners both change the type set (a non-passive one adds `NonPassive*`); capture plays no part | CONFIRMED | `style/StyleAdjuster.cpp:249-262` |
+| the touch half: `Document::didAddTouchEventHandler` returns before any style or region work unless touch event regions are on (site isolation or `AlwaysUseTouchEventRegions`, default off) | CONFIRMED in source; whether shipping iOS Safari has them on is UNRESOLVED; our Simulator data says the touch pair is cheap (OBSERVED, arm w below) | `dom/Document.cpp:12723-12730`, `Source/WTF/Scripts/Preferences/UnifiedWebPreferences.yaml:420-430` |
+| an `inert` flip restyles only the element's subtree (`effectiveInert` is inherited), notifies AX and invalidates event regions through `usedPointerEvents` | CONFIRMED | `html/HTMLElement.cpp:406-408`, `style/StyleAdjuster.cpp:783-798`, `rendering/RenderElement.cpp:987-992` |
+| the y ~1700 frame's L+S spike on the Simulator is that rebuild | OBSERVED (arm w removes it; in our setup) | data below |
+
+(Source read by the helper bm-g0box-webkit with `gh api`, read-only. Not read: Style::TreeResolver propagation,
+`ScrollingCoordinator::frameViewEventTrackingRegionsChanged`, the legacy iOS touch-handler path.)
+
+### Ablations (Simulator, g0.0h base, 10 approach drags per load; event frame = the frame containing the logged add/flip)
+
+| arm (JS pin) | what moves | IO-frame dur ms | IO-frame L / S / script ms | 1650-1850 max L+S per load | approach >50 per load |
+|---|---|---|---|---|---|
+| H = g0.0h (9162843e750f) | nothing | 102.5, 117.7, 108.7 | L 72-77 / S 86-95 / js 47-51 | 158, 171, 161 | 23, 32, 27 |
+| **w** (out/g0box/eop7/w, 0f069cac1498) | wheel listener added once at mount, gated by `d`; touch pair, inert and src stay in the IO frame | 59.0, 39.4, 33.5 | L 22-24 / S 25-28 / js 10 (load 1), n/a | 93, 88, 85 | 42, 31, 19 |
+| b (eop5/b, cf3201293bc0; also in a14b, a3b, a4b) | wheel and touch jack added at y ~3990 (second IO) | inert-only frame at 1716-1728: 18.7, 35.0 | new frame at y ~3990: 82-117 ms, L 9-23 / S 23-40 / C 45-80 / js 25-41 | 191, 45 | 36, 26 |
+| a1 (eop5/a1) | src at the idle mount | 129.8, 153.6 (jack + inert) | L 96-116 / S 111 / js 46 | 207, 227 | 29, 21 |
+| a4 (eop4/a4) | inert at the first lift after b | 143.6 (jack, src) | L 100 / S 112 / js 48 | 221, 175, 212 | 32, 26, 32 |
+
+- **Positive ablation: w.**
+  - With the wheel add gone from the IO frame, that frame (touch pair + inert + 21 src writes) drops from 103-118 ms to
+    34-59 ms, and its L+S drops from 158-171 to 48-52 (non-overlapping, n = 3 each).
+  - What is left is the background level of the band. F-357/F-359 (fix-scrollcb-g0) explain the frames at y ~1627 and
+    ~1810 with L ~42-64 in both arms: the sticky relayout of `.hero` and `.pain-sticky`.
+  - So the touch pair, inert and src are not the spike (decisive local check for the touch half: OBSERVED cheap here).
+- **Negative ablations:** a1 (src off the drag) and a4 (inert off the drag) leave the spike in place: 130-144 ms,
+  L+S 207-221.
+- **Relocation, not removal: b.** b moves the add to y ~3990, where it makes a new 82-117 ms frame that H doesn't
+  have. So b is dropped.
+- **Mechanism check per arm:** the page-side listener log (EventTarget add/remove patched before the drags) and the
+  MutationObserver show the add, the inert flip and the src writes at the y and in the frame named above
+  (`out/g0box/eop-events.mjs`, `eop-band.mjs`).
+- **Whole-approach counts don't separate** (approach >50: H 23-32, w 19-42). The sticky relayout background
+  (F-357/F-359) dominates them; this candidate removes one frame per approach.
+- **Not measured:** w's rebuild at mount. It runs during hydration, before the 4 s idle and the Timeline window. That
+  is a load-time cost, by design.
+
+### Axis, device class, scope
+
+- **Axis:** crossing = `te`'s rootMargin 200 % edge on `.start-selling-platform` (Simulator y 1714-1735, phone
+  ~1750). Position doesn't decouple it: in b the same add at the second IO's edge (y ~3990) brings its own frame along.
+- **Device class:** WebKit, touch. In H the wheel listener costs a rebuild wherever it is added. Chrome isn't measured
+  here: the source above is WebKit's.
+- **Scope of a shippable form (lead 2026-10-09): arm ws** (out/g0box/eop8/ws, JS d0f48dc4f82e, CSS 26d28a0a263b).
+  - Why scope it: a non-passive window wheel listener from mount would make every wheel or trackpad scroll wait for the
+    main thread at every y in Chrome and desktop Safari. Today that only happens near the end. The handler can't be
+    passive, because it calls `preventDefault` while the jack is armed.
+  - ws therefore applies w only where `matchMedia('(hover: none) and (pointer: coarse) and (max-width: 640px) and
+    (prefers-reduced-motion: no-preference)')` matches at mount (the PR-030 scope). Everywhere else, `N()`/`P()` keep
+    g0.0h's add/remove timing.
+  - On the Simulator (430 px, coarse pointer) ws is w.
+
+### A11y (an existing property of the original, not a change)
+
+- The baseline sets no `inert` anywhere (`fix.mjs grep inert`: only Svelte's attribute list). The closed panel is
+  hidden only by `opacity: 0` and `pointer-events: none` (CSS `.start-selling-morph-panel`).
+- So in the original the closed panel is in the Tab order and the accessibility tree from its mount at `b` (y ~1750).
+- g0.0h reproduces that, with inert lifted at `b`. w and ws keep g0.0h's inert timing.
+- The a3/a4 arms (inert later) are dropped (lead 2026-10-09): inert is not the cost.
+
+### Jack parity (w vs g0.0h; Simulator G strokes, counts only)
+
+(see below; filled from `phone/eop-parity-read.mjs`)
+
+### P-171 (phone card DRAFT for the lead's signature; written before any P-171 data; not signed, not run)
+
+**The phone already shows the frame** (replaying P-164's runs with the P-171 reader, before any P-171 data):
+- `node fixes/g0-box/phone/p171-read.mjs out/g0bp/runs` finds, in every run, one approach frame X inside W =
+  [1650, 1850], at y 1751-1766, dt 62-79 ms, L+S 73-125 ms.
+- Per-arm medians: C (g0.0e) X.dt 77 / L+S 109; V (g0.0f) 73 / 112.
+- Both arms add the jack at te, so the location check passes: the spike is in W on the phone.
+
+| item | value |
+|---|---|
+| ticket | P-171 (lead 2026-10-09; runs after P-170, after fix-cm-return if it needs the phone first) |
+| question | Does ws (g0.0h with the wheel jack listener added at mount on small touch screens) remove the te-crossing frame's style spike on the phone, with the same end-of-page behaviour as g0.0h? |
+| arms + pins | C = g0.0h (fixes/g0-0h, main 2de0031f): JS 9162843e750f / CSS 26d28a0a263b (`out/g0box/p168/f-B2`). V = ws = g0.0h + `eop-build.py ws`: JS d0f48dc4f82e / CSS 26d28a0a263b (`out/g0box/eop8/ws`, HASHES 3b42965276bd). |
+| snapshot + HASHES | `out/g0box/snap5` (C from p168/f-B2, V from eop8/ws, read-only), HASHES ba2e2fc5457c, checked by the kit before every start and hold |
+| kit | `fixes/g0-box/phone/p171-{run,block,hold,serve}.sh` + `p171-k.env` (no K): copies of the eop kit (= P-164's g0b kit) with these pins, logs `out/p171p`, labels `p171-`. Made by `out/g0box/mkp171.sh` (sed of pins, snapshot and paths only). Dry run 19:19Z: 3 of 3 servers serve the pinned hashes; H1-H11 DRY ok; programs fs 38d7fe5d7fa8 (budget 229 s) and pr 7ff27a2413c8 ok; exit 0. |
+| driver, profile, order | G `fixes/g0-box/phone/g-fastshort-g0.json`, compiled program 38d7fe5d7fa8 (P-164's, unchanged). Timeline on in every counted run. Profile tool-serious (`CM_THERMAL=serious`, `CM_COOL=0`) as P-164, so P-164's replayed numbers stay a reference (profiles never pool; the lead may choose xcode-serious instead). Order H1:WC H2:WV, then EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4 (C V V C C V V C), then H11:TAIL with the end sentinel. |
+| command | `CM_THERMAL=serious CM_COOL=0 sh fixes/g0-box/phone/p171-run.sh P-171 H1:WC H2:WV H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 H11:TAIL` as a Bash background job (timeout 7200000 ms), as P-164's. |
+| primary metric (lead's condition 3) | The te-crossing frame X per run: the longest approach frame (before O1) with scrollY in W = [1650, 1850]. Its dt and its Timeline Layout + RecalculateStyles. Per arm: median over the 4 runs. Twins: runs with X.dt over 46 / 50 / 54. Reader `fixes/g0-box/phone/p171-read.mjs` (selftest 5 checks ok). |
+| decision rules | LOCATION: C's X has L+S >= 20 ms in >= 3 of 4 runs, else OPEN (window missed). PARITY: every run's open/close trigger counts equal C's (13 / 12 in P-164), else FAIL (behaviour). GAIN: median V X.dt <= median C X.dt - 10 ms and median V X L+S < C's. WORSE: median V X.dt > C's + 4 ms. Otherwise NO GAIN. Twins: a GAIN whose 46/50/54 run counts do not all move the same way is "GAIN (threshold-sensitive)". |
+| descriptive (no verdict) | Frames in W over 50 / 34 per run. Whole-approach finger-down > 50 / > 34 with twins (sticky-dominated, F-357/F-359). O1's second frame and the close-start frame (eop-read). |
+
+**Prediction (frozen with this commit, before any P-171 data).**
+- **LOCATION: passes, about 90 %.** Every P-164 run has X in W with L+S 73-125 ms.
+- **GAIN, about 65 %.**
+  - On the Simulator, w cut the IO frame from 103-118 to 34-59 ms and its L+S from 158-171 to 48-52.
+  - The phone's X is shorter (62-79 ms), so the gain is smaller in ms. The expected V X.dt is 35-50 ms, against C ~75.
+  - The risk: the phone's te-crossing frame may also hold other work (the avatar slide, F-357's sticky relayout), as some Simulator loads did.
+- **PARITY: holds, about 90 %.** The touch jack's timing is unchanged, and the wheel jack is attached earlier.
+
+**Decisions (the lead's to set; proposed):** GAIN -> ws joins the next best build after its README and parity are
+reviewed. NO GAIN -> ws stays attribution only. FAIL -> stop and report. OPEN -> at most one more block
+(sequential rule).
+
 ## P-169 (phone card, window B only; written before any P-169 data)
 
 | | |
