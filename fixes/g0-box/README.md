@@ -938,6 +938,63 @@ Data: `out/p167ph/wread.json`, `out/p167ph/runs/{w,tl}-*.json`, `out/g0box/p167-
 
   - ko3 keeps single Layouts at y 267-474 but loses the y 250 and y 485 pairs in this one load. That points at fwWC, but one load per arm decides nothing.
   - In the Simulator, Layout ms does not separate the arms (v0 and g0.0e are both 18-22 ms), so the higher per-Layout cost is seen only on the phone. Its cause is UNRESOLVED: candidates are the bigger tree that `__mnt` mounts (ko5) and the un-skipped sections.
+- **Correction (14:1xZ, finding F-352): the fwWC link above is REFUTED for y 250-555.**
+  - Source: `p168-wc.mjs`, Simulator, counts only, `out/p168/wc`.
+  - The elements that flip there are only `article.orbit-card` (position absolute, z-index 1/2) and `div.start-selling-profile-shell` (z-index 0/2, contain: paint). Their used z-index cannot flip, so the WebKit path does not apply to them.
+  - The control decides it:
+
+    | arm | data-fw-wc flips | Layouts ≥ 5 ms per load | frames with 2+ |
+    |---|---|---|---|
+    | g0.0f, 2 loads | 6 | 10 / 9 | 2 / 2 |
+    | g0.0g | 6 | 12 | 4 |
+    | f-ko3 (fwWC a no-op) | 0 | 13 | 5 |
+
+  - On the phone the IO came 1-2 frames before the pair only because the orbit-cards leave their ±50 % window at the same W step boundaries where every arm, v0 included, lays out.
+  - The WebKit path stands only for static `z-index: auto` targets: `.start-selling-platform-card` and the platform tracks, at y ≈ 4150-4400.
+
+## P-168 (phone card DRAFT for the lead's signature; written before any P-168 phone data; not signed, not run)
+
+| item | content |
+|---|---|
+| question | **Window A:** are g0.0f's scroll-phase long frames at y 250-555 the costlier Layouts of a bigger layout tree? The test arm f-cv25 has no idle un-skip, and it keeps the idle-mounted morph panel out of layout until its trigger. **Window B:** does a constant stacking context on the fwWC targets (g0.0g) shorten the `+is-play` frame? There, platform-card and the platform tracks are the only fwWC targets whose data-fw-wc flip can change the used z-index, which WebKit answers with Layout. |
+| arms | **Part A:** v0 (control; JS 4606120cf392 / CSS 27776f3d4138) · g0.0f (JS 30fd80ccbb3f / CSS 1d1e5d62a2c4) · **f-cv25** = g0.0f + ko2 (no idle un-skip; cE re-defers as the baseline) + the idle mount kept, with `html:not([data-fw-cv-live]) .start-selling-morph-panel { content-visibility: hidden }`. The attribute is set and latched by a dN effect on the original mount trigger `s(b) || s(E)` (#platform zone reached, or morph > 0.001). JS b700ddaf88b4 / CSS fa5888cfa299. **f-cv25 moves the panel's render cost (layout, paint, layers) to that trigger**, near the platform section, before the morph. It needs a morph-start check (M driver) later, not in P-168. The diagnostic f-ko25 (no idle mount at all; JS 120386db2e02) is not in the block (`P168_K=fko25` would swap it in): ko5 brings back the 40-75 ms mount task, see below.<br>**Part B:** v0 · g0.0f · **g0.0g** = g0.0f + `.start-selling [data-fw-wc] { isolation: isolate }` (JS 30fd80ccbb3f / CSS 2390e4715327; a candidate).<br>Built by `p168-build.py` and served by `p168-serve.sh` (arms B v0 f fcv25 g; fko25 only if named). If de-offscreen points that way, the lead may name g0.0g+ko25 for part B instead (it would need a build). |
+| windows | A: 0 → 750 (the W runs scroll to y ≈ 995). B: 4000 → 5000. One ticket, two parts, one phone hold each. The order is the lead's; the kit defaults to A then B (`P168_FIRST` / `P168_LAST`). |
+| profile | **tool-serious**, as P-166 stage 2 and P-167 (`iphone.mjs rearm`, gates `--accept-induced`, `--profile serious`, `FW_PHONE_CONDITION=tool`; `thermal.mjs clear` after each part). Compared only within P-168. |
+| driver | W with Timeline on every counted run (`iphone.mjs run --driver window --probe std --hold 2 --sentinel 3 --timeline`), plus one uncounted W warm-up per arm port per part. |
+| order | Latin square, 3 counted runs per arm per window, the P-167 layout. Part A: `H1:Aw0,Awe,Awk,AsC,A01  H2:Ae1,Ak1,Ae2,Ak2  H3:A02,Ak3,A03,Ae3  H4:TAILA`. Part B: the same with B (H5-H9). In the item names, `e` is the g0.0f slot (it keeps P-167's letter) and `k` is the part's test arm. |
+| sentinels | as P-166/P-167: only `<S>sC`, an uncounted Timeline-off S run on v0 (`--heat-sentinel`, bottom ≥ 58 and scroll ≥ 44 fps), at each part's start after the warm-ups and in the TAIL. A failing sC is BLOCK STOP 8. |
+| metric (primary) | **the scroll phase** [scroll start, scroll end) of each run: frames > 34 and > 50 (twins 30/38 and 46/54) and max dt; per arm, the median of 3. |
+| metric (secondary) | the card-P-167 move phase (scroll plus the 2 s hold) with the same counts; Layout records ≥ 5 ms per run (count, sum, median, frames with 2+) and Composite max/sum from the Timeline; P-166's binned spot frame. |
+| rules (written before data) | **A, layout-tree:** f-cv25 "removes the extra scroll-phase long frames" when its median > 50 ≤ v0's **and** its median Layout record ≤ v0's + 2 ms; "partial" when its median > 50 is at least 1 below g0.0f's; otherwise "no effect". A verdict is "threshold-sensitive" when the 46/54 twins give another one.<br>**A, reproduce first:** g0.0f's median scroll-phase > 50 ≥ v0's + 1 (else "not reproduced", no f-cv25 verdict).<br>**B, g0.0g:** "shorter" when g0.0g's median max dt is ≥ 6 ms below g0.0f's; "no effect" when it is within ±6 ms; "worse" when it is ≥ 6 ms above. Also report whether g0.0g's > 34 / > 50 medians are ≤ g0.0f's.<br>**Mechanism lines:** (A) f-cv25's median Layout ms moves toward v0's; (B) g0.0g has no Layout record in the `+is-play` frame, or a shorter one. |
+| budget | about 45-50 min of phone time (P-167's two parts took 43 min). Part A alone is about 22 min, part B alone about 25 min. |
+| kit | `fixes/g0-box/phone/p168-{build.py,serve.sh,hold.sh,block.sh,run.sh}`. hold, block and run are P-167's kit generated by `out/g0box/mk168kit.mjs` (only names, paths and arms change; letter `e` = g0.0f, `k` = `P168_K`, set per part by run.sh: A → fcv25, B → g). Read-out: `p167-wread.mjs out/p168ph --arms 0,e,k` plus the scroll-phase split (`out/g0box/phase167.mjs`, to be folded into a p168 reader). |
+| conditions before the first counted run | (1) dry runs of both parts (`CM_DRY=1`) print every pin; (2) the user's ready step is answered; (3) parts start detached with `out/g0box/watchdog2.sh`; (4) USB link, WDA and the thermal read work. |
+| what ko5 changes for the user | The idle mount (`__mnt`, JS 14516-14540 in g0.0f) mounts the end-of-page morph panel (image columns, second countdown, CTAs) once the page is idle after load, invisible and inert. Without it, the panel mounts when `#platform` enters its 200 % zone. That mount was a **40-75 ms task at Chrome 6x inside a scroll frame** (the code's own note, perf(morph-panel-lazy-mount)). The menu itself has no first-open lag either way: it is mounted long before the user reaches the end. So a ko5-like fix trades the top-of-page layout cost for that mid-scroll task. It needs another form, e.g. keep the idle mount but skip the panel's layout until it is needed (`content-visibility: hidden` on the mounted panel, lifted when the morph starts). That form is f-cv25 above (lead 14:3xZ). |
+
+### P-168 evidence before the card (Simulator and Chrome, counts and pixels only; no phone)
+
+**Tree and layer census at the top** (`p168-tree.mjs` v2, `out/p168/tree2`; 3 fresh loads per arm). Values are listed per load. The Layout counts and the Simulator ms come from the W-like steps 0 → ~1150.
+
+| arm | top layers | top MB | DOM elements | rendered at top | rendered after the steps | Layouts ≥ 1 ms | Layout sum (Sim ms) | frames with 2+ Layouts ≥ 5 ms |
+|---|---|---|---|---|---|---|---|---|
+| v0 | 105 / 105 / 105 | 12.2 / 12.2 / 12.2 | 1334 | 905 / 905 / 905 | 905 / 905 / 906 | 32 / 34 / 29 | 604 / 679 / 603 | 6 / 8 / 9 |
+| g0.0f | 162 / 162 / 162 | 28.1 / 27.9 / 27.9 | 1584 | 1584 / 1584 / 1584 | 1584 | 12 / 13 / 12 | 204 / 224 / 213 | 2 / 4 / 1 |
+| f-ko25 | 129 / 129 / 129 | 12.8 / 13.0 / 13.4 | 1387 | 936 / 936 / 936 | 1023 | 15 / 15 / 13 | 298 / 289 / 258 | 4 / 4 / 4 |
+| f-cv25 | 130 / 130 / 130 | 12.8 / 12.8 / 12.8 | 1584 | 937 / 937 / 937 | 1024 | 19 / 15 / 15 | 390 / 299 / 292 | 5 / 5 / 4 |
+
+- **f-cv25 matches f-ko25 at the top**: +1 layer, the same memory, the same rendered tree. The panel (197 elements) is in the DOM; its 196 descendants are skipped by `content-visibility: hidden`. Against v0 this is +25 layers, +0.6 MB, +32 rendered elements.
+- **g0.0f renders the whole page from the top.** All 5 sections are un-skipped, plus the 197-element panel: 1584 rendered elements vs v0's 905, and it does the fewest Layouts.
+- **f-ko25 and f-cv25 un-skip sections during the steps** (936 → 1023 rendered), as the baseline's deferral does. They do 15-19 Layouts vs g0.0f's 12.
+- **Window A tests a trade-off:** a smaller tree, so cheaper Layouts on the phone (the hypothesis), against a few more of them. The Simulator does not separate Layout ms between arms (all 19-21 ms median), so only the phone can answer.
+
+**Pixel gates at rest** (`gates/px-{chrome,sim}.mjs`, four loads A, V, A2, V2; stops 0 / 250 / 500 / 1500 / 3000 / 4600; T2 = `gates/t2.mjs`):
+
+| V vs A = g0.0f | Chrome 430x932 | Simulator 430x775 |
+|---|---|---|
+| g0.0g | 0 CSS px² past the A/A band at every stop (consistent differences up to 13 levels at y 500 / 1500, inside A/A) | 0 at 5 stops; y 1500: one cluster of 57 CSS px², max 23 levels, under `section.feed > span.record`. Within T2 (23 < 64, 515 px < 2000, 0.02 %). |
+| f-cv25 | 0 CSS px² past the A/A band at every stop (only y 1500 differs, 195 px at 1 level) | 0 at 5 stops; y 1500: 2 clusters of 1 CSS px² each, under the people section's community pill (bbox 48-96 x 608-656 CSS px), max 222 levels (`t2.mjs`: edge 222, flat 19). By the letter **T2 fails** (edge 222 > 128) on that 1 px² spot. Simulator A/A differs on 5.3-6.0 % of the frame at every stop (6.0 % at y 1500). Re-check pending: y 1500 only, fresh loads. If the spot stays, look at the shots. |
+
+Files: `out/g0box/p168/px-*/px.json`.
 
 ## P-164 (phone card; written before any P-164 data)
 
