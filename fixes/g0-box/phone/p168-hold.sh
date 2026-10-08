@@ -36,7 +36,7 @@ H=$1; shift
 [ -n "$H" ] && [ $# -gt 0 ] || { echo "usage: CM_TICKET=P-168 sh fixes/g0-box/phone/p168-hold.sh <H> <items>"; exit 2; }
 R=${RUNNER:-fix-g0-box}
 SV=out/p168; LG=out/p168ph; O=out/p168ph/runs
-K=${P168_K:?P168_K must name the part's test arm: fcv25 (window A; fko25 diagnostic) or g (window B; fB if the lead picks f+KO-B)}
+K=${P168_K:?P168_K must name the test arm of the part: fcv25 (window A; fko25 diagnostic) or g (window B; fB if the lead picks f+KO-B)}
 PROF="--profile serious"
 SELF=fixes/g0-box/phone/p168-hold.sh
 TOOLS_MIN=db884e9d   # iphone.mjs run --timeline (I-247); the signature's condition 1
