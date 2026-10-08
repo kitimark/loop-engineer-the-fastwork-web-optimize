@@ -339,8 +339,11 @@ export async function loadInject(file, { label = 'run' } = {}) {
  * {syncT, syncTL, recs} sees epoch 0 alone, correctly aligned). The file goes through lanSafeText (stack urls carry
  * the mirror's LAN host; Hard rule 12). finish() returns {seg, file, records, syncT, syncTL, offsetMs, end, epochs,
  * stopped, errors} for run.timeline.
+ * `kind` / `clock` (I-247): the file's kind and clock text; `iphone.mjs run --timeline` passes 'run-timeline' and the
+ * std probe's clock (one segment, after its reload); the defaults are the gesture run's, unchanged.
  */
-export function timelineRecorder({ file, stopWaitMs = 3000, drainMs = 500, log = (s) => console.error(s) }) {
+export function timelineRecorder({ file, stopWaitMs = 3000, drainMs = 500, log = (s) => console.error(s), kind = 'gesture-timeline',
+  clock = 'syncT: page performance.now() ms (the gesture recorder\'s clock); syncTL: Timeline seconds (stopwatch from Page.enable); Timeline ms = page ms + offsetMs' }) {
   let conn = null, active = null;
   const errText = (e) => e?.message || JSON.stringify(e);
   const segFile = (i) => (i === 0 ? file : file.replace(/(\.json)?$/i, `-seg${i}.json`));
@@ -399,9 +402,9 @@ export function timelineRecorder({ file, stopWaitMs = 3000, drainMs = 500, log =
       const e0 = epochs[0] || { syncT: null, syncTL: null, offsetMs: null, recs: [], errors: [] };
       const allErrors = [...epochs.flatMap((e) => e.errors), ...errors];
       const doc = {
-        kind: 'gesture-timeline', version: 1, seg: a.seg, syncT: e0.syncT, syncTL: e0.syncTL, offsetMs: e0.offsetMs, recs: e0.recs, end,
+        kind, version: 1, seg: a.seg, syncT: e0.syncT, syncTL: e0.syncTL, offsetMs: e0.offsetMs, recs: e0.recs, end,
         stopped: last ? last.stopped : false, protocol: TIMELINE_START, startWall: a.startWall,
-        clock: 'syncT: page performance.now() ms (the gesture recorder\'s clock); syncTL: Timeline seconds (stopwatch from Page.enable); Timeline ms = page ms + offsetMs',
+        clock,
         errors: allErrors,
         ...(epochs.length > 1 ? { epochs: epochs.slice(1).map(({ errors: _, ...e }) => e) } : {}),
       };

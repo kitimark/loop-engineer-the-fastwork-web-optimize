@@ -90,6 +90,10 @@
 //   node tools/iphone.mjs run --driver scroll|window|morph --probe std --owner <topic> [--label l] ...   (run --help)
 // one reload + settle + driver run with the standard probe (per-frame log, uncapped mutation counts by type,
 // crossing log, tool hashes) -> out/iphone/<owner>-run-<label>-<ts>.json (schema fw-iphone-run/1).
+//        [--timeline <out.json>]   (I-247, every driver; MEASUREMENT CODE) a WebKit Timeline on the run's own connection with
+//        # gesture's recorder (I-079: Page.disable, Page.enable, Timeline.start; F-047), from after the settle to after the
+//        # result read: one {syncT, syncTL, recs} file on the probe's clock (Timeline ms = page ms + offsetMs) and
+//        # meta.timeline {file, records, sync}; attribution runs only, never mixed with Timeline-off counted runs (§5.5)
 //
 // Thermal test profile (I-186; user T-162 #3/#5; tools/lib/thermal-profile.mjs): run, scroll, record and gesture take
 // --profile serious|real-serious|fair (default serious; there is no "none"):

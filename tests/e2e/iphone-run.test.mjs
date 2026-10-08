@@ -10,6 +10,8 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { tempDir, node, nodeAsync, tool, freePort, startProc, TESTS } from '../helpers.mjs';
 import { APP_JS } from '../fixtures/fake-run-dom.mjs';
+import { TIMELINE_START } from '../../tools/lib/wip.mjs';
+import { TOOL_FILES } from '../../tools/lib/iphone-run.mjs';
 
 const IPHONE = tool('iphone.mjs'), LOCK = tool('lock.mjs');
 const procs = [];
@@ -296,4 +298,111 @@ test('run while Safari shows the certificate warning: refused with the open hint
   assert.equal(r.code, 1, r.out);
   assert.match(r.stderr, /certificate warning .*node tools\/iphone\.mjs open <url> --owner me \(incident I-003\)/);
   assert.deepEqual(phone.events().filter((e) => e.evaluate || e.reload), []);
+});
+
+// I-247: --timeline <out.json> (MEASUREMENT CODE): the gesture path's recorder (lib/gesture-run.mjs timelineRecorder,
+// I-079) on the run's own connection, armed after the reload, the probe options / load logger and the settle, stopped
+// after the result read; one {syncT, syncTL, recs} file on the probe's page clock and meta.timeline.
+const head = (e) => (e.evaluate.startsWith('window.__fwrOpts') ? 'opts' : e.evaluate.startsWith('(() => { const E = window.__fwrEarly') ? 'early'
+  : e.evaluate === 'document.readyState' ? 'ready' : e.evaluate.startsWith('(() => {\n  window.__fwrOut = undefined') ? 'start' : e.evaluate === 'window.__fwrState || null' ? 'poll'
+    : e.evaluate === "(window.__fwrOut || '').length" ? 'len' : e.evaluate.startsWith('window.__fwrOut.slice(') ? 'chunk'
+      : e.evaluate.startsWith('(() => { const t = performance.now(); let m = null; try { m = performance.mark(') ? 'mark' : e.evaluate.slice(0, 30));
+const steps = (evs) => evs.filter((e) => e.evaluate || e.reload || e.tl || e.navigate).map((e) => (e.reload ? 'RELOAD' : e.tl ? e.tl : e.navigate ? 'PARK' : head(e)))
+  .filter((x, i, a) => x !== a[i - 1] || !['poll', 'ready', 'chunk'].includes(x)); // repeated polls / ready checks / chunks once
+const W_ARGS = ['--driver', 'window', '--owner', 'me', '--from', '1500', '--to', '2000', '--settle', '0.3', '--idle', '0.2', '--hold', '0.2', '--sentinel', '0.2', '--no-battery'];
+
+test('I-247 run --driver window --timeline: armed after the reload, probe install and settle, stopped after the result read; one file with the sync pair on the probe\'s clock; meta.timeline', async () => {
+  const phone = await fakePhone();
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me'], { env: phone.env }).code, 0);
+  const out = join(dir, 'w.json'), tlOut = join(dir, 'w-tl.json');
+  const r = await run([...W_ARGS, '--label', 'wtl', '--timeline', tlOut, '--out', out], phone.env);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^NOTE: --timeline records a WebKit Timeline on this run's inspector connection \(meta\.timeline\): compare it only with Timeline-on runs \(a Timeline block, protocol v2 §5\.2\) or use it as an attribution run; never mix it with Timeline-off counted runs \(§5\.5\)/m);
+  assert.match(r.stdout, new RegExp(`^ {2}timeline: \\d+ records, offset -?\\d+\\.\\d{3} ms -> ${tlOut.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}$`, 'm'));
+
+  // the order on the phone: reload, probe options + load logger, ready, (settle), Timeline start + sync mark, the run, the result read, end mark + stop
+  const seq = steps(phone.events());
+  const at = (x) => seq.indexOf(x);
+  assert.ok(at('RELOAD') >= 0);
+  assert.deepEqual(seq.slice(at('Page.disable'), at('Timeline.start') + 1), TIMELINE_START.map(([m]) => m), 'F-047\'s sequence on the run\'s connection');
+  assert.ok(at('opts') > at('RELOAD') && at('early') > at('opts') && at('ready') > at('early'), seq.join(' '));
+  assert.ok(at('Page.disable') > at('ready'), `Timeline armed after the probe install and the settle: ${seq.join(' ')}`);
+  assert.equal(seq[at('Timeline.start') + 1], 'mark', 'the sync mark right after the start');
+  assert.equal(seq[at('Timeline.start') + 2], 'start', 'then the run (probe + driver)');
+  assert.ok(at('Timeline.stop') > seq.lastIndexOf('chunk') && seq.lastIndexOf('chunk') > at('len'), `stopped after the result read: ${seq.join(' ')}`);
+  assert.equal(seq[at('Timeline.stop') - 1], 'mark', 'the end mark right before the stop');
+  assert.ok(at('PARK') > at('Timeline.stop'));
+  assert.equal(seq.filter((x) => x === 'Timeline.start').length, 1);
+  assert.equal(seq.filter((x) => x === 'Timeline.stop').length, 1);
+  assert.ok(phone.events().filter((e) => e.tl).every((e) => e.gen === 2), 'on the reloaded page');
+
+  const j = JSON.parse(readFileSync(out, 'utf8'));
+  const t = JSON.parse(readFileSync(tlOut, 'utf8'));
+  assert.equal(t.kind, 'run-timeline');
+  assert.equal(t.seg, 0);
+  assert.equal(t.stopped, true);
+  assert.deepEqual(t.errors, []);
+  assert.ok(typeof t.syncT === 'number' && typeof t.syncTL === 'number');
+  assert.ok(Math.abs(t.offsetMs - (t.syncTL * 1000 - t.syncT)) < 1e-6, 'the readers\' alignment: Timeline ms = page ms + (syncTL * 1000 - syncT)');
+  assert.ok(Math.abs(t.end.offsetMs - t.offsetMs) < 0.5, 'end mark on the same base');
+  // the probe's own phase marks land where its marks say, on the frames' clock
+  const tsOf = (name) => { const s = [...t.recs]; while (s.length) { const x = s.pop(); if (x.type === 'TimeStamp' && x.data?.message === name) return x.startTime; if (x.children) s.push(...x.children); } return null; };
+  for (const ph of ['idle', 'scroll', 'hold']) {
+    const tl0 = tsOf(`fwr:${ph}:start`);
+    assert.ok(tl0 !== null, `fwr:${ph}:start recorded`);
+    assert.ok(Math.abs(tl0 * 1000 - t.offsetMs - j.marks[ph][0]) < 2, `${ph}: Timeline ${tl0 * 1000 - t.offsetMs} vs probe ${j.marks[ph][0]}`);
+  }
+  const rf = t.recs.filter((x) => x.type === 'RenderingFrame').map((x) => x.startTime * 1000 - t.offsetMs);
+  assert.ok(rf.length > 20);
+  assert.ok(t.syncT < j.frames[0][0], `the sync mark (page ${t.syncT}) before the probe's first frame (${j.frames[0][0]})`);
+  // the fake records a RenderingFrame every 16 ms from Timeline.start on
+  assert.ok(Math.min(...rf) < j.frames[0][0] + 20 && Math.max(...rf) > j.frames.at(-1)[0], `Timeline ${Math.min(...rf)}..${Math.max(...rf)} covers the frames ${j.frames[0][0]}..${j.frames.at(-1)[0]}`);
+
+  const m = j.meta.timeline;
+  assert.deepEqual(Object.keys(m), ['file', 'records', 'sync', 'stopped', 'errors', 'protocol']);
+  assert.equal(m.file, tlOut);
+  assert.equal(m.records, t.recs.length);
+  assert.deepEqual([m.sync.syncT, m.sync.syncTL, m.sync.offsetMs, m.sync.end], [t.syncT, t.syncTL, t.offsetMs, t.end]);
+  assert.deepEqual([m.stopped, m.errors], [true, []]);
+  assert.ok(Object.keys(j.meta.tool.files).includes('tools/lib/gesture-run.mjs'));
+  assert.equal(j.meta.error, null);
+});
+
+test('I-247 run --driver scroll --timeline works too; without --timeline: no Page or Timeline command, no timeline key, the same page commands in the same order', async () => {
+  const phone = await fakePhone(['--doc-height=1500']);
+  assert.equal(node(LOCK, ['acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me'], { env: phone.env }).code, 0);
+  const args = ['--driver', 'scroll', '--owner', 'me', ...SHORT, '--bottom', '0.2', '--no-battery', '--no-park'];
+  let n = phone.events().length;
+  let r = await run([...args, '--out', join(dir, 'plain.json')], phone.env);
+  assert.equal(r.code, 0, r.out);
+  const plainSeq = steps(phone.events().slice(n));
+  assert.ok(!plainSeq.some((x) => /^(Page|Timeline)\./.test(x) || x === 'mark'), plainSeq.join(' '));
+  assert.doesNotMatch(r.out, /--timeline|^ {2}timeline:/m); // (the page facts line says "byTimeline": the animations')
+  const plain = JSON.parse(readFileSync(join(dir, 'plain.json'), 'utf8'));
+  assert.ok(!('timeline' in plain.meta));
+  assert.deepEqual(Object.keys(plain.meta.tool.files), TOOL_FILES);
+
+  n = phone.events().length;
+  const tlOut = join(dir, 's-tl.json');
+  r = await run([...args, '--timeline', tlOut, '--out', join(dir, 'tl.json')], phone.env);
+  assert.equal(r.code, 0, r.out);
+  const tlSeq = steps(phone.events().slice(n));
+  assert.ok(tlSeq.includes('Timeline.start') && tlSeq.includes('Timeline.stop'), tlSeq.join(' '));
+  assert.deepEqual(tlSeq.filter((x) => !/^(Page|Timeline)\./.test(x) && x !== 'mark'), plainSeq, 'the timeline adds its commands and marks, nothing else');
+  const j = JSON.parse(readFileSync(join(dir, 'tl.json'), 'utf8'));
+  assert.equal(j.meta.driver, 'S');
+  assert.equal(j.meta.timeline.file, tlOut);
+  assert.ok(j.meta.timeline.records > 0);
+  assert.deepEqual(Object.keys(j.meta).filter((k) => k !== 'timeline'), Object.keys(plain.meta), 'the plain run\'s meta keys, plus timeline');
+  assert.ok(existsSync(tlOut));
+});
+
+test('I-247 run --timeline without a file: refused before the lease or Safari are touched', async () => {
+  const phone = await fakePhone();
+  for (const a of [['--timeline'], ['--timeline', '--label', 'x']]) {
+    const r = await run(['--driver', 'scroll', '--owner', 'me', ...a], phone.env);
+    assert.equal(r.code, 1, r.out);
+    assert.match(r.stderr, /--timeline wants a file: --timeline <out\.json>/);
+  }
+  assert.deepEqual(phone.events(), []);
 });

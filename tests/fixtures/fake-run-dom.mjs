@@ -34,6 +34,8 @@
 //     the probe's rAF callback in that frame; the engine's batches come before it);
 //   - morph: true defines window.__fwMorphDrive({hold, cycles}) like fix-nav-morph's overlays: the nav's
 //     --morph goes 0 -> 1 over ~150 ms, holds, back, per cycle; __fwMD = JSON {all, moving, atOne, atZero, frames}.
+// onMark(name, absMs) (I-247): performance.mark(name) calls it with the mark's time on the host's performance.now()
+// clock (t0 + the page's startTime) and returns {name, startTime}, as Safari's does; without it mark() returns nothing.
 import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 
@@ -66,7 +68,7 @@ function matches(el, sel) {
   });
 }
 
-export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY = 900, lateY = 1700, busyMs = 90, clockMs = 0, tieAfterLong = false, scrollHandlerY = null, morph = false, resources = [], href = 'http://127.0.0.1:9/', onReload = null } = {}) {
+export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY = 900, lateY = 1700, busyMs = 90, clockMs = 0, tieAfterLong = false, scrollHandlerY = null, morph = false, resources = [], href = 'http://127.0.0.1:9/', onReload = null, onMark = null } = {}) {
   const t0 = performance.now();
   let inMO = null, lastDelivery = null;
   const now = () => { if (inMO !== null) return inMO; const v = performance.now() - t0; return clockMs ? Math.floor(v / clockMs) * clockMs : v; };
@@ -151,7 +153,7 @@ export function createPage({ docHeight = 2900, eventY = 1960, cvY = 1250, fontY 
     visualViewport: { listeners: [], addEventListener(type, fn) { this.listeners.push({ type, fn }); }, removeEventListener(type, fn) { const i = this.listeners.findIndex((l) => l.type === type && l.fn === fn); if (i >= 0) this.listeners.splice(i, 1); } },
     location: { href, origin: new URL(href).origin, reload: () => { win.__reloaded = true; if (onReload) onReload(); } },
     document, MutationObserver, URL, setTimeout, clearTimeout, queueMicrotask,
-    performance: { now, mark: () => {}, getEntriesByType: (t) => (t === 'resource' ? resources.map((name, i) => ({ name, initiatorType: 'script', startTime: 10 + i, responseEnd: 20 + i, transferSize: 300, encodedBodySize: 25 })) : []) },
+    performance: { now, mark: onMark ? (name) => { const startTime = now(); onMark(String(name), t0 + startTime); return { name: String(name), startTime }; } : () => {}, getEntriesByType: (t) => (t === 'resource' ? resources.map((name, i) => ({ name, initiatorType: 'script', startTime: 10 + i, responseEnd: 20 + i, transferSize: 300, encodedBodySize: 25 })) : []) },
     requestAnimationFrame: (cb) => { raf.push(cb); return ++rafId; },
     scrollTo: (a, b) => { const top = typeof a === 'object' ? a.top : b; smooth = null; sy = clampY(top); },
     scrollBy: (o) => { const to = clampY(sy + o.top); if (o.behavior === 'smooth') smooth = { to, step: (to - sy) / 18 }; else sy = to; },

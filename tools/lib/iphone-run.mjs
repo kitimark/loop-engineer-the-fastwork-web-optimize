@@ -33,14 +33,24 @@
 // a failure, so an animating test page does not keep heating the phone; --no-park keeps the page. The next run on
 // the phone needs `iphone.mjs open <url>` first, which loads it in the parked tab (or restarts Safari when that tab can't
 // be told apart, I-077). The Simulator target never parks.
+// Timeline (I-247, MEASUREMENT CODE; every driver): --timeline <out.json> records a WebKit Timeline on the run's own
+// inspector connection with the gesture path's recorder (lib/gesture-run.mjs timelineRecorder, I-079): after the reload,
+// the probe options / load logger and the settle (and the guard's re-check), TIMELINE_START (Page.disable, Page.enable,
+// Timeline.enable, setInstruments, Timeline.start; F-047) and a sync mark, then the run; after the result read, an end
+// mark and Timeline.stop. One file at <out.json>, kind 'run-timeline', in the existing readers' format {syncT, syncTL,
+// recs} with Timeline ms = page ms + offsetMs, the page clock being the std probe's (performance.now(): frames[].t,
+// marks; the probe's own fwr:<phase>:start|end marks are TimeStamp records in it). The record gets meta.timeline {file,
+// records, sync {syncT, syncTL, offsetMs, end, clock}, stopped, errors, protocol} and gesture-run.mjs in meta.tool.files.
+// A Timeline-on run compares only with Timeline-on runs (protocol v2 §5.2/§5.5): attribution runs. Without --timeline
+// the run sends no Page / Timeline command and its record has no timeline key (byte pins: iphone-run-device.test.mjs).
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { openTab, safariTab, sleep, parkSafari, isBlankUrl } from './wip.mjs';
+import { openTab, safariTab, sleep, parkSafari, isBlankUrl, TIMELINE_START } from './wip.mjs';
 import { status as lockStatus, phoneGuard, phoneMacRecord } from './lock.mjs';
 import { REPO } from './paths.mjs';
-import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeUrl, LAN_HOST, isLanHost, isLoopbackHost } from './iphone-url.mjs';
+import { iphoneTarget, mirrorInfo, CERT_WARNING_TITLE, lanSafeUrl, lanSafeText, LAN_HOST, isLanHost, isLoopbackHost } from './iphone-url.mjs';
 import { tryResolveLanUrl, isLanPlaceholder } from './lan.mjs';
 import { SCHEMA, DRIVERS, DRIVER_JS, PROBE_STD_JS, PRE_JS, STATE_START_JS, EARLY_JS, RESOURCES_JS, RESOURCE_TIMING_JS, Y_SOURCES, yReadsLabel, optsJs, startJs, STATE_JS, RESULT_LEN_JS, CHUNK, resultChunkJs, buildDoc } from './iphone-probe.mjs';
 
@@ -65,6 +75,10 @@ export const USAGE = `usage: node tools/iphone.mjs run --driver scroll|window|mo
     [--tops id=selector,...]                                document tops before/after the timed window
     [--state <file.js>]                                     an expression whose value joins stateAtStart.custom
     [--y-source raf|raf-legacy|scroll|none]                 where the probe's y comes from (default raf; raf-legacy = probe v1)
+    [--timeline <out.json>]                                 record a WebKit Timeline on the run's connection from after the
+                                                            settle to after the result read (I-247): <out.json> {syncT,
+                                                            syncTL, recs} on the probe's clock, meta.timeline; attribution
+                                                            runs only, never mixed with Timeline-off runs (§5.2/§5.5)
     [--no-battery]                                          skip the idevicediagnostics battery read at start and end
     [--no-served]                                           don't fetch the page's scripts/stylesheets again from the Mac
                                                             after the run (meta.served {skipped, reason}); automatic for
@@ -228,6 +242,11 @@ export function parseRunArgs(argv) {
   o.served = !flag('no-served');
   o.lowPower = opt('low-power', 'unknown');
   if (!['on', 'off', 'unknown'].includes(o.lowPower)) throw new Error(`--low-power must be on or off (got ${o.lowPower})\n${USAGE}`);
+  if (argv.some((a) => a === '--timeline' || a.startsWith('--timeline='))) { // I-247: only then the key exists
+    const f = opt('timeline');
+    if (!f || f.startsWith('--')) throw new Error(`--timeline wants a file: --timeline <out.json>\n${USAGE}`);
+    o.timeline = f;
+  }
   const ySource = opt('y-source', 'raf');
   if (!Y_SOURCES.includes(ySource)) throw new Error(`--y-source must be one of ${Y_SOURCES.join(', ')} (got ${ySource})\n${USAGE}`);
   const tops = opt('tops');
@@ -242,6 +261,18 @@ export function parseRunArgs(argv) {
   if (driver === 'morph') p.maxDriveMs = 2 * p.cycles * p.holdMs + 30000;
   o.params = p;
   return o;
+}
+
+/** I-247: the recorder's code (lib/gesture-run.mjs timelineRecorder) shapes a --timeline run: hashed in meta.tool then. */
+export const TIMELINE_TOOL_FILE = 'tools/lib/gesture-run.mjs';
+export const RUN_TIMELINE_CLOCK = 'syncT: page performance.now() ms (the std probe\'s clock: frames[].t, marks); syncTL: Timeline seconds (stopwatch from Page.enable); Timeline ms = page ms + offsetMs';
+/** I-247: timelineRecorder().finish()'s summary -> meta.timeline (file repo-relative, errors LAN-safe). Pure. */
+export function timelineMeta(t) {
+  return {
+    file: t.file.startsWith(REPO + '/') ? t.file.slice(REPO.length + 1) : t.file, records: t.records,
+    sync: { syncT: t.syncT, syncTL: t.syncTL, offsetMs: t.offsetMs, end: t.end, clock: 'Timeline ms = page ms + offsetMs; page ms: the std probe\'s performance.now() (frames[].t, marks)' },
+    stopped: t.stopped, errors: t.errors.map((e) => lanSafeText(String(e))), protocol: TIMELINE_START,
+  };
 }
 
 /** Upper bound of the in-page part (ms), for the poll timeout and the lease check. */
@@ -268,7 +299,7 @@ export async function runCmd({ argv, requireLease, port, target = null, profileG
   // I-186: the thermal profile (--profile serious|real-serious|fair) at the hold's start, one read per hold, before the lease renewal and
   // Safari: never in the timed part. A misfit refuses (exit 8). The Simulator target has no thermal profile.
   const prof = !target && profileGate ? await profileGate(owner) : null;
-  const need = o.settleMs + estimateMs(o) + 30000 + 2500;
+  const need = o.settleMs + estimateMs(o) + 30000 + 2500 + (o.timeline ? 4000 : 0); // I-247: the Timeline stop's wait and drain
   if (!target) {
     // renew the lease to cover this run (iphone-runner did it before every run), through lock.mjs; the Mac stays awake
     // through iphone.mjs's own assertion (I-070, lib/awake.mjs keepAwakeFor), not the iphone lease. --no-shorten: a
@@ -286,6 +317,11 @@ export async function runCmd({ argv, requireLease, port, target = null, profileG
   if (leaseUrl && !tab.url.startsWith(leaseUrl)) { try { leaseUrl = iphoneTarget(leaseUrl, await mirrorInfo(leaseUrl)).url; } catch {} }
   if (leaseUrl && !tab.url.startsWith(leaseUrl)) console.error(`warning: Safari shows ${tab.url}, your lease says ${holder.meta.url} (run: node tools/iphone.mjs open ${holder.meta.url} --owner ${owner})`);
 
+  // I-247: the gesture path's recorder, loaded only for a --timeline run
+  const timeline = o.timeline ? (await import('./gesture-run.mjs')).timelineRecorder({ file: resolve(o.timeline), kind: 'run-timeline', clock: RUN_TIMELINE_CLOCK }) : null;
+  if (timeline) console.log(`NOTE: --timeline records a WebKit Timeline on this run's inspector connection (meta.timeline): compare it only with Timeline-on runs (a Timeline block, protocol v2 §5.2) or use it as an attribution run; never mix it with Timeline-off counted runs (§5.5). File: ${timeline.file}`);
+  let tlOpen = false;
+
   let c = await openTab(() => true, { port });
   const host = new URL(await c.evaluate('location.href')).host;
   let reloaded = false; // from the reload on, the run ends with Safari parked (I-047), also after a failure
@@ -295,6 +331,7 @@ export async function runCmd({ argv, requireLease, port, target = null, profileG
     c.close();
     await sleep(2500);
     c = await openTab(host, { port });
+    if (timeline) await timeline.onConnection(c); // the reloaded page's connection; nothing sent before begin()
     await c.evaluate(optsJs(o.params)).catch(() => {});
     await c.evaluate(EARLY_JS).catch(() => {});
     for (let i = 0; i < 60; i++) { if ((await c.evaluate('document.readyState')) === 'complete') break; await sleep(500); }
@@ -303,6 +340,7 @@ export async function runCmd({ argv, requireLease, port, target = null, profileG
     await sleep(o.settleMs);
     requireLease(); // still ours after the settle
     const macGuard = await guard(true); // its Mac state is the run's start (I-056)
+    if (timeline) { tlOpen = true; await timeline.begin(0); } // I-247: TIMELINE_START + sync mark (errors go into its file)
     const macStartMs = Date.now();
     const started = await c.evaluate(startJs(o.driver, o.params, { customStateJs }));
     if (started !== 'started') throw new Error(`the run did not start in the page (${JSON.stringify(started)})`);
@@ -319,6 +357,7 @@ export async function runCmd({ argv, requireLease, port, target = null, profileG
     for (let i = 0; i < len; i += CHUNK) s += await c.evaluate(resultChunkJs(i));
     if (s.length !== len) throw new Error(`read ${s.length} of ${len} result chars`);
     const raw = JSON.parse(s);
+    if (timeline) { tlOpen = false; raw.timeline = timelineMeta(await timeline.finish()); } // I-247: after the result read
     raw.macStartMs = macStartMs;
     raw.battery = o.battery ? { start: batteryStart, end: batteryInfo() } : null;
     const servedSkip = servedPolicy(raw.pre?.href ?? `http://${host}/`, { noServed: !o.served });
@@ -329,7 +368,10 @@ export async function runCmd({ argv, requireLease, port, target = null, profileG
     if (target) await target.end?.();
     let listed = null; // I-186: the ledger write is async; the run waits for it (also when finish throws on a page error)
     try { return finish(o, owner, raw, { target, onSaved: prof ? (f) => { listed = prof.saved(f); } : null }); } finally { if (listed) await listed; }
-  } finally { c.close(); if (reloaded && o.park && !target) await parkAfterRun(port, owner); }
+  } finally {
+    if (tlOpen) { try { const t = await timeline.finish(); if (t) console.error(`timeline: the run failed; ${t.records} records saved in ${t.file}`); } catch {} } // I-247: a failed run still stops and saves it
+    c.close(); if (reloaded && o.park && !target) await parkAfterRun(port, owner);
+  }
 }
 
 /** Park Safari after a run (I-047); a failure to park never fails the run: it says how to park by hand. */
@@ -392,9 +434,11 @@ export function finish(o, owner, raw, { now = new Date(), target = null, onSaved
     params: { settleMs: o.settleMs, ...o.params },
     wallStartMs: raw.macStartMs ?? null, clock: raw.pre?.clock ?? null, probeVersion: raw.probeVersion ?? 1, ySource: raw.ySource ?? o.params.ySource ?? 'raf', yReads: yReadsLabel(raw.ySource ?? o.params.ySource ?? 'raf', o.driver), yReadCounts: raw.yReads ?? null, settings: target?.settings ?? deviceSettings(raw.pre?.settings, raw.battery?.start, o.lowPower),
     rafHz: doc.summary.rafHz, lowPowerSuspect: doc.summary.lowPowerSuspect, battery: raw.battery ?? null,
-    sentinel: o.sentinel && !target ? sentinelVerdict(o.driver, doc.summary, raw.driverResult) : null, served: raw.served || null, tool: toolVersion(o.driver, REPO, target?.toolFiles), error: raw.err || null,
+    sentinel: o.sentinel && !target ? sentinelVerdict(o.driver, doc.summary, raw.driverResult) : null, served: raw.served || null,
+    tool: toolVersion(o.driver, REPO, raw.timeline ? [...(target?.toolFiles ?? TOOL_FILES), TIMELINE_TOOL_FILE] : target?.toolFiles), error: raw.err || null,
     ...(raw.mac ? { mac: raw.mac } : {}), // I-056: shared jobs and load1 on the Mac at the run's start and end
     ...(raw.profile ? { profile: raw.profile, profileDrift: null } : {}), // I-186: the thermal profile; the hold's end read stamps end / drift
+    ...(raw.timeline ? { timeline: raw.timeline } : {}), // I-247: --timeline (timelineMeta)
     ...(target?.extra ? target.extra() : {}),
   };
   const out = resolve(REPO, o.out || join('out', target?.outDir ?? 'iphone', `${owner}-run-${o.label}-${now.getTime()}.json`));
@@ -414,6 +458,7 @@ export function finish(o, owner, raw, { now = new Date(), target = null, onSaved
   console.log(`  mutations ${JSON.stringify(sm.mutationTotals)}; crossings ${sm.crossings}; probe max ${sm.probeMsMax} ms, frames with probe > 1 ms: ${sm.framesProbeOver1ms}`);
   if (meta.sentinel) console.log(`  heat sentinel [${meta.sentinel.driver}]: ${meta.sentinel.pass === null ? `NOT JUDGED (${meta.sentinel.note})` : meta.sentinel.pass ? 'PASS' : 'FAIL'} ${JSON.stringify(meta.sentinel.value)} (${meta.sentinel.criterion})${typeof raw.battery?.end?.temperatureC === 'number' ? `; battery ${raw.battery.end.temperatureC} °C at the end` : ''}`);
   if (raw.driverResult?.driver) { const d = raw.driverResult.driver; const f = (s) => (s ? `${s.frames}fr p50 ${s.p50} p95 ${s.p95} >50 ${s.gt50} max ${s.max}` : '-'); console.log(`  morph: moving ${f(d.moving)} | atOne ${f(d.atOne)} | atZero ${f(d.atZero)}`); }
+  if (meta.timeline) { const t = meta.timeline; console.log(`  timeline: ${t.records} records, offset ${typeof t.sync.offsetMs === 'number' ? `${t.sync.offsetMs.toFixed(3)} ms` : 'UNKNOWN'}${t.errors.length ? `, ${t.errors.length} error${t.errors.length > 1 ? 's' : ''} (${t.errors[0]})` : ''} -> ${t.file}`); } // I-247
   console.log(`saved ${out}`);
   if (raw.err) throw new Error(`driver failed in the page: ${raw.err} (partial run saved: ${out})`);
   return out;

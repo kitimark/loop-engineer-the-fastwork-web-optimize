@@ -13,6 +13,11 @@
 //                          a non-local page; use a TEST-NET address such as 192.0.2.1, never a real site)
 //   prints FAKE_WIP_PORT=<port>. Env FAKE_WIP_LOG=<file>: one JSON line per evaluate ({evaluate: head, len}), reload and
 //   GET of the page's script ({get: path}).
+// WebKit Timeline (incident I-247, like fake-webkit-proxy.mjs's I-079 part), per inspector connection: Page.enable
+// (re)starts that connection's stopwatch; Timeline.start emits Timeline.recordingStarted, then a RenderingFrame record
+// every 16 ms and a TimeStamp record {data: {message: name}} for each performance.mark(name) in the page (the mark's own
+// time on the stopwatch), all in stopwatch seconds (0 before any Page.enable); Timeline.stop emits
+// Timeline.recordingStopped. Every Page.* / Timeline.* command is logged as {tl: method, gen}.
 import './lifeline.mjs'; // I-072: registered for the test's teardown; ends with the test process
 import http from 'node:http';
 import { createHash } from 'node:crypto';
@@ -25,10 +30,12 @@ const LOG = process.env.FAKE_WIP_LOG;
 const log = (o) => { if (LOG) appendFileSync(LOG, JSON.stringify({ t: Date.now(), ...o }) + '\n'); };
 
 let gen = 1, page = null, base = null, listed = null;
+const markHooks = new Set(); // I-247: the recording connections' TimeStamp emitters
 function newPage() {
   if (page) page.stop();
   page = createPage({ docHeight: Number(arg('doc-height') || 2900), morph: flag('morph'), href: base, resources: [base + '_app/immutable/app.js'],
-    onReload: () => setTimeout(() => { gen++; log({ reload: gen }); newPage(); }, 100) });
+    onReload: () => setTimeout(() => { gen++; log({ reload: gen }); newPage(); }, 100),
+    onMark: (name, abs) => { for (const f of markHooks) f(name, abs); } });
 }
 
 function frame(str) {
@@ -54,11 +61,30 @@ server.on('upgrade', (req, sock) => {
   const send = (o) => { if (!sock.destroyed) sock.write(frame(JSON.stringify(o))); };
   const targetId = `page-${gen}`;
   send({ method: 'Target.targetCreated', params: { targetInfo: { targetId, type: 'page' } } });
+  // I-247: this connection's inspector agents (Page stopwatch, Timeline recording)
+  const tl = { origin: null, timer: null, hook: null };
+  const sw = (abs) => (tl.origin === null ? 0 : (abs - tl.origin) / 1000);
+  const event = (method, params) => send({ method: 'Target.dispatchMessageFromTarget', params: { targetId, message: JSON.stringify({ method, params }) } });
+  const stopTl = () => { clearInterval(tl.timer); tl.timer = null; if (tl.hook) markHooks.delete(tl.hook); tl.hook = null; };
+  sock.on('close', stopTl);
+  const timelineCmd = (method) => {
+    log({ tl: method, gen });
+    if (method === 'Page.enable') tl.origin = performance.now();
+    if (method === 'Timeline.start' && !tl.timer) {
+      event('Timeline.recordingStarted', { startTime: sw(performance.now()) });
+      tl.timer = setInterval(() => { const a = sw(performance.now()); event('Timeline.eventRecorded', { record: { startTime: a, endTime: a + 0.002, data: {}, children: [{ startTime: a, endTime: a + 0.001, data: {}, type: 'Layout' }], type: 'RenderingFrame' } }); }, 16);
+      tl.timer.unref?.();
+      tl.hook = (name, abs) => event('Timeline.eventRecorded', { record: { startTime: sw(abs), data: { message: name }, type: 'TimeStamp' } });
+      markHooks.add(tl.hook);
+    }
+    if (method === 'Timeline.stop' && tl.timer) { stopTl(); setTimeout(() => event('Timeline.recordingStopped', { endTime: sw(performance.now()) }), 30); }
+  };
   const handle = (msg) => {
     send({ id: msg.id, result: {} });
     if (msg.method !== 'Target.sendMessageToTarget') return;
     const inner = JSON.parse(msg.params.message);
     let result = {};
+    if (/^(Page\.|Timeline\.)/.test(inner.method)) timelineCmd(inner.method);
     if (inner.method === 'Runtime.evaluate') {
       const expr = inner.params.expression;
       log({ evaluate: expr.slice(0, 80), len: expr.length });
