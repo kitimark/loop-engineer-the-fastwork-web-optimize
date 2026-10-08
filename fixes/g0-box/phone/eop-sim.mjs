@@ -39,11 +39,15 @@ export function approachProgram(n) {
 }
 const LOG = `(() => { const L = window.__eops = { f: [], t: [] }; const loop = () => { L.f.push([performance.now(), scrollY]); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
   for (const k of ['touchstart', 'touchend', 'touchcancel']) addEventListener(k, (e) => L.t.push([performance.now(), k[5]]), { passive: true, capture: true });
-  L.m = []; const nm = (el) => (el.id ? '#' + el.id : el.tagName.toLowerCase() + (typeof el.className === 'string' && el.className ? '.' + el.className.trim().split(/\\s+/)[0] : ''));
+  L.m = [];
+  // window touch / wheel listener adds and removes (F-054: WebKit pays whole-document work for them), logged like mutations
+  for (const [p, tag] of [['addEventListener', 'listen+'], ['removeEventListener', 'listen-']]) { const f0 = EventTarget.prototype[p];
+    EventTarget.prototype[p] = function (k, f, o) { if (this === window && /^(touch|wheel)/.test(k)) L.m.push([performance.now(), scrollY, 'window', tag + k + (o && typeof o === 'object' && o.passive === false ? ':active' : '')]); return f0.call(this, k, f, o); }; }
+  const nm = (el) => (el.id ? '#' + el.id : el.tagName.toLowerCase() + (typeof el.className === 'string' && el.className ? '.' + el.className.trim().split(/\\s+/)[0] : ''));
   new MutationObserver((ms) => { const t = performance.now(), y = scrollY; for (const m of ms) { if (L.m.length >= 4000) return; const el = m.target;
     let d = m.attributeName; if (d === 'class') { const o = new Set(String(m.oldValue || '').split(/\\s+/).filter(Boolean)), n = new Set(String(el.getAttribute('class') || '').split(/\\s+/).filter(Boolean));
       d = [...n].filter((c) => !o.has(c)).map((c) => '+' + c).concat([...o].filter((c) => !n.has(c)).map((c) => '-' + c)).join(' '); if (!d) continue; }
-    L.m.push([t, y, nm(el), d]); } }).observe(document.documentElement, { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ['class', 'inert', 'src', 'hidden', 'data-start-selling-scene'] });
+    L.m.push([t, y, nm(el), d]); } }).observe(document.documentElement, { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ['class', 'inert', 'src', 'hidden', 'data-start-selling-scene', 'data-start-selling-render', 'data-fw-wc'] });
   return 'ok'; })()`;
 const SCRIPT = new Set(['FireAnimationFrame', 'EventDispatch', 'TimerFire', 'ObserverCallback', 'EvaluateScript', 'FunctionCall']);
 const union = (iv) => { if (!iv.length) return 0; iv.sort((p, q) => p[0] - q[0]); let s = 0, [a, b] = iv[0]; for (const [x, y] of iv.slice(1)) { if (x > b) { s += b - a; a = x; b = y; } else b = Math.max(b, y); } return s + b - a; };

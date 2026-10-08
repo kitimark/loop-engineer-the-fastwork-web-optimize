@@ -28,7 +28,12 @@ def copy(arm):
     return os.path.join(OUT, arm)
 def edit(path, old, new):
     s = open(path).read(); assert s.count(old) == 1, (path, old[:70], s.count(old)); open(path, 'w').write(s.replace(old, new))
-assert h(os.path.join(F, JS)) == '30fd80ccbb3f' and h(os.path.join(F, CSS)) == '1d1e5d62a2c4', 'g0.0f pins'
+# EOP_BASE=h: stack on g0.0h (g0.0f + PR-039 keep-phase = P-168 arm f-B2, fixes/g0-0h) instead of g0.0f (lead 2026-10-08)
+if os.environ.get('EOP_BASE') == 'h':
+    F = 'out/g0box/p168/f-B2'
+    assert h(os.path.join(F, JS)) == '9162843e750f' and h(os.path.join(F, CSS)) == '26d28a0a263b', 'g0.0h pins'
+else:
+    assert h(os.path.join(F, JS)) == '30fd80ccbb3f' and h(os.path.join(F, CSS)) == '1d1e5d62a2c4', 'g0.0f pins'
 
 def a1(a):
     j = os.path.join(a, JS)
@@ -112,7 +117,34 @@ def a3(a):
          '  var I = uN();\n  let L, te;')
     edit(j, '((a.inert = !(s(b) || s(E))),', '((a.inert = !(s(__bIn) || s(E))) /* [eop a3] */,')
 
-ALL = {'a1': [a1], 'a2': [a2], 'b': [b], 'a1b': [a1, b], 'a3': [a3], 'a3b': [a3, b]}
+# a4 (Simulator counts 2026-10-08: under drags with 300 ms pauses plus momentum, a3's 300 ms scroll-quiet never comes
+# before the end, so a3 would move the flip into the first open): as a3, plus the first finger lift (touchend /
+# touchcancel, passive) after b lifts inert too. The flip's style recalc then lands after the finger is up, when iOS
+# scrolls on its own (momentum), not in a finger-down frame of the drag.
+def a4(a):
+    a3(a)
+    j = os.path.join(a, JS)
+    edit(j, '''    return (
+      window.addEventListener(`scroll`, i, { passive: !0 }),
+      (t = window.setTimeout(n, 300)),
+      () => {
+        (window.removeEventListener(`scroll`, i), window.clearTimeout(t));
+      }
+    );''', '''    let u = () => z(__bIn, !0); /* [eop a4] or the first finger lift after b */
+    return (
+      window.addEventListener(`scroll`, i, { passive: !0 }),
+      window.addEventListener(`touchend`, u, { passive: !0, capture: !0 }),
+      window.addEventListener(`touchcancel`, u, { passive: !0, capture: !0 }),
+      (t = window.setTimeout(n, 300)),
+      () => {
+        (window.removeEventListener(`scroll`, i),
+          window.removeEventListener(`touchend`, u, !0),
+          window.removeEventListener(`touchcancel`, u, !0),
+          window.clearTimeout(t));
+      }
+    );''')
+
+ALL = {'a1': [a1], 'a2': [a2], 'b': [b], 'a1b': [a1, b], 'a3': [a3], 'a3b': [a3, b], 'a4': [a4], 'a4b': [a4, b], 'a14b': [a1, a4, b]}
 # usage: python3 eop-build.py [OUT [arm ...]]   (default: out/g0box/eop with a1 a2 b a1b, as first built)
 if len(sys.argv) > 1: OUT = sys.argv[1]
 ARMS = {k: ALL[k] for k in (sys.argv[2:] or ['a1', 'a2', 'b', 'a1b'])}
