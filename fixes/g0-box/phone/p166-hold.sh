@@ -81,9 +81,24 @@ if [ "$CM_DRY" = 1 ]; then
   echo "PLAN gates thermal-gate.mjs --expect serious --max-c 44 (no --accept-induced) at the start and the end; margin 39.0 C"
   echo "HOLD $H DRY ok"; exit 0
 fi
+# USB link and attach check (lead 10:2xZ: the link dropped at 10:26Z while part A waited on its ready step). Before
+# anything touches the phone: the link must be ok (else the hold ends before any run, exit 11; the block re-plugs and
+# restarts WDA and Safari via relink, or stops cleanly after CM_LINK_MAX). The first hold of the block (no attach.txt)
+# and any hold whose usbmux attach number changed since the last hold: wda ensure plus a Safari restart before the gate.
+BU=$(node tools/lan.mjs --url --port "$P_B") || { echo "HOLD $H VOID no LAN url (no run)"; exit 4; }
+LK=$(node tools/usblink.mjs status --json 2>/dev/null)
+lst=$(echo "$LK" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).state)}catch{console.log("?")}})')
+lat=$(echo "$LK" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const a=JSON.parse(s).mux.attach;console.log(a==null?"?":a)}catch{console.log("?")}})')
+[ "$lst" = ok ] || { echo "HOLD $H VOID before any run: USB link $lst (LINK)"; exit 11; }
+AT=$LG/attach.txt
+if [ ! -s $AT ] || [ "$(cat $AT)" != "$lat" ]; then
+  echo "ATTACH $( [ -s $AT ] && echo "changed $(cat $AT) -> $lat" || echo "first hold, attach $lat"): wda ensure + safari-restart before the gate"
+  node tools/iphone.mjs wda ensure --owner "$R" > "$O/$H-wda-ensure.log" 2>&1 || { echo "HOLD $H VOID before any run: wda ensure exit $? (LINK)"; exit 11; }
+  node tools/iphone.mjs safari-restart --owner "$R" --url "$BU" --timeout 60 > "$O/$H-attach-restart.log" 2>&1 || { echo "HOLD $H VOID before any run: safari-restart failed (LINK)"; exit 11; }
+  echo "$lat" > $AT; echo "ATTACH ok: WDA ready, Safari restarted"
+fi
 node tools/iphone.mjs wda check > "$O/$H-wda.log" 2>&1; w=$?
 [ $w -ne 0 ] && { echo "HOLD $H VOID wda check exit $w (no run)"; exit 5; }
-BU=$(node tools/lan.mjs --url --port "$P_B") || { echo "HOLD $H VOID no LAN url (no run)"; exit 4; }
 hread() { node fixes/g0-box/phone/heatread.mjs 2>/dev/null; }
 HP=
 hflush() { [ -n "$HP" ] || return 0; L="$HP state1=${1:-?}"; echo "$L"; echo "$(date -u +%FT%TZ) $H $L" >> $HR; HP=; }
