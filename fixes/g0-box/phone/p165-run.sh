@@ -14,7 +14,10 @@ case $P in
   1) SPECS="H1:wC,wV,C1,V2 H2:V3,C4,C5,V6 H3:V7,C8"; RD=1; FH=1 ;;
   2) SPECS="H4:WC H5:WV H6:sC,EC1 H7:EV1 H8:sC,EV2"; RD=0; FH=0 ;;
   3) SPECS="H9:EC2 H10:sC,EC3 H11:EV3 H12:sC,EV4 H13:EC4 H14:TAIL"; RD=0; FH=0 ;;
-  *) echo "part must be 1, 2 or 3"; exit 2 ;;
+  # 2b (user T-248, lead 08:2xZ): part 2 was stopped in H8 to hand the iPhone to the user; H8 re-runs alone after the
+  # user's Done, with a first heat (the phone cooled), before part 3
+  2b) SPECS="H8:sC,EV2"; RD=0; FH=1 ;;
+  *) echo "part must be 1, 2, 2b or 3"; exit 2 ;;
 esac
 # P165_READY=0: part 1 again after the user already answered its ready step in this block (no second step)
 RD=${P165_READY:-$RD}

@@ -417,6 +417,14 @@ The kit is in `fixes/g0-box/phone/`, committed with this paragraph (sha256/12):
 - **A finger test by the user** (`memory/perception-tests-touch-ab.md`): a blind swipe A/B on the iPhone, original
   against g0.0f, posted by the phone holder as a console swipe-pair step (the lead sets the order).
 
+**User break in part 2 (user T-248 #3, the lead's instruction; user steps first):** at 08:24Z, on the lead's urgent
+instruction, I stopped part 2's runner (SIGTERM to its process group) during H8's EV2 gesture. H4-H7 were VALID; H8 (sC,
+EV2) is lost and re-runs. The iphone lease was free at once. The servers kept running in their own process group. Console
+step C-116 handed the iPhone to the user ("press Done when you hand it back"). After Done: **part 2b** (`p165-run.sh
+P-165 2b`: H8 alone, with a first heat because the phone cooled), then part 3, both detached. Their heat holds re-warm
+the phone, and their start gates (with the GRIDCHECK Safari restart) re-check real Serious, so nothing from before the
+break is assumed. The stopped H8 has no VALID line, so the scorer reads none of its runs.
+
 ### P-165 S leg (complete 07:51Z; interim until the block ends; `p165-score.mjs out/p165`)
 
 All 8 counted S runs are VALID (holds H1-H3, real Serious 38.9-39.8 °C at the gates, heat sentinels C1/C4/C5/C8 pass:
