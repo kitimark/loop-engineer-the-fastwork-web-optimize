@@ -58,11 +58,12 @@ test('profileVerdict: serious = xcode-serious, fair = real-fair, every state x i
   }
 });
 
-test('parseProfile: serious by default, fair, and nothing else (no "none")', () => {
+test('parseProfile: serious by default, real-serious (I-246), fair, and nothing else (no "none")', () => {
   assert.equal(P.parseProfile(undefined), 'serious');
   assert.equal(P.parseProfile('fair'), 'fair');
   assert.equal(P.parseProfile('serious'), 'serious');
-  for (const bad of ['none', '', 'Serious', 'real-serious', 'xcode-serious']) assert.throws(() => P.parseProfile(bad), /--profile must be serious .* or fair .*There is no profile "none"/);
+  assert.equal(P.parseProfile('real-serious'), 'real-serious');
+  for (const bad of ['none', '', 'Serious', 'xcode-serious', 'real-fair', 'real']) assert.throws(() => P.parseProfile(bad), /--profile must be serious .*, real-serious .* or fair .*There is no profile "none"/);
   assert.equal(P.EXIT_PROFILE, 8);
 });
 
@@ -465,4 +466,108 @@ test('I-201 the tester\'s step: not posted again within 30 min of an answered on
   assert.equal(q({ state: 'Critical', induced: 'Yes', condition: 'Serious' }, 1e12 + 60000), null, 'condition changed');
   assert.equal(q({ state: 'Critical', induced: 'No', condition: null }, 1e12 + 60000), null, 'condition stopped');
   assert.equal(q(ans.meta.phoneProfile.read, 1e12, 'fair'), null, 'another profile');
+});
+
+// I-246: real heat. The real-serious profile (gate real-serious: expect serious, acceptInduced false) passes a phone at
+// Serious by itself (Is Induced = No) and refuses an induced one (code 4, "wants real heat"), too cool (2), the ceiling (3).
+test('I-246: profile real-serious = gate real-serious: Serious not induced passes, induced refuses (code 4), too cool 2, ceiling 3', () => {
+  assert.deepEqual({ ...P.PROFILES['real-serious'] }, { name: 'real-serious', gate: 'real-serious', expect: 'serious', acceptInduced: false, want: 'Serious, real heat (not induced)' });
+  assert.equal(P.DEFAULT_PROFILE, 'serious', 'serious stays the default');
+  const want = { 'Nominal No': 2, 'Nominal Yes': 4, 'Fair No': 2, 'Fair Yes': 4, 'Serious No': 0, 'Serious Yes': 4, 'Critical No': 3, 'Critical Yes': 3 };
+  for (const [k, code] of Object.entries(want)) {
+    const [state, induced] = k.split(' ');
+    const r = P.profileVerdict('real-serious', { state, induced, battC: 36 });
+    assert.equal(r.code, code, `real-serious ${k}: ${r.why}`);
+    assert.equal(r.profile, 'real-serious');
+  }
+  assert.match(P.profileVerdict('real-serious', { state: 'Serious', induced: 'Yes', battC: 36 }).why, /induced .*this profile wants real heat/);
+  assert.match(P.profileVerdict('real-serious', { state: 'Fair', induced: 'No', battC: 36 }).why, /too cool \(Fair\)/);
+  assert.equal(P.profileVerdict('real-serious', { state: 'Serious', induced: 'No', battC: 43.9 }).code, 0);
+  assert.equal(P.profileVerdict('real-serious', { state: 'Serious', induced: 'No', battC: 44 }).code, 3, 'the 44 C ceiling holds');
+  assert.equal(P.profileVerdict('real-serious', { state: 'Serious', induced: 'No', battC: null }).code, 0);
+  assert.equal(P.profileVerdict('real-serious', { error: 'xctrace record exit 1' }).code, 1);
+  // serious and fair unchanged
+  assert.equal(P.profileVerdict('serious', { state: 'Serious', induced: 'No', battC: 36 }).code, 7);
+  assert.equal(P.profileVerdict('serious', { state: 'Serious', induced: 'Yes', battC: 36 }).code, 0);
+  assert.equal(P.profileVerdict('fair', { state: 'Fair', induced: 'Yes', battC: 36 }).why, 'induced by Xcode');
+});
+
+test('I-246: real-serious refusals: an induced condition is stopped (step stop-condition, tool mode CLEAR), too cool waits for real heat (no step)', () => {
+  const t = (read, o) => P.refusalText('real-serious', read, P.profileVerdict('real-serious', read), o);
+  let r = t({ state: 'Serious', induced: 'Yes', condition: 'Serious', battC: 34 });
+  assert.deepEqual([r.fix, r.reason], ['stop-condition', 'condition-on']);
+  assert.equal(r.line, 'REFUSED profile real-serious (Serious, real heat (not induced)): phone is Serious (induced by Xcode), battery 34 C; stop it: Xcode > Window > Devices and Simulators > the phone > Device Conditions > Thermal State > Stop (leave it off), then run again (gate real-serious code 4, reason condition-on, I-186)');
+  assert.equal(P.toolHint('real-serious', t({ state: 'Serious', induced: 'Yes', condition: 'Serious', battC: 34 }, { condition: 'tool' }), 'me'), 'CLEAR the thermal tool fixes it (no user step): node tools/thermal.mjs clear --owner me (inside your phone hold; I-199)');
+  r = t({ state: 'Fair', induced: 'No', battC: 33 });
+  assert.deepEqual([r.fix, r.reason], [null, 'too-cool']);
+  assert.match(r.line, /^REFUSED profile real-serious \(Serious, real heat \(not induced\)\): phone is Fair, battery 33 C; too cool for the real-serious profile: .*real heat.* \(gate real-serious code 2, reason too-cool, I-186\)$/);
+  r = t({ state: 'Critical', induced: 'Yes', condition: 'Serious', battC: 33 });
+  assert.deepEqual([r.fix, r.reason], ['stop-condition', 'condition-wrong']);
+  r = t({ state: 'Critical', induced: 'No', battC: 41 });
+  assert.deepEqual([r.fix, r.reason], [null, 'ceiling']);
+  const s = P.stepFor({ owner: 'me', profile: 'real-serious', fix: 'stop-condition' });
+  assert.match(s.title, /stop the iPhone's thermal condition \(test profile real-serious\)/);
+  assert.match(s.instructions, /The real-serious profile wants the phone at Serious by its own heat, with no Xcode condition\./);
+  assert.match(P.stepFor({ owner: 'me', profile: 'fair', fix: 'stop-condition' }).instructions, /The fair profile wants the phone at Nominal or Fair with no Xcode condition\./, 'fair unchanged');
+});
+
+test('I-246: startGate / closeHold under real-serious: the ledger, meta.profile and the end read name real-serious (profiles never pool)', async () => {
+  const dir = tempDir('fw-thermal-real-');
+  const lines = [];
+  const g = await P.startGate({ profile: 'real-serious', owner: 'runner', hold: hold('tokR'), read: async () => ({ state: 'Serious', induced: 'No', battC: 39 }), log: (l) => lines.push(l) });
+  assert.equal(lines[0], 'PROFILE real-serious ok at the hold\'s start: phone is Serious (real heat, not induced), battery 39 C (gate real-serious; read 0 s)');
+  assert.equal(g.key, P.ledgerKey(hold('tokR'), 'real-serious'));
+  const rec = g.record();
+  assert.deepEqual([rec.name, rec.gate, rec.start.state, rec.start.induced, rec.start.code], ['real-serious', 'real-serious', 'Serious', 'No', 0]);
+  // a serious run in the same hold is its own ledger: it refuses this real-heat phone, the real-serious read stays kept
+  await assert.rejects(P.startGate({ profile: 'serious', owner: 'runner', hold: hold('tokR'), read: async () => ({ state: 'Serious', induced: 'No', battC: 39 }), log: () => {}, postStep: null }), (e) => e.exitCode === 8 && e.verdict.code === 7);
+  assert.equal((await P.startGate({ profile: 'real-serious', owner: 'runner', hold: hold('tokR'), read: async () => { throw new Error('no read expected'); }, log: () => {} })).cached, true);
+  const f = join(dir, 'run.json');
+  writeFileSync(f, JSON.stringify({ meta: { profile: rec } }));
+  await g.saved(f);
+  const end = [];
+  const s = await P.closeHold({ resource: 'chrome-measure', token: 'tokR', read: async () => ({ state: 'Serious', induced: 'Yes', condition: 'Serious', battC: 39 }), log: (l) => end.push(l) });
+  assert.deepEqual(s.map((x) => [x.profile, x.gate, x.drift, x.end.code]), [['real-serious', 'real-serious', true, 4]]);
+  assert.match(end[0], /^PROFILE-DRIFT real-serious: .*\(gate real-serious code 4: induced .*wants real heat.*\)/);
+  const j = JSON.parse(readFileSync(f, 'utf8'));
+  assert.deepEqual([j.meta.profile.name, j.meta.profile.gate, j.meta.profileDrift], ['real-serious', 'real-serious', true]);
+});
+
+test('I-246: a real-serious warm-up (the heat pre-warm) passes too cool, is never the hold\'s start read; ceiling and a condition still refuse', async () => {
+  let read = { state: 'Fair', induced: 'No', battC: 35 };
+  const c = counter(() => read);
+  const lines = [];
+  const opts = { profile: 'real-serious', owner: 'runner', hold: hold('tokW'), read: c.read, log: (l) => lines.push(l), postStep: null };
+  const w = await P.startGate({ ...opts, warmup: true });
+  assert.match(lines[0], /^PROFILE real-serious warm-up: phone is Fair, battery 35 C \(gate real-serious code 2: too cool \(Fair\)\); an uncounted warm-up runs, not kept as the hold's start read/);
+  assert.deepEqual([w.key, w.cached, w.record().name, w.record().gate, w.record().warmup, w.record().start.state, w.record().start.code], [null, false, 'real-serious', 'real-serious', true, 'Fair', 2]);
+  await w.saved('/nonexistent/run.json'); // lists nothing
+  assert.equal(P.readLedger(P.ledgerKey(hold('tokW'), 'real-serious')), null, 'no ledger: no start read kept');
+  // the counted run reads again and refuses too cool (reason too-cool, no step)
+  await assert.rejects(P.startGate(opts), (e) => e.exitCode === 8 && e.reason === 'too-cool');
+  // a warm-up that already finds real Serious is still not the start read
+  read = { state: 'Serious', induced: 'No', battC: 38 };
+  assert.equal((await P.startGate({ ...opts, warmup: true })).record().warmup, true);
+  assert.equal(P.readLedger(P.ledgerKey(hold('tokW'), 'real-serious')), null);
+  assert.equal(c.n, 3);
+  // the first counted run: the start read, kept; a later warm-up in the same hold reuses it (no read)
+  const g = await P.startGate(opts);
+  assert.equal(g.record().warmup, undefined);
+  assert.equal(P.readLedger(g.key).start.state, 'Serious');
+  assert.equal((await P.startGate({ ...opts, warmup: true })).cached, true);
+  assert.equal(c.n, 4);
+  // a fresh hold: the ceiling and an induced condition refuse a warm-up as usual
+  const o2 = { ...opts, hold: hold('tokW2') };
+  read = { state: 'Fair', induced: 'No', battC: 44 };
+  await assert.rejects(P.startGate({ ...o2, warmup: true }), (e) => e.exitCode === 8 && e.verdict.code === 3 && e.reason === 'ceiling');
+  read = { state: 'Serious', induced: 'Yes', condition: 'Serious', battC: 34 };
+  await assert.rejects(P.startGate({ ...o2, warmup: true }), (e) => e.exitCode === 8 && e.verdict.code === 4 && e.reason === 'condition-on');
+  read = { state: 'Critical', induced: 'No', battC: 36 };
+  await assert.rejects(P.startGate({ ...o2, warmup: true }), (e) => e.verdict.code === 3);
+  // serious and fair: warmup changes nothing (a Fair phone refuses serious, its passing read is kept)
+  read = { state: 'Fair', induced: 'No', battC: 35 };
+  await assert.rejects(P.startGate({ ...o2, profile: 'serious', warmup: true }), (e) => e.exitCode === 8 && e.verdict.code === 2);
+  const f = await P.startGate({ ...o2, profile: 'fair', warmup: true });
+  assert.equal(f.record().warmup, undefined);
+  assert.equal(P.readLedger(P.ledgerKey(hold('tokW2'), 'fair')).start.code, 0);
 });

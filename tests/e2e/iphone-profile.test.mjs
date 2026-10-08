@@ -180,3 +180,42 @@ test('inside lock.mjs run chrome-measure --no-timing: the hold\'s first run read
   assert.deepEqual(line.phoneProfile.map((x) => [x.profile, x.drift, x.runs, x.stamped, x.start.state, x.end.state]), [['serious', true, 2, 2, 'Serious', 'Nominal']]);
   assert.equal(line.code, 0, 'the exit code stays the command\'s');
 });
+
+test('I-246: --profile real-serious: a --warmup run on a Fair phone runs (not the start read), a counted one refuses too cool (exit 8, no step), real Serious passes; the end read names real-serious', async () => {
+  const phone = await fakePhone();
+  env.FW_IPHONE_PORT = phone.port;
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '300').code, 0);
+  const w = join(dir, 'w.json'), a = join(dir, 'a.json');
+  // the heat pre-warm: Fair, not induced
+  let r = await nodeAsync(IPHONE, RUN(w, '--profile', 'real-serious', '--warmup'), { env, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^PROFILE real-serious warm-up: phone is Fair, battery 34\.5 C \(gate real-serious code 2: too cool \(Fair\)\); an uncounted warm-up runs, not kept as the hold's start read/m);
+  let m = JSON.parse(readFileSync(w, 'utf8')).meta;
+  assert.deepEqual([m.profile.name, m.profile.gate, m.profile.warmup, m.profile.start.state, m.profile.start.code], ['real-serious', 'real-serious', true, 'Fair', 2]);
+  // a counted run on the same Fair phone refuses: too cool, no console step
+  r = await nodeAsync(IPHONE, RUN(a, '--profile', 'real-serious'), { env, timeout: 60000 });
+  assert.equal(r.code, 8, r.out);
+  assert.match(r.stderr, /^REFUSED profile real-serious \(Serious, real heat \(not induced\)\): phone is Fair, battery 34\.5 C; too cool for the real-serious profile: .*\(gate real-serious code 2, reason too-cool, I-186\)$/m);
+  assert.doesNotMatch(r.stderr, /^STEP /m);
+  assert.ok(!existsSync(a), 'no record');
+  // real Serious: the counted run's read is the hold's start read
+  writeFileSync(thermal, 'Serious No 39\n');
+  r = await nodeAsync(IPHONE, RUN(a, '--profile', 'real-serious'), { env, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.stdout, /^PROFILE real-serious ok at the hold's start: phone is Serious \(real heat, not induced\), battery 39 C \(gate real-serious; read \d+ s\)$/m);
+  m = JSON.parse(readFileSync(a, 'utf8')).meta;
+  assert.deepEqual([m.profile.name, m.profile.gate, m.profile.warmup, m.profile.start.state, m.profile.start.induced, m.profile.start.code], ['real-serious', 'real-serious', undefined, 'Serious', 'No', 0]);
+  assert.equal(reads(), 3, 'warm-up, refused counted run, passing counted run: one read each');
+  // an Xcode condition switched on mid-hold: the end read drifts, only the counted record is stamped
+  writeFileSync(thermal, 'Serious Yes 39\n');
+  r = node(IPHONE, ['profile', '--owner', 'me', '--end'], { env, timeout: 30000 });
+  assert.equal(r.code, 8, r.out);
+  assert.match(r.stdout, /^PROFILE-DRIFT real-serious: at the hold's end the phone is Serious \(induced by Xcode\), battery 39 C \(gate real-serious code 4: induced .*this profile wants real heat.*\); 1 of 1 run records marked profileDrift: true/m);
+  const mw = JSON.parse(readFileSync(w, 'utf8')).meta;
+  assert.deepEqual([JSON.parse(readFileSync(a, 'utf8')).meta.profileDrift, mw.profileDrift, mw.profile.end], [true, null, null], 'the warm-up record is not stamped');
+  // the induced phone refuses a real-serious start: stop the condition (one step)
+  r = node(IPHONE, ['profile', '--owner', 'me', '--profile', 'real-serious'], { env, timeout: 30000 });
+  assert.equal(r.code, 8, r.out);
+  assert.match(r.stderr, /^REFUSED profile real-serious .*stop it: Xcode > .* > Stop \(leave it off\), then run again \(gate real-serious code 4, reason condition-on, I-186\)$/m);
+  assert.match(r.stderr, /^STEP C-\d+ posted on the user console for the tester: Xcode: stop the iPhone's thermal condition \(test profile real-serious\)$/m);
+});

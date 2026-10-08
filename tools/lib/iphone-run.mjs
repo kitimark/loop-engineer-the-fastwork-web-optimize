@@ -87,8 +87,10 @@ export const USAGE = `usage: node tools/iphone.mjs run --driver scroll|window|mo
     [--no-park]                                             keep the page open after the run (default: Safari parks
                                                             on about:blank, I-047; iphone.mjs open <url> before the
                                                             next run loads it in the parked tab or restarts Safari, I-077)
-    [--profile serious|fair]                                the thermal test profile (I-186, default serious = Xcode's
-                                                            induced Serious; fair = Nominal or Fair, not induced),
+    [--profile serious|real-serious|fair]                   the thermal test profile (I-186, default serious = Xcode's
+                                                            induced Serious; real-serious = Serious by real heat, not
+                                                            induced, I-246: a --warmup run passes too cool and is not
+                                                            the hold's start read; fair = Nominal or Fair, not induced),
                                                             read once per hold before Safari is touched; a misfit
                                                             refuses with exit 8 (iphone.mjs --help)`;
 
@@ -263,7 +265,7 @@ export async function runCmd({ argv, requireLease, port, target = null, profileG
   if (target) o.battery = false;
   const guard = target ? target.guard : (again) => measureGuard({ ...o, owner }, undefined, undefined, { note: !again });
   await guard();
-  // I-186: the thermal profile (--profile serious|fair) at the hold's start, one read per hold, before the lease renewal and
+  // I-186: the thermal profile (--profile serious|real-serious|fair) at the hold's start, one read per hold, before the lease renewal and
   // Safari: never in the timed part. A misfit refuses (exit 8). The Simulator target has no thermal profile.
   const prof = !target && profileGate ? await profileGate(owner) : null;
   const need = o.settleMs + estimateMs(o) + 30000 + 2500;

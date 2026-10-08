@@ -2,8 +2,14 @@
 // record | gesture) runs under a named profile, checked against the phone's thermal state at the START and END of its hold.
 //   serious (default): Xcode's Device Conditions > Thermal State "Serious" (Is Induced = Yes), no heat pre-warm
 //                      (gate profile xcode-serious of research/phone-thermal-gate, --accept-induced)
+//   real-serious:      Serious by the phone's own heat (Is Induced = No; I-246, real-heat blocks such as P-165): gate profile
+//                      real-serious (--expect serious, no --accept-induced); an Xcode/thermal.mjs condition refuses (code 4,
+//                      stop it), too cool refuses (code 2, no step: warm the phone by real use). Its uncounted warm-up runs
+//                      (--warmup / FW_PHONE_WARMUP=1, the heat pre-warm) pass too cool and never become the hold's start
+//                      read: that is the first counted run's (startGate `warmup`). The ceiling refuses them too.
 //   fair:              Nominal or Fair, not induced (gate profile real-fair, --expect fair)
-// There is no "none" profile. The ceiling (Critical, or battery >= 44 C) holds in every profile.
+// There is no "none" profile. The ceiling (Critical, or battery >= 44 C) holds in every profile. Profiles never pool: the
+// ledger key, meta.profile.name/gate and the end read name the profile.
 //
 // One read (readThermal, ~25 s on the phone): `xcrun xctrace record --instrument 'Thermal State' --device <udid>
 // --all-processes --time-limit 10s` into a temp trace, `xctrace export` of its 'device-thermal-state-intervals' table
@@ -16,7 +22,8 @@
 // config's udid). The device id is passed to xctrace only, never printed or stored.
 //
 // The verdict (gateVerdict) is a port of research/phone-thermal-gate/verdict.mjs (8e4eacbb), same codes:
-//   0 PASS; 1 no read; 2 too cool; 3 ceiling (Critical or battery >= maxC); 4 induced by Xcode (fair); 5 Serious during
+//   0 PASS; 1 no read; 2 too cool; 3 ceiling (Critical or battery >= maxC); 4 induced by a condition (fair, real-serious:
+//   both want no condition; I-246's why for real-serious says "this profile wants real heat"); 5 Serious during
 //   a Fair check; 6 timer grid disagrees (never here: the tools read no timer); 7 xcode-serious wanted, Serious is real heat.
 //
 // The hold: the caller's own `lock.mjs run chrome-measure` hold when the run is inside one ($FW_LOCK_HELD names its
@@ -57,6 +64,7 @@ export const DEFAULT_PROFILE = 'serious';
 export const XCODE_PATH = 'Xcode > Window > Devices and Simulators > the phone > Device Conditions > Thermal State';
 export const PROFILES = Object.freeze({
   serious: Object.freeze({ name: 'serious', gate: 'xcode-serious', expect: 'serious', acceptInduced: true, want: 'Serious, induced by Xcode' }),
+  'real-serious': Object.freeze({ name: 'real-serious', gate: 'real-serious', expect: 'serious', acceptInduced: false, want: 'Serious, real heat (not induced)' }), // I-246
   fair: Object.freeze({ name: 'fair', gate: 'real-fair', expect: 'fair', acceptInduced: false, want: 'Nominal or Fair, not induced' }),
 });
 const STATES = /^(Nominal|Fair|Serious|Critical)$/;
@@ -64,8 +72,8 @@ const STATES = /^(Nominal|Fair|Serious|Critical)$/;
 /** --profile value -> profile name; undefined -> the default (serious). Throws on anything else, "none" included. */
 export function parseProfile(v) {
   if (v === undefined || v === null) return DEFAULT_PROFILE;
-  if (PROFILES[v]) return v;
-  throw new Error(`--profile must be serious (default: Xcode-induced Serious) or fair (Nominal or Fair, not induced); got ${v === true || v === '' ? 'nothing' : `"${v}"`}. There is no profile "none" (I-186)`);
+  if (Object.hasOwn(PROFILES, v)) return v;
+  throw new Error(`--profile must be serious (default: Xcode-induced Serious), real-serious (Serious by real heat, not induced; I-246) or fair (Nominal or Fair, not induced); got ${v === true || v === '' ? 'nothing' : `"${v}"`}. There is no profile "none" (I-186)`);
 }
 
 /** Port of research/phone-thermal-gate/verdict.mjs gateVerdict (8e4eacbb), unchanged logic. Pure. */
@@ -79,7 +87,7 @@ export function gateVerdict({ err = null, state = null, induced = null, battC = 
     if (induced !== 'Yes') return out(7, 'Serious is real heat, not the Xcode condition (profile real-serious, not xcode-serious)');
     return out(0);
   }
-  if (induced === 'Yes') return out(4, 'induced by Xcode');
+  if (induced === 'Yes') return out(4, expect === 'serious' ? 'induced (a thermal condition is on), but this profile wants real heat (real-serious)' : 'induced by Xcode'); // I-246: the why only
   if (expect === 'serious' && state !== 'Serious') return out(2, `too cool (${state})`);
   if (expect === 'fair' && state === 'Serious') return out(5, 'too hot for a Fair check (Serious)');
   if (timer && ((state === 'Serious') !== (timer.median >= 25))) return out(6, `timer grid ${timer.median} ms disagrees with ${state} (LPM? page hidden?)`);
@@ -102,7 +110,7 @@ const REARM_REASONS = new Set(['phone-above-condition', 'condition-critical', 'c
 /** I-225: the tool-mode line after a refusal (what the agent runs itself, no user step), or null. Pure. */
 export function toolHint(profile, t, owner) {
   if (profile === 'serious' && REARM_REASONS.has(t.reason)) return `REARM the thermal tool fixes it (no user step): node tools/iphone.mjs rearm --owner ${owner} (inside your phone hold: thermal.mjs clear, plain reads once a minute until Nominal/Fair, set serious, settle 120 s, the profile read; I-225)`;
-  if (profile === 'fair' && t.fix === 'stop-condition') return `CLEAR the thermal tool fixes it (no user step): node tools/thermal.mjs clear --owner ${owner} (inside your phone hold; I-199)`;
+  if (profile !== 'serious' && t.fix === 'stop-condition') return `CLEAR the thermal tool fixes it (no user step): node tools/thermal.mjs clear --owner ${owner} (inside your phone hold; I-199)`;
   return null;
 }
 
@@ -266,9 +274,10 @@ export function currentHold({ env = process.env, cm, ip } = {}) {
 
 const slim = (read, v) => ({ at: read.at, state: read.state, induced: read.induced, condition: read.condition ?? null, ...(read.holder ? { holder: read.holder } : {}), battC: read.battC, code: v.code, why: v.why || null, ...(read.error ? { error: read.error } : {}) });
 
-/** The run record's meta.profile for a ledger (or a hold-less read): {name, gate, hold, start, end, drift}. */
+/** The run record's meta.profile for a ledger (or a hold-less read): {name, gate, hold, start, end, drift} (+ warmup: true for
+ *  a real-serious warm-up read that is not the hold's start read, I-246). */
 export function profileRecord(lg, { cached = false } = {}) {
-  return { name: lg.profile, gate: PROFILES[lg.profile].gate, hold: lg.hold ? `${lg.hold.resource}:${lg.hold.token}` : null, start: { ...lg.start, cached }, end: lg.end ?? null, drift: lg.end ? lg.end.code !== 0 : null };
+  return { name: lg.profile, gate: PROFILES[lg.profile].gate, hold: lg.hold ? `${lg.hold.resource}:${lg.hold.token}` : null, start: { ...lg.start, cached }, end: lg.end ?? null, drift: lg.end ? lg.end.code !== 0 : null, ...(lg.warmup ? { warmup: true } : {}) };
 }
 
 function prune(now) {
@@ -297,7 +306,8 @@ export const stateWords = (r) => (r?.state ? `${r.state}${r.induced === 'Yes' ? 
  * the line as "(gate <gate> code <n>, reason <reason>, I-186)":
  *   no-read                no thermal read (code 1); no step
  *   condition-critical     the Xcode condition itself is Critical (or its level is unknown) and the phone Critical; step
- *   condition-wrong        a Critical phone under a condition of the wrong level for the profile (fair: any); step
+ *   condition-wrong        a Critical phone under a condition of the wrong level for the profile (fair, real-serious:
+ *                          any); step
  *   phone-above-condition  serious: the condition IS Serious, the phone itself is Critical above it (06:14Z read of
  *                          2026-10-05). Battery < COOL_C (38 C): stop the condition, wait until a re-read shows below
  *                          Critical (~2 min), start Serious again; step fix 'restart-condition' (once per 30 min,
@@ -309,8 +319,10 @@ export const stateWords = (r) => (r?.state ? `${r.state}${r.induced === 'Yes' ? 
  *                          condition did not end it; a Stop, a ~2 min wait and a new Start did.
  *   ceiling                Critical without a condition, or battery >= maxC; cool down, no step
  *   condition-missing      serious: no Xcode condition (too cool, code 2, or real-heat Serious, code 7); step
- *   condition-on           fair: an Xcode condition is on (code 4); step (stop it)
+ *   condition-on           fair, real-serious: an Xcode condition is on (code 4); step (stop it)
  *   too-hot                fair: real-heat Serious (code 5); cool down, no step
+ *   too-cool               real-serious (I-246): below Serious with no condition (code 2); warm the phone by real use
+ *                          (the uncounted --warmup runs), no step
  *   condition-not-ours     serious, tool mode (I-233): the read passes (code 0) but the condition's holder is not our
  *                          thermal.mjs set (Xcode left on); take it over with rearm, no step
  *   other                  anything else (the gate's own why)
@@ -343,7 +355,8 @@ export function refusalText(profile, read, v, { maxC = MAX_C, condition = 'xcode
   else if (v.code === 3) { reason = 'ceiling'; what = `at the ceiling (Critical or battery >= ${maxC} C); ${cool}`; }
   else if (profile === 'serious' && (v.code === 2 || v.code === 7)) { reason = 'condition-missing'; fix = 'set-serious'; what = tool ? `no condition on: ${setSerious}` : setSerious; }
   else if (v.code === 0 && tool && profile === 'serious') { reason = 'condition-not-ours'; what = `the Serious condition is held by ${H}, not by our thermal.mjs set: take it over with the thermal tool (the REARM line below)`; } // I-233
-  else if (profile === 'fair' && v.code === 4) { reason = 'condition-on'; fix = 'stop-condition'; what = stop; }
+  else if (profile !== 'serious' && v.code === 4) { reason = 'condition-on'; fix = 'stop-condition'; what = stop; } // fair, real-serious (I-246)
+  else if (profile === 'real-serious' && v.code === 2) { reason = 'too-cool'; what = `too cool for the real-serious profile: it wants Serious by real heat, not a condition; warm the phone by real use (uncounted --warmup runs pass too cool), then run again`; } // I-246
   else if (profile === 'fair' && v.code === 5) { reason = 'too-hot'; what = `too hot for the fair profile; ${cool}`; }
   else what = v.why || `gate code ${v.code}`;
   return { line: `${head}; ${what} (gate ${p.gate} code ${v.code}, reason ${reason}, I-186)`, fix, reason };
@@ -360,7 +373,7 @@ export function stepFor({ owner, profile, fix, read = null }) {
   }
   if (fix === 'stop-condition') {
     return { title: `Xcode: stop the iPhone's thermal condition (test profile ${profile})`, meta,
-      instructions: `On the Mac, in Xcode choose Window > Devices and Simulators, click Devices and select the iPhone; under Device Conditions click Stop. Leave it off. The ${profile} profile wants the phone at Nominal or Fair with no Xcode condition. Then click Done here; ${owner} runs again.` };
+      instructions: `On the Mac, in Xcode choose Window > Devices and Simulators, click Devices and select the iPhone; under Device Conditions click Stop. Leave it off. The ${profile} profile wants the phone at ${profile === 'real-serious' ? 'Serious by its own heat, with' : 'Nominal or Fair with'} no Xcode condition. Then click Done here; ${owner} runs again.` };
   }
   return { title: `Xcode: set the iPhone's Thermal State to Serious (test profile ${profile})`, meta,
     instructions: `On the Mac, in Xcode choose Window > Devices and Simulators, click Devices and select the iPhone; under Device Conditions set Condition to Thermal State and Profile to Serious, then click Start. Leave it on (keep the cable in: it ends when the phone disconnects from Xcode). The ${profile} profile wants the phone at Serious induced by Xcode. Then click Done here; ${owner} runs again.` };
@@ -419,8 +432,12 @@ export async function postProfileStep({ owner, profile, fix, read = null, now = 
  * posting the tester's step (`postStep`; null when no Xcode action fixes it). Returns {ledger, key, record(), saved(file),
  * cached, read, verdict}. `hold` null (no lease, no hold): reads, keeps nothing. `condition` 'tool' (I-225, parseCondition):
  * a misfit posts no step and adds toolHint's line (REARM / CLEAR) after the refusal line instead.
+ * `warmup` (I-246; an uncounted --warmup run): under real-serious, while the hold has no kept start read, the read is made
+ * but never kept, and too cool (code 2) passes: the heat pre-warm runs on a phone that is not yet Serious, and the hold's
+ * start read is the first counted run's. Every other misfit (ceiling, a condition on, no read) refuses as usual. Its
+ * record() says warmup: true; saved() lists nothing (no end-read stamp). Other profiles: `warmup` changes nothing.
  */
-export async function startGate({ profile = DEFAULT_PROFILE, owner, hold, read = () => readThermal(), force = false, log = console.log, postStep = postProfileStep, now = Date.now, condition = 'xcode' } = {}) {
+export async function startGate({ profile = DEFAULT_PROFILE, owner, hold, read = () => readThermal(), force = false, log = console.log, postStep = postProfileStep, now = Date.now, condition = 'xcode', warmup = false } = {}) {
   profile = parseProfile(profile);
   condition = parseCondition(condition);
   const key = hold ? ledgerKey(hold, profile) : null;
@@ -428,6 +445,11 @@ export async function startGate({ profile = DEFAULT_PROFILE, owner, hold, read =
   if (old && !force && old.start?.code === 0 && !old.end) return handle(old, { cached: true });
   const r = await read();
   const v = profileVerdict(profile, r);
+  if (warmup && profile === 'real-serious' && (v.code === 0 || v.code === 2)) { // I-246: the heat pre-warm, never the start read
+    const lg = { key: null, hold, owner, profile, gate: PROFILES[profile].gate, start: slim(r, v), end: null, runs: [], warmup: true };
+    log(`PROFILE ${profile} warm-up: phone is ${stateWords(r)}${typeof r.battC === 'number' ? `, battery ${r.battC} C` : ''} (gate ${lg.gate} code ${v.code}${v.why ? `: ${v.why}` : ''}); an uncounted warm-up runs, not kept as the hold's start read (the first counted run reads; I-246)`);
+    return handle(lg, { cached: false, read: r, verdict: v });
+  }
   // I-233: in tool mode the Serious condition must be ours (P-158 03:07Z ran a tool-serious block on Xcode's condition)
   const notOurs = condition === 'tool' && profile === 'serious' && v.code === 0 && r.holder !== 'thermal.mjs';
   if (v.code !== 0 || notOurs) {

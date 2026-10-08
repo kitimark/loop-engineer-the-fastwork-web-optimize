@@ -519,7 +519,7 @@ export function phoneTarget({ owner, allowDuringMeasure = false, requireQuiet = 
       // hold; the runner's own hold passes; shared jobs pass with a NOTE and the Mac state in meta.mac, unless
       // --require-quiet or FW_PHONE_REQUIRE_QUIET=1
       mac = phoneGuard({ owner, allow: allowDuringMeasure, requireQuiet, warmup, log });
-      // I-186: the thermal profile (--profile serious|fair) at the hold's start (one read per hold), after the guard and
+      // I-186: the thermal profile (--profile serious|real-serious|fair) at the hold's start (one read per hold), after the guard and
       // before the lease and hold budget checks (so they count its ~25 s), WDA and Safari; without a gate: synchronous
       if (profileGate) return profileGate(owner).then((p) => { prof = p; return budget(budgetMs); });
       return budget(budgetMs);

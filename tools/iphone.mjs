@@ -92,10 +92,13 @@
 // crossing log, tool hashes) -> out/iphone/<owner>-run-<label>-<ts>.json (schema fw-iphone-run/1).
 //
 // Thermal test profile (I-186; user T-162 #3/#5; tools/lib/thermal-profile.mjs): run, scroll, record and gesture take
-// --profile serious|fair (default serious; there is no "none"):
-//   serious = Xcode's Device Conditions > Thermal State "Serious" (Is Induced = Yes), no heat pre-warm (gate xcode-serious)
-//   fair    = Nominal or Fair, not induced (gate real-fair)
-// The ceiling (Critical, or battery >= 44 C) holds in both. The hold (your `lock.mjs run chrome-measure` hold when the run
+// --profile serious|real-serious|fair (default serious; there is no "none"):
+//   serious      = Xcode's Device Conditions > Thermal State "Serious" (Is Induced = Yes), no heat pre-warm (gate xcode-serious)
+//   real-serious = Serious by the phone's own heat, not induced (gate real-serious; I-246, real-heat blocks): a condition
+//                  refuses (stop it), too cool refuses with no step; its --warmup runs (the heat pre-warm) pass too cool
+//                  and are never the hold's start read (the first counted run reads; meta.profile.warmup: true)
+//   fair         = Nominal or Fair, not induced (gate real-fair)
+// The ceiling (Critical, or battery >= 44 C) holds in all three. The hold (your `lock.mjs run chrome-measure` hold when the run
 // is inside one, else your iphone lease) is checked at its START (one xctrace Thermal State read, ~25 s, made by the
 // hold's first run before Safari is touched and reused by its later runs; a read is never in the timed part) and at its
 // END (`lock.mjs run` makes it when its command ends; outside a run hold: `iphone.mjs profile --end`). On a misfit at the
@@ -111,7 +114,7 @@
 // start, end, drift} (start/end: state, induced, condition (the Xcode condition's own level, I-201), battC, gate code).
 // No CLI can set the Xcode condition (devicectl has none,
 // research/thermal-condition-cli). A Simulator session reads nothing (meta.profile.skipped).
-//   node tools/iphone.mjs profile --owner <topic> [--profile serious|fair]   # one read now (your lease): exit 0 fits,
+//   node tools/iphone.mjs profile --owner <topic> [--profile serious|real-serious|fair]   # one read now (your lease): exit 0 fits,
 //        # 8 misfit (+ the step); inside your hold it is the hold's start read, so the first run reads nothing more.
 //        # Before a finger test (record) run it first, so a misfit never meets the user's Start.
 //   node tools/iphone.mjs profile --owner <topic> --end                      # the hold's end read now; exit 8 on drift
@@ -138,7 +141,7 @@
 import { mkdirSync, writeFileSync, renameSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { openTab, navigate, safariTab, sleep, parkSafari, connect, findParkedTab } from './lib/wip.mjs';
-import { status as lockStatus, timedInSlotRefusal, phoneGuard, phoneMacRecord, describeHold, phoneHolder } from './lib/lock.mjs';
+import { status as lockStatus, timedInSlotRefusal, phoneGuard, phoneMacRecord, describeHold, phoneHolder, phoneWarmup } from './lib/lock.mjs';
 import { keepAwakeFor } from './lib/awake.mjs';
 import { runnerRefusal } from './lib/phone-step.mjs';
 import { parseJob, phoneRunText } from './lib/hold-job.mjs';
@@ -207,14 +210,17 @@ function measureGuard(owner) {
   return phoneGuard({ owner, allow: flag('allow-during-measure'), requireQuiet: flag('require-quiet'), warmup: cmd === 'scroll' && flag('warmup') }); // I-176: only an uncounted warm-up scroll
 }
 
-/** I-186: the phone's thermal state against the run's --profile (serious, the default, or fair) at its hold's start: one
- *  read per hold (lib/thermal-profile.mjs startGate; the hold's later runs reuse it), before Safari is touched. A misfit
- *  throws (exit EXIT_PROFILE, 8) after posting the tester's console step. Returns {record(), saved(file)}: the record's
- *  meta.profile, and the file's registration for the hold's end read (profileDrift). A Simulator session reads nothing. */
+/** I-186: the phone's thermal state against the run's --profile (serious, the default, real-serious or fair) at its hold's
+ *  start: one read per hold (lib/thermal-profile.mjs startGate; the hold's later runs reuse it), before Safari is touched.
+ *  A misfit throws (exit EXIT_PROFILE, 8) after posting the tester's console step. Returns {record(), saved(file)}: the
+ *  record's meta.profile, and the file's registration for the hold's end read (profileDrift). A Simulator session reads
+ *  nothing. I-246: a --warmup run (or FW_PHONE_WARMUP=1; never record) under real-serious passes too cool and is not the
+ *  hold's start read (startGate `warmup`). */
 async function profileGate(owner, profile = opt('profile')) {
   const name = parseProfile(profile);
   if (process.env.FW_SIM_SESSION) return { record: () => ({ name, gate: PROFILES[name].gate, skipped: 'simulator session' }), saved: async () => {} };
-  return startGate({ profile: name, owner, hold: currentHold(), condition: parseCondition(undefined) }); // I-225: $FW_PHONE_CONDITION
+  const warmup = cmd !== 'record' && (flag('warmup') || phoneWarmup());
+  return startGate({ profile: name, owner, hold: currentHold(), condition: parseCondition(undefined), warmup }); // I-225: $FW_PHONE_CONDITION
 }
 
 async function tabs() {
@@ -293,7 +299,7 @@ async function openParked(url, target, info) {
   return true;
 }
 
-/** `iphone.mjs profile --owner <o> [--profile serious|fair] [--end]` (I-186). Without --end: one fresh read now, checked
+/** `iphone.mjs profile --owner <o> [--profile serious|real-serious|fair] [--end]` (I-186). Without --end: one fresh read now, checked
  *  against the profile; it counts as the start read of your hold (your lock.mjs run hold, else your iphone lease), so the
  *  hold's first run reads nothing more; a misfit posts the tester's step and exits 8. --end: the end read of your hold
  *  now (closeHold): every run record of the hold gets profile.end / profileDrift; exit 8 on drift. */
@@ -470,6 +476,6 @@ async function main() {
   if (cmd === 'run') return (await import('./lib/iphone-run.mjs')).runCmd({ argv, requireLease: leaseAndMark, port: PORT, profileGate });
   if (cmd === 'profile') return profileCmd();
   if (cmd === 'rearm') return rearmCmd();
-  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--warmup] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--touches] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--idle-after-reload <ms>] [--warmup] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|ensure|stop | preflight --owner <topic> [--settle 60] | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | profile --owner <topic> [--profile serious|fair] [--condition xcode|tool] [--end] | rearm --owner <topic> [--settle 120] [--max-wait 600] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
+  console.log('usage: node tools/iphone.mjs status | open <url> --owner <topic> [--keep-https] [--no-restart] | scroll --owner <topic> [--label x] [--out file] [--warmup] [--require-quiet] [--allow-during-measure] | park --owner <topic> | record --owner <topic> [--seconds 25] [--poll 5] [--touches] [--require-quiet] [--allow-during-measure] | gesture <script.json> --owner <topic> [--dry-run] [--idle-after-reload <ms>] [--warmup] [--require-quiet] [--allow-during-measure] | wda status|check|build|start|ensure|stop | preflight --owner <topic> [--settle 60] | safari-restart --owner <topic> [--url U] [--via auto|wda|devicectl] [--timeout 30] | battery [--every 30] [--seconds N] [--out f.jsonl] | profile --owner <topic> [--profile serious|real-serious|fair] [--condition xcode|tool] [--end] | rearm --owner <topic> [--settle 120] [--max-wait 600] | run --driver scroll|window|morph --probe std --owner <topic> (run --help)');
 }
 main().then(async () => { await clearMark(); process.exit(exitCode); },async (e) => { console.error(e.message || e); await clearMark(); process.exit(e?.exitCode || 1); }); // I-186: a profile misfit exits 8
