@@ -1037,6 +1037,55 @@ Files: `out/g0box/p168/px-*/px.json`.
   3. Swapping it in would change part B's arm after the card was drafted, with no Simulator reason to drop g0.0g: g0.0g is no worse than f on the Simulator either.
   The kit keeps the option (`P168_KB=fB`) if the lead decides otherwise.
 
+### P-168 result (OBSERVED, within the block; signed d7bee250, GO 15:2xZ after the user's ready step C-126)
+
+- **Runs.** Part A ran 15:28-15:48Z, profile tool-serious.
+  - Holds H1-H4 all valid, no re-runs.
+  - Heat sentinel AsC passed at the start (bottom 60.1 / scroll 51.6 fps, battery 34.8 °C) and at the end (60.0 / 52.3 fps, 37.1 °C).
+- **Deviations from the card** (neither touches a counted run):
+  - (1) `P168_READY=0`: C-126 was the ready step (condition 3), so the kit posted no second one.
+  - (2) Part A started with plain `nohup`, without `out/g0box/watchdog2.sh` (condition 3). The watchdog only prints stall warnings; part A had no stall. Part B ran with it.
+- **Reader:** `phone/p168-wread.mjs`, committed (859d765e) before any run was read. It fixed one definition the card leaves open: "median Layout record" = per run, the median of the Layout records ≥ 5 ms in the scroll phase; per arm, the median of the 3 runs. Data: `out/p168ph/wread-A.json`.
+
+**Window A** (steps 0 → 750, W runs reach y ≈ 750-930; scroll phase primary; medians of 3 runs, per-run values in brackets)
+
+| arm | > 34 (30/38) | > 50 (46/54) | max dt ms | move > 34 / > 50 | Composite sum / max, move | Layouts ≥ 5 ms: n / sum / median ms | frames with 2+ |
+|---|---|---|---|---|---|---|---|
+| v0 | 4 (4/3) [5, 3, 4] | 1 (2/1) [2, 1, 1] | 57 [64, 57, 54] | 7 / 3 | 529 / 41 | 12 / 177 / 12.3 | 4 |
+| g0.0f | 5 (5/4) [5, 4, 5] | 2 (2/0) [1, 2, 2] | 52 [52, 56, 52] | 5 / 2 | 296 / 30 | 8 / 119 / 14.5 | 1 |
+| f-cv25 | 6 (6/4) [6, 4, 6] | 3 (4/2) [3, 4, 3] | 58 [57, 58, 62] | 6 / 3 | 306 / 32 | 9 / 148 / 15.7 | 2 |
+
+- **Reproduce first: reproduced at > 50, and threshold-sensitive.** g0.0f's median > 50 is 2, v0's + 1 = 2. Both twins say "not reproduced": at > 46 both arms have 2; at > 54 g0.0f has 0 against v0's 1.
+- **f-cv25: "no effect" (threshold-sensitive).** Its median > 50 of 3 is above v0's 1, so not "removes", and above g0.0f's 2, so not "partial". The twins give "not reproduced", which voids the f-cv25 verdict at those thresholds.
+- **Mechanism line (A): f-cv25's median Layout does not move toward v0.** It is 15.7 ms against g0.0f's 14.5 and v0's 12.3, with 9 Layouts ≥ 5 ms against g0.0f's 8.
+  - The smaller tree at the top (937 vs 1584 rendered elements, `content-visibility` on the panel) does not make the phone's scroll-phase Layouts cheaper.
+  - With ko2, f-cv25 un-skips sections while scrolling, as v0 does. That costs one more Layout, as on the Simulator (census above).
+- **Reading.** The layout-tree hypothesis for g0.0f's window-A long frames is not supported: the arm that brings the tree back to v0's size does not bring the Layout cost or the long frames back to v0.
+  - On this phone at tool-serious, g0.0f's window-A excess over v0 is one > 50 frame and holds only at the 50 ms threshold.
+  - g0.0f's max dt (52) is below v0's (57), and its Composite work in the move phase is ~44 % lower (296 vs 529 ms).
+
+**Window B** (jump to 4000, steps 4000 → 5000; part B 15:49-16:12Z)
+- Holds H5-H9 all valid, no re-runs.
+- BsC passed at the start (60.2 / 51.6 fps, 36.8 °C) and at the end (60.0 / 52.0 fps, 37.8 °C). Data: `out/p168ph/wread.json`.
+
+| arm | > 34 (30/38) | > 50 (46/54) | max dt ms [runs] | +is-play frame: y, dt, Composite in it | Layout in it | Composite sum, move |
+|---|---|---|---|---|---|---|
+| v0 | 1 (1/1) | 0 (0/0) | 45 [43, 45, 46] | y 4562, 43-46 ms, 40-42 ms | none | 1198 |
+| g0.0f | 1 (1/1) | 1 (1/1) | 73 [74, 73, 69] | y 4608-4609, 69-74 ms, 58-64 ms | 0-1 record, ≤ 0.3 ms | 376 |
+| g0.0g | 1 (1/1) | 1 (1/1) | 69 [71, 69, 69] | y 4607-4609, 69-71 ms, 58-60 ms | 0-1 record, ≤ 0.4 ms | 351 |
+
+- **g0.0g: "no effect".** Its median max dt is 4 ms below g0.0f's, inside the ±6 ms band. Its > 34 / > 50 medians (1 / 1) are ≤ g0.0f's (1 / 1). The twins agree.
+- **Mechanism line (B): no Layout record in the `+is-play` frame on either arm.** The card's premise for window B, that the fwWC flip changes the used z-index and WebKit answers with Layout, does not show up on the phone.
+- **The frame is Composite-bound.** In every run the `+is-play` frame is the only frame over 34 ms in the scroll phase, and Composite covers 84-92 % of it.
+  - g0.0f's frame comes 46 px later than v0's (y 4608 vs 4562, as in P-167) and carries ~20 ms more Composite (58-64 vs 40-42 ms), although g0.0f's Composite over the whole window is a third of v0's (376 vs 1198 ms).
+  - g0.0g's constant stacking context trims at most ~2-4 ms of it.
+
+**What P-168 settles** (OBSERVED, tool-serious, 3 runs per arm)
+1. **Window A:** g0.0f's excess over v0 is one > 50 frame, threshold-sensitive (the 46/54 twins do not reproduce it). f-cv25 does not remove it and does not bring the Layout cost toward v0. Not a layout-tree effect. **Recommendation: drop f-cv25 as a fix candidate.**
+2. **Window B:** g0.0f's long frame is one Composite-heavy `+is-play` frame, ~25 ms over v0's, with no Layout in it. **Recommendation: drop g0.0g as a fix candidate** (no effect).
+   - The next question for window B is what that one Composite costs: the layers that commit at `+is-play`. That is de-offscreen's area (layer census, KO B).
+   - On the Simulator, f+B was the one arm that cut the window-B Composite max (−2.8 ms, see "Composite count" above), so the later f+B block (after the proposal decision) asks the right question.
+
 ## P-164 (phone card; written before any P-164 data)
 
 **Pre-data check 2, with the g0 program (2026-10-08 03:47-03:55Z, before any P-164 data). Result: START-STATE

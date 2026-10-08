@@ -2065,5 +2065,289 @@
       "Composite sum over window A: v0 ~560 ms vs g0.0e ~305, e-ko2 ~303; window B: v0 ~1230 vs ~370/360",
       "thermal clear after part A: set stopped, confirm hit RSD GOAWAY; status in a separate hold 13:41:56Z read NONE"
     ]
+  },
+  "p168": {
+    "status": "done: window A f-cv25 no effect (g0.0f excess reproduced at >50 only, threshold-sensitive); window B g0.0g no effect (-4 ms, band 6); OBSERVED, within the block",
+    "signed": "lead, d7bee250 (landed on main); GO 15:2xZ after the user ready step C-126",
+    "when": "2026-10-08 15:28-16:12Z (part A 15:28-15:48, part B 15:49-16:12)",
+    "profile": "tool-serious (iphone.mjs rearm + thermal.mjs, --profile serious); never pooled with P-165/P-166/P-167",
+    "arms": {
+      "v0": "JS 4606120cf392 CSS 27776f3d4138",
+      "g0.0f": "JS 30fd80ccbb3f CSS 1d1e5d62a2c4",
+      "f-cv25 (A)": "JS b700ddaf88b4 CSS fa5888cfa299",
+      "g0.0g (B)": "JS 30fd80ccbb3f CSS 2390e4715327"
+    },
+    "kit": "d7bee250 (card + kit); reader p168-wread.mjs 859d765e, committed before any run was read; tools head at the runs 50901a12 (contains db884e9d)",
+    "deviations": [
+      "P168_READY=0: C-126 was the ready step, no second one posted",
+      "part A started with plain nohup, not out/g0box/watchdog2.sh (stall warnings only; no stall); part B with it"
+    ],
+    "holds": {
+      "valid": [
+        "H1",
+        "H2",
+        "H3",
+        "H4",
+        "H5",
+        "H6",
+        "H7",
+        "H8",
+        "H9"
+      ],
+      "countedRunsValid": 18,
+      "reruns": 0
+    },
+    "sentinels": [
+      "AsC H1 PASS 60.1/51.6 34.8 C",
+      "AsC H4 PASS 60.0/52.3 37.1 C",
+      "BsC H5 PASS 60.2/51.6 36.8 C",
+      "BsC H9 PASS 60.0/52.0 37.8 C"
+    ],
+    "metric": "p168-wread.mjs: scroll phase [scroll start, scroll end) per run, frames >34/>50 (twins 30/38, 46/54), max dt; medians of 3; median Layout record = median of Layout >= 5 ms in the scroll phase per run, median of runs",
+    "arms_summary": {
+      "A0": {
+        "n": 3,
+        "scroll": {
+          "gt30": 4,
+          "gt34": 4,
+          "gt38": 3,
+          "gt46": 2,
+          "gt50": 1,
+          "gt54": 1,
+          "maxDt": 57,
+          "compSum": 156.1,
+          "compMax": 38.5
+        },
+        "move": {
+          "gt30": 9,
+          "gt34": 7,
+          "gt38": 5,
+          "gt46": 3,
+          "gt50": 3,
+          "gt54": 3,
+          "maxDt": 60,
+          "compSum": 528.6,
+          "compMax": 41.4
+        },
+        "lay": {
+          "n": 12,
+          "sum": 177.4,
+          "med": 12.3,
+          "max": 19.6,
+          "pairs": 4,
+          "medAll": 0.2
+        },
+        "play": null
+      },
+      "Ae": {
+        "n": 3,
+        "scroll": {
+          "gt30": 5,
+          "gt34": 5,
+          "gt38": 4,
+          "gt46": 2,
+          "gt50": 2,
+          "gt54": 0,
+          "maxDt": 52,
+          "compSum": 167.1,
+          "compMax": 29.5
+        },
+        "move": {
+          "gt30": 5,
+          "gt34": 5,
+          "gt38": 4,
+          "gt46": 2,
+          "gt50": 2,
+          "gt54": 0,
+          "maxDt": 52,
+          "compSum": 296.1,
+          "compMax": 29.5
+        },
+        "lay": {
+          "n": 8,
+          "sum": 119.1,
+          "med": 14.5,
+          "max": 19.3,
+          "pairs": 1,
+          "medAll": 0.1
+        },
+        "play": null
+      },
+      "Ak": {
+        "n": 3,
+        "scroll": {
+          "gt30": 6,
+          "gt34": 6,
+          "gt38": 4,
+          "gt46": 4,
+          "gt50": 3,
+          "gt54": 2,
+          "maxDt": 58,
+          "compSum": 158.6,
+          "compMax": 32.2
+        },
+        "move": {
+          "gt30": 6,
+          "gt34": 6,
+          "gt38": 4,
+          "gt46": 4,
+          "gt50": 3,
+          "gt54": 2,
+          "maxDt": 58,
+          "compSum": 306.2,
+          "compMax": 32.2
+        },
+        "lay": {
+          "n": 9,
+          "sum": 148.3,
+          "med": 15.7,
+          "max": 23,
+          "pairs": 2,
+          "medAll": 0.1
+        },
+        "play": null
+      },
+      "B0": {
+        "n": 3,
+        "scroll": {
+          "gt30": 1,
+          "gt34": 1,
+          "gt38": 1,
+          "gt46": 0,
+          "gt50": 0,
+          "gt54": 0,
+          "maxDt": 45,
+          "compSum": 293.3,
+          "compMax": 41.3
+        },
+        "move": {
+          "gt30": 1,
+          "gt34": 1,
+          "gt38": 1,
+          "gt46": 0,
+          "gt50": 0,
+          "gt54": 0,
+          "maxDt": 45,
+          "compSum": 1198.3,
+          "compMax": 41.3
+        },
+        "lay": {
+          "n": 0,
+          "sum": 0,
+          "med": null,
+          "max": 0,
+          "pairs": 0,
+          "medAll": 0.1
+        },
+        "play": {
+          "dt": 45,
+          "layouts": 0,
+          "layoutMs": 0,
+          "n": 3
+        }
+      },
+      "Be": {
+        "n": 3,
+        "scroll": {
+          "gt30": 1,
+          "gt34": 1,
+          "gt38": 1,
+          "gt46": 1,
+          "gt50": 1,
+          "gt54": 1,
+          "maxDt": 73,
+          "compSum": 277,
+          "compMax": 61.5
+        },
+        "move": {
+          "gt30": 1,
+          "gt34": 1,
+          "gt38": 1,
+          "gt46": 1,
+          "gt50": 1,
+          "gt54": 1,
+          "maxDt": 73,
+          "compSum": 376,
+          "compMax": 61.5
+        },
+        "lay": {
+          "n": 0,
+          "sum": 0,
+          "med": null,
+          "max": 0,
+          "pairs": 0,
+          "medAll": 0.2
+        },
+        "play": {
+          "dt": 73,
+          "layouts": 0,
+          "layoutMs": 0,
+          "n": 3
+        }
+      },
+      "Bk": {
+        "n": 3,
+        "scroll": {
+          "gt30": 1,
+          "gt34": 1,
+          "gt38": 1,
+          "gt46": 1,
+          "gt50": 1,
+          "gt54": 1,
+          "maxDt": 69,
+          "compSum": 253.1,
+          "compMax": 59.4
+        },
+        "move": {
+          "gt30": 1,
+          "gt34": 1,
+          "gt38": 1,
+          "gt46": 1,
+          "gt50": 1,
+          "gt54": 1,
+          "maxDt": 69,
+          "compSum": 350.7,
+          "compMax": 59.4
+        },
+        "lay": {
+          "n": 0,
+          "sum": 0,
+          "med": null,
+          "max": 0,
+          "pairs": 0,
+          "medAll": 0.2
+        },
+        "play": {
+          "dt": 69,
+          "layouts": 0,
+          "layoutMs": 0,
+          "n": 3
+        }
+      }
+    },
+    "verdicts": {
+      "A": {
+        "verdict": "no effect",
+        "twins": {
+          "gt46": "not reproduced",
+          "gt54": "not reproduced"
+        },
+        "thresholdSensitive": true,
+        "reproduced": true,
+        "mechanism": "f-cv25 median Layout 15.7 ms vs g0.0f 14.5, v0 12.3: does not move toward v0"
+      },
+      "B": {
+        "verdict": "no effect",
+        "maxDtDelta": -4,
+        "gt34le": true,
+        "gt50le": true,
+        "mechanism": "+is-play frame Layout: g0.0g 0 records / 0 ms vs g0.0f 0 / 0 ms"
+      }
+    },
+    "notes": [
+      "window A: Layout >= 5 ms median 12.3 (v0) / 14.5 (g0.0f) / 15.7 ms (f-cv25); counts 12 / 8 / 9; the smaller tree does not make phone Layouts cheaper",
+      "window B: the +is-play frame is the only >34 frame; Composite in it 40-42 ms (v0, y 4562) vs 58-64 (g0.0f) and 58-60 (g0.0g) at y 4607-4609; no Layout in it",
+      "pixel: f-cv25 y 1500 spot = unfrozen avatar carousel (re-gate with PX_CAROUSEL=freeze clean); Simulator y 0 hero glyph spot = g0.0f control phase (A vs A2 differ)"
+    ]
   }
 }
