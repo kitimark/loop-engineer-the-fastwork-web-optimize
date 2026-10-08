@@ -1,0 +1,25 @@
+# g0.0i delta vs g0.0h (JS 9162843e750f / CSS 26d28a0a263b) -> g0.0i (JS 9162843e750f unchanged / CSS adb875d94c1f): menu-layers clock layer (T-253 #10 item 2)
+# contains excerpts of Fastwork's code: local branches only, never push
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -12452,4 +12452,20 @@
+   .start-selling [data-start-selling-scene="paused"] .start-selling-morph-col:nth-child(2n) .start-selling-morph-col-track {
+     transform: translateY(-56px);
+   }
++}
++/* [menu-layers] the panel countdown on its own small layer while the menu scene is active (T-253 #10, item 2). The
++   panel clock paints its cells unlayered (cd-strip, countdown-faces), so every frame of a tick's roll repainted the
++   menu centre's layer (~5.7 MB at 430 px, DPR 3); with the wrapper composited a roll frame repaints only the wrapper
++   (~1.2 MB). Only while active: closed, the clock is frozen (__cdLive) and the centre is no layer (PR-039
++   keep-phase), so a wrapper layer there would only add memory. The wrapper is a stacking context at all times
++   (isolation), so the will-change flip at the scene change never flips its used z-index (auto <-> 0), which WebKit
++   answers with a Layout (F-351). Nothing inside is positioned against an ancestor above it, there is no blend mode
++   and nothing in the centre overlaps it, so the isolation paints the same. WebKit only (html.fw-bx, the page's own
++   `GestureEvent` test, g0-box v3-W): the cost is WebKit's (a re-displayed backing store per roll frame), and Chrome
++   placed the composited wrapper's digits 1 CSS px higher (3 device px, up to 224 levels; seek gate, OBSERVED). */
++html.fw-bx .start-selling-morph-center .waitlist-closing-countdown {
++  isolation: isolate;
+ }
++html.fw-bx .start-selling-morph-panel[data-start-selling-scene="active"] .start-selling-morph-center .waitlist-closing-countdown {
++  will-change: transform;
++}
