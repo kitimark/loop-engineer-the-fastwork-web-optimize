@@ -996,6 +996,23 @@ Data: `out/p167ph/wread.json`, `out/p167ph/runs/{w,tl}-*.json`, `out/g0box/p167-
 
 Files: `out/g0box/p168/px-*/px.json`.
 
+**Re-gate of f-cv25 with the avatar carousel frozen** (lead 15:2xZ, while C-126 waits; `PX_CAROUSEL=freeze` in both gates, one shared slot each).
+- **How the carousel is frozen.** Its loop (JS ~12379-12413 in g0.0f) advances only after `setTimeout(<helper>, 800)` and `setTimeout(<helper>, 220)`. The helper's text occurs once in the bundle. The gate drops exactly those timers, installed right after load at y 0, where the row is inactive. Every other timer runs.
+- **Proof it held.** Every load recorded 1 stalled timer and the same slot classes at y 1500.
+
+| check | Chrome 430x932 | Simulator 430x775 |
+|---|---|---|
+| g0.0f vs f-cv25, 6 stops | 0 consistent CSS px² at every stop (max 1 level) | 0 at y 250 / 500 / **1500** / 3000 / 4600. y 0: 18 CSS px², edge 187 (T2 fails by the letter, see below) |
+| g0.0f vs g0.0f A/A, y 1500 | 0 | 0 consistent (1 px² beyond A/A, not repeated) |
+
+- **The y 1500 spot is gone** once the carousel is frozen. It was the carousel's position, as the same-build A/A had suggested.
+- **The new y 0 spot is the animated hero glyph** between "What" and "can" (screenshot x 179-221, y 210-257; crops `out/g0box/p168/hero-y0-f-vs-cv-carfrozen.png`).
+  - The two f-cv25 loads, V and V2, are identical there.
+  - The two **g0.0f** loads, A and A2, differ from each other: 2064 px over 8 levels, max 207.
+  - "Consistent" only means both g0.0f loads differ from f-cv25, each at its own glyph phase.
+  - The control's glyph phase varies between loads; this is not f-cv25. The earlier unfrozen runs had y 0 clean (`px-sim-2026-10-08T14-43-38-105Z`).
+- **Verdict:** f-cv25 is pixel-identical wherever both controls agree. Before it lands as a build, the glyph needs the same treatment: frozen, or the y 0 stop repeated until the two control loads agree. Files: `px-mobile-2026-10-08T15-17-25-251Z`, `px-mobile-2026-10-08T15-19-31-340Z`, `px-sim-2026-10-08T15-21-34-248Z`, `px-sim-2026-10-08T15-23-35-754Z`.
+
 **Composite count, windows A and B** (lead 14:5xZ; `p168-comp.mjs`, Simulator Timeline, 3 loads per arm, counts and Simulator ms only, no timing claim). Window A: W-like steps 0 → ~1000. Window B: jump to 4000, 3 s, then steps 4000 → 5000. Each cell is the min-max over the 3 loads. Arms: f = g0.0f, f+B = g0.0f + KO B, f+C = g0.0f + KO C, g = g0.0g.
 
 | window | arm | frames | Composite sum ms | Composite max ms | max frame ms (y) | Layouts |

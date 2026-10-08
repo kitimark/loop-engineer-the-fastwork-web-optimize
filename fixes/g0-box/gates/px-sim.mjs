@@ -31,11 +31,21 @@ const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
 const cfg = S.readConfig();
 const F = Date.parse('2026-10-04T12:00:00Z') + 500;
 const SETTLE = +(process.env.PX_SETTLE || 2600); // double-drive: settle after each instant scroll (int-v8 used 1600)
+
+// PX_CAROUSEL=freeze (lead, P-168 wait): stall the people-section avatar carousel. Its loop (JS ~12379-12413 in g0.0f) waits
+// with setTimeout(<helper>, 800 | 220); the helper's text (`n.indexOf(r)` ... `n.splice(e, 1), t()`) occurs once in the bundle.
+// Installed right after load at y 0, where the row is inactive, so the index stays at its start value in every load. Only those
+// timers are dropped; every other timer runs. Each stop records the row's image names and the stall count.
+const CAROUSEL = process.env.PX_CAROUSEL === 'freeze';
+const STALL = `(() => { if (window.__fwCarStall != null) return 'again'; const st = window.setTimeout; window.__fwCarStall = 0;
+  window.setTimeout = function (fn, ms, ...a) { if ((ms === 800 || ms === 220) && typeof fn === 'function' && /indexOf\\(r\\)[\\s\\S]*splice\\(e, 1\\), t\\(\\)/.test(Function.prototype.toString.call(fn))) { window.__fwCarStall++; return 0; } return st.call(this, fn, ms, ...a); };
+  return 'ok'; })()`;
+const CARSTATE = `JSON.stringify({ stalled: window.__fwCarStall ?? null, imgs: [...document.querySelectorAll('.start-selling-avatars.is-carousel img')].map((i) => (i.currentSrc || i.src).split('/').pop() + (i.className ? ':' + i.className : '') + (i.complete ? '' : ':loading')) })`;
 const FREEZE = `JSON.stringify((() => { let n = 0, s = 0; for (const a of document.getAnimations()) { try { if (a instanceof CSSTransition) continue; if (a.playState !== 'running') continue; a.pause(); a.currentTime = 4000; n++; } catch {} }
   for (const svg of document.querySelectorAll('svg')) { try { if (svg.animationsPaused && !svg.animationsPaused()) { svg.pauseAnimations(); svg.setCurrentTime(4); s++; } } catch {} } return { anims: n, smil: s }; })())`;
 const HITS = `JSON.stringify((() => { const out = []; const lab = (e) => { if (!e) return null; const sec = e.closest('section[id],section[class],[id]'); const c = (x) => x ? x.tagName.toLowerCase() + (x.id ? '#' + x.id : '') + (typeof x.className === 'string' && x.className.trim() ? '.' + x.className.trim().split(/\\s+/).slice(0, 2).join('.') : '') : ''; return (sec && sec !== e ? c(sec) + ' > ' : '') + c(e); };
   for (let y = 20; y < innerHeight; y += 40) for (let x = 20; x < innerWidth; x += 40) out.push([x, y, lab(document.elementFromPoint(x, y))]); return out; })())`;
-const res = { tool: 'fixes/g0-box/gates/px-sim.mjs', engine: 'webkit-simulator', dpr: 3, arms: ARMS, startedAt: new Date().toISOString(), load1: loadavg()[0], F, loads: [], stops: [] };
+const res = { carouselFreeze: CAROUSEL, tool: 'fixes/g0-box/gates/px-sim.mjs', engine: 'webkit-simulator', dpr: 3, arms: ARMS, startedAt: new Date().toISOString(), load1: loadavg()[0], F, loads: [], stops: [] };
 let YS = process.argv[2] && process.argv[2] !== 'auto' ? process.argv[2].split(',').map(Number) : null; const shots = {};
 // optional dir map, as in px-chrome.mjs: A=P,V=V serves arm A (and A2) from snap dir Q (accent-ca-v7)
 const DIRMAP = Object.fromEntries((process.argv[3] || 'A=A,V=V').split(',').map((kv) => kv.split('='))); res.dirs = DIRMAP;
@@ -53,6 +63,7 @@ for (const arm of ARMS) {
     execFileSync(process.execPath, [join(WT, 'tools/sim.mjs'), 'open', url], { stdio: ['ignore', 'ignore', 'inherit'] });
     c = await openTab(`localhost:${s.port}`);
     for (let i = 0; i < 40 && (await c.evaluate('document.readyState')) !== 'complete'; i++) await sleep(500);
+    if (CAROUSEL) load.carouselStall = await c.evaluate(STALL);
     await sleep(2500);
     await c.evaluate(`(() => { window.__pxErr = []; addEventListener('error', (e) => window.__pxErr.push(String(e.message))); addEventListener('unhandledrejection', (e) => window.__pxErr.push('rej ' + String(e.reason))); return 1; })()`);
     load.scripts = JSON.parse(await c.evaluate(`JSON.stringify(performance.getEntriesByType('resource').map((e) => e.name.replace(location.origin, '')).filter((n) => n.includes('${NODE}') || n.includes('${CSS}')))`));
@@ -74,7 +85,7 @@ for (const arm of ARMS) {
       const yy = await c.evaluate('Math.round(scrollY)');
       const f = join(OUT, `${arm}-y${y}.png`); const r = S.simctl(['io', cfg.udid, 'screenshot', f]);
       const hits = JSON.parse(await c.evaluate(HITS));
-      (shots[y] ||= {})[arm] = { file: f, hits }; load.stops.push({ y, scrollY: yy, frozen: fr, ok: r.status === 0, hits });
+      (shots[y] ||= {})[arm] = { file: f, hits }; load.stops.push({ y, scrollY: yy, frozen: fr, ok: r.status === 0, hits, ...(CAROUSEL ? { carousel: JSON.parse(await c.evaluate(CARSTATE)) } : {}) });
     }
     load.errors = JSON.parse(await c.evaluate('JSON.stringify(window.__pxErr || [])'));
   } catch (e) { load.void = 'error: ' + String(e.stack || e); console.log(arm, 'error', load.void); }

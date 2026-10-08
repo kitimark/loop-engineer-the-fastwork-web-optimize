@@ -36,6 +36,16 @@ const HX = Object.fromEntries(readFileSync(join(SNAP, 'HASHES.txt'), 'utf8').tri
 const BASE = resolveTree('site-pretty');
 const tag = new Date().toISOString().replace(/[:.]/g, '-');
 const OUT = join(WT, 'out/g0box/p168', `px-${VP}-${tag}`); mkdirSync(OUT, { recursive: true });
+
+// PX_CAROUSEL=freeze (lead, P-168 wait): stall the people-section avatar carousel. Its loop (JS ~12379-12413 in g0.0f) waits
+// with setTimeout(<helper>, 800 | 220); the helper's text (`n.indexOf(r)` ... `n.splice(e, 1), t()`) occurs once in the bundle.
+// Installed right after load at y 0, where the row is inactive, so the index stays at its start value in every load. Only those
+// timers are dropped; every other timer runs. Each stop records the row's image names and the stall count.
+const CAROUSEL = process.env.PX_CAROUSEL === 'freeze';
+const STALL = `(() => { if (window.__fwCarStall != null) return 'again'; const st = window.setTimeout; window.__fwCarStall = 0;
+  window.setTimeout = function (fn, ms, ...a) { if ((ms === 800 || ms === 220) && typeof fn === 'function' && /indexOf\\(r\\)[\\s\\S]*splice\\(e, 1\\), t\\(\\)/.test(Function.prototype.toString.call(fn))) { window.__fwCarStall++; return 0; } return st.call(this, fn, ms, ...a); };
+  return 'ok'; })()`;
+const CARSTATE = `JSON.stringify({ stalled: window.__fwCarStall ?? null, imgs: [...document.querySelectorAll('.start-selling-avatars.is-carousel img')].map((i) => (i.currentSrc || i.src).split('/').pop() + (i.className ? ':' + i.className : '') + (i.complete ? '' : ':loading')) })`;
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
 const F = Date.parse('2026-10-04T12:00:00Z') + 500;
 // double-drive: settle after each instant scroll (v8's 0.9 s transform transition plus the script's easing; int-v8 used 1600)
@@ -73,7 +83,7 @@ async function server(arm) {
   for (let i = 0; i < 300; i++) { if (existsSync(st)) try { return { p, d, ...JSON.parse(readFileSync(st, 'utf8')) }; } catch {} await sleep(100); }
   p.kill(); throw new Error(arm + ' server did not start');
 }
-const res = { tool: 'fixes/g0-box/gates/px-chrome.mjs', viewport: VP, ...vp, arms: ARMS, dirs: DIRMAP, startedAt: new Date().toISOString(), load1: loadavg()[0], F, loads: [], stops: [] };
+const res = { carouselFreeze: CAROUSEL, tool: 'fixes/g0-box/gates/px-chrome.mjs', viewport: VP, ...vp, arms: ARMS, dirs: DIRMAP, startedAt: new Date().toISOString(), load1: loadavg()[0], F, loads: [], stops: [] };
 const chrome = await launchChrome({ port: 0, profileDir: tempProfileDir(join(WT, 'out/g0box/chrome'), 'px-' + VP), headless: true, windowSize: `${vp.width},${vp.height}` });
 const cdp = await CDP.connect(chrome.wsUrl); res.browser = chrome.browser;
 const shots = {}; let YS = null;
@@ -90,7 +100,7 @@ try {
       await page.send('Emulation.setDeviceMetricsOverride', { width: vp.width, height: vp.height, deviceScaleFactor: vp.dpr, mobile: vp.mobile });
       if (vp.mobile) await page.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
       await page.send('Emulation.setFocusEmulationEnabled', { enabled: true });
-      await gotoAndSettle(page, url, { quietMs: 1500, maxMs: 45000 }); await sleep(2000);
+      await gotoAndSettle(page, url, { quietMs: 1500, maxMs: 45000 }); if (CAROUSEL) load.carouselStall = await page.eval(STALL); await sleep(2000);
       load.scripts = await page.eval(`performance.getEntriesByType('resource').map((e) => e.name.replace(location.origin, '')).filter((n) => n.includes('${NODE}') || n.includes('${CSS}'))`);
       await page.eval(`(() => { const F = ${F}; Date.now = () => F; return 1; })()`); await sleep(2500);
       if (!YS) {
@@ -109,7 +119,7 @@ try {
         const { data } = await page.send('Page.captureScreenshot', { format: 'png' });
         const hits = await page.eval(HITS);
         const f = join(OUT, `${arm}-y${y}.png`); writeFileSync(f, Buffer.from(data, 'base64'));
-        (shots[y] ||= {})[arm] = { file: f, hits }; load.stops.push({ y, scrollY: yy, frozen: fr, anims, hits });
+        (shots[y] ||= {})[arm] = { file: f, hits }; load.stops.push({ y, scrollY: yy, frozen: fr, anims, hits, ...(CAROUSEL ? { carousel: JSON.parse(await page.eval(CARSTATE)) } : {}) });
       }
       await page.close();
     } finally { s.p.kill(); }
