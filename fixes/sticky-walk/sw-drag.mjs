@@ -36,8 +36,11 @@ import { fileURLToPath } from 'node:url';
 const WT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const JS = '_app/immutable/nodes/2.DyWL8TcE.js', CSS = '_app/immutable/assets/2.gBuqKVzi.css';
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
-const build = () => { const dir = join(WT, 'out/sticky-walk/snap/C'); const js = sha(readFileSync(join(dir, JS))), css = sha(readFileSync(join(dir, CSS)));
-  if (js !== '9162843e750f' || css !== '26d28a0a263b') throw new Error('snapshot ' + js + ' / ' + css); return { C: { dir, js, css } }; };
+// F gate 5 (2026-10-09): arm V = g0.0h + fixcq (snapshot out/sticky-walk/snap/V, real overlay CSS, no injection)
+const PIN = { C: ['9162843e750f', '26d28a0a263b'], V: ['9162843e750f', '2d1a1995fd2b'] };
+const build = () => Object.fromEntries(Object.entries(PIN).map(([arm, [pj, pc]]) => { const dir = join(WT, 'out/sticky-walk/snap', arm);
+  const js = sha(readFileSync(join(dir, JS))), css = sha(readFileSync(join(dir, CSS)));
+  if (js !== pj || css !== pc) throw new Error('snapshot ' + arm + ' ' + js + ' / ' + css); return [arm, { dir, js, css }]; }));
 
 const { openTab, sleep, timelineSyncJs, findTimeStamp } = await import(join(WT, 'tools/lib/wip.mjs'));
 const { resolveTree } = await import(join(WT, 'tools/lib/paths.mjs'));
