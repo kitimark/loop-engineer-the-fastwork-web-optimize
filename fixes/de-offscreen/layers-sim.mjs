@@ -16,20 +16,11 @@
 import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { WT, ARMS, serveArm, checkServed, OWNER_INFO_FN, sleep } from './common.mjs';
+import { WT, ARMS, KO, serveArm, checkServed, OWNER_INFO_FN, sleep } from './common.mjs';
 const { openTab, runAsync } = await import(join(WT, 'tools/lib/wip.mjs'));
 
 const OUT = join(WT, 'out/de-offscreen'); mkdirSync(OUT, { recursive: true });
-// knock-outs (diagnostic only, never a candidate build): one CSS rule each, injected as a <style> after the load settles,
-// arm name <base>+<KO>[+<KO>...], e.g. e+A. Layer census only; the injection happens after load, so mount-time effects
-// are not tested (fix-g0-box's ko5 covers the idle mount itself).
-export const KO = {
-  A: '.start-selling-top-nav.is-hero-pill:not(.is-expanded) .start-selling-morph-panel { display: none !important; }',
-  B: '.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track { animation: none !important; }',
-  C: '.start-selling [data-start-selling-scene="paused"] .start-selling-platform-row [class*="start-selling-platform-row-title-"]::after { animation: none !important; }',
-  D: '.start-selling [data-start-selling-scene="paused"] .zero-frame { animation: none !important; }',
-  E: '.start-selling [data-start-selling-scene="paused"] .start-selling-avatars.is-carousel img { will-change: auto !important; }',
-};
+// knock-outs: KO in common.mjs; arm name <base>+<KO>[+<KO>...], e.g. e+A
 const only = process.argv.slice(2).filter((a) => ARMS[a.split('+')[0]] && a.split('+').slice(1).every((k) => KO[k]));
 const arms = only.length ? only : Object.keys(ARMS);
 const POS = { top: 0, B: 4600 };

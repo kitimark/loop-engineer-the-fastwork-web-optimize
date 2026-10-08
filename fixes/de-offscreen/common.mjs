@@ -13,6 +13,15 @@ export const ARMS = {
   e: { overlay: join(G0, 'g00e'), js: '5c39f7a96e41', css: 'd4e684032482' },
   f: { overlay: join(G0, 'snap4/V'), js: '30fd80ccbb3f', css: '1d1e5d62a2c4' },
 };
+// knock-outs (diagnostic only, never a candidate build): one CSS rule each, injected as a <style> after the load
+// settles. Layer census only; the injection happens after load, so mount-time effects are not tested.
+export const KO = {
+  A: '.start-selling-top-nav.is-hero-pill:not(.is-expanded) .start-selling-morph-panel { display: none !important; }',
+  B: '.start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track { animation: none !important; }',
+  C: '.start-selling [data-start-selling-scene="paused"] .start-selling-platform-row [class*="start-selling-platform-row-title-"]::after { animation: none !important; }',
+  D: '.start-selling [data-start-selling-scene="paused"] .zero-frame { animation: none !important; }',
+  E: '.start-selling [data-start-selling-scene="paused"] .start-selling-avatars.is-carousel img { will-change: auto !important; }',
+};
 export const NODE = '_app/immutable/nodes/2.DyWL8TcE.js', CSSF = '_app/immutable/assets/2.gBuqKVzi.css';
 export const sha12 = (b) => createHash('sha256').update(b).digest('hex').slice(0, 12);
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

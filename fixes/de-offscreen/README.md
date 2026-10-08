@@ -185,12 +185,153 @@ Chrome layers do not stand in for WebKit.
     above. The count varies between runs (83-100), probably with the far re-skip timing (inferred).
   - Off-screen row-title sweeps keep repainting at B: secure 61 px below, 58 paints. WebKit shows nothing like it.
 
+## 5. The spot-B `+is-play` commit: which layers change (step 2, after P-168)
+
+The lead's question after P-168: on the phone, g0.0f's worst frame at spot B is the `+is-play` frame (y 4608, max 73 ms,
+Composite 58-64 ms; v0's is at y 4562, 43-46 ms, Composite 40-42 ms; no Layout in either). Which layers are created,
+resized, repainted or committed in that frame on g0.0f vs v0? Simulator only, counts / MB / paints, **no timing claims**.
+
+**Setup** (`isplay-sim.mjs`, `ipdiff.mjs`; 2026-10-08 16:20-16:39Z, three shared-lane Simulator sessions):
+- Arms: **v0**, **g0.0f**, **g0.0f+B** (g0.0f with knock-out B injected as a `<style>` after the 6 s settle).
+- 3 fresh loads per arm (9 loads), served hashes checked before each load (all `ok`). Viewport 430x775, DPR 3.
+- A MutationObserver on the two `is-play` owners stamps each class flip (y, page time). Jump to 4000, 3 s, then
+  scroll to 4460, then 8 px steps until `+is-play` lands.
+- Census (`LayerTree.layersForNode`) before the step. After the flip: back-to-back censuses at the same position for
+  1.6 s, each stamped with ms after the flip (tRel). Owners and reasons for every layer that changes.
+- The flip landed at y 4516 in every load (`.start-selling-platform-secure.is-network`), 3-13 ms after the step; is-play was never already on at the start. The
+  Simulator does not reproduce the phone's 46 px offset between the arms (both bindings are the same code:
+  `"is-play": s(h) && !s(g)`, JS 12379 in v0 / 13448 in g0.0f, `h` set by an IntersectionObserver at ratio ≥ 0.35).
+
+### 5.1 In the `+is-play` commit itself: the same 7 new layers in all three arms
+
+| arm | loads | layers before → after | MB before → after | created (MB) | destroyed / resized | repainted layers (paints) |
+|---|---|---|---|---|---|---|
+| v0 | 3 | 43 → 50 | 127.5 → 129.8 | 7 (14.06) | 0 / 0 | 3-4 (8-10): platform-card 23.8 MB ×6, top-nav ×1, ask-field ×2 (load 3: + morph-center ×1) |
+| g0.0f | 3 | **53 → 60** | 128.1 → 130.4 | 7 (14.08) | 0 / 0 | 1 (2): ask-field ×2 |
+| g0.0f+B | 3 | 43 → 50 | 113.0 → 115.3 | 7 (14.08) | 0 / 0 | 1 (1-2): ask-field |
+
+- **Created at the flip, every arm, every load:** `img.…-secure-network-rings` 11.71 MB (542x600 CSS px), the shield
+  1.49 MB, both faces 0.42 MB each, both dashes 0.01-0.02 MB, the flags 0 MB. Each is a new backing store painted
+  in full once (paints 1).
+- At the same time `div.start-selling-platform-stage-artboard` drops 11.8 MB: its backing store shrinks to what is
+  left after the new layers take their content.
+- **Nothing is resized.** No new layer is near the tiling size, so none of them switches to a tiled layer (source below).
+- **g0.0f has 10 more layers in the tree than v0 at the flip** (53 vs 43), all unchanged in the commit:
+  - 8 platform row-title layers: 4 masks (doc, earn, secure, organized; `maskWithCompositedDescendants`) plus their
+    4 `::after` sweeps (`animation`), 37-38 px tall, together about 1.3 MB (section 2);
+  - 2 more top-nav-pill-sized layers (398x52, 0 MB).
+- **g0.0f+B has v0's count but not v0's set.** KO B removes the 10 hidden morph-panel layers (col-tracks, center,
+  footer, veil; 15 MB) that v0 and g0.0f both have at B. The 10 row-title and pill layers stay.
+- **v0 repaints more in this commit, not less** (platform-card, 23.8 MB, 6 paints).
+
+So the census of the flip commit does **not** show anything g0.0f adds to it: the same 7 new backing stores
+(14.1 MB first paint), nothing destroyed or resized, and fewer repaints. The only difference is 10 more unchanged
+layers in the tree (OBSERVED).
+
+### 5.2 One second later, g0.0f only: the glint start rebuilds the network's layers
+
+The glint's `.is-active` is set by `window.setTimeout(r, 1e3)` once the same IntersectionObserver reports the network
+visible (g0.0f JS 13281-13294). In g0.0f (platform-idle G1) the glint is a `clip-path: path(…)` span with an SVG that
+runs a 5 s infinite CSS transform animation (CSS 7180-7213). In v0 it is an SVG `<animate>` on the gradient
+(JS 12152), which creates no layer.
+
+Layer-set changes after the flip (tRel = ms after the flip). The pattern is the same in all 9 loads (data/sim-isplay.json `events`):
+
+| tRel ms | v0 | g0.0f | g0.0f+B | what |
+|---|---|---|---|---|
+| 8-18 | +7 | +7 | +7 | the flip commit (5.1) |
+| 479-964 | +9 / −16 | +9 / −16 | +9 / −16 | the network's intro sequence: the flags (6, 0 MB) and the shield logo appear, then every intro layer is de-composited after its entry animation; same in all arms |
+| 998-999 | – | **+4** | **+4** | 2 glint SVGs (`animation`, 0 MB) and 2 glint clip spans (0 MB) |
+| 1013-1017 | – | **+5** (+2.4 MB) | **+5** (+2.4 MB) | dash left (`transformWithCompositedDescendants`), dash right, both faces and the shield (`overlap`), re-composited ~50 ms after the intro dropped them. In g0.0f load 3 the +4 and +5 land in one sample at 967 ms, in the same commit as the intro's last −3 |
+| 1067-1152 | +5 (+6.2 MB) | +5 | +5 | 4 `agents-ask-service` cards (3.05 MB each) + 1 container (`agents-ask-list-out`), same in all arms |
+| 1211-1219 | – | **+2 / −2** | **+2 / −2** | the 2 glint clip layers are rebuilt (`clipsCompositingDescendants`) when the 0.2 s opacity transition ends |
+| at 1.6 s | 48 L / 133.7 MB (3 of 3) | **67 L / 136.7 MB** (2 of 3; load 3: 65 L / 142.7 MB after a −2 at 1614 ms) | 57 L / 121.6 MB (3 of 3) | |
+
+- **What the glint start adds:** 9 layers and 2 running animations in two commits about 15 ms apart, then a
+  rebuild of 2 layers 0.2 s later. Five of the nine exist only because the animated SVGs now sit next to them
+  in paint order (reason `overlap`).
+- **v0 has none of these layer changes.** Its `<animate>` repaints the dash in place instead. In the Simulator Timeline,
+  v0 shows a Composite record of ~16-19 ms on most frames after ~1.03 s, against ~2-5 ms on g0.0f. These are
+  Simulator ms, quoted only to show where the work goes, not as a cost claim.
+- **KO B does not touch either commit.** g0.0f+B shows the same +7 at the flip and the same +9 at the glint start.
+  It only removes the 10 hidden panel layers from the tree.
+- **P-168 says the phone's `+is-play` frame is the only frame over 34 ms in the scroll phase.** So the glint
+  restructure, which comes about 1 s later, was not a > 34 ms frame there (OBSERVED, phone data). Whether it can
+  coincide with the flip frame on a finger scroll is not tested.
+
+### 5.3 WebKit source: what the Timeline's "Composite" contains, and what makes it costly
+
+Source: WebKit main @ f9dcd0ee93e4 (read with `gh api`). Status: CONFIRMED where cited, otherwise marked.
+
+- **Composite = building and encoding the remote layer-tree commit, painting included.** CONFIRMED:
+  - `Page::willStartRenderingUpdateDisplay` / `didCompleteRenderingUpdateDisplay` emit the inspector's
+    `willComposite` / `didComposite` (Page.cpp:2836-2858). The comment there says that on Apple platforms these hooks
+    "wrap the non-WebKit CA commit time which is mostly painting-related".
+  - In `RemoteLayerTreeDrawingArea::updateRendering` (RemoteLayerTreeDrawingArea.mm:360-447) the bracket opens
+    *after* `finalizeRenderingUpdate` (:360), which runs the GraphicsLayer flush (`flushCompositingStateIncludingSubframes`,
+    Page.cpp:2802). So the compositing-requirements pass and the GraphicsLayer flush are **outside** Composite.
+    Inside it are `buildTransaction` (:384), the commit encoding (:419-420) and `didFlushLayers` (:424).
+  - `RemoteLayerTreeContext::buildTransaction` (RemoteLayerTreeContext.mm:204-221) does three things:
+    - walks every layer (`recursiveBuildTransaction`, PlatformCALayerRemote.mm:220-270; an unchanged layer adds nothing
+      but is still visited);
+    - prepares and **paints every backing store that needs display** (`prepareBackingStoresForDisplay`,
+      `paintReachableBackingStoreContents`, RemoteLayerBackingStoreCollection.mm:69-95);
+    - attaches the created and destroyed layer lists.
+- **New backing stores.** A new layer's store needs display, so its whole area is painted inside this Composite
+  bracket (follows from the above; inferred, the first-display path in `RemoteLayerBackingStore` was not traced).
+  At the flip that is 14.1 MB in every arm, 11.7 MB of it the rings image (1626x1800 device px).
+- **Tiled layers: not involved here.** CONFIRMED: `requiresTiledLayer` compares the layer size times the *page* scale,
+  not the device scale, with 1280 on iOS, or 1024 at low memory (GraphicsLayerCA.cpp:102-106, 4933-4946). The type
+  switches at commit (:2199-2225). The largest new layer here is 542x600.
+- **Mask and clip-path layers.**
+  - A `clip-path: path()` becomes a shape mask layer with no backing store (RenderLayerBacking.cpp:3265-3266, 3281).
+    That is the glint's clip.
+  - A CSS mask gets a painted mask layer (:3241-3282). Those are the row-title masks, unchanged in the flip commit.
+- **Animations.**
+  - A layer's accelerated animations are wrapped in `PlatformCAAnimation` groups, one per animated property, and set
+    on the platform layer, so they travel in the commit (`updateAnimations`, GraphicsLayerCA.cpp:3524-3560).
+  - Adding one notes `AnimationChanged | CoverageRectChanged` on the layer (GraphicsLayerCA.cpp:1253). A transform
+    animation that starts or ends marks `CoverageRectChanged` on every descendant (:1999-2000, 2045-2049). Both happen
+    in the GraphicsLayer flush, before the Composite bracket.
+  - The glint start adds two transform animations.
+- **Overlap re-evaluation.** A layer that changes its composited state makes the compositor re-run the requirements
+  pass for the later layers, with overlap tests (RenderLayerCompositor.cpp:1303-1318, ~2539; RenderLayerBacking.cpp:1216).
+  This is why the 5 network siblings come back as `overlap` 15 ms after the glint SVGs are composited. That pass runs
+  before the Composite bracket.
+- **UNRESOLVED:**
+  - the cost per visited unchanged layer in `recursiveBuildTransaction`;
+  - the cost of a first display in `RemoteLayerBackingStore`;
+  - whether the GPU-process side (`backingStoreFlusher->flush`, :436-437, on the commit queue) can lengthen the
+    phone's frame.
+  - The decisive local check is a phone Timeline block that compares the flip frame's Composite against the
+    number of Paint records nested in it, per arm.
+
+### 5.4 What this means for the `+is-play` frame (OBSERVED, Simulator counts)
+
+- **The census does not explain g0.0f's +20 ms Composite in the flip frame by anything it creates, resizes or
+  repaints.** All three arms create the same 7 layers (14.1 MB) there, and g0.0f repaints less than v0.
+- **What g0.0f does add to that commit is tree size: 10 unchanged layers** (8 row-title mask / sweep layers, 2
+  pill-sized layers), each visited by `recursiveBuildTransaction`.
+  - KO B does not test this. It removes 10 *other* layers, so g0.0f+B ends up at v0's count.
+  - The row-title layers are KO C's (section 3).
+- **The phone flip lands 46 px later on g0.0f** (y 4608 vs 4562), but in the Simulator both arms flip at the same
+  step. So the phone frame may hold other work the Simulator's stepped scroll separates: an IntersectionObserver
+  delivery that is late by one or more frames, plus whatever else crosses at 4608. Inferred; not tested.
+- **The g0.0f-only layer restructure is the glint start, ~1 s after the flip.** It adds +9 layers, 2 animations,
+  overlap re-composite of 5 siblings and a 2-layer rebuild at +0.2 s. KO B leaves it as it is.
+  - If the phone frame is to be attributed to it, the test is a phone Timeline run that marks the glint
+    `.is-active` flip next to `+is-play`.
+  - A knock-out that removes it: in g0.0f, keep the glint's `.is-active` off (no CSS animation). That is not
+    pixel-identical (no glint), so it is diagnostic only.
+
 ## Files
 
 - `layers-sim.mjs`, `layers-chrome.mjs`, `common.mjs`: the probes, which can be re-run (commands in their headers;
   shared lane).
+- `isplay-sim.mjs`, `ipdiff.mjs` (section 5): the `+is-play` census probe and its analysis.
 - `summarize.mjs`, `rank.mjs`, `kodiff.mjs`, `export.mjs`: the analysis.
 - `data/sim-layers.json`, `data/chrome-layers.json`: one row per layer per build per position.
 - `data/sim-knockouts.json`: the knock-out diffs against g0.0e.
+- `data/sim-isplay.json` (section 5): per load, the flip commit's diff and the layer-set changes over the next 1.6 s.
 
 No URLs, device ids or addresses are in `data/`.
