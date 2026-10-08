@@ -1,0 +1,28 @@
+{
+  "topic": "menu-layers",
+  "item": "T-253 #10 item 2: the panel countdown on its own layer while the menu scene is active (WebKit only)",
+  "base": { "name": "g0.0h", "commit": "55f5cacd", "js": "9162843e750f", "css": "26d28a0a263b" },
+  "build": { "name": "g0.0h + clock layer", "js": "9162843e750f", "css": "adb875d94c1f" },
+  "baselineSnapshot": "b1789284481295-4ad4a84a",
+  "measurementCode": "unchanged (no tools/ change on this branch)",
+  "simCensus": {
+    "tool": "fixes/menu-layers/gates/morph-sim.mjs (de-offscreen morph-sim.mjs, arms b = g0.0h, c = build); counts only, iOS Simulator 430x775 DPR 3",
+    "layersMB": {
+      "g0.0h": { "a": [151, 35.1], "b_m0": [43, 55.2], "c_m0.2": [53, 72.3], "c_m0.5": [53, 78.1], "d_m1": [53, 77.3], "e_closed": [43, 55.2] },
+      "build": { "a": [151, 35.1], "b_m0": [43, 55.2], "c_m0.2": [54, 73.5], "c_m0.5": [54, 79.3], "d_m1": [54, 78.5], "e_closed": [43, 55.2] }
+    },
+    "paintsOverOneOpen": {
+      "g0.0h": { "morph-center_5.7MB": 196 },
+      "build": { "morph-center_5.7MB": 11, "waitlist-closing-countdown_1.2MB": 187 }
+    },
+    "nullStepControlAtM1_per0.45s": { "g0.0h": "morph-center +22", "build": "waitlist-closing-countdown +34, morph-center 0" },
+    "redisplayedBackingMBPerOpen": { "g0.0h": 1117, "build": 287, "delta": "-74 %" }
+  },
+  "pixelGates": {
+    "rule": "T2 (PR-010 wide): flat <= 64, edge <= 128, <= 0.5 %, clusters <= 2000 CSS px2; four loads A V A2 V2; A = g0.0h, V = build",
+    "chrome": { "dir": "out/menu-layers/seek-chrome-2", "stops": 22, "verdict": "T2 PASS", "worst": { "flat": 0, "edge": 59, "pct": 0.0071, "cluster": 28 } },
+    "simulator": { "dir": "out/menu-layers/seek-sim-1", "stops": 14, "verdict": "T2 PASS", "worst": { "flat": 0, "edge": 76, "pct": 0.0213, "cluster": 28 }, "note": "differences only at open@440/560 (clock text mid-tween); 0 at m = 1 and at every close stop" },
+    "chromeUnscopedBuild": { "css": "28badb9b5a98", "dir": "out/menu-layers/seek-chrome-1", "verdict": "T2 FAIL (5 of 22 stops, edge up to 224: the digits drawn 3 device px higher); fixed by scoping the rules to WebKit (html.fw-bx)" }
+  },
+  "phone": { "status": "card drafted, not signed, no data" }
+}
