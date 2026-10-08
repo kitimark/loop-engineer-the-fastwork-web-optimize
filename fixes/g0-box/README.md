@@ -689,6 +689,55 @@ Our runner had already ended the condition with `thermal.mjs clear` when part A 
 
 Conditions 1, 2 and 4 stand as checked above. For condition 3, C-119 was answered before the kit was ready. The console refused a late ack on the answered step, so the lead tells the user that the test starts a few minutes later.
 
+### P-166 stage 2 result (phone, tool-serious, W driver with Timeline; 2026-10-08 11:03-12:31Z; `p166-wread.mjs out/p166ph`)
+
+**Owner at spot A: g0.0e. Owner at spot B: g0.0e.** The extra phone time in both of P-165's S clusters comes from
+g0.0e, not from v3-W (g0.0f). At both spots the extra time is WebKit Paint+Composite inside the rendering frame. Both
+spots are reproduced under induced Serious, and neither verdict is threshold-sensitive (the 46/54 twins agree). All
+numbers are OBSERVED in our setup and compare only within this block: profiles never pool, so they never compare with
+P-165.
+
+Validity:
+- All holds H1-H9 are VALID, and all 27 counted runs are valid (profile serious, no drift, served pins, a Timeline
+  file each).
+- All 4 heat sentinels passed: the Timeline-OFF S runs on v0, AsC in H2 and H4 and BsC in H5 and H9. Each read bottom 60
+  fps and scroll 51.0-52.3 fps, at battery 33.4 / 35.2 / 35.7 / 37.0 °C.
+- H1 ran under the first tool-serious kit and is VALID by the lead ruling 11:1xZ.
+- The two v0 runs whose frame read over 50 ms are listed below.
+
+Before A2 ran, it needed five restarts, all before any hold and with nothing measured:
+- I-249: a transient RSD close in rearm.
+- I-250: the xctrace thermal read hung twice; fixed on main in 98762cb1.
+- WDA could not start twice after the re-plug. The cause was a stale CoreDeviceService; the lead restarted it (C-124).
+- Holds H2-H9 ran on tools 98762cb1, which changes only rearm's thermal read, not the W driver or Timeline. H1 ran on
+  7b5ab208.
+
+| spot | arm | spot-frame dt (ms) per run | median | > 50 | > 46 / > 54 | Script | Layout | Paint+Composite | Other | gap − frame |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A | v0 | 17 / 59 / 16 | 17 | 1/3 | 1 / 1 | 0.5 | 15.7 | 0.2 | 0.6 | 0.1 |
+| A | **g0.0e** | 42 / 55 / 61 | **55** | 2/3 | 2 / 2 | 1.4 | 13.6 | **31.8** | 7.8 | 0.2 |
+| A | e-nohe (knock-out) | 44 / 53 / 61 | 53 | 2/3 | 2 / 1 | 1.3 | 14.2 | 29.1 | 4.7 | 0.1 |
+| B | v0 | 46 / 44 / 48 | 46 | 0/3 | 1 / 0 | 0.8 | 1.7 | 41.2 | 1.9 | 0.1 |
+| B | **g0.0e** | 73 / 69 / 70 | **70** | 3/3 | 3 / 3 | 1.4 | 4.7 | **59.5** | 4.2 | 0.1 |
+| B | g0.0f | 74 / 72 / 68 | 72 | 3/3 | 3 / 3 | 1.5 | 4.7 | 60.7 | 4.9 | 0.1 |
+
+Segment columns are medians, in ms, of each run's Timeline self time inside the spot frame.
+
+**Spot A** (the first frame past y 30, the he-css crossing):
+- **Reproduce rule:** g0.0e's median is 38 ms above v0's (the rule needs ≥ 6), so the spot is reproduced.
+- **Owner rule:** v0 → g0.0e is +38 ms, of which Paint+Composite is +31.6 and Other +7.2. That is ≥ 2/3 of the rise, with 2/3 runs > 50 ms, so the owner is g0.0e.
+- **Knock-out:** e-nohe has no `+he-css` crossing in its spot frame, yet costs the same (median 53 ms, ≤ 50 in only 1/3). So the knock-out does not remove the frame: the paint at spot A is g0.0e's other change, not the he-css switch.
+- **v0's A02:** its 59 ms frame lies almost entirely outside any RenderingFrame (union 1.5 ms, gap − frame 57.5 ms). It is a gap with no rendering work in the frame, cause unknown; it doesn't move the median.
+
+**Spot B** (the `+is-play` frame):
+- **Reproduce rule:** g0.0f's median is 26 ms above v0's, so the spot is reproduced.
+- **Owner rule:** v0 → g0.0e is +24 ms, of which Paint+Composite is +18.3 (≥ 2/3 of 24 = 16), with 3/3 runs > 50 ms, so the owner is g0.0e. g0.0e → g0.0f adds only +2 ms (Paint+Composite +1.2), so g0.0f is not an owner.
+- **Crossing position:** the `+is-play` crossing lands at y ≈ 4608 on g0.0e/g0.0f and at y 4562 on v0. Both are inside the same 4500 → 4750 step, about 15 frames apart within its smooth scroll. The stage-1 Simulator counts did not show this difference.
+
+How this fits the earlier data:
+- Stage 1's Simulator counts saw no main-thread difference at either spot. That fits: the added time is in WebKit's paint/composite inside the rendering update, not in Script or Layout. Counts of records cannot show durations.
+- What g0.0e changes besides he-css is the next question. The lead has a ranked candidate list for spot A, and its knock-outs are pre-staged for a P-167 card.
+
 ## P-164 (phone card; written before any P-164 data)
 
 **Pre-data check 2, with the g0 program (2026-10-08 03:47-03:55Z, before any P-164 data). Result: START-STATE

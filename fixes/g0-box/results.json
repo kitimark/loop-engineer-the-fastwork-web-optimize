@@ -1543,7 +1543,7 @@
     }
   },
   "p166": {
-    "status": "card draft (README \"P-166\"); stage 1 done (Simulator counts); stage 2 (phone W with Timeline) awaits the signature",
+    "status": "stage 2 done: owner A g0.0e, owner B g0.0e (OBSERVED, within the block)",
     "stage1": {
       "when": "2026-10-08 09:4x-10:1xZ",
       "tools": "a0a1050c (stage 1 uses lib/wip.mjs and sim.mjs open only; db884e9d untouched)",
@@ -1594,6 +1594,265 @@
         "tab matched by port + navigation entry (the page drops the query from location)",
         "step budget 85 s, session budget 235 s (a step takes ~75 s)",
         "reader spot-A rule: first frame past y 30 (was first moving frame, y 2-7 in the Simulator, before the switch)"
+      ]
+    },
+    "stage2": {
+      "when": "2026-10-08 11:03-12:31Z",
+      "profile": "tool-serious (iphone.mjs rearm + thermal.mjs set serious, gates --accept-induced, --profile serious); lead amendment 10:4xZ, user T-247 #12; never pooled with P-165",
+      "driver": "W: iphone.mjs run --driver window --probe std --hold 2 --sentinel 3 --timeline (spot A --from 0 --to 750, spot B --from 4000 --to 5000)",
+      "tools": "H1 on 7b5ab208; H2-H9 on 98762cb1 (I-250 fix: rearm thermal read only, not the W driver or Timeline)",
+      "kit": "b1ee5b0b (tool-serious, reproduce rule), 7b5ab208 (lead ruling 11:1xZ: Timeline-OFF S sentinel sC only)",
+      "holds": {
+        "valid": [
+          "H1",
+          "H2",
+          "H3",
+          "H4",
+          "H5",
+          "H6",
+          "H7",
+          "H8",
+          "H9"
+        ],
+        "countedRunsValid": 27
+      },
+      "sentinels": [
+        {
+          "item": "AsC",
+          "hold": "H2",
+          "bottom": 60,
+          "scroll": 51.8,
+          "battC": 33.39,
+          "pass": true
+        },
+        {
+          "item": "AsC",
+          "hold": "H4",
+          "bottom": 60,
+          "scroll": 51.8,
+          "battC": 35.19,
+          "pass": true
+        },
+        {
+          "item": "BsC",
+          "hold": "H5",
+          "bottom": 60,
+          "scroll": 52.3,
+          "battC": 35.69,
+          "pass": true
+        },
+        {
+          "item": "BsC",
+          "hold": "H9",
+          "bottom": 60.2,
+          "scroll": 51,
+          "battC": 37,
+          "pass": true
+        }
+      ],
+      "rules": "reproduce: test arm (A g0.0e, B g0.0f) median >= v0 median + 6 ms; owner: first arm after v0 with spot frame > 50 ms in >= 2/3 runs and one Timeline segment median rise >= 2/3 of the median dt rise; twins 46/54; knock-out removes if <= 50 ms in >= 2/3",
+      "A": {
+        "owner": "g0.0e",
+        "thresholdSensitive": false,
+        "reproduce": {
+          "test": "g0.0e",
+          "v0Med": 17,
+          "testMed": 55,
+          "rise": 38,
+          "reproduced": true
+        },
+        "knockOut": {
+          "arm": "e-nohe",
+          "le50": 1,
+          "removes": false,
+          "med": 53
+        },
+        "steps": [
+          {
+            "from": "v0",
+            "to": "g0.0e",
+            "dtRise": 38,
+            "segRise": {
+              "Script": 0.9,
+              "Layout": -2.1,
+              "PaintComposite": 31.6,
+              "Other": 7.2
+            },
+            "top": "PaintComposite",
+            "accounts": true,
+            "gt50": 2,
+            "pass": true
+          }
+        ],
+        "stats": {
+          "v0": {
+            "dts": [
+              17,
+              59,
+              16
+            ],
+            "median": 17,
+            "gt50": 1,
+            "gt46": 1,
+            "gt54": 1,
+            "segMedianMs": {
+              "Script": 0.5,
+              "Layout": 15.7,
+              "PaintComposite": 0.2,
+              "Other": 0.6,
+              "rf": 15.9
+            },
+            "gapMinusFrame": 0.1
+          },
+          "g0.0e": {
+            "dts": [
+              42,
+              55,
+              61
+            ],
+            "median": 55,
+            "gt50": 2,
+            "gt46": 2,
+            "gt54": 2,
+            "segMedianMs": {
+              "Script": 1.4,
+              "Layout": 13.6,
+              "PaintComposite": 31.8,
+              "Other": 7.8,
+              "rf": 54.6
+            },
+            "gapMinusFrame": 0.2
+          },
+          "e-nohe": {
+            "dts": [
+              44,
+              53,
+              61
+            ],
+            "median": 53,
+            "gt50": 2,
+            "gt46": 2,
+            "gt54": 1,
+            "segMedianMs": {
+              "Script": 1.3,
+              "Layout": 14.2,
+              "PaintComposite": 29.1,
+              "Other": 4.7,
+              "rf": 52.9
+            },
+            "gapMinusFrame": 0.1
+          }
+        }
+      },
+      "B": {
+        "owner": "g0.0e",
+        "thresholdSensitive": false,
+        "reproduce": {
+          "test": "g0.0f",
+          "v0Med": 46,
+          "testMed": 72,
+          "rise": 26,
+          "reproduced": true
+        },
+        "knockOut": null,
+        "steps": [
+          {
+            "from": "v0",
+            "to": "g0.0e",
+            "dtRise": 24,
+            "segRise": {
+              "Script": 0.6,
+              "Layout": 3,
+              "PaintComposite": 18.3,
+              "Other": 2.3
+            },
+            "top": "PaintComposite",
+            "accounts": true,
+            "gt50": 3,
+            "pass": true
+          },
+          {
+            "from": "g0.0e",
+            "to": "g0.0f",
+            "dtRise": 2,
+            "segRise": {
+              "Script": 0.1,
+              "Layout": 0,
+              "PaintComposite": 1.2,
+              "Other": 0.7
+            },
+            "top": "PaintComposite",
+            "accounts": false,
+            "gt50": 3,
+            "pass": false
+          }
+        ],
+        "stats": {
+          "v0": {
+            "dts": [
+              46,
+              44,
+              48
+            ],
+            "median": 46,
+            "gt50": 0,
+            "gt46": 1,
+            "gt54": 0,
+            "segMedianMs": {
+              "Script": 0.8,
+              "Layout": 1.7,
+              "PaintComposite": 41.2,
+              "Other": 1.9,
+              "rf": 45.9
+            },
+            "gapMinusFrame": 0.1
+          },
+          "g0.0e": {
+            "dts": [
+              73,
+              69,
+              70
+            ],
+            "median": 70,
+            "gt50": 3,
+            "gt46": 3,
+            "gt54": 3,
+            "segMedianMs": {
+              "Script": 1.4,
+              "Layout": 4.7,
+              "PaintComposite": 59.5,
+              "Other": 4.2,
+              "rf": 69.9
+            },
+            "gapMinusFrame": 0.1
+          },
+          "g0.0f": {
+            "dts": [
+              74,
+              72,
+              68
+            ],
+            "median": 72,
+            "gt50": 3,
+            "gt46": 3,
+            "gt54": 3,
+            "segMedianMs": {
+              "Script": 1.5,
+              "Layout": 4.7,
+              "PaintComposite": 60.7,
+              "Other": 4.9,
+              "rf": 71.9
+            },
+            "gapMinusFrame": 0.1
+          }
+        }
+      },
+      "notes": [
+        "spot A: e-nohe has no +he-css crossing yet costs the same: the paint is g0.0e's other change, not the he-css switch",
+        "spot B: g0.0e -> g0.0f +2 ms: v3-W is not the cause",
+        "v0 A02 59 ms frame lies outside any RenderingFrame (gap - frame 57.5 ms); median unaffected",
+        "spot B +is-play crossing at y ~4608 on g0.0e/f vs 4562 on v0 (same 4500-4750 step)",
+        "pre-hold restarts with nothing measured: I-249 (RSD close in rearm), I-250 (xctrace hang x2), WDA after re-plug x2 (CoreDeviceService restart, C-124)"
       ]
     }
   }
