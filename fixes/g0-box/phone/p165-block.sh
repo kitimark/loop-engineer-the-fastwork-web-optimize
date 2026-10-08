@@ -194,6 +194,7 @@ firstheat() { # P-165 lead 06:4xZ: the first heat as its own phase before H1 (he
       5|7|3) ;;
       6) node tools/wait.mjs phone-temp --below 42 --timeout 600 --every 60 --owner "$R" --reason "$CM_TICKET ceiling in the first heat" >> $LG/cooling.log 2>&1 ;;
       9) echo "BLOCK STOP 9 in the first heat: induced Serious (a thermal condition is on): message the lead"; exit 9 ;;
+      10) echo "BLOCK STOP 10 in the first heat: the live heat page did not open (see out/p165/runs/pw-*-open.log): message the lead"; exit 10 ;;
       *) if [ "$CM_DRY" != 1 ] && ! linkok; then relink "in the first heat"; continue; fi
          if [ "$CM_DRY" != 1 ]; then preflight H0h$k && continue; fi
          echo "BLOCK STOP in the first heat at H0h$k exit $fe: message the lead"; exit $fe ;;

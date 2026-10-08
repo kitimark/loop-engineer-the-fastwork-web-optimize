@@ -19,7 +19,7 @@
 #   WC / WV          G warm-up on that arm's port (--warmup)                                  -> g-W<a>-<H>.json
 #   EC<n> / EV<n>    G counted run n, Timeline on                                             -> g-E<a><n>.json + tl-E<a><n>.json
 #   E<a><n>r / E<a><n>x   the TAIL's one re-run (r: a run gate or error; x: voided by a failing sentinel)
-#   PW               a heat hold: pre-warm runs on B back to back, the gate after every 3rd, until the gate passes
+#   PW               a heat hold: pre-warm runs on the live page (user T-247) back to back, the gate after every 3rd, until the gate passes
 # Steps: served hashes; WDA check; the START GATE. Too cool (exit 2): up to 2 pre-warm runs on B (iphone.mjs run
 # --driver scroll --probe std --profile real-serious --warmup), the gate after each; still too cool: VOID TOOCOOL
 # (exit 5, no counted run; the block runs a PW hold, then this hold again). Ceiling (exit 3): VOID CEILING (exit 6).
@@ -44,6 +44,7 @@ R=${RUNNER:-fix-g0-box}
 SV=out/p165; O=out/p165/runs
 FS=fixes/g0-box/phone/g-fastshort-g0b.json; PROG_FS=31fc66329daf
 PROF="--profile real-serious"
+HEAT_URL=https://fastwork.com/   # heat source of PW and pre-warm runs (user T-247); gates and counted runs stay on the mirror
 GATES=fixes/g0-box/phone/p129-gates-g0b.mjs
 SELF=fixes/g0-box/phone/p165-hold.sh
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
@@ -75,7 +76,7 @@ if [ "$CM_DRY" = 1 ]; then
   for I in "$@"; do case $(kind $I) in
     S) echo "PLAN $I S on $(arm $I) $(desc $I) $PROF (budget $BUDGET_S s)" ;;
     G) echo "PLAN $I G on $(arm $I) $(desc $I) $PROF (budget $sE s)" ;;
-    P) echo "PLAN $I heat hold: pre-warm S runs on B (--warmup $PROF), the gate after every 3rd run, until the gate passes or the hold runs out of time" ;; esac; done
+    P) echo "PLAN $I heat hold: pre-warm S runs on the live page $HEAT_URL (--warmup $PROF, uncounted; user T-247), the gate after every 3rd run, until the gate passes or the hold runs out of time" ;; esac; done
   echo "PLAN gates thermal-gate.mjs --expect serious --max-c 44 (no --accept-induced) at the start and the end; run gates $GATES"
   echo "HOLD $H DRY ok"; exit 0
 fi
@@ -96,11 +97,19 @@ gate() {
   return $gr
 }
 NPW=0
+# heat source (user T-247, lead 06:4xZ): the pre-warm and heat-hold runs load the live page, which heats the phone far
+# more per run than the mirror; uncounted (--warmup), profile real-serious. Every gate and every counted run, the
+# warm-ups wC/wV/WC/WV included, stays on the mirror ports. A run that refuses the live page falls back to
+# `iphone.mjs scroll --warmup` there. (HEAT_URL is set at the top, next to PROF.)
 prewarm() {
   NPW=$((NPW + 1))
-  node tools/iphone.mjs open "$BU" --owner "$R" > /dev/null || { echo "HOLD $H VOID open B failed (pre-warm)"; exit 4; }
-  node tools/iphone.mjs run --driver scroll --probe std $PROF --warmup --owner "$R" --block "$CM_TICKET" --label "p165-$H-pw$NPW" --out "$O/pw-$H-$NPW.json" > "$O/pw-$H-$NPW.log" 2>&1
-  echo "PREWARM $NPW exit $? $(date -u +%TZ) $(grep -m1 -E 'batt|temperature' "$O/pw-$H-$NPW.log" | cut -c1-80)"
+  node tools/iphone.mjs open "$HEAT_URL" --owner "$R" > "$O/pw-$H-$NPW-open.log" 2>&1 || { echo "HOLD $H VOID open of the heat page failed (pre-warm, HEATOPEN): $(tail -1 "$O/pw-$H-$NPW-open.log" | cut -c1-100)"; exit 10; }
+  node tools/iphone.mjs run --driver scroll --probe std $PROF --warmup --owner "$R" --block "$CM_TICKET" --label "p165-$H-pw$NPW" --out "$O/pw-$H-$NPW.json" > "$O/pw-$H-$NPW.log" 2>&1; pr=$?
+  if [ $pr -ne 0 ] && [ $pr -ne 8 ]; then
+    node tools/iphone.mjs open "$HEAT_URL" --owner "$R" > /dev/null 2>&1
+    node tools/iphone.mjs scroll --warmup $PROF --owner "$R" --label "p165-$H-pw$NPW-s" > "$O/pw-$H-$NPW-s.log" 2>&1; pr="$pr, scroll fallback $?"
+  fi
+  echo "PREWARM $NPW (live page) exit $pr $(date -u +%TZ) $(grep -m1 -E 'batt|temperature' "$O/pw-$H-$NPW.log" | cut -c1-80)"
 }
 late() { [ $(( $(date +%s) - T0 + $1 + 30 )) -gt 600 ]; }
 # the start gate, with the heat pre-warm
