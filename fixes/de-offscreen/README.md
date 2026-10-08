@@ -533,6 +533,115 @@ first frame of the close tween, the jack's `E(0)` → `T` rAF (JS 14374-14390). 
 composited between the open and the close, as v14's K6 did for the open. Likely pixel-identical; gain at most one
 frame over 34 ms per close; owner g0-box. The +1650 ms frame is not identified.
 
+## 8. The nav and the end menu, layer by layer per morph state (T-228 #110, T-253)
+
+The user saw many compositing borders on the top nav and at the end of the page. This census looks at the nav and
+the menu per `--morph` state. Simulator (WebKit, Mobile Safari), counts only, no timing. Data:
+`data/sim-morph.json` (`morph-read.mjs --json`). Probe: `morph-sim.mjs`.
+
+**Method.**
+- One fresh load per arm (v0; g0.0f = snap4/V), settled for 6 s.
+- States:
+  - a: mid-page with the nav pill (y 2400).
+  - b: the end, m = 0.
+  - Open, stepped: a rAF shim holds only the tween's own callback `T` (the one that calls `ZM`) and feeds it virtual
+    timestamps o + 16 ... 680 ms, so m = 0.06 ... 1. Per step it takes a census 60 ms and 450 ms after the step,
+    plus the owners of new layers. c is the steps at m ≈ 0.2 and 0.5.
+  - d: m = 1, settled.
+  - Close, stepped the same way.
+  - e: settled after the close.
+- Repaints per step = paintCount difference since the previous step, minus the most a layer gained over two null
+  steps (same census pattern, no step) at b or d.
+- The tween starts from a synthetic wheel event, which the original's jack listener `A` handles.
+- CSS transitions are not held, so they settle between steps.
+
+**Totals, layers / backing MB** (OBSERVED):
+
+| state | v0 | g0.0f |
+|---|---|---|
+| a, mid-page pill | 125 / 50.9 | 161 / 50.2 |
+| b, end, m = 0 | 29 / 67.0 | 53 / 74.6 |
+| c, m ≈ 0.2 | 110 / 73.1 | 54 / 72.2 |
+| c, m ≈ 0.5 | 110 / 87.1 | 53 / 78.1 |
+| d, m = 1 | 110 / 86.8 | 53 / 77.3 |
+| e, after close | 30 / 67.0 | 53 / 70.2 |
+
+At b, 12 of g0.0f's extra layers are in the platform section, all 0 MB.
+
+### 8.1 The nav header group (user question 2)
+
+| layer | WebKit reason | v0 (m 0 → 1) | g0.0f (every state) |
+|---|---|---|---|
+| header `.start-selling-top-nav` | filters (backdrop-filter), positionFixed, stacking | 0.7 → 11.6 MB, +1 paint per step | 0 MB, never repaints |
+| `.fw-bx-fill.fw-bx-light` / `-dark` | willChange (transform / opacity) | none | 2 layers, 0 MB (solid colour) |
+| `.start-selling-top-nav-bar` | overlap | 0.7 MB, +1 per step | same |
+| `.start-selling-top-nav-actions` | transformWithCompositedDescendants (translate -50 % over the switch's layer) | 0.2 MB | same |
+| `.start-selling-language-switch` | filters (its own backdrop-filter blur 12px) | 0.1 MB | same; 9-23 paints per step around m 0-0.2 and at the close end |
+
+- g0.0f: 6 layers / 1.0 MB in every state. v0: 4 layers, 1.7 MB at m = 0 and 12.6 MB at m = 1.
+- The clip-path on g0.0f's header is a shape mask on the header's own layer, not a separate layer.
+- Join `.is-earn`: no layer in either arm at a, b or e. So `filter: blur(0)` at rest, and the finished fill-both
+  mask/sheen, hold no layer in these states (OBSERVED).
+- The header is not flagged backdropRoot.
+- One short-lived layer appears at m ≈ 0.13-0.26 in both arms. It was gone before its owner could be read
+  (likely the Join fade).
+- The header's `will-change: width, height, border-radius, background` composites nothing: none of these
+  properties is in WebKit's will-change trigger list (`StyleWillChange.cpp` 83-110 @f9dcd0ee93e4), and no layer in
+  either arm carries a willChange reason for it (CONFIRMED).
+- `filter` composites in WebKit's web process: `requiresCompositingForFilters` (RenderLayerCompositor.cpp 4037-4050)
+  needs FilterTrigger, which `ChromeClient::allowedCompositingTriggers` grants by default (ChromeClient.h 551,
+  AllTriggers), and WebChromeClient does not override it (CONFIRMED).
+
+### 8.2 The menu panel, its clock and the centre (user question 1)
+
+- **Panel layers.** 11 in both arms, 15.1 MB while hidden at opacity 0 (a, b, e), 35.5 MB at m = 1:
+  - morph-panel, backdrop and the 3 columns (0 MB, "with composited descendants").
+  - 3 col-tracks: animation, 2.5 MB each.
+  - morph-veil (0.7 → 11.6 MB), morph-center (5.6 MB) and morph-footer (1.3 MB): overlap or stacking only. They sit
+    above the animated col-tracks; the overlap rule is RenderLayerCompositor.cpp 1341-1346 (@f9dcd0ee93e4, around
+    1344). The earlier knock-out B (col-track animation off in the paused scene) removed all three (section 4).
+- **The clock is inside morph-center** (JS 12879; `cD` 3918, the sliding digits `$E` 3820-3870).
+  - v0 at m = 0: morph-center repaints about 80 times per 0.45 s while hidden. v0's `cD` ticks every second
+    regardless of state (setInterval, JS 3931-3943).
+  - g0.0f at m = 0: 0 (the clock is frozen while closed, `__cdLive`).
+  - g0.0f at m = 1: about 21 repaints per 0.45 s, and 20-29 on some open steps. Its digits are no longer layers, so a
+    tick redraws the 5.7 MB centre.
+  - v0 at m = 1: 0, because there its digit faces are layers and a tick only moves them.
+- **Churn, v0 only.**
+  - On the first open step (m 0.06), 81 layers are created: 80 `span.face` digit faces (`will-change: transform`,
+    CSS 1408; 24.6 KB each, 2.0 MB in all) plus 1 overlap layer. They are destroyed on the last close step (m back
+    to 0). Nothing is created or destroyed at the close start.
+  - Every face repaints once per morph step: 80 paints per tween frame. The trigger is UNRESOLVED; it fits WebKit's
+    subpixel-offset repaint (`RenderLayerBacking.cpp` 1939 @f9dcd0ee93e4) as the header's width moves the centre.
+- **g0.0f has no churn.** It stays at 53 layers from b through every step to e (apart from the one short-lived layer
+  above).
+- **Platform section.**
+  - v0 at m = 1 (opacity 0): platform-card (13.3 MB) about 760 paints and the payment artboard about 380 per 0.45 s,
+    from the doc-sweep title animations.
+  - g0.0f sets `data-fw-pf-paused` from m ≈ 0.65 (fade 0). Its platform has 0 repaints at d, and at b too.
+
+### 8.3 Which layers can go
+
+| # | layers | MB | idea | pixel-identical | status / owner |
+|---|---|---|---|---|---|
+| 1 | v0 header repaint + backing | up to 11.6 | the nav paints nothing; 2 solid fills + clip-path | yes (PR-038) | done in g0.0f |
+| 2 | v0's 80 digit faces (churn + 80 paints per frame) | 2.0 | faces `will-change: auto` + clock frozen while closed | yes (patch) | done in g0.0f |
+| 3 | veil + centre + footer overlap layers | 7.6 at rest, up to 18.6 open | stop the col-track animation while closed (PR-039 option 2, f-B2) | yes | open proposal; fix-g0-box. Saves memory only: P-169 found no shorter `+is-play` flip frame (Composite medians v0 42.5, g0.0f 60.9, f-B2 59.2 ms) |
+| 3b | g0.0f centre redrawn on each clock tick while open | 5.7 per tick | the clock on its own small layer while open (will-change on the countdown wrapper) | needs a pixel check (text on its own layer may differ by 1-3 levels) | proposal if not exact; fix-g0-box |
+| 4 | 3 col-tracks + panel at rest | 15.1 | drop the hidden panel's layers at m = 0 | yes, but creation moves into the first open frame | not recommended |
+| 5 | language-switch blur layer (+ actions) | 0.2 | drop its own backdrop blur inside the nav | no (double blur) | proposal only |
+| 6 | top-nav-bar overlap layer | 0.7 | none while the fills under it are composited | – | keep |
+| 7 | header `will-change` list | 0 | delete (no layer effect) | yes | cleanup, no gain |
+
+**Decisive check, v0 with the panel clock hidden** (`morph-sim.mjs v0:noclock`, `.waitlist-closing-countdown` in the
+centre set to `display: none` after load; a diagnostic knock-out, never a candidate):
+- At m = 0 the centre's paintCount stays at 1 over the whole closed state. With the clock it went 87 → 194.
+- The open makes 30 layers, not 110, at every step: no 80-face churn.
+- So the closed-state centre repaints and the churn are the panel clock (OBSERVED, Simulator).
+- In v0 the 80 panel faces exist in the DOM while closed (88 `.face` in the page with the hero clock) but are not
+  layers, so their roll paints into the centre. On open they become 80 `will-change: transform` layers. This fits
+  map-cd-morphcenter's reading (the paused-scene rule sets `will-change: auto`); that rule was not re-read here.
+
 ## Files
 
 - `layers-sim.mjs`, `layers-chrome.mjs`, `common.mjs`: the probes, which can be re-run (commands in their headers;
@@ -546,5 +655,7 @@ frame over 34 ms per close; owner g0-box. The +1650 ms frame is not identified.
   and Timeline contents.
 - `p168-isplay-read.mjs`, `data/phone-p168-isplay.json` (section 6): the P-168 phone runs' flip frame, its Composite
   and nested Paint records, and the glint flips.
+- `morph-sim.mjs`, `morph-read.mjs`, `data/sim-morph.json` (section 8): the per-morph-state census (stepped tween),
+  its reader and the compact export.
 
 No URLs, device ids or addresses are in `data/`.
