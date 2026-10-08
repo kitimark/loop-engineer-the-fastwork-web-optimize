@@ -95,8 +95,10 @@ gstate() { tail -1 out/thermal-gate/gates.jsonl 2>/dev/null | node -e 'let s="";
 hpage() {
   [ $HFOK = 1 ] || { echo live; return; }
   [ -s $HM ] && { cat $HM; return; }
-  nm=$(grep -c 'method=fling page=mirror .*ok=1' $HR 2>/dev/null); nl=$(grep -c 'method=fling page=live .*ok=1' $HR 2>/dev/null)
-  if [ "${nm:-0}" -ge 3 ] && [ "${nl:-0}" -ge 3 ]; then
+  # the pending line (the last run, waiting for its state1) counts too, else the alternation lags one run (H0h4 07:15Z)
+  nm=$( { cat $HR 2>/dev/null; echo "$HP"; } | grep -c 'method=fling page=mirror .*ok=1'); nl=$( { cat $HR 2>/dev/null; echo "$HP"; } | grep -c 'method=fling page=live .*ok=1')
+  fm=$(grep -c 'method=fling page=mirror .*ok=1' $HR 2>/dev/null); fl=$(grep -c 'method=fling page=live .*ok=1' $HR 2>/dev/null)
+  if [ "${fm:-0}" -ge 3 ] && [ "${fl:-0}" -ge 3 ]; then   # the choice only from flushed lines (the medians read $HR)
     node -e '
 const L=require("fs").readFileSync(process.argv[1],"utf8").split("\n").filter(l=>/method=fling .*ok=1/.test(l));
 const med=a=>{a=[...a].sort((x,y)=>x-y);const n=a.length;return n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):NaN};
