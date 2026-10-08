@@ -82,7 +82,10 @@ fi
 node tools/iphone.mjs wda check > "$O/$H-wda.log" 2>&1; w=$?
 [ $w -ne 0 ] && { echo "HOLD $H VOID wda check exit $w (no run)"; exit 5; }
 BU=$(node tools/lan.mjs --url --port "$PB") && CU=$(node tools/lan.mjs --url --port "$PC") && VU=$(node tools/lan.mjs --url --port "$PV") || { echo "HOLD $H VOID no LAN url (no run)"; exit 4; }
-gate() { node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "p165-$H-$1" --expect serious --max-c 44 --url "$BU"; }
+gate1() { node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "p165-$H-$1" --expect serious --max-c 44 --url "$BU"; }
+# a gate that got no read (exit 1, e.g. "iphone.mjs open exit 1" right after a run parked Safari, P-165 H1 06:34Z) is
+# read once more after a park; only a second exit 1 counts
+gate() { gate1 "$1"; gr=$?; if [ $gr -eq 1 ]; then node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "GATE $1 no read (exit 1): once more"; gate1 "$1"; gr=$?; fi; return $gr; }
 NPW=0
 prewarm() {
   NPW=$((NPW + 1))

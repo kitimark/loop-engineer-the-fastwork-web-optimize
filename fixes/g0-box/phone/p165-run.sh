@@ -16,6 +16,8 @@ case $P in
   3) SPECS="H9:EC2 H10:sC,EC3 H11:EV3 H12:sC,EV4 H13:EC4 H14:TAIL"; RD=0 ;;
   *) echo "part must be 1, 2 or 3"; exit 2 ;;
 esac
+# P165_READY=0: part 1 again after the user already answered its ready step in this block (no second step)
+RD=${P165_READY:-$RD}
 # the servers keep their ports for the whole block (the warm-ups are per arm port, A3/U5): part 1 starts them, parts 2
 # and 3 only check them, part 3 stops them (or: sh fixes/g0-box/phone/p165-serve.sh stop)
 if [ "$P" = 1 ] || [ "$CM_DRY" = 1 ]; then sh fixes/g0-box/phone/p165-serve.sh start || { echo "BLOCK STOP: servers"; exit 4; }
