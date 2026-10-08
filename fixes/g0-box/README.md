@@ -450,7 +450,7 @@ Part 2b ran 08:28-08:37Z: one heat hold (82 s), then H8 VALID (327 s). The stopp
      arm port.
   3. Runs H10-H13 and the TAIL.
 
-### P-165 S leg (complete 07:51Z; interim until the block ends; `p165-score.mjs out/p165`)
+### P-165 S leg (complete 07:51Z; final, the block re-score at 09:2xZ gives the same numbers; `p165-score.mjs out/p165`)
 
 All 8 counted S runs are VALID (holds H1-H3, real Serious 38.9-39.8 °C at the gates, heat sentinels C1/C4/C5/C8 pass:
 bottom 60 fps, scroll 51.7-52.9 fps). **S verdict: FAIL** (DS2, a new cluster), as signed; the lead's ruling: no
@@ -470,6 +470,54 @@ The two new V clusters, from the run logs' frame lines (OBSERVED, one frame per 
 - **Spot B, y ≈ 4525 (t+8.8 s):** the `div.start-selling-platform-secure +is-play` frame in both arms. C 42, 39, 42, 42 ms;
   V 51, 52, 49, 51 ms: the same trigger, about 10 ms slower in V.
 - Both arms keep the about 110 ms frame at y ≈ 1850. V loses C's frames at 688-738, 1200-1250, 1600-1680 and 2600-2700.
+
+### P-165 result (block 2026-10-08 06:2x-09:2xZ, real Serious; card signed c31626f2)
+
+**Block verdict: FAIL**, by DS2 alone (the S leg's two new clusters, above). Every other rule passes:
+
+| rule | C (v0) | V (g0.0f) | result |
+|---|---|---|---|
+| DS1, S frames >50 per run | 5, 4, 5, 6 | 4, 3, 3, 6 | d −1.5: no-worse (twins agree) |
+| DS2, S new clusters | | | **FAIL**: new at 0-249 (spot A, `+he-css`) and 4500-4749 (spot B, `+is-play`); not threshold-sensitive |
+| DS3, S frames >34 per run | 20, 22, 27, 18 | 11, 8, 11, 8 | **BETTER** (d −11.5, max V < min C) |
+| DS3, S frames >50 | | | not shown better (d −1.5; threshold-sensitive) |
+| D1, G O1.f2 | median 46.5 (16-54) | 16.5 (16-17) | −30 ms: PASS |
+| D2, G later open tweens, median dt | 38.25 (37-44) | 17 (17-17) | −21.25 ms: PASS |
+| D3, G open-tween share >34 / >30 / >38 | 0.58 / 0.65 / 0.50 | 0 / 0 / 0 | PASS at all three |
+| triggers per G run | 13 opens, 12 closes ×4 | 13 opens, 12 closes ×4 | match |
+
+- **Validity:**
+  - All counted runs are valid: S 4+4, G 4+4 (EC1-EC4, EV1-EV4; run gates G1-G6 all `ok`).
+  - All 9 heat sentinels pass (C1, C4, C5, C8 and five sC; battery at their starts 38.9-41.2 °C).
+  - No Low Power Mode. Served hashes are checked before every item.
+  - Every VALID hold's start and end gates read real Serious. The voided tries (H1 Fair, H10 Critical) were run again.
+- **G descriptive** (no "better" claim at the end, as the card says): V's open and close tweens run at 17 ms in every run;
+  C's open tweens run at 37-44 ms, its close tweens at 58-72 ms. The prediction for D1-D3 was PASS; the size of the gap
+  is new.
+- **Scorer fix after the block, before any G reading:** the first `p165-score.mjs` (ac951bcba999) matched only a bare
+  `GATES <run> E ok`. `p129-gates-g0b.mjs` prints `ok idle <s>`, its documented format, so the first score read every G
+  run as "gates missing" and printed an empty GRUNS. The fix (`gatesOf`, selftest case 9) parses that line and nothing
+  else; no rule changed. The S numbers are byte-identical before and after. Scorer now 49e398dcdfcf.
+- **What happened during the block:**
+  - The user break in part 2 (T-248 #3; H8 run again).
+  - The H10 ceiling stop and part 3b (above).
+  - A time VOID of H10 after part 3b's restart: the start pre-warm from Fair plus the sC pushed EC3 past 600 s. The hold
+    re-ran whole and was VALID.
+  - H4 voided for time once (the margin NEED fix).
+- **Timer grid (gate exit 6):** 3 starts read an 8 ms timer grid at real Serious (H0h15, H1, H10). Each time a Safari
+  restart brought 30 ms back and the gate passed. No exit 6 was accepted unrestarted (`grid-accept.txt` is empty).
+- **Heat method (uncounted; HEATRATE lines; user T-247 #7):**
+  - Mirror fling: 6 runs, 0.17-0.50 °C/min (median 0.25).
+  - Live fling: 3 runs, 0.17-0.39 °C/min (median 0.38).
+  - The starting states differ. Live ran twice from Fair (0.39, 0.38); mirror once (0.29). Serious starts: mirror 0.17-0.50
+    (n 5), live 0.17 (n 1). So no same-band comparison reaches 3 per arm: **not decided**, and the mirror stays the default
+    (the lead's tie rule).
+- **Thermal ceiling (OBSERVED, in our setup, cause unknown):** the phone read Critical at a 39.1-41.5 °C battery, and
+  Fair at 38.0 °C 3 min later. Battery °C alone does not predict Critical, so a ceiling wait on `phone-temp` cannot end
+  it; read the state.
+- **Decision, as signed:** FAIL means no landing claim of "no worse everywhere" for g0.0f. The S clusters go to P-166
+  (W attribution at spots A and B, arms v0 / g0.0e / g0.0f plus the three knock-outs). The G leg needs no follow-up for
+  no-worse.
 
 ## P-166 (attribution ticket draft for P-165's two S clusters; written before any P-166 data; not signed, not run)
 

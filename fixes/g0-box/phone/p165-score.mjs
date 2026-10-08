@@ -65,6 +65,14 @@ export function scoreS(j, arm) {
   return { void: v, sentinel: m.sentinel ?? null, tempStart: m.battery?.start?.temperatureC ?? null, timed, bins };
 }
 
+/** a G run's GATES line -> 'ok' | 'INVALID …' | null. p129-gates-g0b.mjs prints "GATES <run> E ok idle <s>" (its
+ * documented format); the first scorer matched only a bare "ok" and read every G run as gates missing (fixed after the
+ * block, before any G reading, 2026-10-08 09:2xZ: a parser fix, no rule changed) */
+export function gatesOf(t, item) {
+  const m = t.match(new RegExp(`^GATES ${item} E (ok(?: .*)?|INVALID.*)$`, 'm'));
+  return m ? (m[1].startsWith('ok') ? 'ok' : m[1]) : null;
+}
+
 /** parse the hold logs of VALID holds, in hold order -> [{hold, item, gates}] */
 export function readOrder(logs) {
   const num = (h) => { const m = h.match(/^H(\d+)(.*)$/); return m ? [Number(m[1]), m[2]] : [1e9, h]; };
@@ -76,7 +84,7 @@ export function readOrder(logs) {
     if (!/^HOLD \S+ VALID/.test(last)) continue;
     for (const m of t.matchAll(/^RUN (\S+) arm (\S+) exit (\d+)/gm)) {
       const item = m[1];
-      const g = (t.match(new RegExp(`^GATES ${item} E (ok|INVALID.*)$`, 'm')) || [])[1] ?? null;
+      const g = gatesOf(t, item);
       const itemVoid = new RegExp(`^ITEM ${item} VOID`, 'm').test(t);
       out.push({ hold: h, item, arm: m[2], exit: Number(m[3]), gates: g, itemVoid });
     }
@@ -192,7 +200,10 @@ function selftest() {
   const b8 = [...block([rep(5, 80, 100)], [rep(1, 80, 100)]), g('EC1', 'INVALID G4 idle 6.1 s'), g('EV1'), { hold: 'H8', item: 'sC', arm: 'C', exit: 0, gates: null, itemVoid: false, j: mk('C', [], { sentinel: { pass: false } }) }, g('EV2', 'ok', 'H8'), g('EC1r', 'ok', 'H14')];
   r = scoreBlock(b8);
   ok(r.G.valid.join(',') === 'EV2,EC1r', `8 G valid ${r.G.valid}`);
-  console.log(bad.length ? `SELFTEST FAIL\n- ${bad.join('\n- ')}` : 'SELFTEST ok (8 cases: PASS + BETTER, NEW CLUSTER, DS1 twin flip, DS3 twin flip, OPEN by a DS2 twin, sentinel chain + re-runs, served/profile voids, G gates + sentinel)');
+  // 9. GATES lines as p129-gates-g0b.mjs prints them
+  const lg = 'RUN EC1 arm C exit 0\nGATES EC1 E ok idle 4.662\nGATES EV1 E INVALID G4 idle 6.1 s\nGATES EC10 E ok idle 4.1';
+  ok(gatesOf(lg, 'EC1') === 'ok' && gatesOf(lg, 'EV1') === 'INVALID G4 idle 6.1 s' && gatesOf(lg, 'EV2') === null && gatesOf('GATES EC1 E okay', 'EC1') === null, '9 GATES parse');
+  console.log(bad.length ? `SELFTEST FAIL\n- ${bad.join('\n- ')}` : 'SELFTEST ok (9 cases: PASS + BETTER, NEW CLUSTER, DS1 twin flip, DS3 twin flip, OPEN by a DS2 twin, sentinel chain + re-runs, served/profile voids, G gates + sentinel, GATES line parse)');
   return bad.length ? 1 : 0;
 }
 

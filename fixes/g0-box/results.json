@@ -1249,7 +1249,7 @@
     }
   },
   "p165": {
-    "status": "card draft, not signed, not run (before any P-165 data); README \"P-165\"",
+    "status": "run 2026-10-08 (card signed c31626f2); block verdict FAIL by DS2; README \"P-165 result\"",
     "profile": "real-serious (iphone.mjs --profile real-serious, I-246, main 8f2d9e8c); never pooled with tool-serious, xcode-serious or real-fair",
     "arms": {
       "C": "v0, the original page (baseline b1789284481295-4ad4a84a, site-pretty, no overlay), JS 4606120cf392 / CSS 27776f3d4138",
@@ -1295,6 +1295,251 @@
     "followUps": [
       "short no-worse check at Fair (real-fair, S leg, n = 3 per arm, about 15 min)",
       "finger test by the user (blind swipe A/B, original against g0.0f, console swipe-pair)"
-    ]
+    ],
+    "result": {
+      "verdict": "FAIL",
+      "why": "DS2: new S clusters at 0-249 (spot A, the first scroll frame, section.hero-track +he-css) and 4500-4749 (spot B, +is-play), not threshold-sensitive",
+      "S": {
+        "valid": {
+          "C": [
+            "C1",
+            "C4",
+            "C5",
+            "C8"
+          ],
+          "V": [
+            "V2",
+            "V3",
+            "V6",
+            "V7"
+          ]
+        },
+        "DS1": {
+          "nC": 4,
+          "nV": 4,
+          "delta": {
+            "gt50": -1.5,
+            "gt46": -2,
+            "gt54": -2,
+            "gt34": -11.5,
+            "gt30": -23.5,
+            "gt38": -6
+          },
+          "gt50": "no-worse",
+          "thresholdSensitive": false,
+          "verdict": "no-worse"
+        },
+        "DS2": {
+          "vClusters": [
+            "0-249",
+            "250-499",
+            "500-749",
+            "1750-1999",
+            "4500-4749"
+          ],
+          "newClusters": [
+            "0-249",
+            "4500-4749"
+          ],
+          "fail": true,
+          "thresholdSensitive": false
+        },
+        "DS3": {
+          "gt50": {
+            "better": false,
+            "thresholdSensitive": true,
+            "d": -1.5,
+            "C": [
+              5,
+              4,
+              5,
+              6
+            ],
+            "V": [
+              4,
+              3,
+              3,
+              6
+            ]
+          },
+          "gt34": {
+            "better": true,
+            "thresholdSensitive": false,
+            "d": -11.5,
+            "C": [
+              20,
+              22,
+              27,
+              18
+            ],
+            "V": [
+              11,
+              8,
+              11,
+              8
+            ]
+          }
+        },
+        "verdict": "FAIL"
+      },
+      "G": {
+        "valid": "EC1,EV1,EV2,EC2,EC3,EV3,EV4,EC4 (C 4, V 4), run gates G1-G6 ok",
+        "D1": {
+          "C": {
+            "median": 46.5,
+            "range": [
+              16,
+              54
+            ]
+          },
+          "V": {
+            "median": 16.5,
+            "range": [
+              16,
+              17
+            ]
+          },
+          "diff": -30,
+          "verdict": "PASS"
+        },
+        "D2": {
+          "C": {
+            "median": 38.25,
+            "range": [
+              37,
+              44
+            ]
+          },
+          "V": {
+            "median": 17,
+            "range": [
+              17,
+              17
+            ]
+          },
+          "diff": -21.25,
+          "verdict": "PASS"
+        },
+        "D3": {
+          "C": {
+            "gt34": 0.58,
+            "gt30": 0.655,
+            "gt38": 0.499
+          },
+          "V": {
+            "gt34": 0,
+            "gt30": 0,
+            "gt38": 0
+          },
+          "verdict": "PASS"
+        },
+        "triggers": "C and V 13 opens / 12 closes in every run",
+        "decision": "PASS",
+        "descriptive": "close tween median dt C 66.5 (58-72) ms, V 17 ms; no better claim at the end (card)"
+      },
+      "sentinels": [
+        {
+          "item": "C1",
+          "hold": "H1",
+          "pass": true,
+          "tempStart": 38.89
+        },
+        {
+          "item": "C4",
+          "hold": "H2",
+          "pass": true,
+          "tempStart": 39.5
+        },
+        {
+          "item": "C5",
+          "hold": "H2",
+          "pass": true,
+          "tempStart": 39.69
+        },
+        {
+          "item": "C8",
+          "hold": "H3",
+          "pass": true,
+          "tempStart": 39.29
+        },
+        {
+          "item": "sC",
+          "hold": "H6",
+          "pass": true,
+          "tempStart": 40.79
+        },
+        {
+          "item": "sC",
+          "hold": "H8",
+          "pass": true,
+          "tempStart": 38.89
+        },
+        {
+          "item": "sC",
+          "hold": "H10",
+          "pass": true,
+          "tempStart": 39.29
+        },
+        {
+          "item": "sC",
+          "hold": "H12",
+          "pass": true,
+          "tempStart": 40.5
+        },
+        {
+          "item": "sC",
+          "hold": "H14",
+          "pass": true,
+          "tempStart": 41.19
+        }
+      ],
+      "scorer": {
+        "sha256": "49e398dcdfcfa363eb08aa08a6768b0e81d98a0c2c87bea6128ce769baa7c53c",
+        "fix": "after the block, before any G reading: GATES line parse accepts \"ok idle <s>\" (p129-gates-g0b.mjs format); the first scorer (ac951bcba999) read every G run as gates missing; no rule changed, S numbers identical"
+      },
+      "reader": "g0b-read.mjs ffd6d5ac862a unchanged",
+      "timerGrid": {
+        "gridchecks": 3,
+        "holds": [
+          "H0h15",
+          "H1",
+          "H10"
+        ],
+        "fixedByRestart": 3,
+        "acceptedUnrestarted": 0,
+        "note": "8 ms timer grid at real Serious; one Safari restart brought 30 ms back each time"
+      },
+      "heatMethod": {
+        "mirrorFling": {
+          "n": 6,
+          "ratesCPerMin": [
+            0.294,
+            0.497,
+            0.171,
+            0.173,
+            0.443,
+            0.213
+          ]
+        },
+        "liveFling": {
+          "n": 3,
+          "ratesCPerMin": [
+            0.173,
+            0.386,
+            0.38
+          ]
+        },
+        "decision": "not decided (start states differ; no same-band arm reaches 3); mirror stays the default (tie rule)",
+        "counted": false
+      },
+      "events": [
+        "heat source: uncounted fling heat runs on the mirror (live as the comparison arm), user T-247",
+        "user break in part 2 (T-248 #3): H8 stopped at 08:24Z, run again as part 2b (VALID)",
+        "H10 ceiling stop: Critical at 41.5-41.0 C battery (below 44 C); lead ruling: not a sentinel failure, cool idle, resume from H10, margin target 39.0 C; part 3b: Critical -> Fair in 3 min, H10-H14 VALID",
+        "H1 VOID end gate Fair, H4 VOID time (margin NEED fix), H10 VOID time once (pre-warm + sC); each re-run whole"
+      ],
+      "thermalObserved": "OBSERVED, in our setup, cause unknown: Critical at 39.1-41.5 C battery and Fair at 38.0 C three minutes later; battery C does not predict Critical",
+      "measurementCode": "no change to verify.mjs, lib/cdp.mjs or fix.mjs ab during the block; tools at merge-base 7905475"
+    }
   }
 }
