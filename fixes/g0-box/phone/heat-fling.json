@@ -1,0 +1,858 @@
+{
+ "name": "ms-heat-fling",
+ "version": 1,
+ "screen": [
+  430,
+  932
+ ],
+ "about": "UNCOUNTED heat program (user T-247): hard fast flings, most of the run at the end of the page (repeated close/open of the end-of-page menu), two full-page top-bottom passes. No timing is read from it. Fixed repeats and optional untils only; every down fling sits in a one-pass runtime loop (until atTop) so a pull-to-refresh guard miss ends that loop instead of aborting the run. Start on an open page, no reload.",
+ "params": {
+  "x": 215,
+  "pressMs": 10
+ },
+ "steps": [
+  {
+   "type": "mark",
+   "name": "heat-start"
+  },
+  {
+   "type": "repeat",
+   "times": 4,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 540,
+     "ms": 130,
+     "profile": "fling"
+    },
+    {
+     "type": "pause",
+     "ms": 250
+    }
+   ]
+  },
+  {
+   "type": "repeat",
+   "times": 5,
+   "until": "atTop",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "down",
+     "px": 540,
+     "ms": 140,
+     "profile": "fling"
+    },
+    {
+     "type": "pause",
+     "ms": 500
+    }
+   ]
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "repeat",
+   "times": 1,
+   "until": "atTop",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "down",
+     "px": 60,
+     "ms": 50,
+     "profile": "fling"
+    },
+    {
+     "type": "pause",
+     "ms": 400
+    }
+   ]
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "repeat",
+   "times": 1,
+   "until": "atTop",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "down",
+     "px": 120,
+     "ms": 60,
+     "profile": "fling"
+    },
+    {
+     "type": "pause",
+     "ms": 400
+    }
+   ]
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "repeat",
+   "times": 1,
+   "until": "atTop",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "down",
+     "px": 200,
+     "ms": 90,
+     "profile": "fling"
+    },
+    {
+     "type": "pause",
+     "ms": 400
+    }
+   ]
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "repeat",
+   "times": 5,
+   "until": "atTop",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "down",
+     "px": 540,
+     "ms": 140,
+     "profile": "fling"
+    },
+    {
+     "type": "pause",
+     "ms": 500
+    }
+   ]
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 200,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "repeat",
+   "times": 1,
+   "until": "atTop",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "down",
+     "px": 60,
+     "ms": 50,
+     "profile": "fling"
+    },
+    {
+     "type": "pause",
+     "ms": 400
+    }
+   ]
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 200,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "repeat",
+   "times": 1,
+   "until": "atTop",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "down",
+     "px": 120,
+     "ms": 60,
+     "profile": "fling"
+    },
+    {
+     "type": "pause",
+     "ms": 400
+    }
+   ]
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "repeat",
+   "times": 1,
+   "until": "atTop",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "down",
+     "px": 200,
+     "ms": 90,
+     "profile": "fling"
+    },
+    {
+     "type": "pause",
+     "ms": 400
+    }
+   ]
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "repeat",
+   "times": 1,
+   "until": "atTop",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "down",
+     "px": 60,
+     "ms": 50,
+     "profile": "fling"
+    },
+    {
+     "type": "pause",
+     "ms": 400
+    }
+   ]
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "repeat",
+   "times": 1,
+   "until": "atTop",
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "down",
+     "px": 120,
+     "ms": 60,
+     "profile": "fling"
+    },
+    {
+     "type": "pause",
+     "ms": 400
+    }
+   ]
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 540,
+   "ms": 130,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 250
+  },
+  {
+   "type": "mark",
+   "name": "heat-done"
+  }
+ ]
+}
