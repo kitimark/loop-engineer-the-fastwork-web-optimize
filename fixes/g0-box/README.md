@@ -282,6 +282,44 @@ Why the G program cannot run on g0 builds (OBSERVED, both arms; mechanism from t
 - **FAIL on D2 or D3:** g0.0e stays best; v3-W stays a research result, and the user is told the no-worse check failed despite the accepted look.
 - **OPEN (threshold-sensitive):** at most one more block (sequential rule); the lead decides.
 
+### P-164 result (block run 2026-10-08 04:00-05:08Z; the lead decides on the G6 gate)
+
+**As the kit ran it, the block is VOID**, and the reason is a kit error of mine, not the phone:
+- The run gates come from P-129's frozen reader (`research/serious-heat/p129-read.mjs`). Its gate G6 requires the
+  gesture program hash to start with v1's `8737f212c0ff` (`FS_HASH`, line 66).
+- When I moved the kit to the g0 program (38d7fe5d7fa8) I re-pinned the hold script but not this gate, and the dry run
+  does not exercise gates.
+- So every counted run printed `INVALID G6`, the block used its two re-runs (EC1r, EV1r) on that, and the end sentinel
+  S1 failed on G6 alone ("SENTINEL S1 FAIL fps 54.3 slow 0.039 (G6 script hash 38d7fe5d7fa8 is not fs 8737f212c0ff)"),
+  which by the protocol voids every counted run (exit 8).
+
+**Every other gate passes** (`out/g0box/p164gates.mjs`, P-129's readRun on each record):
+- G1-G5 hold on all 10 counted runs (EC1-EC4, EV1-EV4, EC1r, EV1r); idle 4.68-4.86 s (window 4.0-5.5).
+- S1 meets the numeric sentinel: moving fps 54.3 ≥ 50, slow share 3.9 % ≤ 6 %.
+- Every hold was VALID; the run hash on every record is the signed program 38d7fe5d7fa8.
+- Heat: tool-serious; Serious (induced) at every gate; battery 38.8-41.0 °C, under the 44 °C ceiling; no Critical.
+- The swipe robot and USB held for the whole block (no link loss, no re-plug).
+
+**Reading with the card's rules** (`g0b-read.mjs out/g0bp/runs`; the block's own counted runs, EC1-EC4 and EV1-EV4;
+valid for a decision only if the lead rules G6 a pin error, since the card names 38d7fe5d7fa8):
+
+| | C (g0.0e) | V (g0.0f) | V − C | rule |
+|---|---|---|---|---|
+| triggers per run (open / close) | 13 / 12 in all 4 runs | 13 / 12 in all 4 runs | equal | must match: ok |
+| D1: O1.f2, median (range) | 16.5 ms (16-17) | 16.5 ms (16-17) | 0 | ≤ +4: pass |
+| D2: later-open tween median dt, median of runs (range) | 17 ms (17-17) | 17 ms (17-17) | 0 | ≤ +4: pass |
+| D3: later-open share > 34 / twins > 30, > 38 | 0 / 0, 0 | 0 / 0, 0 | 0 | ≤: pass at all three |
+| open-tween frames per run | 513-515 | 514-516 | | |
+| descriptive: close-tween median dt / share > 34 | 17 ms / 0-0.2 % | 17 ms / 0-0.2 % | | |
+| descriptive: finger-down frames > 50 (46 / 54) per run | 7, 5, 6, 6 (7-10 / 2-3) | 5, 10, 8, 9 (7-12 / 5-7) | | |
+| descriptive: finger-down frames > 34 (30 / 38) per run | 29, 31, 34, 28 (53-65 / 16-21) | 32, 32, 30, 39 (60-69 / 19-23) | | |
+
+- **Reading: PASS** (D1, D2 and D3 pass with zero difference; no twin changes a verdict), conditional on the lead's
+  G6 ruling. Single runs reach ~0.2 % close-tween frames over 34 ms in both arms; the open tweens have none in either.
+- Finger-down frames are the whole run's touch-down time (approach drags included), descriptive only. V's > 50 count
+  has a median of 8.5 per run against C's 6 (> 34: 32 against 30); with 4 runs a side this decides nothing.
+- Records: `out/g0bp/runs/` (gitignored); reader output `out/g0bp/p164-read.json`; run log `out/g0bp/p164-run.log`.
+
 ### Options considered after the stop (the lead chose (a))
 
 - (a) A T3 look-alike proposal: the outline differs mid-motion only. **Taken.**

@@ -950,7 +950,7 @@
   }
  },
  "p164": {
-  "status": "card written before any P-164 data, for the lead to sign; block not run",
+  "status": "block run 2026-10-08 04:00-05:08Z; VOID as run by the kit (gate G6 pinned to v1 8737f212c0ff, a kit error), every other gate passes; reading PASS conditional on the lead ruling G6 a pin error",
   "preData1": {
    "program": "fixes/morph-scroll/g-fastshort-v1.json (8737f212c0ff)",
    "result": "STOP: both arms abort at the first non-optional `until atEnd` (scrollY 5213/5214): g0 pins the opened page where its jack fired and opening grows docH 5999 -> 6035 (maxY 5260); no E stroke reached"
@@ -966,6 +966,253 @@
    "D2": "PASS ~70 %",
    "D3": "PASS ~60 %",
    "overall": "PASS ~50 %, OPEN (threshold-sensitive) the most likely other outcome"
+  },
+  "block": {
+   "kitVerdict": "VOID: S1 FAIL on G6 alone (fps 54.3 >= 50, slow 0.039 <= 0.06 pass), every counted run INVALID on G6 alone; re-runs EC1r, EV1r spent on G6",
+   "gatesWithoutG6": "G1-G5 ok on all 10 counted runs; idle 4.68-4.86 s",
+   "heat": "tool-serious, Serious induced at every gate, battery 38.8-41.0 C, no Critical",
+   "link": "no link loss, no re-plug",
+   "reading": {
+    "decision": "PASS",
+    "d1": {
+     "diff": 0,
+     "ok": true
+    },
+    "d2": {
+     "diff": 0,
+     "ok": true
+    },
+    "d3": {
+     "30": "le",
+     "34": "le",
+     "38": "le"
+    },
+    "perRun": {
+     "EC1": {
+      "nOpen": 13,
+      "nClose": 12,
+      "f1": 16,
+      "f2": 17,
+      "n": 514,
+      "medianDt": 17,
+      "share": {
+       "30": 0,
+       "34": 0,
+       "38": 0,
+       "50": 0
+      },
+      "close": {
+       "n": 513,
+       "medianDt": 17,
+       "share": {
+        "30": 0.0078,
+        "34": 0.0019,
+        "38": 0,
+        "50": 0
+       }
+      }
+     },
+     "EV1": {
+      "nOpen": 13,
+      "nClose": 12,
+      "f1": 16,
+      "f2": 17,
+      "n": 516,
+      "medianDt": 17,
+      "share": {
+       "30": 0,
+       "34": 0,
+       "38": 0,
+       "50": 0
+      },
+      "close": {
+       "n": 511,
+       "medianDt": 17,
+       "share": {
+        "30": 0.0059,
+        "34": 0,
+        "38": 0,
+        "50": 0
+       }
+      }
+     },
+     "EV2": {
+      "nOpen": 13,
+      "nClose": 12,
+      "f1": 12,
+      "f2": 16,
+      "n": 515,
+      "medianDt": 17,
+      "share": {
+       "30": 0,
+       "34": 0,
+       "38": 0,
+       "50": 0
+      },
+      "close": {
+       "n": 514,
+       "medianDt": 17,
+       "share": {
+        "30": 0.0058,
+        "34": 0.0019,
+        "38": 0,
+        "50": 0
+       }
+      }
+     },
+     "EC2": {
+      "nOpen": 13,
+      "nClose": 12,
+      "f1": 12,
+      "f2": 16,
+      "n": 514,
+      "medianDt": 17,
+      "share": {
+       "30": 0.0019,
+       "34": 0,
+       "38": 0,
+       "50": 0
+      },
+      "close": {
+       "n": 511,
+       "medianDt": 17,
+       "share": {
+        "30": 0.0098,
+        "34": 0.002,
+        "38": 0.002,
+        "50": 0
+       }
+      }
+     },
+     "EC3": {
+      "nOpen": 13,
+      "nClose": 12,
+      "f1": 16,
+      "f2": 17,
+      "n": 515,
+      "medianDt": 17,
+      "share": {
+       "30": 0,
+       "34": 0,
+       "38": 0,
+       "50": 0
+      },
+      "close": {
+       "n": 513,
+       "medianDt": 17,
+       "share": {
+        "30": 0.0039,
+        "34": 0.0019,
+        "38": 0,
+        "50": 0
+       }
+      }
+     },
+     "EV3": {
+      "nOpen": 13,
+      "nClose": 12,
+      "f1": 17,
+      "f2": 16,
+      "n": 514,
+      "medianDt": 17,
+      "share": {
+       "30": 0.0019,
+       "34": 0,
+       "38": 0,
+       "50": 0
+      },
+      "close": {
+       "n": 513,
+       "medianDt": 17,
+       "share": {
+        "30": 0.0058,
+        "34": 0.0019,
+        "38": 0,
+        "50": 0
+       }
+      }
+     },
+     "EV4": {
+      "nOpen": 13,
+      "nClose": 12,
+      "f1": 11,
+      "f2": 17,
+      "n": 514,
+      "medianDt": 17,
+      "share": {
+       "30": 0,
+       "34": 0,
+       "38": 0,
+       "50": 0
+      },
+      "close": {
+       "n": 513,
+       "medianDt": 17,
+       "share": {
+        "30": 0.0019,
+        "34": 0,
+        "38": 0,
+        "50": 0
+       }
+      }
+     },
+     "EC4": {
+      "nOpen": 13,
+      "nClose": 12,
+      "f1": 17,
+      "f2": 16,
+      "n": 513,
+      "medianDt": 17,
+      "share": {
+       "30": 0,
+       "34": 0,
+       "38": 0,
+       "50": 0
+      },
+      "close": {
+       "n": 514,
+       "medianDt": 17,
+       "share": {
+        "30": 0.0039,
+        "34": 0,
+        "38": 0,
+        "50": 0
+       }
+      }
+     }
+    }
+   },
+   "descriptiveFingerDown": {
+    "gt50": {
+     "C": [
+      7,
+      5,
+      6,
+      6
+     ],
+     "V": [
+      5,
+      10,
+      8,
+      9
+     ]
+    },
+    "gt34": {
+     "C": [
+      29,
+      31,
+      34,
+      28
+     ],
+     "V": [
+      32,
+      32,
+      30,
+      39
+     ]
+    },
+    "order": "EC1 EC2 EC3 EC4 / EV1 EV2 EV3 EV4"
+   }
   }
  }
 }
