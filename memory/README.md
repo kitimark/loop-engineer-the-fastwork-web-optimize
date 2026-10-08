@@ -23,6 +23,7 @@ Every agent:
 - [Console steps only for actions](console-steps-only-for-actions.md): "Your steps" is only for what the user must do; answers, results and FYIs go in a thread (the lead opens it)
 - [Milestone 2: heat profiles](milestone-2-heat-profiles.md): after fixes 1-3 are smooth at real Serious, stay smooth from a 42-44 °C start and under Xcode-induced Serious
 - [Phone checks start warm](phone-checks-start-warm.md): tests run at thermal Serious, since T-162 #3 Xcode-induced Serious by default (no heat pre-warm), real heat once for the final build; ceiling 44 °C/Critical; Fair no-worse check at the end; LPM dropped
+- [Heat probe for blog posts](heat-probe-for-blog.md): HEATRATE lines (°C/min per heat method and page) stay reproducible; the user writes blog posts from them (T-247 #10)
 - [One phone step at a time](one-phone-step-at-a-time.md): only the lease holder posts a phone step, one open at a time, after the user says ready; the lead sets the order; renew 2 min early, arm `--until redo`
 - [Answer format](answer-format.md): every answer to the user: answer first, short plain bullets, codes explained, numbers in small tables, ~10 lines, "What you need to do" last
 - [Trace before asking](trace-before-asking.md): a reported lag or bug is traced from our recordings, logs and probes first; ask the user only what no data can answer
