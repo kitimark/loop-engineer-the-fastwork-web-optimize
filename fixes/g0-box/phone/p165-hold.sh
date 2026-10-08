@@ -121,6 +121,8 @@ fi
 node tools/iphone.mjs wda check > "$O/$H-wda.log" 2>&1; w=$?
 [ $w -ne 0 ] && { echo "HOLD $H VOID wda check exit $w (no run)"; exit 5; }
 BU=$(node tools/lan.mjs --url --port "$PB") && CU=$(node tools/lan.mjs --url --port "$PC") && VU=$(node tools/lan.mjs --url --port "$PV") || { echo "HOLD $H VOID no LAN url (no run)"; exit 4; }
+GA=out/p165/grid-accept.txt
+gfield() { tail -1 out/thermal-gate/gates.jsonl 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const r=JSON.parse(s),k=process.argv[1];const v=k==="median"?(r.timer&&r.timer.median):r[k];console.log(v===undefined||v===null?"?":v)}catch{console.log("?")}})' "$1"; }
 gate1() { node research/phone-thermal-gate/thermal-gate.mjs --owner "$R" --label "p165-$H-$1" --expect serious --max-c 44 --url "$BU"; }
 # P-165 H1 06:34Z: a second Safari page (I-037) made the gate's open fail (exit 1, no read). Lead 06:4xZ: park before
 # every gate; a gate with no read gets one retry after a safari-restart, then the hold is VOID GATEERR (exit 4: the
@@ -132,6 +134,23 @@ gate() {
     node tools/iphone.mjs safari-restart --owner "$R" --url "$BU" --timeout 60 > "$O/$H-gate-restart.log" 2>&1
     node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
     gate1 "$1"; gr=$?; fi
+  # lead ruling 07:2xZ (P-165, before counted data): real Serious with an 8 ms timer grid is gate exit 6. Once per block:
+  # a safari-restart and a re-gate (GRIDCHECK before/after, the decisive check: did Safari miss the thermal change?).
+  # Still exit 6 with real Serious, induced No, grid < 25 ms after that: exit 6 counts as PASS for this block, the grid
+  # recorded, not judged ($GA). Exit 6 any other way (Fair with a 30 ms grid) stays a fail.
+  if [ $gr -eq 6 ] && [ "$(gfield state)" = Serious ] && [ "$(gfield induced)" = No ] && [ "$(gfield median | cut -d. -f1)" -lt 25 ] 2>/dev/null; then
+    if [ ! -s $GA ]; then
+      echo "GRIDCHECK $H $1 before: state Serious induced No timer $(gfield median) ms batt $(gfield battC) C: safari-restart, then re-gate"
+      node tools/iphone.mjs safari-restart --owner "$R" --url "$BU" --timeout 60 > "$O/$H-grid-restart.log" 2>&1; rr=$?
+      node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
+      gate1 "$1"; gr=$?
+      echo "GRIDCHECK $H $1 after (safari-restart exit $rr): gate exit $gr state $(gfield state) induced $(gfield induced) timer $(gfield median) ms"
+      [ $gr -eq 6 ] && [ "$(gfield state)" = Serious ] && echo "$(date -u +%FT%TZ) $H timer $(gfield median) ms after safari-restart: exit 6 accepted for P-165 (lead ruling)" > $GA
+    fi
+    if [ $gr -eq 6 ] && [ -s $GA ] && [ "$(gfield state)" = Serious ] && [ "$(gfield induced)" = No ]; then
+      echo "GATE $1 exit 6 accepted (lead ruling: real Serious, induced No; timer grid $(gfield median) ms recorded, not judged)"; gr=0
+    fi
+  fi
   return $gr
 }
 NPW=0
@@ -141,7 +160,7 @@ NPW=0
 # `iphone.mjs scroll --warmup` there. (HEAT_URL is set at the top, next to PROF.)
 prewarm() {
   NPW=$((NPW + 1))
-  PG=$(hpage); [ $PG = mirror ] && PU=$BU || PU=$HEAT_URL
+  PG=${HPAGE_FORCE:-$(hpage)}; [ $PG = mirror ] && PU=$BU || PU=$HEAT_URL
   M=$([ $HFOK = 1 ] && echo fling || echo scroll)
   t0=$(hread); s0=$(date +%s)
   node tools/iphone.mjs open "$PU" --owner "$R" > "$O/pw-$H-$NPW-open.log" 2>&1 || { hflush "?"; echo "HOLD $H VOID open of the heat page ($PG) failed (pre-warm, HEATOPEN): $(tail -1 "$O/pw-$H-$NPW-open.log" | cut -c1-100)"; exit 10; }
@@ -180,7 +199,8 @@ case $g in
   3) node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "HOLD $H VOID start gate ceiling (CEILING: Critical or battery >= 44 C)"; exit 6 ;;
   4) node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "HOLD $H VOID start gate: Serious is induced (INDUCED): stop the block"; exit 9 ;;
   1) node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "HOLD $H VOID start gate: no read twice (GATEERR)"; exit 4 ;;
-  *) node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "HOLD $H VOID start gate exit $g (no run)"; exit 5 ;;
+  *) if [ $HFOK = 1 ]; then HPAGE_FORCE=mirror; prewarm; hflush "?"; fi
+     node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "HOLD $H VOID start gate exit $g (no counted run; $NPW heat run(s))"; exit 5 ;;
 esac
 RERUN=""; SFAIL=""
 for I in "$@"; do
