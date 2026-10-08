@@ -886,6 +886,59 @@ How this fits the earlier data:
 
 Data: `out/p167ph/wread.json`, `out/p167ph/runs/{w,tl}-*.json`, `out/g0box/p167-part{A,B}.log`. `fixes/g0-box/results.json` key `p167`.
 
+### After P-167: layer census per element, and the Layout frames at y 280-555 (Simulator counts plus the P-167 phone Timeline; no new phone runs)
+
+**Layer census** (`p167-sim.mjs` with `P167_DESCRIBE=1`, `out/p167/sim2`; Simulator, counts only).
+
+| arm | top layers | top MB | spot B layers | spot B MB |
+|---|---|---|---|---|
+| v0 | 111 | 12.5 | 29 | 67 |
+| g0.0e | 160 | 28.9 | 51 | 71 |
+| e-ko2 | 138 | 28.7 | 41 | 71 |
+| e-ko4 (strip/cell will-change auto; pixels change) | 71 | 28.4 | 49 | 71 |
+| e-ko5 (no idle __mnt) | 148 | 12.8 | 49 | 71 |
+| e-ko245 | 38 | 13.0 | 41 | 71 |
+
+- **Top, g0.0e − v0 = +49 layers, +16.2 MB.**
+  - The countdown: 88 `span.cell` + 8 `span.strip` layers replace v0's 80 `span.face` layers (+16 layers, +0.2 MB).
+  - The morph panel, which the idle `__mnt` mounts at y 0, adds about 15 MB: morph-col-track 3 layers / 7.5 MB, morph-center 5.6, morph-footer 1.3, veil 0.7, top-nav-bar 0.7.
+  - Its subtree adds about 20 more zero-MB layers (platform stage, artboard, row titles, invoice card).
+  - ko5 brings top memory back to v0's.
+- **Spot B, g0.0e − v0 = +22 layers, +3.8 MB.**
+  - The MB: secure-network shield 1.5, row titles 0.9 + 0.6, network face 0.8.
+  - ko2 removes 10 zero-MB layers (zero-mark, people, pain-sticky, commission, fee). These are the un-skipped sections behind. Removing them does not change the 70 ms Composite (P-167 B).
+
+**Layout at y 280-555** (phone, the P-167 Timeline, `out/g0box/tllay.mjs`, `tlio.mjs`; OBSERVED).
+
+| arm (window A, move phase) | Layouts ≥ 5 ms per run | Layout sum per run | median Layout | frames with 2+ Layouts |
+|---|---|---|---|---|
+| v0 | 39 / 41 / 42 | 536 / 557 / 580 ms | 12.1-12.5 ms | 3 / 5 / 6 |
+| g0.0e | 10 / 8 / 9 | 175 / 128 / 143 ms | 15.3-16.7 ms | 1 / 0 / 2 |
+| e-ko2 | 9 / 11 / 10 | 162 / 180 / 181 ms | 13.3-16.3 ms | 1 / 2 / 3 |
+
+- **g0.0e does about 4x less Layout than v0, but each Layout costs more.**
+  - The pairs left near the W steps (y ≈ 250-320 and ≈ 500-555) take 37-40 ms in one frame, and those are the extra > 50 frames.
+  - v0 has a pair at the same place (A02 y 249: 15.8 + 12.8 ms), but it is cheaper.
+- **What comes before each pair.** In every g0.0e/e-ko2 run, the `fwWC` IntersectionObserver callback (JS 2741/2742, `setAttribute('data-fw-wc')`) runs 1-2 frames before the pair. This is the will-change window, rootMargin 50 %.
+  - v0 has no fwWC.
+  - The frame logger's MutationObserver does not count `data-fw-wc`, so the frames looked mutation-free.
+- **WebKit source** (WebKit main f9dcd0ee):
+  - A will-change change by itself yields only RecompositeLayer (`Source/WebCore/style/StyleDifference.cpp` 269-272; `rendering/RenderElement.cpp` 348-351).
+  - But `will-change: transform` makes an element with `z-index: auto` use z-index 0 (`style/StyleAdjuster.cpp` 391-410, `shouldTreatAutoZIndexAsZero` … `willChange().canCreateStackingContext()`).
+  - A flip of `hasAutoUsedZIndex` returns Layout (`StyleDifference.cpp` 428-429).
+  - The path is CONFIRMED from source. That it is what happens on our page is inferred, not observed.
+- **Simulator** (`p167-layout.mjs`, one load per arm, counts only, `out/p167/layout`):
+
+  | arm | big Layouts (> 10 ms) | frames with 2+ big Layouts |
+  |---|---|---|
+  | v0 | 33 | 8 |
+  | g0.0e | 10 | 3 (y 250, 485, 615) |
+  | e-ko2 | 15 | 4 |
+  | e-ko3 (fwWC a no-op) | 11 | 1 (y 599) |
+
+  - ko3 keeps single Layouts at y 267-474 but loses the y 250 and y 485 pairs in this one load. That points at fwWC, but one load per arm decides nothing.
+  - In the Simulator, Layout ms does not separate the arms (v0 and g0.0e are both 18-22 ms), so the higher per-Layout cost is seen only on the phone. Its cause is UNRESOLVED: candidates are the bigger tree that `__mnt` mounts (ko5) and the un-skipped sections.
+
 ## P-164 (phone card; written before any P-164 data)
 
 **Pre-data check 2, with the g0 program (2026-10-08 03:47-03:55Z, before any P-164 data). Result: START-STATE
