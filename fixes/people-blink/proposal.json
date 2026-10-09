@@ -145,33 +145,6 @@
           "patch": "fixes/g0-0k/patch.diff"
         }
       }
-    },
-    {
-      "name": "keep",
-      "label": "Keep today's fade",
-      "idea": "Change nothing: the fade-in stays as in g0.0k. On a fast flick the deck stays blurred until shortly before it lands (about 0.8 s before on the iPhone).",
-      "visualDiff": [
-        "None (B = A)."
-      ],
-      "gain": [
-        {
-          "what": "Card blurred during a fast flick",
-          "before": "yes, ~0.6-0.9 s",
-          "after": "yes, ~0.5 s",
-          "better": "same",
-          "tag": "OBSERVED",
-          "how": "As measured above."
-        }
-      ],
-      "risk": "None.",
-      "compare": {
-        "b": {
-          "label": "Unchanged (g0.0k)"
-        }
-      },
-      "live": {
-        "none": "Keep the original: B is the same page as A (g0.0k), so there is nothing new to try."
-      }
     }
   ],
   "recommended": {
