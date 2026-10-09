@@ -10,15 +10,47 @@
     "simulator": "fw-sim iPhone 15 Pro Max (iOS 26.5 Simulator), functional sessions in the shared lane; pixels at 430x775"
   },
   "builds": {
-    "control": { "name": "g0.0j", "js": "9162843e750f", "css": "bee7fce9ad56", "rebuild": "node tools/fix.mjs apply g0-0j --reset", "snapshot": "out/cm-return/snapk/A" },
-    "patched": { "name": "g0.0k", "js": "e0b7b1e7e158", "css": "a9d4fa8992d9", "rebuild": "node tools/fix.mjs apply g0-0k --reset", "snapshot": "out/cm-return/snapk/V", "patch": "fixes/g0-0k/patch.diff (baseline-relative, reproduces both pins)", "delta": "fixes/g0-0k/delta.diff (g0.0j -> g0.0k)" }
+    "control": {
+      "name": "g0.0j",
+      "js": "9162843e750f",
+      "css": "bee7fce9ad56",
+      "rebuild": "node tools/fix.mjs apply g0-0j --reset",
+      "snapshot": "out/cm-return/snapk/A"
+    },
+    "patched": {
+      "name": "g0.0k",
+      "js": "e0b7b1e7e158",
+      "css": "a9d4fa8992d9",
+      "rebuild": "node tools/fix.mjs apply g0-0k --reset",
+      "snapshot": "out/cm-return/snapk/V",
+      "patch": "fixes/g0-0k/patch.diff (baseline-relative, reproduces both pins)",
+      "delta": "fixes/g0-0k/delta.diff (g0.0j -> g0.0k)"
+    }
   },
   "gates": {
     "bxChrome": "PASS: html.fw-bx never set in Chrome mobile emulation (430x932 DPR 3, touch, hover none, coarse) or desktop, top and bottom with the menu open; countdown isolation auto, will-change auto (out/cm-return/k-1-bx.log)",
     "endCounts": {
       "tool": "out/cm-return/endsim.mjs, 1 load per build, 5 WDA swipes into the end and past the bottom, 5 back",
-      "J_g0.0j": { "endFrames": 1418, "paintsPerFrame": 3.23, "layoutsPerFrame": 0.81, "stylesPerFrame": 1.0, "forcedMs": 669.3, "layersClosed": "46 / 77.2 MB", "layersOpen": "57 / 100.6 MB", "clockLayerOpen": "1 / 1.2 MB" },
-      "K_g0.0k": { "endFrames": 1683, "paintsPerFrame": 0.63, "layoutsPerFrame": 0.44, "stylesPerFrame": 1.43, "forcedMs": 1351.4, "layersClosed": "53 / 103.6 MB", "layersOpen": "56 / 95.3 MB", "clockLayerOpen": "1 / 1.2 MB" },
+      "J_g0.0j": {
+        "endFrames": 1418,
+        "paintsPerFrame": 3.23,
+        "layoutsPerFrame": 0.81,
+        "stylesPerFrame": 1.0,
+        "forcedMs": 669.3,
+        "layersClosed": "46 / 77.2 MB",
+        "layersOpen": "57 / 100.6 MB",
+        "clockLayerOpen": "1 / 1.2 MB"
+      },
+      "K_g0.0k": {
+        "endFrames": 1683,
+        "paintsPerFrame": 0.63,
+        "layoutsPerFrame": 0.44,
+        "stylesPerFrame": 1.43,
+        "forcedMs": 1351.4,
+        "layersClosed": "53 / 103.6 MB",
+        "layersOpen": "56 / 95.3 MB",
+        "clockLayerOpen": "1 / 1.2 MB"
+      },
       "note": "end motions differ by design (g0.0j: menu opens by itself at the bottom; g0.0k: grows over 815 px of scroll); the clock layer exists inside the CM wrapper on g0.0k"
     },
     "finger": "K hold to m 0.28: 3 still shots 0 px apart; K wiggle (17 shots): glass sharpness 0.03-0.09 (frosted), logo/Join 37.3/296 before and after the return (no closed-bar jump); Join sweep: intro once after load, 0 replays at the CM switches (out/cm-return/simhold-2026-10-09T04-09-26-797Z, simsheen-2026-10-09T04-09-59-770Z)",
@@ -26,13 +58,221 @@
     "pixelsChrome": "PASS at 13 stops (mobile 430x932): y 0 0.0108 %, y 548 0.1457 % (hero accent word, page-own motion), 1422 ~0, the rest 0 (out/g0box/p168/px-mobile-2026-10-09T03-57-50-250Z)",
     "approachCrossing": {
       "tool": "out/cm-return/appsim.mjs (out/cm-return/appsim-2026-10-09T04-10-46-141Z/appsim.json), 3 loads per build alternating, start y 900, 6 WDA drags up",
-      "J_g0.0j": { "frameY": 1709, "renderingFrameMs": [148.6, 137.2, 128.5], "layoutPlusStyleMs": [57.2, 54.8, 49.8], "paints": [20, 19, 19], "longestRafGapInBandMs": [142, 124, 117], "backgroundLSMedianP90": [[0.5, 1.4], [0.5, 1.4], [0.9, 1.5]] },
-      "K_g0.0k": { "frameY": 1709, "renderingFrameMs": [19.8, 28.6, 20.9], "layoutPlusStyleMs": [7.8, 5.1, 7.2], "paints": [1, 1, 1], "longestRafGapInBandMs": [19, 59, 18], "backgroundLSMedianP90": [[0.4, 1.5], [0.4, 1.5], [0.6, 1.6]] },
+      "J_g0.0j": {
+        "frameY": 1709,
+        "renderingFrameMs": [
+          148.6,
+          137.2,
+          128.5
+        ],
+        "layoutPlusStyleMs": [
+          57.2,
+          54.8,
+          49.8
+        ],
+        "paints": [
+          20,
+          19,
+          19
+        ],
+        "longestRafGapInBandMs": [
+          142,
+          124,
+          117
+        ],
+        "backgroundLSMedianP90": [
+          [
+            0.5,
+            1.4
+          ],
+          [
+            0.5,
+            1.4
+          ],
+          [
+            0.9,
+            1.5
+          ]
+        ]
+      },
+      "K_g0.0k": {
+        "frameY": 1709,
+        "renderingFrameMs": [
+          19.8,
+          28.6,
+          20.9
+        ],
+        "layoutPlusStyleMs": [
+          7.8,
+          5.1,
+          7.2
+        ],
+        "paints": [
+          1,
+          1,
+          1
+        ],
+        "longestRafGapInBandMs": [
+          19,
+          59,
+          18
+        ],
+        "backgroundLSMedianP90": [
+          [
+            0.4,
+            1.5
+          ],
+          [
+            0.4,
+            1.5
+          ],
+          [
+            0.6,
+            1.6
+          ]
+        ]
+      },
       "read": "the style spike is gone on g0.0k (no listener add at the crossing on phones: N() returns while __msOn); a 5-8 ms residual stays (background p90 1.5); K-2's 59 ms gap at y 1856 is a 7 ms frame with L+S 2 (no page work). Candidate 1 closed on g0.0k by the lead's rule as I read it; the lead decides"
     },
     "gProgramDryRun": "phone card pre-check (Simulator, count-only, g-fastshort-g0.json 38d7fe5d7fa8 on g0.0k): approach reaches the true end (6035 = docH 6850 - 815) on drag 11 of 12; every close fling settles at 5220-5260 (m ~0), every open fling runs to 6035; re-approaches end at atEnd; 0 prevented touchmoves; 35 strokes, 1 segment (out/sim/fix-cm-return-gesture-gdry-K-1791519254275.json)"
   },
   "costCorrection": "PR-040's risk text named v14's non-passive window wheel listener at setup without the phone exception: on touch phones (__msOn) N() returns early, so g0.0k adds no wheel listener and no non-passive touch jack; only where __msOn is false (desktop, reduced motion, screens wider than 600 px) is the listener added once at setup",
-  "phone": "card drafted in README.md (G, tool-serious, C = g0.0j, V = g0.0k, S0 + S1 sentinels, C V V C C V V C, no-worse on END frames > 50 / > 34 with twins); not signed, not run",
-  "verdict": "g0.0k built and gated: the clock layer works on the new end and stays off in Chrome; end-of-page paints and layouts per frame lower than g0.0j, style recalcs and forced style+layout higher (v14's end code); the approach crossing's 50-57 ms style spike is gone; pixels as PR-040 (2 Simulator stops over T2, disclosed). Not best until the phone check passes."
+  "phone": {
+    "ticket": "P-173 (signed by the lead 2026-10-09 ~04:25Z; amendments: pre-data D2 >30-twin ruling; cooling below 40.0 C before every hold after attempt 1 stopped on Critical)",
+    "driver": "G, fixes/g0-box/phone/g-fastshort-g0.json 38d7fe5d7fa8",
+    "profile": "tool-serious (Serious induced by thermal.mjs, re-armed per part, cleared after)",
+    "kit": "fixes/g0-0k/phone (block d4bef7eb6605, run 1892029d1a86, hold 3aeadbf53957, serve 937ae8dcb7dd, snapshot HASHES bcb64c57738b); reader g0k-read.mjs d31bfc7a4de6, frozen before data",
+    "attempt1": "04:26-04:56Z, stopped at H5 (end gate Critical, battery 42.9 C); S0 PASS, EC1 valid, EV1 void; descriptive only, not pooled (out/g0kp-attempt1)",
+    "attempt2": "05:00-06:27Z in two parts: part 1 H1-H3 (S0 PASS 57.4 fps), then the H4 start gate's xctrace export exit null (I-259, no run); part 2 H4-H12 per I-154's workaround, all holds VALID, S1 PASS 57.9 fps, no re-runs",
+    "runs": {
+      "EC1": {
+        "batt": "38.5->39.19",
+        "end": {
+          "n": 6284,
+          "gt50": 0,
+          "gt34": 8,
+          "gt30": 44,
+          "gt38": 0
+        },
+        "X": {
+          "y": 1742,
+          "dt": 49,
+          "ls": 31.9
+        },
+        "note": "END from O1 at 77 s (the first jack open came during the E strokes)"
+      },
+      "EV1": {
+        "batt": "39.39->40.19",
+        "end": {
+          "n": 5324,
+          "gt50": 0,
+          "gt34": 16,
+          "gt30": 43,
+          "gt38": 5
+        },
+        "X": {
+          "y": 1676,
+          "dt": 19,
+          "ls": 4.7
+        }
+      },
+      "EV2": {
+        "batt": "39.79->40.0",
+        "end": {
+          "n": 5343,
+          "gt50": 0,
+          "gt34": 9,
+          "gt30": 31,
+          "gt38": 2
+        },
+        "X": {
+          "y": 1667,
+          "dt": 19,
+          "ls": 3.9
+        }
+      },
+      "EC2": {
+        "batt": "40.0->40.89",
+        "end": {
+          "n": 9005,
+          "gt50": 0,
+          "gt34": 16,
+          "gt30": 58,
+          "gt38": 2
+        },
+        "X": {
+          "y": 1747,
+          "dt": 51,
+          "ls": 31.5
+        }
+      },
+      "EC3": {
+        "batt": "39.69->39.89",
+        "end": {
+          "n": 9030,
+          "gt50": 0,
+          "gt34": 24,
+          "gt30": 64,
+          "gt38": 5
+        },
+        "X": {
+          "y": 1742,
+          "dt": 51,
+          "ls": 32.0
+        }
+      },
+      "EV3": {
+        "batt": "39.89->40.39",
+        "end": {
+          "n": 5336,
+          "gt50": 0,
+          "gt34": 10,
+          "gt30": 41,
+          "gt38": 1
+        },
+        "X": {
+          "y": 1686,
+          "dt": 19,
+          "ls": 4.6
+        }
+      },
+      "EV4": {
+        "batt": "39.89->40.0",
+        "end": {
+          "n": 5347,
+          "gt50": 0,
+          "gt34": 11,
+          "gt30": 35,
+          "gt38": 1
+        },
+        "X": {
+          "y": 1653,
+          "dt": 17,
+          "ls": 1.1
+        }
+      },
+      "EC4": {
+        "batt": "40.0->40.09",
+        "end": {
+          "n": 8978,
+          "gt50": 0,
+          "gt34": 16,
+          "gt30": 55,
+          "gt38": 1
+        },
+        "X": {
+          "y": 1743,
+          "dt": 49,
+          "ls": 30.0
+        }
+      }
+    },
+    "D1": "PASS: END >50 C 0,0,0,0 V 0,0,0,0, d 0 at 46/50/54",
+    "D2": "PASS: END >34 C 8,16,24,16 V 16,9,10,11, d -5.5 (limit +4); >30 d -18.5, >38 d 0 (twins agree)",
+    "X": "C median 50 ms, L+S 31.7 (2/4 runs >50, 4/4 >34) vs V median 19 ms, L+S 4.3 (0/4 >34)",
+    "caveats": "V runs ~60 s shorter (END 5320-5350 vs ~9000 frames; flings snap the menu); per END frame the >34 share is C 0.13-0.27 % vs V 0.17-0.30 %; V's END has 45-49 Style records >= 5 ms per run (v14's per-frame style work) without frames over 50",
+    "prediction": "P-173 HIT: D1 PASS, D2 PASS, X shorter with L+S near background",
+    "data": "out/g0kp/runs, out/g0kp/p173-read.json"
+  },
+  "verdict": "g0.0k passes the P-173 phone no-worse check at the end of the page (D1 END >50 0 vs 0; D2 END >34 d -5.5, twins agree) and removes the approach crossing's long frame on the phone (X 50 -> 19 ms, L+S 31.7 -> 4.3 ms); Simulator gates as before (clock layer on the new end, off in Chrome; pixels as PR-040). Ready to land as the best build, the lead's call."
 }

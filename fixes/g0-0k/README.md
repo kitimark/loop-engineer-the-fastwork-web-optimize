@@ -3,8 +3,9 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` and `delta.diff` contain excerpts of Fastwork's code: keep them on local branches, never push.
 
-**Status:** built and gated (Simulator and Chrome counts and pixels). Phone check card **signed by the lead as P-173**
-(2026-10-09 ~04:25Z, before any data); block not yet run. Not the best build until the phone check passes.
+**Status:** built and gated (Simulator and Chrome counts and pixels). Phone check **P-173 PASSED** (signed by the lead
+2026-10-09 ~04:25Z before any data; run 05:00-06:27Z): D1 PASS (END > 50: 0 vs 0), D2 PASS (END > 34 d -5.5, twins
+agree), crossing frame X 50 -> 19 ms. Ready for the lead to land and to update BEST_BUILDS.
 **Stage:** F (build + gates) for PR-040, accepted by the user 2026-10-09 03:40:01Z (thread T-253).
 **Device class / gate:** phone render-bound (end of page, nav morph); touch-only (G) for the phone check.
 **Driver(s) behind the claims:** Simulator WDA finger strokes (`out/cm-return/simhold.mjs`, `endsim.mjs`,
@@ -298,7 +299,54 @@ PREDICTION P-173 · fix-cm-return · 2026-10-09
 7 decision: as in the ticket
 ```
 
+## P-173 result (iPhone, G, tool-serious with cooling below 40.0 C; attempt 2, 2026-10-09 05:00-06:27Z)
+
+**Verdict by the card: D1 PASS, D2 PASS (both twins agree; the 30 ms ruling was not needed), X shorter in every V run.
+Prediction HIT on all three.** OBSERVED, iPhone 15 Pro Max, one block.
+
+- Block: attempt 2 ran in two parts.
+  - Part 1: H1 WC, H2 WV, H3 S0 (**PASS**, 57.4 fps, slow 2.3 %). It stopped before any counted run, because the
+    H4 start gate's xctrace export ended with no exit code (incident I-259, opened; load ~4, phone 40.0 C).
+  - Part 2 (I-154's workaround: re-run the hold once): preflight, rearm, then H4-H11 EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4
+    and H12 S1 (**PASS**, 57.9 fps, slow 1.2 %).
+  - Every counted run: P-129 gates ok (idle 4.69-4.76 s), the profile held Serious to the hold's end, no re-runs.
+  - Logs: `out/g0kp/p173-block-part1.log` and `p173-block.log`; runs in `out/g0kp/runs`; read with the frozen reader
+    (d31bfc7a4de6) into `out/g0kp/p173-read.json`.
+- Attempt 1 (stopped at H5 on Critical): descriptive only, not pooled (`out/g0kp-attempt1/`).
+
+| run | battery start -> end (C) | END frames | END > 50 (46 / 54) | END > 34 (30 / 38) | END > 34 share | X: y, dt, L+S | approach finger-down > 50 / > 34 | whole run > 50 / > 34 | END Timeline >= 5 ms: Layout / Style |
+|---|---|---|---|---|---|---|---|---|---|
+| EC1 | 38.5 -> 39.2 | 6284 * | 0 (0 / 0) | 8 (44 / 0) | 0.13 % | 1742, 49 ms, 31.9 | 2 / 11 | 3 / 24 | 0 / 0 |
+| EV1 | 39.4 -> 40.2 | 5324 | 0 (0 / 0) | 16 (43 / 5) | 0.30 % | 1676, 19 ms, 4.7 | 0 / 7 | 0 / 29 | 1 / 49 (305 ms) |
+| EV2 | 39.8 -> 40.0 | 5343 | 0 (0 / 0) | 9 (31 / 2) | 0.17 % | 1667, 19 ms, 3.9 | 1 / 6 | 1 / 18 | 1 / 48 (307 ms) |
+| EC2 | 40.0 -> 40.9 | 9005 | 0 (0 / 0) | 16 (58 / 2) | 0.18 % | 1747, 51 ms, 31.5 | 1 / 10 | 2 / 31 | 0 / 1 |
+| EC3 | 39.7 -> 39.9 | 9030 | 0 (0 / 0) | 24 (64 / 5) | 0.27 % | 1742, 51 ms, 32.0 | 2 / 8 | 3 / 39 | 0 / 1 |
+| EV3 | 39.9 -> 40.4 | 5336 | 0 (0 / 0) | 10 (41 / 1) | 0.19 % | 1686, 19 ms, 4.6 | 0 / 6 | 0 / 21 | 1 / 47 (293 ms) |
+| EV4 | 39.9 -> 40.0 | 5347 | 0 (0 / 0) | 11 (35 / 1) | 0.21 % | 1653, 17 ms, 1.1 | 2 / 11 | 2 / 26 | 1 / 45 (284 ms) |
+| EC4 | 40.0 -> 40.1 | 8978 | 0 (0 / 0) | 16 (55 / 1) | 0.18 % | 1743, 49 ms, 30.0 | 0 / 9 | 1 / 28 | 0 / 1 |
+
+\* EC1's END starts at its O1 at 77 s (the first jack open came during the E strokes, not at the approach), so its END
+is shorter than the other C runs'. That is the reader's rule as signed. A longer END could only raise C's counts.
+
+- **D1 (END > 50), PASS:** C 0, 0, 0, 0 vs V 0, 0, 0, 0; d 0 at 46, 50 and 54.
+- **D2 (END > 34), PASS:** C 8, 16, 24, 16 vs V 16, 9, 10, 11; d -5.5 (limit +4). Twins: > 30 C 44-64 vs V 31-43,
+  d -18.5; > 38 C 0-5 vs V 1-5, d 0. Both twins pass.
+- **X (the platform crossing), secondary:** C median 50 ms, L+S 31.7 ms (2 of 4 runs over 50, all 4 over 34) vs
+  V median 19 ms, L+S 4.3 ms (0 runs over 34). The phone shows what the Simulator showed: the crossing's style spike is
+  gone on g0.0k. Candidate 1 stays closed.
+- **Caveats (descriptive, no verdict):**
+  - V's runs are about 60 s shorter: holds took 228 s vs 290 s, and END has 5320-5350 frames vs 9000. On g0.0k every
+    fling snaps the menu open or shut by itself, so the program's "until settled" and re-approach steps finish
+    sooner. So D2's per-run counts favour V partly by length. Per END frame the > 34 share is C 0.13-0.27 % and
+    V 0.17-0.30 %: the same range, no worse.
+  - V's END carries 45-49 Style records >= 5 ms per run (284-307 ms), against 0-1 in C. That is v14's per-frame
+    style work, the Simulator's styles / frame 1.0 -> 1.43. On the phone it does not make frames over 50, and it does
+    not raise the > 34 share.
+  - Whole-run > 50: C 3, 2, 3, 1 vs V 0, 1, 0, 2.
+- Heat: counted runs started at 38.5-40.0 C and ended at 39.2-40.9 C. Every hold stayed Serious to its end; no stop
+  rule fired.
+
 ## Not run
 
-- No timing A/B in Chrome, no phone block (needs the lead's signature on the card above).
+- No timing A/B in Chrome.
 - Real finger (F) on the phone: not planned; the user already judged the look and feel on Try-it (PR-040 accepted).
