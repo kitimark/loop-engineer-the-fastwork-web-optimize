@@ -1354,6 +1354,26 @@ fix-cm-return packages g0.0k in `fixes/g0-0k/`:
   duration and on L+S, and the first 3 drags overlapping.
 - The result decides whether the arm is worth a phone block.
 
+**Before building it: the follow-up has nothing to remove on phones** (code read of fix-cm-return's g0.0k overlay,
+pins JS e0b7b1e7e158 / CSS a9d4fa8992d9, uncommitted at the time; line numbers are that file's):
+- g0.0k's jack arm is `N = () => { d || __msOn || ((d = !0), window.addEventListener('wheel', A, …), …touch… ) }`
+  (15011-15020). `N()` is called once at setup (15086).
+- `__msOn` (14454-14457) is `!reducedMotion && (hover: none) and (pointer: coarse) && min(screen.width, screen.height) <= 600`,
+  so it is true on the iPhone and the Simulator. There `N()` adds nothing: no window wheel listener, and no
+  non-passive touch jack, at mount or at te.
+- On phones the file adds only one set of window listeners: passive touchstart, touchmove, touchend and touchcancel for
+  morph-scroll (`__msTouchEv`, 15095), at setup. No `wheel` add exists outside `N()`.
+- So on phones g0.0k already has no wheel listener. A head-registered wheel listener scoped to phones (ws3's
+  analytics.js prepend) would add a non-passive wheel listener that g0.0k does not have. That can only add the
+  event-region style rebuild, never remove one.
+- Where g0.0k keeps the jack (desktop, reduced motion, screens wider than 600 px), `N()` adds the wheel listener at
+  mount. ws3's head scope (max-width 640 px and coarse pointer, motion not reduced) does not cover those cases, so the
+  arm would change nothing there either.
+- Recommendation: candidate 1 has no remaining question on g0.0k. Close it there; no Simulator mount gate and no phone
+  block. The te-crossing frame it named (g0.0f/g0.0h) is gone in g0.0k by construction, because nothing is added at te.
+  Whether that frame has really left the phone's approach drags is a property of g0.0k and belongs in g0.0k's own
+  phone data.
+
 **Decisions (the lead's, word for word):**
 - GAIN -> ws stacks with whatever wins P-170 (g0.0i candidate).
 - GAIN (threshold-sensitive) -> the lead's call.
