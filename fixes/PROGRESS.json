@@ -1,7 +1,7 @@
 {
  "schema": "fw-progress/1",
- "updatedAt": "2026-10-04T23:18:17Z",
- "updatedBy": "lead",
+ "updatedAt": "2026-10-09T03:56:38Z",
+ "updatedBy": "mgmt-progress-g00j",
  "howToUpdate": "Curated by mgmt-ops. Schema and rules: header of tools/lib/progress.mjs. Check: node tools/console.mjs progress --check. Plain words in title/fixes/felt/gate/next/why; jargon in details. Every phone number carries its tag (OBSERVED/CONFIRMED), driver and ref. No URLs, addresses or names. When a version gets best:true, the build block moves with it in the same edit: name, since (= that version's since), summary, fixes (every fix in it); keep combined rows only if measured on that build.",
  "goal": "On the iPhone, scrolling with your finger should feel smooth: no frame slower than 50 ms (a visible hitch) and a steady 60 frames per second. And less work at rest, so the phone stays cooler: the heat test (P-068) showed Fastwork warms the phone more than apple.com.",
  "complaints": [
@@ -9,6 +9,7 @@
   { "area": "end", "text": "the end of the page (pushing past the end, where the bottom panel grows) feels laggy" }
  ],
  "changes": [
+  { "at": "2026-10-09T08:30:00Z", "text": "Best build is now g0.0j: the people deck no longer re-lays out its cards on every finger move (far fewer long layouts in finger drags; phone no-worse check passed, no gain claimed on frames over 50 ms). The page now lists the builds since v8." },
   { "at": "2026-10-04T18:53:00Z", "text": "Best build is now v8: v7 plus a lighter countdown roll, the hero countdown paused off screen, a cheaper heading accent and the menu fade kept on the graphics chip. Same look; the quiet-Mac phone check found nothing worse, and your Mac Safari check passed." },
   { "at": "2026-10-04T12:26:48Z", "text": "Progress tidied: fixes in the best build marked landed (people-section shrink, avatar row, pin clamp, F3, the earlier combined build); the end-of-page menu GPU version landed as a record only; countdown faces landed; new rows for the fast-flick test (T-113) and the next best build v8." },
   { "at": "2026-10-04T11:48:14Z", "text": "Best build is now v7: v6 plus the countdown on the GPU and a calmer avatar row; same look, less work at rest." },
@@ -37,8 +38,7 @@
   { "at": "2026-10-03T16:30:00Z", "text": "Hero phone test (P-081): the new hero ending removes almost all of the per-frame script work and is no worse on slow frames, but restarting it after you pause mid-hero costs more than the original. Two cheaper restarts are being built and checked next (P-088)." },
   { "at": "2026-10-03T16:00:00Z", "text": "You disconnected the iPhone (T-047): all phone tests are paused until you reconnect it. Then the hero test runs first, then the end-of-page check, then your countdown finger test." },
   { "at": "2026-10-03T15:48:02Z", "text": "Today's best build now has every landed fix in one piece (base plus the idle-animation and menu display fixes). It is the \"before\" side of every Try-it and finger test from now on." },
-  { "at": "2026-10-03T15:45:00Z", "text": "Your new priority (T-046): the hero and the end-of-page menu animation on the graphics chip come first. Phone order: hero test, then the end-of-page check, then your countdown finger test. A combined best build becomes the A side of every Try-it." },
-  { "at": "2026-10-03T15:23:14Z", "text": "You accepted the hero change (PR-011, both items) under your new pixel rule; the avatar slider is looked into separately. Next for the hero: its phone test (P-081) and your finger test, once the iPhone is back." }
+  { "at": "2026-10-03T15:45:00Z", "text": "Your new priority (T-046): the hero and the end-of-page menu animation on the graphics chip come first. Phone order: hero test, then the end-of-page check, then your countdown finger test. A combined best build becomes the A side of every Try-it." }
  ],
  "items": [
   {
@@ -745,6 +745,132 @@
    "details": [
     "Landed as 25f860ff: option (b) hide while unseen plus the stopped 1 s interval, rebuilt on main + morph-inherit + cd-strip + cd-roll-ca (user T-024)."
    ]
+  },
+  {
+   "id": "v9-final",
+   "title": "Best build v9-final rev 7d (landed)",
+   "area": "end",
+   "state": "landed",
+   "stage": "L",
+   "fixes": "The end-of-page menu follows the finger, the Join waitlist button is new, and two lower cards stop being driven twice.",
+   "best": [{ "what": "frames over 50 ms in the middle-of-page flicks (iPhone, 3 valid runs per build)", "before": "v8", "after": "same (difference 0)", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-122", "note": "no-worse; no new cluster of slow frames" }, { "what": "frames over 50 ms going into and out of the page end (iPhone, 3 valid runs)", "before": "v8", "after": "0 (one 48 ms frame over 46)", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-122", "note": "no-worse, threshold-sensitive" }],
+   "gate": "Passed on the less-work rule: identity, pixel and parity checks, and the phone check P-122 (block verdict insufficient, no gate worse).",
+   "writeup": "fixes/v9-best/README.md",
+   "details": [
+    "Landed 2026-10-05 17:21 +0700 (189ca7ed); user accepted PR-023 rev 5. Pins JS 1b2eecc66011, CSS e1359ab9994a."
+   ]
+  },
+  {
+   "id": "v14",
+   "title": "Best build v14 (landed)",
+   "area": "end",
+   "state": "landed",
+   "stage": "L",
+   "fixes": "The end-of-page menu opens with its layers already built, on the GPU, with the People title slide and a timed Join fade.",
+   "best": [{ "what": "first menu open, frame length (iPhone at Serious, shorter is better)", "before": "28.5 ms", "after": "26.5 ms", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-161", "note": "vs v9-final rev 7d, all P-161 gates passed" }, { "what": "later menu opens, frame length (iPhone, shorter is better)", "before": "17 ms", "after": "16 ms", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-161", "note": "vs v9-final rev 7d" }],
+   "gate": "Passed: phone check P-161 against v9-final (first open, later opens, frames over 34 ms), Simulator look within the wide numbers.",
+   "writeup": "fixes/compositor-morph/README.md",
+   "details": [
+    "Candidates v10 to v13a (GPU menu card, forced-layout cuts, People title slide, nav-colour observer) folded into v14. Best since 2026-10-07 (e8ad1d8b)."
+   ]
+  },
+  {
+   "id": "g0-0b",
+   "title": "Best build g0.0b (landed)",
+   "area": "end",
+   "state": "landed",
+   "stage": "L",
+   "fixes": "The end of the page behaves like the original again (holds still, menu opens by itself), without the Join button's lift.",
+   "best": [{ "what": "style work at rest at the page end (Simulator, per second, fewer is better)", "before": "60", "after": "0", "tag": "OBSERVED", "driver": "at rest, no scrolling", "note": "counts only; PR-034 rev 2" }, { "what": "repaints per menu-opening frame (Simulator, fewer is better)", "before": "about 1", "after": "5-6", "tag": "OBSERVED", "driver": "morph driver", "note": "the original page does about 20; counts only" }],
+   "gate": "Passed: Chrome and Simulator pixels within T2 of the original, state parity 0 mismatches, above the end equal to v14. No phone timing check.",
+   "writeup": "fixes/g0-revert/README.md",
+   "details": [
+    "PR-034 rev 2 accepted (45a2d3ee). Pins JS 5c39f7a96e41, CSS a2351bd219ae."
+   ]
+  },
+  {
+   "id": "g0-0c",
+   "title": "Best build g0.0c (landed)",
+   "area": "middle",
+   "state": "landed",
+   "stage": "L",
+   "fixes": "The second platform card in Safari has clean rounded corners.",
+   "best": [{ "what": "grey pixels outside the card's rounded corners (Simulator)", "before": "grey corner squares", "after": "0 px", "tag": "OBSERVED", "driver": "Simulator pixels", "note": "rest of the card T0; Chrome unchanged" }],
+   "gate": "Passed: Simulator corners 0 px outside the curve, Chrome unchanged.",
+   "writeup": "fixes/platform-corners/README.md",
+   "details": [
+    "PR-035 (fbf96d8c). Pins JS 5c39f7a96e41, CSS c65da97ba01f."
+   ]
+  },
+  {
+   "id": "g0-0e",
+   "title": "Best build g0.0e (landed)",
+   "area": "end",
+   "state": "landed",
+   "stage": "L",
+   "fixes": "The Join waitlist button fades cleanly and the logo no longer jumps when the menu closes or opens.",
+   "best": [{ "what": "logo jump on the last frame of the menu close (Chrome 430x775/815 and Simulator)", "before": "15.4 px", "after": "0.15 px", "tag": "OBSERVED", "driver": "scripted", "note": "rest of the page within the A/A noise" }, { "what": "Join button fade: corner slivers and dark square over the language button", "before": "present", "after": "0 px, gap kept 4/8 px", "tag": "OBSERVED", "driver": "Chrome 430-1280 and Simulator pixels", "note": "PR-036; no new layers" }],
+   "gate": "Passed: pixel and geometry checks in Chrome and the Simulator; no phone or finger check.",
+   "writeup": "fixes/g0-0e/README.md",
+   "details": [
+    "PR-036 Join fade (fd415e1a) and PR-037 logo close (c94109c7); g0.0d (Join fade alone) was best for under a minute. Pins JS 5c39f7a96e41, CSS d4e684032482."
+   ]
+  },
+  {
+   "id": "g0-0f",
+   "title": "Best build g0.0f (landed)",
+   "area": "end",
+   "state": "landed",
+   "stage": "L",
+   "fixes": "The end-of-page menu bar in Safari uses flat GPU layers, so the open menu holds about 11 MB less graphics memory.",
+   "best": [{ "what": "first menu open, frame length (iPhone, tool-serious)", "before": "16.5 ms", "after": "16.5 ms", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-164", "note": "vs g0.0e, 4 runs per arm" }, { "what": "later menu opens, frame length (iPhone)", "before": "17 ms", "after": "17 ms", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-164", "note": "vs g0.0e" }],
+   "gate": "Passed: phone no-worse check P-164 against g0.0e; Chrome and Simulator pixel checks.",
+   "writeup": "fixes/v3w-g00e/README.md",
+   "details": [
+    "PR-038 (v3-W) on g0.0e; best since P-164 PASS (f1003072). Pins JS 30fd80ccbb3f, CSS 1d1e5d62a2c4."
+   ]
+  },
+  {
+   "id": "g0-0h",
+   "title": "Best build g0.0h (landed)",
+   "area": "end",
+   "state": "landed",
+   "stage": "L",
+   "fixes": "While the menu is closed its photo columns hold no graphics memory (about 15 MB less at the top of the page in Safari).",
+   "best": [{ "what": "graphics memory at the top of the page (Simulator, 1 load, fewer is better)", "before": "27.6 MB", "after": "12.4 MB", "tag": "OBSERVED", "driver": "Simulator counts", "note": "layers 158 -> 152" }, { "what": "menu-flip frame length, median (iPhone, tool-serious, window B, 3 runs)", "before": "71 ms", "after": "69 ms", "tag": "OBSERVED", "driver": "scripted window run", "ref": "P-169", "note": "vs g0.0f; scroll-phase counts no worse at every threshold" }],
+   "gate": "Passed on the less-work rule: Simulator counts and the phone no-worse check P-169; user accepted PR-039 keep-phase.",
+   "writeup": "fixes/g0-0h/README.md",
+   "details": [
+    "User accepted PR-039 option keep-phase 2026-10-08 18:08Z; best since 55f5cacd. Pins JS 9162843e750f, CSS 26d28a0a263b."
+   ]
+  },
+  {
+   "id": "g0-0i",
+   "title": "Best build g0.0i (landed)",
+   "area": "end",
+   "state": "landed",
+   "stage": "L",
+   "fixes": "The open menu's clock ticks without redrawing the whole menu centre (Safari).",
+   "best": [{ "what": "menu-centre redraws over one opening (Simulator, fewer is better)", "before": "196", "after": "11", "tag": "OBSERVED", "driver": "Simulator counts", "note": "the clock wrapper takes the other 187" }, { "what": "backing store redrawn over one opening (Simulator, fewer is better)", "before": "about 1117 MB", "after": "about 287 MB", "tag": "OBSERVED", "driver": "Simulator counts", "note": "-74 %; +1 layer / +1.2 MB while open" }],
+   "gate": "Passed on the less-work rule: Simulator counts, T2 looks in Chrome, Simulator and iPad, phone no-worse check P-170b.",
+   "writeup": "fixes/g0-0i/README.md",
+   "details": [
+    "P-170 (3 runs) was void on a hot end sentinel, same read; P-170b is the counted check. Best since e32d8495. Pins JS 9162843e750f, CSS adb875d94c1f."
+   ]
+  },
+  {
+   "id": "g0-0j",
+   "title": "Best build g0.0j (today's best)",
+   "area": "middle",
+   "state": "landed",
+   "stage": "L",
+   "fixes": "On phones, the people deck's cards no longer get re-laid out on every finger move, so far fewer long layouts during drags.",
+   "best": [{ "what": "layout records of 5 ms or more, finger-down at y 1000-3400 (iPhone, per run, 4 runs)", "before": "152-159", "after": "0-1", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-172", "note": "prediction hit; vs g0.0i" }, { "what": "frames over 34 ms, finger-down at y 1000-3400 (iPhone, per run)", "before": "12-18", "after": "2-6", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-172", "note": "separated; descriptive" }],
+   "gate": "Passed on the less-work rule (lead ruling on P-172): Simulator counts, T2 look checks, and the phone no-worse check P-172 (all 12 holds valid, both sentinels passed).",
+   "writeup": "fixes/g0-0j/README.md",
+   "details": [
+    "Rebuild: node tools/fix.mjs apply g0-0j --reset (fixes/g0-0j/patch.diff, baseline-relative). JS is g0.0i's byte for byte; CSS only. Best since 2e8cff4c; next open item is the crossing frame at y about 1750 (P-171)."
+   ]
   }
  ],
  "upcoming": [
@@ -761,13 +887,22 @@
   {"id": "v5-gpu-preview", "landed": false, "name": "GPU preview c0c8ad4e (to try; not landed)", "since": "2026-10-04T07:08:29Z", "improvement": "Moves the countdown roll, the hero exit and the end-of-page menu reveal onto the graphics chip, plus the landed countdown strips. A page to try; each fix still lands on its own.", "fixes": ["cd-strip", "cd-roll-ca", "hero-exit-threaded", "morph-gpu"], "verdict": "less work at rest and in the hero; not timed as a whole", "result": [{"what": "script timer callbacks (rAF) in 10 s at rest at the top (iPhone Simulator)", "before": "297-298", "after": "11", "tag": "OBSERVED", "driver": "at rest, no scrolling", "note": "counts only, two loads per build"},{"what": "script function calls while scrolling through the hero (iPhone Simulator)", "before": "778-867", "after": "679-711", "tag": "OBSERVED", "driver": "scripted scroll", "note": "counts only, two loads per build"},{"what": "main-thread frames per second at rest at the top (Chrome)", "before": "49.6", "after": "41.2", "tag": "OBSERVED", "driver": "at rest, no scrolling", "note": "one load per build"},{"what": "elements restyled per second over a full scroll (Chrome)", "before": "2042", "after": "2238 (+10 %)", "tag": "OBSERVED", "driver": "scripted scroll", "note": "a cost: the rolling countdown cells and the menu reveal"}], "cost": "About 10 % more elements restyled in Chrome; the menu reveal's first frame on a repeat open is about 7 ms longer (P-092). The countdown roll has not had its phone check yet (P-093).", "hashes": {"js": "c0c8ad4e36cb", "css": "d0f1017e692d"}, "tryIt": {"port": 57727, "scheme": "http", "path": "/", "server": "gpu-preview"}},
   {"id": "v6-best-br2", "name": "Best build 8018ce06 (best build + hero fade on the GPU)", "since": "2026-10-04T07:33:52Z", "improvement": "The hero cards and text fade out on Safari's scroll thread (GPU) instead of being redrawn by script on every scroll frame, on top of best build 65052c4a.", "fixes": ["hero-exit-threaded"], "verdict": "smoother through the hero; you preferred it in both blind swipes", "result": [{"what": "slow frames (over 34 ms) while scrolling through the top card, warm phone, per run (fewer is better)", "before": "27", "after": "12", "tag": "OBSERVED", "driver": "scripted touch gesture", "ref": "P-095"},{"what": "very slow frames (over 50 ms), same runs (fewer is better)", "before": "4", "after": "3", "tag": "OBSERVED", "driver": "scripted touch gesture", "ref": "P-095", "note": "no-worse"},{"what": "area redrawn per moving frame in the top card, iPhone (smaller is better)", "before": "165-174 k px", "after": "55-70 k px", "tag": "OBSERVED", "driver": "scripted touch gesture", "ref": "P-095"},{"what": "blind finger swipe, 2 pairs: which page followed your finger better (more picks is better)", "before": "0 of 2 picks", "after": "2 of 2 picks (a hidden same-page pair: \"same\")", "tag": "OBSERVED", "driver": "your finger (C-038, C-039, C-040)"}], "cost": "The first move after a rest paints a little more (8-19 paint units vs 2-8), as does the frame about 330 ms after a rest (4-6 vs 0-1). The first scroll after load paints about 50 more (185-186 vs 121-141, Simulator). No frame cost seen; narrow iPad windows unchecked.", "hashes": {"js": "8018ce062d30", "css": "71b65c667720"}, "tryIt": {"port": 60238, "scheme": "http", "path": "/", "server": "best-br2"}},
   {"id":"v7-best", "name":"Best build v7 (8c90da21): v6 + countdown + avatar row","since":"2026-10-04T11:36:58Z","improvement":"Adds the countdown digit strips, the countdown roll on the graphics chip and the resting avatar row to v6. The end-of-page menu animation stays out (its phone check failed).","fixes":["cd-strip","cd-roll-ca","rest-script"],"verdict":"less work at rest, the same frames while scrolling; not timed as a whole","result":[{"what":"main-thread frames per second at rest at the top (Chrome, fewer is better)","before":"49","after":"41-42","tag":"OBSERVED","driver":"at rest, no scrolling","note":"counts only, two loads per build"},{"what":"script animation-frame callbacks per second at rest at the top (Chrome, fewer is better)","before":"27-33","after":"1","tag":"OBSERVED","driver":"at rest, no scrolling","note":"the countdown no longer runs a per-frame loop"},{"what":"main-thread frames per second at rest by the avatar row (Chrome, fewer is better)","before":"8.2-8.7","after":"4.2","tag":"OBSERVED","driver":"at rest, no scrolling","note":"counts only, two loads per build"},{"what":"style recalculations per second over a full scroll (Chrome, fewer is better)","before":"78-81","after":"72","tag":"OBSERVED","driver":"scripted scroll","note":"frames per second the same (126)"}],"cost":"About 2 % more elements restyled over a full scroll in Chrome (rolling countdown cells). Still frames match v6 except the avatar row: the slider sits at another point (the accepted avatar-row fix itself). No phone check of the whole build yet.","tryIt":{"port": 6139, "scheme": "http", "path": "/", "server": "v7-best"},"hashes":{"js":"8c90da217745","css":"308f0da70c3a"}},
-  {"id":"v8-best", "best": true,"name":"Best build v8 (3e3e94cb): v7 + lighter countdown + accent + menu fade","since":"2026-10-04T18:46:59Z","improvement":"Adds to v7: the countdown roll in 4x fewer animation steps, the hero countdown paused while it is off screen, the hand-drawn accent under the heading drawn the same but cheaper, and the end-of-page menu fade kept on the graphics chip.","fixes":["cd-roll-ca","countdown-faces","morph-gpu","v8"],"verdict":"same look, less work at rest, no-worse on the phone (P-114)","result":[{"what": "moving frames over 50 ms in the end-of-page menu open and close (iPhone at real Serious, fewer is better)", "before": "2 (all 4 runs)", "after": "0 (all 4 runs)", "tag": "OBSERVED", "driver": "morph driver", "ref": "P-114", "note": "no-worse at every twin threshold"}, {"what": "end-of-page menu close, first and third frame length (iPhone, shorter is better)", "before": "30.5 / 64 ms", "after": "26.5 / 59 ms", "tag": "OBSERVED", "driver": "morph driver", "ref": "P-114", "note": "later opens are faster too (second open first frame 55 -> 37 ms)"}, {"what": "frames over 50 ms in the hero fast flicks (iPhone, fewer is better, per run)", "before": "10 / 9 / 7", "after": "7 / 9 / 8", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-114", "note": "no-worse, no new cluster of slow frames; an earlier block (P-111, loaded Mac) had flagged one, not repeated here"}, {"what": "paint work in 6 s at rest at the top of the page (Chrome at phone width, fewer is better)", "before": "145 / 142", "after": "74 / 72", "tag": "OBSERVED", "driver": "at rest, no scrolling", "note": "counts only; about nothing at the page end (8.7 -> 0.7)"}, {"what": "area repainted in the first frame of a menu open at the page end (Safari engine, Simulator, fewer is better)", "before": "1490 kpx", "after": "443-446 kpx", "tag": "OBSERVED", "driver": "morph driver", "note": "morph-gpu rev 3 counts, measured on best build + the menu fade fix, not on v7/v8 themselves"}],"cost":"None seen: same look (Chrome and Safari-engine pixel checks; your Mac Safari check). P-111 (busy Mac) had flagged a slower menu close; the quiet repeat P-114 did not (OBSERVED, cause unknown).","tryIt":{"port":6400,"scheme":"http","path":"/","server":"v8-best"},"hashes":{"js":"3e3e94cb6e9f","css":"f836404b3728"}}
+  {"id":"v8-best", "name":"Best build v8 (3e3e94cb): v7 + lighter countdown + accent + menu fade","since":"2026-10-04T18:46:59Z","improvement":"Adds to v7: the countdown roll in 4x fewer animation steps, the hero countdown paused while it is off screen, the hand-drawn accent under the heading drawn the same but cheaper, and the end-of-page menu fade kept on the graphics chip.","fixes":["cd-roll-ca","countdown-faces","morph-gpu","v8"],"verdict":"same look, less work at rest, no-worse on the phone (P-114)","result":[{"what": "moving frames over 50 ms in the end-of-page menu open and close (iPhone at real Serious, fewer is better)", "before": "2 (all 4 runs)", "after": "0 (all 4 runs)", "tag": "OBSERVED", "driver": "morph driver", "ref": "P-114", "note": "no-worse at every twin threshold"}, {"what": "end-of-page menu close, first and third frame length (iPhone, shorter is better)", "before": "30.5 / 64 ms", "after": "26.5 / 59 ms", "tag": "OBSERVED", "driver": "morph driver", "ref": "P-114", "note": "later opens are faster too (second open first frame 55 -> 37 ms)"}, {"what": "frames over 50 ms in the hero fast flicks (iPhone, fewer is better, per run)", "before": "10 / 9 / 7", "after": "7 / 9 / 8", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-114", "note": "no-worse, no new cluster of slow frames; an earlier block (P-111, loaded Mac) had flagged one, not repeated here"}, {"what": "paint work in 6 s at rest at the top of the page (Chrome at phone width, fewer is better)", "before": "145 / 142", "after": "74 / 72", "tag": "OBSERVED", "driver": "at rest, no scrolling", "note": "counts only; about nothing at the page end (8.7 -> 0.7)"}, {"what": "area repainted in the first frame of a menu open at the page end (Safari engine, Simulator, fewer is better)", "before": "1490 kpx", "after": "443-446 kpx", "tag": "OBSERVED", "driver": "morph driver", "note": "morph-gpu rev 3 counts, measured on best build + the menu fade fix, not on v7/v8 themselves"}],"cost":"None seen: same look (Chrome and Safari-engine pixel checks; your Mac Safari check). P-111 (busy Mac) had flagged a slower menu close; the quiet repeat P-114 did not (OBSERVED, cause unknown).","tryIt":{"port":6400,"scheme":"http","path":"/","server":"v8-best"},"hashes":{"js":"3e3e94cb6e9f","css":"f836404b3728"}},
+  {"id": "v9-final-rev7d", "name": "Best build v9-final rev 7d (1b2eecc6): v8 + menu swipe + new Join button", "since": "2026-10-05T10:21:00Z", "improvement": "Adds to v8: the end-of-page menu follows your swipe (rev 7d also fixes fast flings), the new Join waitlist button, the double-drive fix for the future and commission cards, and a cached nav hit test.", "fixes": ["v9-final"], "verdict": "landed on the no-worse rule (P-122 insufficient, nothing worse)", "result": [{"what": "frames over 50 ms in the middle-of-page flicks (iPhone, 3 valid runs per build)", "before": "v8", "after": "same (difference 0)", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-122", "note": "no-worse; no new cluster of slow frames"}, {"what": "frames over 50 ms going into and out of the page end (iPhone, 3 valid runs)", "before": "v8", "after": "0 (one 48 ms frame over 46)", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-122", "note": "no-worse, threshold-sensitive"}, {"what": "menu blinks in the swipe tests (iPhone, valid runs pooled, fewer is better)", "before": "8", "after": "9", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-122", "note": "no-worse; 0 monotone blinks in all three parts"}], "cost": "Known limit: the menu can glide back open after a swipe released just past closed (2 of 42 swipes, I-179). The close rule and the scroll callback change were left out of this build (a restyle at rest; a short first fling).", "hashes": {"js": "1b2eecc66011", "css": "e1359ab9994a"}, "tryIt": {"none": "No Try-it page is registered for this build yet; it can be rebuilt from its patch (see the write-up)."}},
+  {"id": "v14-best", "name": "Best build v14 (d23ee885): v9-final + GPU menu card + early menu layers", "since": "2026-10-07T11:40:00Z", "improvement": "Adds to v9-final: the menu card on the GPU, the People title slide, the Join button on a timed fade, less forced layout, and (v14) the menu layers built early near the end on Safari so the first open does not build them.", "fixes": ["v14"], "verdict": "first open no slower; no frame over 34 ms in the menu opens (P-161)", "result": [{"what": "first menu open, frame length (iPhone at Serious, shorter is better)", "before": "28.5 ms", "after": "26.5 ms", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-161", "note": "vs v9-final rev 7d, all P-161 gates passed"}, {"what": "later menu opens, frame length (iPhone, shorter is better)", "before": "17 ms", "after": "16 ms", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-161", "note": "vs v9-final rev 7d"}, {"what": "menu-open frames over 34 ms (iPhone, share of frames, fewer is better)", "before": "10 %", "after": "0 %", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-161", "note": "vs v9-final rev 7d"}], "cost": "More style work and +10.6 MB of graphics memory while the page rests near the end; later opens from the very end still rebuild layers (open question).", "hashes": {"js": "d23ee885d54f", "css": "4fafb83f1e72"}, "tryIt": {"none": "No Try-it page is registered for this build yet; it can be rebuilt from its patch (see the write-up)."}},
+  {"id": "g0-0b-best", "name": "Best build g0.0b (a2351bd2): v14 + the original end of the page", "since": "2026-10-07T18:44:00Z", "improvement": "The end of the page works like fastwork.com again: the page holds still and the menu opens by itself over 680 ms; the Join button fades without its 8 px rise. Above the end it is v14.", "fixes": ["g0-0b"], "verdict": "end like the original; no phone timing check yet", "result": [{"what": "style work at rest at the page end (Simulator, per second, fewer is better)", "before": "60", "after": "0", "tag": "OBSERVED", "driver": "at rest, no scrolling", "note": "counts only; PR-034 rev 2"}, {"what": "repaints per menu-opening frame (Simulator, fewer is better)", "before": "about 1", "after": "5-6", "tag": "OBSERVED", "driver": "morph driver", "note": "the original page does about 20; counts only"}], "cost": "More repaints per opening frame (about 1 to 5-6; the original about 20). No phone timing check yet. The GPU steps tried on top (card on Web Animations) brought no gain.", "hashes": {"js": "5c39f7a96e41", "css": "a2351bd219ae"}, "tryIt": {"none": "No Try-it page is registered for this build yet; it can be rebuilt from its patch (see the write-up)."}},
+  {"id": "g0-0c-best", "name": "Best build g0.0c (5c39f7a9): g0.0b + platform-card corners", "since": "2026-10-07T19:00:00Z", "improvement": "Safari: the blurred background picture of the second platform card is clipped to the card's rounded corners, so the grey corner squares are gone.", "fixes": ["g0-0c"], "verdict": "look fix only; no new layers or work", "result": [{"what": "grey pixels outside the card's rounded corners (Simulator)", "before": "grey corner squares", "after": "0 px", "tag": "OBSERVED", "driver": "Simulator pixels", "note": "rest of the card T0; Chrome unchanged"}], "cost": "None seen: no new layers or work; no phone check.", "hashes": {"js": "5c39f7a96e41", "css": "c65da97ba01f"}, "tryIt": {"none": "No Try-it page is registered for this build yet; it can be rebuilt from its patch (see the write-up)."}},
+  {"id": "g0-0e-best", "name": "Best build g0.0e (5c39f7a9): g0.0c + Join fade + logo close", "since": "2026-10-08T03:02:00Z", "improvement": "Two look fixes: the Join button's fade is clipped to its pill and keeps its gap to the language button (and Safari animates its width), and on phones the logo no longer jumps when the menu closes or opens.", "fixes": ["g0-0e"], "verdict": "look fixes only; no phone or finger check", "result": [{"what": "logo jump on the last frame of the menu close (Chrome 430x775/815 and Simulator)", "before": "15.4 px", "after": "0.15 px", "tag": "OBSERVED", "driver": "scripted", "note": "rest of the page within the A/A noise"}, {"what": "Join button fade: corner slivers and dark square over the language button", "before": "present", "after": "0 px, gap kept 4/8 px", "tag": "OBSERVED", "driver": "Chrome 430-1280 and Simulator pixels", "note": "PR-036; no new layers"}], "cost": "None seen: 768 and 1280 widths unaffected; the build was rebuilt from patches, no new screenshot or phone check.", "hashes": {"js": "5c39f7a96e41", "css": "d4e684032482"}, "tryIt": {"none": "No Try-it page is registered for this build yet; it can be rebuilt from its patch (see the write-up)."}},
+  {"id": "g0-0f-best", "name": "Best build g0.0f (30fd80cc): g0.0e + the Safari GPU menu bar", "since": "2026-10-08T05:20:00Z", "improvement": "Safari on phones: the end-of-page menu bar's colour comes from two flat GPU layers and its rounded corner from a clip shape, so it no longer keeps a full-screen picture (about 11 MB less while the menu is open).", "fixes": ["g0-0f"], "verdict": "phone no-worse PASS (P-164); look accepted", "result": [{"what": "first menu open, frame length (iPhone, tool-serious)", "before": "16.5 ms", "after": "16.5 ms", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-164", "note": "vs g0.0e, 4 runs per arm"}, {"what": "later menu opens, frame length (iPhone)", "before": "17 ms", "after": "17 ms", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-164", "note": "vs g0.0e"}, {"what": "menu-open frames over 34 ms (iPhone, share of frames)", "before": "0 %", "after": "0 %", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-164", "note": "vs g0.0e"}, {"what": "finger-down frames over 50 ms per run (iPhone, 4 runs)", "before": "7 / 5 / 6 / 6", "after": "5 / 10 / 8 / 9", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-164", "note": "descriptive only, not scored"}], "cost": "Only the bar's 1 px outline differs mid-motion (accepted in PR-038). Chrome 148 stops and Reduce Motion identical.", "hashes": {"js": "30fd80ccbb3f", "css": "1d1e5d62a2c4"}, "tryIt": {"none": "No Try-it page is registered for this build yet; it can be rebuilt from its patch (see the write-up)."}},
+  {"id": "g0-0h-best", "name": "Best build g0.0h (9162843e): g0.0f + menu keep-phase", "since": "2026-10-08T18:18:00Z", "improvement": "While the menu is closed, its photo columns are held as a still picture instead of a paused animation, so they stop holding graphics memory; they resume from the same frame at the next opening.", "fixes": ["g0-0h"], "verdict": "less memory at the top; phone no-worse PASS (P-169)", "result": [{"what": "graphics memory at the top of the page (Simulator, 1 load, fewer is better)", "before": "27.6 MB", "after": "12.4 MB", "tag": "OBSERVED", "driver": "Simulator counts", "note": "layers 158 -> 152"}, {"what": "menu-flip frame length, median (iPhone, tool-serious, window B, 3 runs)", "before": "71 ms", "after": "69 ms", "tag": "OBSERVED", "driver": "scripted window run", "ref": "P-169", "note": "vs g0.0f; scroll-phase counts no worse at every threshold"}, {"what": "column jump at menu re-open (Simulator, 3 cycles)", "before": "0-0.36 px", "after": "0-0.34 px", "tag": "OBSERVED", "driver": "Simulator pixels", "note": "one frame of motion is 0.14-0.16 px"}], "cost": "None seen: no visual change in Chrome or the Simulator. The finger-gesture menu open and close on this build alone was not checked.", "hashes": {"js": "9162843e750f", "css": "26d28a0a263b"}, "tryIt": {"none": "No Try-it page is registered for this build yet; it can be rebuilt from its patch (see the write-up)."}},
+  {"id": "g0-0i-best", "name": "Best build g0.0i (9162843e): g0.0h + menu clock layer", "since": "2026-10-08T22:58:00Z", "improvement": "Safari only: while the end-of-page menu is open, its countdown clock is its own small layer, so a tick no longer redraws the whole menu centre.", "fixes": ["g0-0i"], "verdict": "less redraw in the open menu; phone no-worse PASS (P-170b, n = 2)", "result": [{"what": "menu-centre redraws over one opening (Simulator, fewer is better)", "before": "196", "after": "11", "tag": "OBSERVED", "driver": "Simulator counts", "note": "the clock wrapper takes the other 187"}, {"what": "backing store redrawn over one opening (Simulator, fewer is better)", "before": "about 1117 MB", "after": "about 287 MB", "tag": "OBSERVED", "driver": "Simulator counts", "note": "-74 %; +1 layer / +1.2 MB while open"}, {"what": "first open frame / open median (iPhone, tool-serious, 2 runs per arm)", "before": "16.5 / 17 ms", "after": "16.5 / 17 ms", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-170b", "note": "0 frames over 34 ms both; PASS by lead ruling (n = 2)"}], "cost": "+1 layer and +1.2 MB while the menu is open; closed menu unchanged. Clock text antialiases slightly differently mid-open in Safari (T2 look-alike, as the user allowed).", "hashes": {"js": "9162843e750f", "css": "adb875d94c1f"}, "tryIt": {"none": "No Try-it page is registered for this build yet; it can be rebuilt from its patch (see the write-up)."}},
+  {"id": "g0-0j-best", "best": true, "name": "Best build g0.0j (bee7fce9): g0.0i + people-deck card sizes", "since": "2026-10-09T00:50:00Z", "improvement": "Phones and touch screens: the six profile cards in the people swipe deck get their height from a container-width formula instead of aspect-ratio, so each finger move no longer re-lays them out. Same look.", "fixes": ["g0-0j"], "verdict": "less layout work in finger drags; phone no-worse PASS (P-172)", "result": [{"what": "layout records of 5 ms or more, finger-down at y 1000-3400 (iPhone, per run, 4 runs)", "before": "152-159", "after": "0-1", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-172", "note": "prediction hit; vs g0.0i"}, {"what": "frames over 34 ms, finger-down at y 1000-3400 (iPhone, per run)", "before": "12-18", "after": "2-6", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-172", "note": "separated; descriptive"}, {"what": "frames over 50 ms, finger-down at y 1000-3400 (iPhone, per run)", "before": "1-3", "after": "1", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-172", "note": "NO separation at n = 4, threshold-sensitive: no gain claimed"}, {"what": "frames over 50 ms, whole run (iPhone, per run)", "before": "5-10", "after": "1-2", "tag": "OBSERVED", "driver": "robot finger", "ref": "P-172", "note": "no-worse"}, {"what": "layouts of 5 ms or more per finger drag (Simulator, counts)", "before": "129-169", "after": "2-4", "tag": "OBSERVED", "driver": "Simulator drags", "note": "frames delivered 1051-1101 -> 1180-1203"}], "cost": "None seen: looks the same (T2); only deck photo sharpness after swipes differs in the Simulator, within limits (the vinyl spin differs as much between A/A runs). Not checked with a real finger. One frame over 50 ms is left at y about 1750, from an earlier fix.", "hashes": {"js": "9162843e750f", "css": "bee7fce9ad56"}, "tryIt": {"none": "No Try-it page is registered for this build yet; it can be rebuilt from its patch (see the write-up)."}}
  ],
  "build": {
-  "name": "Best build v8 (3e3e94cb): v7 + lighter countdown + accent + menu fade",
-  "since": "2026-10-04T18:46:59Z",
-  "summary": "v7 plus the countdown roll in 4x fewer animation steps, the hero countdown paused while off screen, the accent under the heading drawn the same but cheaper, and the end-of-page menu fade kept on the graphics chip. Same look as v7; no-worse on the phone (P-114); your Mac Safari check passed.",
-  "fixes": ["wave1-base", "pin-clamp", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel", "shell-hold-c", "r4-v3", "platform-idle", "morph-inherit", "hero-exit-threaded", "cd-strip", "cd-roll-ca", "rest-script", "countdown-faces", "morph-gpu", "v8"],
+  "name": "Best build g0.0j (bee7fce9): g0.0i + people-deck card sizes",
+  "since": "2026-10-09T00:50:00Z",
+  "summary": "v8 plus every step since: the menu follows the swipe, the end of the page behaves like the original, Safari's menu uses less graphics memory, and the people deck no longer re-lays out on each finger move. Phone no-worse checks passed; no gain claimed on frames over 50 ms.",
+  "fixes": ["wave1-base", "pin-clamp", "cdwc", "re-keep-op", "f3-arm-scope", "style-recalc", "hero-carousel", "shell-hold-c", "r4-v3", "platform-idle", "morph-inherit", "hero-exit-threaded", "cd-strip", "cd-roll-ca", "rest-script", "countdown-faces", "morph-gpu", "v8", "v9-final", "v14", "g0-0b", "g0-0c", "g0-0e", "g0-0f", "g0-0h", "g0-0i", "g0-0j"],
   "combined": [
   ]
  }
