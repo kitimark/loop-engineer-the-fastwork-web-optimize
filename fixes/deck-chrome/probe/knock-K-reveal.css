@@ -1,0 +1,1 @@
+.start-selling-future > .start-selling-future-card { visibility: visible !important; opacity: 0.999 !important; filter: blur(0px) !important; transition: none !important; } .start-selling-future:not(.is-visible) > .start-selling-future-card { transform: translateY(0) !important; }
