@@ -1,0 +1,152 @@
+{
+  "schema": "fw-proposal/1",
+  "title": "People section: no blurry 'blink' on the profile deck after a fast scroll down; slow scrolling keeps today's fade",
+  "area": "middle",
+  "topic": "people-blink",
+  "thread": "T-228",
+  "problem": "A fast flick down from the top makes the profile deck blink: white, then blurred, then sharp.\n- You saw it on the deck with the photos; the original site has it too.\n- Cause (observed on the iPhone, in the Simulator and in Chrome; our tests, not a browser document): the card fades in over time.\n- The fade is opacity 0.7 s and blur 0.9 s in today's best build g0.0k (1.6 s blur in the original).\n- It starts at a fixed point below the hero; a fast flick brings the deck into view ~0.3 s later, mid-fade.\n- iPhone, 4 robot flicks per build: the blur ends at the landing in the original, ~0.8 s before it in g0.0j.\n- The screen kept 60 frames a second throughout: it is not a freeze.\n- With the fade switched off for a test the deck is sharp in every frame; switching off the deck's own effects changes nothing.",
+  "looksSame": "Slow scrolling, a page at rest and Reduce Motion keep today's look; only the fast case changes.\n- Simulator, slow drags (0.47-0.57 px per ms): nothing triggers; the card fades exactly as in g0.0k.\n- At rest with the deck in view, the only differences from g0.0k are things that move by themselves.\n- Those are the clock, the spinning record and the avatar row.\n- Plus 40 device pixels at the profile photo's edge, up to 31 of 255: within the agreed look-alike numbers.\n- Scrolling back up: the card hides with today's fade-out.",
+  "risk": "Low: about 30 lines of script and one CSS rule on g0.0k, inside the people section's existing scroll code.\n- 'Fast' means at least 0.8 px per ms in the frame where the card would start fading. Our robot flicks on the iPhone measured 1.0-2.9; a slow drag is about 0.5. A brisk but not flicked scroll may also count as fast and get the new look.\n- The two deck profiles you see first (their photos and cover) now load and decode about 1.5 s after the page settles, on every visit. Today they load only when you scroll near: about 15 more images up front.\n- Not yet run on the real iPhone; checked in the iPhone Simulator (Safari's engine). Chrome runs the same code path.",
+  "compare": {
+    "a": {
+      "label": "Today's best build (g0.0k)"
+    },
+    "view": "side"
+  },
+  "options": [
+    {
+      "name": "instant",
+      "label": "Fast scroll: the card appears at once, already sharp",
+      "idea": "On a fast scroll the card skips its fade and shows its final look at once.\n- No blur, no fade, no lift; slower scrolls still get today's fade.\n- The deck's first two profiles load their photos early (after the page settles), so nothing pops in on a deck you can now see.",
+      "visualDiff": [
+        "Fast flick: the card is sharp from its first frame on screen.\n- Simulator sharpness 13-14, as at rest; today 1.6-3.8 until the deck is about halfway in.",
+        "The moment the card appears is the same as today (the same scroll point); it just has no fade.",
+        "Slow scroll, rest, Reduce Motion, scrolling up: as today."
+      ],
+      "gain": [
+        {
+          "what": "Card blurred during a fast flick",
+          "before": "yes, ~0.6-0.9 s",
+          "after": "no",
+          "better": "better",
+          "tag": "OBSERVED",
+          "how": "iPhone Simulator, a 300 px / 220 ms robot flick from the top, as on the phone.\n- 2 flicks per build in each of 2 sessions; screenshots every ~0.25 s.\n- Sharpness = average edge strength of the screenshot; a sharp page is 11-14."
+        },
+        {
+          "what": "Deck photos ready before the flick",
+          "before": "0 of 15",
+          "after": "15 of 15",
+          "better": "better",
+          "tag": "OBSERVED",
+          "how": "Same Simulator sessions: photos of the first 3 profiles counted as loaded just before the first flick. Today they load during the flick, hidden behind the fade."
+        },
+        {
+          "what": "Fade on a slow drag",
+          "before": "fades",
+          "after": "fades (same)",
+          "better": "same",
+          "tag": "OBSERVED",
+          "how": "Same sessions, 3 slow drags of 520 px in 1.2 s: the switch never triggers; the card's three fades start as in g0.0k."
+        },
+        {
+          "what": "Smoothness on the iPhone",
+          "before": "not measured",
+          "after": "not measured",
+          "better": "same",
+          "tag": "UNRESOLVED",
+          "how": "A phone check with the same robot flick follows if you accept. Skipping the fade does less work, not more."
+        }
+      ],
+      "risk": "The card's appearance is sudden on fast scrolls (that is the change).",
+      "compare": {
+        "b": {
+          "label": "g0.0k + instant card on a fast scroll"
+        }
+      },
+      "live": {
+        "patch": "fixes/people-blink--b2/patch.diff",
+        "a": {
+          "patch": "fixes/g0-0k/patch.diff"
+        }
+      }
+    },
+    {
+      "name": "quick",
+      "label": "Fast scroll: a short 0.15 s fade instead",
+      "idea": "The same switch, but on a fast scroll the card fades in over 0.15 s instead of 0.7-0.9 s.\n- It is sharp before the deck arrives; slower scrolls get today's fade; same early photo loading.",
+      "visualDiff": [
+        "Fast flick: a brief fade when the card appears, mostly while the hero is still on screen.\n- The deck is sharp when it comes into view (Simulator sharpness 12.4-14).",
+        "Slow scroll, rest, Reduce Motion, scrolling up: as today."
+      ],
+      "gain": [
+        {
+          "what": "Card blurred during a fast flick",
+          "before": "yes, ~0.6-0.9 s",
+          "after": "~0.15 s, before the deck",
+          "better": "better",
+          "tag": "OBSERVED",
+          "how": "Same Simulator sessions and measure as the first option."
+        },
+        {
+          "what": "Deck photos ready before the flick",
+          "before": "0 of 15",
+          "after": "15 of 15",
+          "better": "better",
+          "tag": "OBSERVED",
+          "how": "Same as the first option."
+        },
+        {
+          "what": "Fade on a slow drag",
+          "before": "fades",
+          "after": "fades (same)",
+          "better": "same",
+          "tag": "OBSERVED",
+          "how": "Same as the first option."
+        }
+      ],
+      "risk": "Same as the first option. On a very fast flick the 0.15 s fade can still overlap the deck's first frames.",
+      "compare": {
+        "b": {
+          "label": "g0.0k + 0.15 s fade on a fast scroll"
+        }
+      },
+      "live": {
+        "patch": "fixes/people-blink--b3/patch.diff",
+        "a": {
+          "patch": "fixes/g0-0k/patch.diff"
+        }
+      }
+    },
+    {
+      "name": "keep",
+      "label": "Keep today's fade",
+      "idea": "Change nothing: the fade-in stays as in g0.0k. On a fast flick the deck stays blurred until shortly before it lands (about 0.8 s before on the iPhone).",
+      "visualDiff": [
+        "None (B = A)."
+      ],
+      "gain": [
+        {
+          "what": "Card blurred during a fast flick",
+          "before": "yes, ~0.6-0.9 s",
+          "after": "yes, ~0.5 s",
+          "better": "same",
+          "tag": "OBSERVED",
+          "how": "As measured above."
+        }
+      ],
+      "risk": "None.",
+      "compare": {
+        "b": {
+          "label": "Unchanged (g0.0k)"
+        }
+      },
+      "live": {
+        "none": "Keep the original: B is the same page as A (g0.0k), so there is nothing new to try."
+      }
+    }
+  ],
+  "recommended": {
+    "option": "instant",
+    "why": "It removes the blink in every flick we tried, and slow scrolling is untouched.\n- The card ends exactly as today.\n- Pick 'quick' if a sudden appearance feels too abrupt."
+  }
+}

@@ -1,0 +1,85 @@
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -12357,14 +12357,54 @@
+               }))
+             : fwSync());
+       },
++      // [people-blink B2] A fast fling carries the deck into view while the card's fade-in (opacity 0.7 s, blur
++      // 0.9 s) is still running, so the deck shows white, then blurred, then snaps sharp as the fling lands (iPhone,
++      // Simulator, Chrome; OBSERVED). When .is-visible turns on while the page scrolls at >= 0.8 px/ms, the card
++      // takes its end state at once (data-fw-reveal="instant": no transition), as it would after the fade; slower
++      // scrolls keep the fade unchanged. The speed is the scrollY step since the previous l() (one per rAF while
++      // scrolling, none after 200 ms of rest). The attribute goes after 400 ms (nothing is transitioning then, so
++      // removing it starts nothing) and at once when the class turns off, so the hide transition is unchanged.
++      fwRvY = null,
++      fwRvT = 0,
++      fwRvEl = null,
++      fwRvTo = 0,
++      fwRvOn = !1, // the last value l() gave the class (a plain mirror: reading the state here would subscribe the mount effect)
++      fwRevealGate = (on) => {
++        let now = performance.now(),
++          sy = window.scrollY,
++          v = fwRvY === null || now - fwRvT > 200 ? 0 : Math.abs(sy - fwRvY) / Math.max(1, now - fwRvT);
++        ((fwRvY = sy), (fwRvT = now));
++        if (on === fwRvOn) return;
++        if (((fwRvOn = on), !(fwRvEl ||= document.getElementById(`people`)))) return;
++        window.clearTimeout(fwRvTo);
++        on && v >= 0.8
++          ? (fwRvEl.setAttribute(`data-fw-reveal`, `instant`), (fwRvTo = window.setTimeout(() => fwRvEl.removeAttribute(`data-fw-reveal`), 400)))
++          : fwRvEl.removeAttribute(`data-fw-reveal`);
++      },
++      // [people-blink B2] the active deck's lazy photos load during the fling today (8 loads at y 460-1180 on the
++      // iPhone), hidden by the fade; without the fade they would pop in on a visible deck. Load them once the page is
++      // idle after mount instead (1.5 s, then an idle callback, 2 s cap): the active shell and the next one, whose
++      // edge shows beside it. Every image there (the cover too, decoding="async") is also decoded ahead (decode()), so
++      // the first frame that shows the card does not paint it blank (Simulator s6: the cover was white for one shot).
++      fwPreT = 0,
++      fwPreload = () => {
++        let go = () => {
++          for (let im of document.querySelectorAll(
++            `#people .start-selling-profile-shell.is-active-shell img, #people .start-selling-profile-shell.is-active-shell + .start-selling-profile-shell img`,
++          ))
++            (im.loading === `lazy` && (im.loading = `eager`), im.decode?.().catch(() => {}));
++        };
++        fwPreT = window.setTimeout(() => (window.requestIdleCallback ? window.requestIdleCallback(go, { timeout: 2e3 }) : go()), 1500);
++      },
+       l = () => {
+         i = 0;
+         let n = document.querySelector(`.hero-track`);
+         if (n) {
+           let t = n.getBoundingClientRect(),
+             r = Math.max(1, t.height - window.innerHeight),
+-            i = Math.min(r, Math.max(0, -t.top));
+-          z(y, e.matches || i / r >= 0.72, !0);
++            i = Math.min(r, Math.max(0, -t.top)),
++            fwOn = e.matches || i / r >= 0.72;
++          (fwRevealGate(fwOn), z(y, fwOn, !0));
+         } else z(y, !0);
+         if (g) {
+           let t = T(g.getBoundingClientRect(), window.innerHeight),
+@@ -12438,10 +12478,11 @@
+       shrinkOffMq.addEventListener(`change`, u),
+       _(),
+       l(),
++      fwPreload(),
+       () => {
+         a = !0;
+         for (let e of r) e();
+-        ((r.length = 0), i && window.cancelAnimationFrame(i));
++        ((r.length = 0), i && window.cancelAnimationFrame(i), window.clearTimeout(fwPreT), window.clearTimeout(fwRvTo));
+         (fwIO?.disconnect(), fwRO?.disconnect(), fwR && window.cancelAnimationFrame(fwR), fwClk?.cancel());
+         for (let e of n) window.clearTimeout(e);
+         ((n.length = 0),
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -12633,3 +12633,10 @@
+ html.fw-bx .start-selling-morph-panel[data-start-selling-scene="active"] .start-selling-morph-center .waitlist-closing-countdown {
+   will-change: transform;
+ }
++
++/* [people-blink B2] set by the page script only when .is-visible turns on during a fast scroll (>= 0.8 px/ms): the card
++   takes its end state at once instead of fading in (the fade would still run while a fling lands the deck in view).
++   Slower scrolls never get the attribute, so their fade is unchanged; it is removed 400 ms later. */
++.start-selling-future[data-fw-reveal="instant"] > .start-selling-future-card {
++  transition: none !important;
++}
