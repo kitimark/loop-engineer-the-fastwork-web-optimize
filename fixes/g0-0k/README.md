@@ -3,8 +3,8 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` and `delta.diff` contain excerpts of Fastwork's code: keep them on local branches, never push.
 
-**Status:** built and gated (Simulator and Chrome counts and pixels). Phone check card drafted below, **not signed, not
-run**. Not the best build until the lead signs and the phone check passes.
+**Status:** built and gated (Simulator and Chrome counts and pixels). Phone check card **signed by the lead as P-173**
+(2026-10-09 ~04:25Z, before any data); block not yet run. Not the best build until the phone check passes.
 **Stage:** F (build + gates) for PR-040, accepted by the user 2026-10-09 03:40:01Z (thread T-253).
 **Device class / gate:** phone render-bound (end of page, nav morph); touch-only (G) for the phone check.
 **Driver(s) behind the claims:** Simulator WDA finger strokes (`out/cm-return/simhold.mjs`, `endsim.mjs`,
@@ -143,9 +143,9 @@ with the largest Layout + Style in y 1600-1900, against the band background (y 1
   full style rebuild (F-360, CONFIRMED by WebKit source: `Document::invalidateEventListenerRegions` ->
   `scheduleFullStyleRebuild`, dom/Document.cpp 6648-6663). On g0.0k `N()` returns while `__msOn` (touch phones), so
   nothing is added at that crossing. That this add is the whole spike is OBSERVED (the frame's cost drops with it).
-- By the lead's rule ("no style spike, L+S near the band background"): the spike is gone; the residual is 5-8 ms, not
-  1.5. I read that as candidate 1 closed on g0.0k; the lead decides. The phone card reads the same frame (X) as a
-  secondary.
+- **Lead ruling (2026-10-09 ~04:25Z): fix-g0-box's candidate 1 is CLOSED on g0.0k.** The 5-8 ms L+S residual at the
+  crossing is below the card's 20 ms falsifier and shows no spike: residual, not pursued. fix-g0-box agrees (its
+  status: closed-no-fix). The phone card reads the same frame (X) as a secondary only.
 
 ## Corrected cost text (PR-040)
 
@@ -161,7 +161,43 @@ PR-040's risk text said B adds v14's non-passive window wheel listener at setup.
 - The same correction is in `fixes/cm-return/README.md` "Known costs". The accepted proposal itself is not revised: a
   revision would mark the user's decision stale (T-030), for a sentence that only removed a cost on phones.
 
-## Phone check card (draft for the lead to sign; nothing run)
+## Phone check card: P-173 (signed by the lead 2026-10-09 ~04:25Z)
+
+Signed as drafted below (in 62bcb5e4), before any P-173 data, with these rulings:
+1. **D2 is signed as proposed**: END frames > 34, d <= +4, twins > 30 / > 38 must agree, is the no-worse rule for > 34
+   (the END motions differ by design, and the user already judged the feel with PR-040). If D1 PASSES and D2 FAILS,
+   the lead decides from X and the E-mark split.
+2. Candidate 1 is closed on g0.0k (above); X stays a secondary on the phone.
+3. PR-040 stays unrevised; the README correction is enough.
+4. Phone health (user T-256, memory "phone-problems-fix-first"): `iphone.mjs wda check` and the kit dry run before H1;
+   a link or WDA failure is repaired inside the hold (wda stop / start) and reported to the lead, never posted as a
+   user step. Rebased on main first (I-257, 9c1d42ff): the kit runs FW_PHONE_CONDITION=tool with CM_PROFILE=tool-serious
+   and `iphone.mjs gesture`, which I-257 left gated (I-257 dropped only the Xcode user steps and the gate on `record`
+   without --profile).
+5. The block runs under `lock.mjs run iphone --owner fix-cm-return --block P-173 --max-seconds 3600`.
+
+Kit and reader, frozen before the first counted run (sha256, 12):
+
+| file | sha256 |
+|---|---|
+| `fixes/g0-0k/phone/g0k-read.mjs` (selftest ok; also read P-172's g0.0j runs as arm C: X 51-52 ms at y 1747-1752, L+S 30-34 ms, END > 50 0, > 34 16-20) | d31bfc7a4de6 |
+| `fixes/g0-0k/phone/g0k-block.sh` | 6e7632d54f91 |
+| `fixes/g0-0k/phone/g0k-hold.sh` | 3aeadbf53957 |
+| `fixes/g0-0k/phone/g0k-run.sh` | 80aeda4976fb |
+| `fixes/g0-0k/phone/g0k-serve.sh` (snapshot out/g0kp-snap, HASHES.txt bcb64c57738b) | 937ae8dcb7dd |
+| `fixes/g0-0k/phone/g0k-k.env` (no K arm) | 848094b02c9b |
+
+The kit is a text-substitution copy of fix-scrollcb-g0's P-172 kit (`fixes/sticky-walk/phone/sw-*.sh`) with the
+pins above; the reader imports eop-read.mjs's helpers (fix-g0-box). Note from the reader check on P-172's g0.0j data:
+50-64 of g0.0j's END frames per run fall in (30, 38] (two 60 Hz vsyncs are 33.3 ms), so D2's twins sit on a dense band
+and OPEN is a likely D2 outcome.
+
+Pre-data checks, 2026-10-09 04:24Z: `iphone.mjs wda check` READY (WDA 16.13.6, iOS 26.6.1); kit dry run
+(`CM_DRY=1 sh fixes/g0-0k/phone/g0k-run.sh P-173 H1:WC ... H12:TAIL`): the 3 servers serve the pinned hashes (B baseline,
+C 9162843e750f / bee7fce9ad56, V e0b7b1e7e158 / a9d4fa8992d9), program fs 38d7fe5d7fa8 (GESTURE_BUDGET_S 229), all 12
+holds DRY ok.
+
+### Card as signed
 
 ```
 TICKET g0.0k · V = g0.0k: JS e0b7b1e7e158 / CSS a9d4fa8992d9 (out/cm-return/snapk/V)
@@ -215,7 +251,7 @@ expected minutes: ~65 (12 runs of ~230 s budget each in 600 s holds; P-172 took 
 ```
 
 ```
-PREDICTION P-<id> · fix-cm-return · 2026-10-09
+PREDICTION P-173 · fix-cm-return · 2026-10-09
 1 g0.0k (e0b7b1e7e158 / a9d4fa8992d9) vs g0.0j (9162843e750f / bee7fce9ad56) · driver G · END > 50 / > 34 (twins), X
 2 baseline: no phone G run of g0.0j's END within 24 h (P-172 read only the approach); the block's own C runs are the
   baseline. P-172's g0.0j approach: X 51-52 ms at y 1747-1752 in every run
