@@ -175,6 +175,12 @@ Signed as drafted below (in 62bcb5e4), before any P-173 data, with these rulings
    and `iphone.mjs gesture`, which I-257 left gated (I-257 dropped only the Xcode user steps and the gate on `record`
    without --profile).
 5. The block runs under `lock.mjs run iphone --owner fix-cm-return --block P-173 --max-seconds 3600`.
+6. **Pre-data ruling (lead, 04:3xZ, before any counted data):** if D2 comes out OPEN *only* because the > 30 twin
+   disagrees, while D2 itself (> 34) and the > 38 twin pass, D2 counts as **PASS-with-note**. The 30-38 ms band is dense
+   with two-frame 33.3 ms frames at the 60 Hz rate, so there the > 30 twin measures cadence, not stalls. The note lists
+   the > 30 counts per arm. Any other disagreement (the > 38 twin, or either of D1's twins) stays OPEN under the card's
+   rule. Neither case runs a second block without the lead's say. (Applied by hand to the frozen reader's per-threshold
+   output; the reader itself is unchanged.)
 
 Kit and reader, frozen before the first counted run (sha256, 12):
 
