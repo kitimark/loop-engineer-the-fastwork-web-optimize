@@ -35,6 +35,16 @@ test('I-077: a listed web page means Safari is not parked (open keeps its usual 
   assert.match(parkedCandidates([], 'PID:7653').why, /is not listed/, 'nothing listed (Safari not running)');
 });
 
+test('I-262: another app\'s web page (a mail app\'s background view) does not hide Safari\'s parked tab when Safari\'s appId is known', () => {
+  const MAIL = [view(5, 'PID:25536'), view(6, 'PID:25536', 'file://lan-host/private/var/containers/Bundle/Application/X/Mail.app/')];
+  const SAFARI = view(7, 'PID:39587'); // Safari after a park: about:blank only
+  assert.deepEqual(parkedCandidates([...MAIL, SAFARI], 'PID:39587'), { candidates: [SAFARI] });
+  assert.deepEqual(parkedCandidates([SAFARI, ...MAIL], 'PID:39587'), { candidates: [SAFARI] }, 'list order does not matter');
+  assert.deepEqual(parkedCandidates([...MAIL, view(8, 'PID:39587', 'http://192.0.2.7:5492/')], 'PID:39587'), { notParked: true }, 'Safari showing a web page: the usual path');
+  assert.match(parkedCandidates(MAIL, 'PID:39587').why, /is not listed/, 'Safari not listed: a reason, never the other app\'s page');
+  assert.deepEqual(parkedCandidates([...MAIL, SAFARI], null), { notParked: true }, 'no appId: any listed web page still decides (unchanged)');
+});
+
 test('I-077: pickVisible takes the one view that says "visible"; none, several or no answer is a reason', async () => {
   const states = (m) => async (p) => { const v = m[p.webSocketDebuggerUrl.slice(-1)]; if (v instanceof Error) throw v; return v; };
   assert.deepEqual(await pickVisible(PARKED, states({ 1: 'hidden', 2: 'visible' })), { tab: PARKED[1] });

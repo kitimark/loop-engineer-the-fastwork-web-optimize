@@ -227,12 +227,17 @@ export function recordSafariApp(appId, port) {
 export function recordedSafariApp(port) {
   try { const r = JSON.parse(readFileSync(safariAppFile(), 'utf8')); return r.port === Number(port) && typeof r.appId === 'string' ? r.appId : null; } catch { return null; }
 }
-/** {notParked} (a web page is listed: the usual path), {candidates: Safari's blank views} or {why}. */
+/** {notParked} (a web page is listed: the usual path), {candidates: Safari's blank views} or {why}.
+ *  I-262: with Safari's appId known, only Safari's own views decide: another app's web page (e.g. a mail app's
+ *  background web view) no longer makes a parked Safari look "not parked". Without an appId any listed page decides. */
 export function parkedCandidates(pages, appId) {
   const all = (Array.isArray(pages) ? pages : []).filter((p) => p && p.webSocketDebuggerUrl);
-  if (all.some((p) => !isBlankUrl(p.url))) return { notParked: true };
-  if (!appId) return { why: 'no record of Safari\'s app (a park records it, I-077)' };
+  if (!appId) {
+    if (all.some((p) => !isBlankUrl(p.url))) return { notParked: true };
+    return { why: 'no record of Safari\'s app (a park records it, I-077)' };
+  }
   const c = all.filter((p) => p.appId === appId);
+  if (c.some((p) => !isBlankUrl(p.url))) return { notParked: true };
   if (!c.length) return { why: `Safari's app at the last park (${appId}) is not listed: Safari restarted since (a new pid on every start), or it is not running` };
   return { candidates: c };
 }
