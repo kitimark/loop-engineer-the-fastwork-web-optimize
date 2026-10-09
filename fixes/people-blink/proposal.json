@@ -61,7 +61,24 @@
       "compare": {
         "b": {
           "label": "g0.0k + instant card on a fast scroll"
-        }
+        },
+        "shots": [
+          {
+            "caption": "Simulator, one fast flick, a shot every ~0.25 s (ms after the flick, page y). A blurs the deck; B is sharp at once.",
+            "a": "../../out/people-blink/s8/sheet-A1-land1.png",
+            "b": "../../out/people-blink/s8/sheet-P1-land1.png"
+          },
+          {
+            "caption": "A second flick, same builds.",
+            "a": "../../out/people-blink/s8/sheet-A1-land2.png",
+            "b": "../../out/people-blink/s8/sheet-P1-land2.png"
+          },
+          {
+            "caption": "Slow drags: both fade in the same way (the switch never triggers).",
+            "a": "../../out/people-blink/s8/sheet-A1-slow.png",
+            "b": "../../out/people-blink/s8/sheet-P1-slow.png"
+          }
+        ]
       },
       "live": {
         "patch": "fixes/people-blink--b2/patch.diff",
@@ -108,7 +125,19 @@
       "compare": {
         "b": {
           "label": "g0.0k + 0.15 s fade on a fast scroll"
-        }
+        },
+        "shots": [
+          {
+            "caption": "Simulator, one fast flick, a shot every ~0.25 s. B fades in 0.15 s, sharp when the deck arrives.",
+            "a": "../../out/people-blink/s8/sheet-A1-land1.png",
+            "b": "../../out/people-blink/s8/sheet-Q1-land1.png"
+          },
+          {
+            "caption": "Slow drags: both fade in the same way.",
+            "a": "../../out/people-blink/s8/sheet-A1-slow.png",
+            "b": "../../out/people-blink/s8/sheet-Q1-slow.png"
+          }
+        ]
       },
       "live": {
         "patch": "fixes/people-blink--b3/patch.diff",
