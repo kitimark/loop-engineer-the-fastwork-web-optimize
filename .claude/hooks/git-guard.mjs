@@ -706,6 +706,15 @@ const FRAME_FILE = /\.(png|jpe?g|bmp|tiff?|webp|gif|heic)$/i;
 const FRAME_FORMATS = /^(image2|image2pipe|sdl2?|opengl|caca|xv|apng|gif|webp|mjpeg|singlejpeg)$/i;
 const VIEWERS = new Set(['qlmanage', 'mpv', 'mplayer', 'vlc', 'iina']);
 const isRecording = (a) => MOVIE.test(a) || SCREEN_DIR.test(a);
+// User 2026-10-09 (Claude Code chat; T-228 #138/#151/#153): frame pictures are allowed for the people-blink deck
+// recordings only, by an ffmpeg export to image files under out/: Simulator videos under out/people-blink/, and iPhone
+// recordings in out/iphone-screen/ whose name carries the deck label "-pb-", recorded while the user keeps Do Not
+// Disturb or Sleep focus on (record them only after the user says focus is on). Every other recording stays denied,
+// and so do players and viewers (open, ffplay, qlmanage, mpv, ...) on any recording.
+const DECK_SIM = /(^|\/)out\/people-blink\/(.+\/)?[^/]+\.(mov|mp4|m4v)$/i;
+const DECK_PHONE = /(^|\/)out\/iphone-screen\/[^/]*-pb-[^/]*\.(mov|mp4|m4v)$/i;
+const isDeckRecording = (a) => !/(^|\/)\.\.(\/|$)/.test(a) && (DECK_SIM.test(a) || DECK_PHONE.test(a));
+const isOutImage = (a) => !/(^|\/)\.\.(\/|$)/.test(a) && /(^|\/)out\/.+/.test(a) && FRAME_FILE.test(a);
 function analyzeFrames(prog, argv, findings) {
   const rest = argv.slice(1);
   const no = (what) => findings.push(deny(`${what} is not allowed. ${NO_FRAMES}`));
@@ -715,7 +724,14 @@ function analyzeFrames(prog, argv, findings) {
   if (prog === 'ffmpeg') {
     const fmt = rest.some((a, k) => a === '-f' && FRAME_FORMATS.test(rest[k + 1] ?? ''));
     const imageOut = rest.some((a, k) => FRAME_FILE.test(a) && rest[k - 1] !== '-i');
-    if (fmt || imageOut) return no('An ffmpeg frame export or preview');
+    if (fmt || imageOut) {
+      const inputs = rest.filter((a, k) => rest[k - 1] === '-i');
+      const formats = rest.filter((a, k) => rest[k - 1] === '-f');
+      const outputs = rest.filter((a, k) => rest[k - 1] !== '-i' && FRAME_FILE.test(a));
+      const deck = inputs.length > 0 && inputs.every(isDeckRecording) && outputs.length > 0 && outputs.every(isOutImage) &&
+        formats.every((f) => /^image2$/i.test(f));
+      if (!deck) return no('An ffmpeg frame export or preview (only the deck recordings in out/people-blink/ and out/iphone-screen/*-pb-*, as image files under out/)');
+    }
   }
   return undefined;
 }
