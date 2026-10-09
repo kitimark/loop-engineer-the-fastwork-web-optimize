@@ -7,8 +7,9 @@ Rows marked (unconfirmed) rest on one source only.
 
 ## First build per accepted proposal (newest first)
 
-| Build | Proposals first applied | In g0.0k (best now)? |
+| Build | Proposals first applied | In g0.0l (best now)? |
 |---|---|---|
+| g0.0l | PR-041 people card appears sharp on a fast scroll (option instant, accepted 2026-10-09 07:23Z) | yes |
 | g0.0k | PR-040 end-of-page menu follows the finger with a steady glass (accepted 2026-10-09 03:40Z) | yes |
 | g0.0h | PR-039 menu photo columns kept as a still picture while closed (keep-phase) | yes |
 | g0.0f | PR-038 Safari menu bar drawn by the GPU | yes |
@@ -27,7 +28,7 @@ Rows marked (unconfirmed) rest on one source only.
 | v3 | PR-002 platform section, less style work (unconfirmed: may be v1-v2) | yes |
 | v1 | PR-013 avatar slider (option keep-st6) | yes |
 
-## Accepted but not in g0.0k
+## Accepted but not in g0.0l
 
 - Removed by the g0.0b rollback (fixes/g0-revert/README.md 133-143): PR-012, PR-018, PR-023, PR-030, PR-032.
 - Accepted but never built into a best build:
