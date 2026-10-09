@@ -1347,6 +1347,13 @@ on L+S (+3.5 against +4).
 - The user keeps g0.0h's end or rejects PR-040: queue P-171 after P-170b ends and after any cm-return phone work.
 - The user accepts PR-040: P-171 is void. The next step is a card for B vs B + head wheel (mount only).
 
+**Outcome: P-171 is void.** The user accepted PR-040 (03:40Z, local date 2026-10-09). The follow-up (lead), once
+fix-cm-return packages g0.0k in `fixes/g0-0k/`:
+- Build g0.0k + head-registered wheel: the ws3 `/analytics.js` prepend, phone-scoped.
+- Ask the mount-only question on the Simulator, n = 6, under the same pre-set rule: median ≤ +4 ms on mount-frame
+  duration and on L+S, and the first 3 drags overlapping.
+- The result decides whether the arm is worth a phone block.
+
 **Decisions (the lead's, word for word):**
 - GAIN -> ws stacks with whatever wins P-170 (g0.0i candidate).
 - GAIN (threshold-sensitive) -> the lead's call.
