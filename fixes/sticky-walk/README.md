@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** F gates done; phone card drafted, waiting for the lead's signature (no phone before it)
+**Status:** P-172 phone block done (lead-signed, tool-serious, all holds VALID): finger-down > 50 at y 1000-3400 C 3,1,2,2 vs V 1,1,1,1, NO SEPARATION by the card rule but threshold-sensitive (both twins separate lower); > 34 separated (C 12-18, V 2-6); Layout >= 5 ms 152-159 -> 0-1 (prediction HIT). Waiting for the lead: landing rule and the deck look ruling (split reads T2).
 **Stage:** D NAMED (lead, fast path, 2026-10-09 ~21:2xZ, after the drag check). F: build `fixcq`, restacked on g0.0i; gates in "F: build fixcq".
 **Open item (own, outside the deck):** the y 0-600 static-nudge residual (~19 ms per nudge, `sw-map.mjs`, every knock-out arm). In G drags with the served fixcq CSS it is gone (0 big layouts at y < 1000); it appears only when the fixcq rules are injected after load (see "F: build fixcq", gate 5).
 **Device class / gate:** touch-only (G) for the gain; Simulator counts for attribution
@@ -162,6 +162,16 @@ Gate 5 (data `out/sticky-walk/drag-f.json`; interleaved C:1 V:1 C:2 V:2 C:3 V:3,
   is OBSERVED, cause unknown); or a different decode size.
 - Reading: this is a rendering-quality state, not a layout change; by the PR-010 numbers it is T2 except the one 206-level step.
   The lead decides T2 or proposal.
+- **Fill / edge split** (lead's look ruling, 2026-10-09; `gates/deck-split.mjs` over the three deck-sim sessions, offline, no
+  Simulator; fill = consistent pixels whose 3x3 luma range in A is <= 2, edge = the rest; the status bar excluded):
+  - Every step except b0, in all three sessions: fill max 15, edge max 91, at most 1,897 css px² (0.473 % of the screen) per
+    step. Within T2 (fill <= 64, edge <= 128, <= 0.5 %).
+  - Step b0 (the vinyl card in view) is beyond the limits in every session (fill up to 206, edge up to 206). The card's record
+    spins: `animation: 4s linear infinite vinyl-spin` (CSS 3850-3852). The four shots show the label at four different angles,
+    and the A/A pairs differ there too: A~A2 up to 187-200 and V~V2 up to 4-220 in the same box. These are rotation phases,
+    not the build.
+  - b0 without the vinyl card (css y < 685): 0 or 788 css px² at max level 63. Within T2.
+  - Reading by the lead's rule: T2, with the vinyl step excluded as A/A noise (numbers above). The lead's ruling decides.
 
 **Restack on g0.0i (lead 2026-10-09).** `fix.mjs apply sticky-walk --from g0-0i --reset`, then `delta.diff` applied (the
 edits do not overlap: g0.0i adds rules at the end of the CSS). Simulator pixel spot check, g0.0i vs g0.0i + fixcq
@@ -170,7 +180,20 @@ aligned): **PASS**. Consistent 0 at 548, 2400, 4856 and 5260 (the end of the pag
 level 23, inside the deck (the photo-sharpness state above). At 3384: 15 css px² at max level 19, the commission-card spot
 already seen on g0.0h. The status-bar clock falls inside the A/A mask.
 
-## Phone card (draft for the lead's signature; P-id from the lead)
+## Phone card: P-172 (signed by the lead 2026-10-09)
+
+Signed as drafted below, with these pre-data notes (sent to the lead before the block):
+- Profile **tool-serious**, not xcode-serious: Serious is induced by `iphone.mjs rearm` / `thermal.mjs`, with no Xcode user
+  step (the lead: no user steps). P-159..P-171 ran the same way. Comparisons stay within the block.
+- Kit `phone/sw-*.sh`: a text-substitution copy of fix-menu-layers' P-170b kit with the same gates and G program
+  (`g-fastshort-g0.json`, 38d7fe5d7fa8). The program's first phase (mark `approach`, up to 12 strokes of 520 px in 1200 ms,
+  drag profile, x 215, 300 ms pause) is the G approach; the y 1000-3400 read uses only that phase. One change: a phone that
+  is not ready stops the block instead of posting a user step.
+- Order: H1 WC, H2 WV, H3 S0 (start sentinel right after the warm-ups), H4-H11 EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4, H12 TAIL
+  (re-runs, then S1).
+- Reader `phone/p172-read.mjs` (sha256 89ad7f069998, written 23:32:55Z, before any counted run existed; selftest ok).
+
+Draft as signed:
 
 ```
 TICKET sticky-walk · g0.0i + fixcq: JS 9162843e750f / CSS bee7fce9ad56 (out/sticky-walk/snap-i/V)
@@ -207,8 +230,39 @@ PREDICTION P-<id> · fix-scrollcb-g0 · 2026-10-09
 7 decision: as in the ticket
 ```
 
+## P-172 result (iPhone, G, tool-serious, 2026-10-08 23:31Z to 2026-10-09 00:37Z)
+
+- Block: H1-H12 VALID, no re-runs; every counted run's P-129 gates ok; sentinels S0 PASS (53.5 fps) and S1 PASS (53.8 fps).
+  Thermal cleared after the hold. Data in `out/swp/runs`, read in `out/sticky-walk/p172-read.json`, summary in `results.json`.
+- Reader `phone/p172-read.mjs` (89ad7f069998, unchanged since before the data). Window: approach phase, finger-down
+  frames at scrollY 1000-3400.
+
+| run | frames in window | > 50 (46 / 54) | > 34 (30 / 38) | Layout >= 5 ms in window | whole run > 50 | whole run > 34 |
+|---|---|---|---|---|---|---|
+| EC1 | 331 | 3 (4 / 1) | 18 (30 / 12) | 159 (2,208 ms) | 10 | 58 |
+| EC2 | 333 | 1 (2 / 1) | 12 (25 / 9) | 153 (2,112 ms) | 5 | 50 |
+| EC3 | 332 | 2 (2 / 1) | 12 (25 / 8) | 152 (2,126 ms) | 7 | 46 |
+| EC4 | 333 | 2 (3 / 1) | 13 (28 / 8) | 155 (2,150 ms) | 9 | 47 |
+| EV1 | 354 | 1 (1 / 0) | 2 (2 / 1) | 1 (5 ms) | 1 | 32 |
+| EV2 | 352 | 1 (1 / 0) | 3 (4 / 1) | 0 | 1 | 32 |
+| EV3 | 352 | 1 (1 / 0) | 5 (6 / 3) | 1 (5 ms) | 2 | 31 |
+| EV4 | 350 | 1 (1 / 0) | 6 (6 / 2) | 1 (5 ms) | 2 | 33 |
+
+- **Card rule, primary (> 50):** C 3,1,2,2 vs V 1,1,1,1. The ranges touch at 1, so the rule says **NO SEPARATION**. The
+  no-worse check holds (whole-run > 50: C 5-10, V 1-2). The result is **threshold-sensitive**: both twins separate lower
+  (> 46: C 2-4, V 1; > 54: C 1, V 0).
+- **> 34:** separated lower, both twins agree (C 12-18, V 2-6).
+- **Prediction HIT:** big Layout records in the window fall from 152-159 to 0-1 per run (-99 %). V also delivers more frames in
+  the window (350-354 vs 331-333).
+- **What is left:** the one > 50 frame in every V run sits at y 1747-1752 (51-52 ms). In C the same frame is 61-63 ms at y 1762.
+  It is the te crossing frame that P-171 / cm-return targets (window 1650-1850), not the deck walk. fixcq shortens it by
+  about 10 ms but does not remove it.
+- Next: the lead picks the landing rule (the less-work rule on the Simulator cost card plus this no-worse check, or GAIN on
+  > 34 and the twins) and rules on the deck look (the split reads T2).
+
 ## Probes
 
 - `sw-map.mjs`: static nudge cost map, knock-out arms in `KO`, `SW_DUMP=<selector>` subtree dump, `--selftest`.
 - `sw-drag.mjs`: a copy of `fixes/scrollcb-g0/sim-approach.mjs` with window resize and visualViewport event stamps; arms C (g0.0h) and V (g0.0h + fixcq) from the immutable copies.
-- `gates/`: `px-chrome.mjs`, `px-sim.mjs` (copies of g0-box's pixel gates; `PX_SNAP`, `PX_ALIGN_FEE`, `PX_RM`, tablet viewports), `io-chrome.mjs`, `deck-chrome.mjs` + `deck-score.mjs`, `deck-sim.mjs` (`DECK_STALL`, `DECK_LATE`), `avatar-gate.mjs`.
+- `gates/`: `px-chrome.mjs`, `px-sim.mjs` (copies of g0-box's pixel gates; `PX_SNAP`, `PX_ALIGN_FEE`, `PX_RM`, tablet viewports), `io-chrome.mjs`, `deck-chrome.mjs` + `deck-score.mjs`, `deck-sim.mjs` (`DECK_STALL`, `DECK_LATE`), `avatar-gate.mjs`, `deck-split.mjs` (the PR-010 fill / edge split, offline).
+- `phone/`: the P-172 kit (`sw-run.sh`, `sw-block.sh`, `sw-hold.sh`, `sw-serve.sh`, `sw-k.env`) and its pre-data reader `p172-read.mjs`.

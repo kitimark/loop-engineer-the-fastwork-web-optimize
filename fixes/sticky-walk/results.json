@@ -1,0 +1,459 @@
+{
+ "topic": "sticky-walk",
+ "owner": "fix-scrollcb-g0",
+ "date": "2026-10-09",
+ "change": "fixcq: mobile/coarse media rule only; .start-selling-profile-deck container-type: inline-size; shells aspect-ratio 353/764 -> height calc(100cqi * 764 / 353) (same 844.078125 px box at 430 wide)",
+ "builds": {
+  "control": {
+   "name": "g0.0i",
+   "js": "9162843e750f",
+   "css": "adb875d94c1f",
+   "snapshot": "out/sticky-walk/snap-i/C"
+  },
+  "patched": {
+   "name": "g0.0i + fixcq",
+   "js": "9162843e750f",
+   "css": "bee7fce9ad56",
+   "snapshot": "out/sticky-walk/snap-i/V",
+   "patch": "fixes/sticky-walk/patch.diff (baseline-relative)",
+   "delta": "fixes/sticky-walk/delta.diff"
+  }
+ },
+ "gates": {
+  "io": "PASS 52 targets, 0 differ",
+  "pixelsChrome": "PASS consistent 0 (mobile, desktop, tablet 768, reduced motion); tablet 1024 pain-note shuffle only, geometry equal",
+  "pixelsSimulator": "PASS consistent 0 except the status-bar clock (standard exclusion) and 15 css px2 at level 19 (commission card)",
+  "deck": "PASS geometry and snaps (Chrome 6 viewports, Simulator); Chrome crops 0; Simulator sharpness state: fill/edge split T2 except the spinning vinyl card (A/A noise)",
+  "deckSplit": {
+   "exceptVinyl": {
+    "fillMax": 15,
+    "edgeMax": 91,
+    "maxAreaPct": 0.473
+   },
+   "b0AboveVinyl": {
+    "maxLevel": 63,
+    "cssPx2": 788
+   },
+   "vinylB0": {
+    "maxLevel": 206,
+    "aaMax": "187-220",
+    "cause": "animation 4s linear infinite vinyl-spin (CSS 3850-3852)"
+   },
+   "reading": "T2 by the lead rule; the lead rules"
+  },
+  "avatar": "PASS Chrome 0 px, Simulator consistent 0 (max 31-32, A/A noise of the same size), motionOk; first runs void (crop), re-run 2026-10-09",
+  "simulatorG": {
+   "layouts5msPerRun": {
+    "C": [
+     169,
+     142,
+     129
+    ],
+    "V": [
+     2,
+     2,
+     4
+    ]
+   },
+   "fingerDownY1000to3400": {
+    "C": [
+     73,
+     65,
+     56
+    ],
+    "V": [
+     2,
+     2,
+     2
+    ]
+   },
+   "note": "g0.0h base, OBSERVED Simulator counts"
+  }
+ },
+ "phone": {
+  "ticket": "P-172",
+  "signedBy": "lead",
+  "profile": "tool-serious",
+  "driver": "G (g-fastshort-g0.json 38d7fe5d7fa8, approach phase)",
+  "kit": "fixes/sticky-walk/phone/sw-*.sh",
+  "reader": "fixes/sticky-walk/phone/p172-read.mjs sha256 89ad7f069998 (pre-data)",
+  "order": "WC WV S0 EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4 S1",
+  "holds": "H1-H12 VALID, no re-runs",
+  "sentinels": {
+   "S0": "PASS 53.5 fps",
+   "S1": "PASS 53.8 fps"
+  },
+  "window": "approach phase, finger-down frames at scrollY 1000-3400",
+  "runs": {
+   "EC1": {
+    "window": {
+     "gt30": 30,
+     "gt34": 18,
+     "gt38": 12,
+     "gt46": 4,
+     "gt50": 3,
+     "gt54": 1,
+     "near34": 18,
+     "near50": 3,
+     "n": 331
+    },
+    "layout5InWindow": {
+     "n": 159,
+     "ms": 2208.4
+    },
+    "whole": {
+     "gt34": 58,
+     "gt46": 13,
+     "gt50": 10,
+     "gt54": 7,
+     "n": 10929
+    },
+    "slow50InWindow": [
+     {
+      "t": 14586,
+      "dt": 61,
+      "y": 1762
+     },
+     {
+      "t": 20219,
+      "dt": 54,
+      "y": 3007
+     },
+     {
+      "t": 21766,
+      "dt": 51,
+      "y": 3041
+     }
+    ],
+    "opens": 13,
+    "closes": 12
+   },
+   "EC2": {
+    "window": {
+     "gt30": 25,
+     "gt34": 12,
+     "gt38": 9,
+     "gt46": 2,
+     "gt50": 1,
+     "gt54": 1,
+     "near34": 16,
+     "near50": 1,
+     "n": 333
+    },
+    "layout5InWindow": {
+     "n": 153,
+     "ms": 2111.5
+    },
+    "whole": {
+     "gt34": 50,
+     "gt46": 11,
+     "gt50": 5,
+     "gt54": 5,
+     "n": 10926
+    },
+    "slow50InWindow": [
+     {
+      "t": 14668,
+      "dt": 61,
+      "y": 1762
+     }
+    ],
+    "opens": 13,
+    "closes": 12
+   },
+   "EC3": {
+    "window": {
+     "gt30": 25,
+     "gt34": 12,
+     "gt38": 8,
+     "gt46": 2,
+     "gt50": 2,
+     "gt54": 1,
+     "near34": 17,
+     "near50": 1,
+     "n": 332
+    },
+    "layout5InWindow": {
+     "n": 152,
+     "ms": 2126
+    },
+    "whole": {
+     "gt34": 46,
+     "gt46": 9,
+     "gt50": 7,
+     "gt54": 3,
+     "n": 10921
+    },
+    "slow50InWindow": [
+     {
+      "t": 14036,
+      "dt": 52,
+      "y": 1522
+     },
+     {
+      "t": 14490,
+      "dt": 63,
+      "y": 1762
+     }
+    ],
+    "opens": 13,
+    "closes": 12
+   },
+   "EC4": {
+    "window": {
+     "gt30": 28,
+     "gt34": 13,
+     "gt38": 8,
+     "gt46": 3,
+     "gt50": 2,
+     "gt54": 1,
+     "near34": 20,
+     "near50": 2,
+     "n": 333
+    },
+    "layout5InWindow": {
+     "n": 155,
+     "ms": 2149.5
+    },
+    "whole": {
+     "gt34": 47,
+     "gt46": 13,
+     "gt50": 9,
+     "gt54": 6,
+     "n": 10912
+    },
+    "slow50InWindow": [
+     {
+      "t": 11484,
+      "dt": 51,
+      "y": 1026
+     },
+     {
+      "t": 21766,
+      "dt": 68,
+      "y": 3052
+     }
+    ],
+    "opens": 13,
+    "closes": 12
+   },
+   "EV1": {
+    "window": {
+     "gt30": 2,
+     "gt34": 2,
+     "gt38": 1,
+     "gt46": 1,
+     "gt50": 1,
+     "gt54": 0,
+     "near34": 1,
+     "near50": 1,
+     "n": 354
+    },
+    "layout5InWindow": {
+     "n": 1,
+     "ms": 5.3
+    },
+    "whole": {
+     "gt34": 32,
+     "gt46": 3,
+     "gt50": 1,
+     "gt54": 0,
+     "n": 10963
+    },
+    "slow50InWindow": [
+     {
+      "t": 14529,
+      "dt": 52,
+      "y": 1751
+     }
+    ],
+    "opens": 13,
+    "closes": 12
+   },
+   "EV2": {
+    "window": {
+     "gt30": 4,
+     "gt34": 3,
+     "gt38": 1,
+     "gt46": 1,
+     "gt50": 1,
+     "gt54": 0,
+     "near34": 3,
+     "near50": 1,
+     "n": 352
+    },
+    "layout5InWindow": {
+     "n": 0,
+     "ms": 0
+    },
+    "whole": {
+     "gt34": 32,
+     "gt46": 2,
+     "gt50": 1,
+     "gt54": 0,
+     "n": 10950
+    },
+    "slow50InWindow": [
+     {
+      "t": 14508,
+      "dt": 51,
+      "y": 1747
+     }
+    ],
+    "opens": 13,
+    "closes": 12
+   },
+   "EV3": {
+    "window": {
+     "gt30": 6,
+     "gt34": 5,
+     "gt38": 3,
+     "gt46": 1,
+     "gt50": 1,
+     "gt54": 0,
+     "near34": 3,
+     "near50": 1,
+     "n": 352
+    },
+    "layout5InWindow": {
+     "n": 1,
+     "ms": 5.1
+    },
+    "whole": {
+     "gt34": 31,
+     "gt46": 3,
+     "gt50": 2,
+     "gt54": 0,
+     "n": 10956
+    },
+    "slow50InWindow": [
+     {
+      "t": 14572,
+      "dt": 51,
+      "y": 1747
+     }
+    ],
+    "opens": 13,
+    "closes": 12
+   },
+   "EV4": {
+    "window": {
+     "gt30": 6,
+     "gt34": 6,
+     "gt38": 2,
+     "gt46": 1,
+     "gt50": 1,
+     "gt54": 0,
+     "near34": 4,
+     "near50": 1,
+     "n": 350
+    },
+    "layout5InWindow": {
+     "n": 1,
+     "ms": 5.2
+    },
+    "whole": {
+     "gt34": 33,
+     "gt46": 2,
+     "gt50": 2,
+     "gt54": 1,
+     "n": 10983
+    },
+    "slow50InWindow": [
+     {
+      "t": 14601,
+      "dt": 51,
+      "y": 1752
+     }
+    ],
+    "opens": 13,
+    "closes": 12
+   }
+  },
+  "verdict": {
+   "gt50": {
+    "C": [
+     3,
+     1,
+     2,
+     2
+    ],
+    "V": [
+     1,
+     1,
+     1,
+     1
+    ],
+    "sep": "overlap",
+    "twins": [
+     "lower",
+     "lower"
+    ]
+   },
+   "gt34": {
+    "C": [
+     18,
+     12,
+     12,
+     13
+    ],
+    "V": [
+     2,
+     3,
+     5,
+     6
+    ],
+    "sep": "lower",
+    "twins": [
+     "lower",
+     "lower"
+    ]
+   },
+   "whole50": {
+    "C": [
+     10,
+     5,
+     7,
+     9
+    ],
+    "V": [
+     1,
+     1,
+     2,
+     2
+    ],
+    "sep": "lower",
+    "twins": [
+     "lower",
+     "lower"
+    ]
+   },
+   "layout5": {
+    "C": [
+     159,
+     153,
+     152,
+     155
+    ],
+    "V": [
+     1,
+     0,
+     1,
+     1
+    ],
+    "medC": 154,
+    "medV": 1
+   },
+   "parity": true,
+   "verdict": "NO SEPARATION, NO-WORSE holds",
+   "prediction": "HIT"
+  },
+  "reading": [
+   "Card rule on the primary (> 50): C 3,1,2,2 vs V 1,1,1,1 touch at 1 -> NO SEPARATION; NO-WORSE holds (whole-run > 50 lower).",
+   "Threshold-sensitive: both twins separate lower (> 46 C 4,2,2,3 vs V 1,1,1,1; > 54 C 1,1,1,1 vs V 0,0,0,0).",
+   "> 34 separated lower with both twins (C 12-18 vs V 2-6); whole-run > 50 C 5-10 vs V 1-2; frames in the window C 331-333 vs V 350-354.",
+   "Prediction HIT: Layout >= 5 ms in the window C 152-159 vs V 0-1 per run (-99 %).",
+   "The one > 50 frame left in every V run is at y 1747-1752 (51-52 ms; C 61-63 ms at y 1762): the te crossing frame of P-171 (window 1650-1850), not the deck walk."
+  ]
+ }
+}
