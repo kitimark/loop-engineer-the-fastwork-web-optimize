@@ -28,8 +28,15 @@ export const install = () => `(() => {
     for (const k of ['transitionstart', 'transitionend', 'transitioncancel'])
       people.addEventListener(k, (e) => { if (L.ev.length < 5000) L.ev.push([performance.now(), k, nm(e.target), e.propertyName || '']); }, { capture: true, passive: true });
     people.addEventListener('load', (e) => { if (L.ev.length < 5000 && e.target && e.target.tagName === 'IMG') L.ev.push([performance.now(), 'imgload', nm(e.target), '']); }, { capture: true });
+    // P-174 ruling 3: at the gesture's flick mark (performance.mark 'fwg:flick'), how many deck photos are complete (active shell + the next one,
+    // and all shells): [perf, completeActiveNext, totalActiveNext, completeAll, totalAll]
+    try { new PerformanceObserver((list) => { for (const e of list.getEntries()) if ((e.name === 'fwg:flick' || e.name === 'flick') && !L.atFlick) {
+      const an = [...document.querySelectorAll('#people .start-selling-profile-shell.is-active-shell img, #people .start-selling-profile-shell.is-active-shell + .start-selling-profile-shell img')];
+      const all = [...document.querySelectorAll('#people .start-selling-profile-shell img')];
+      L.atFlick = [performance.now(), an.filter((i) => i.complete && i.naturalWidth > 0).length, an.length, all.filter((i) => i.complete && i.naturalWidth > 0).length, all.length];
+    } }).observe({ type: 'mark' }); } catch (err) { L.atFlick = ['no PerformanceObserver']; }
   }
   return people ? 1 : 2;
 })()`;
 export const read = () => `JSON.stringify((() => { const L = window.__pbl || {}; const y = scrollY, box = (q) => { const e = document.querySelector(q); if (!e) return null; const r = e.getBoundingClientRect(); return [Math.round(r.top + y), Math.round(r.height)]; };
-  return { f: L.f || [], m: L.m || [], ev: L.ev || [], geom: { y, vh: innerHeight, vw: innerWidth, people: box('#people'), card: box('.start-selling-future-card'), deck: box('.start-selling-profile-deck') } }; })())`;
+  return { f: L.f || [], m: L.m || [], ev: L.ev || [], atFlick: L.atFlick || null, geom: { y, vh: innerHeight, vw: innerWidth, people: box('#people'), card: box('.start-selling-future-card'), deck: box('.start-selling-profile-deck') } }; })())`;

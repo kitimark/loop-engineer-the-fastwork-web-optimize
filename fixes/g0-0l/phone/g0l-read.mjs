@@ -68,7 +68,8 @@ export function deck(seg, inj, markFlick, markEnd) {
   const reveal = (inj.m || []).filter(([t, , a, v]) => t >= tF - 50 && t <= tE && a === 'data-fw-reveal' && v === 'instant').length;
   return { deckIn: deckIn == null ? null : r1(deckIn - tF), flip: flip == null ? null : r1(flip - tF), blurredFrames: blurred, fadeInViewMs: fadeInView,
     imgsBefore: imgs.filter(([t]) => t < tF).length, imgsAfterDeckIn: deckIn == null ? null : imgs.filter(([t]) => t >= deckIn && t <= tE).length, revealInstant: reveal,
-    filterTransition: fStart != null || fEnd != null, opacityTransition: oStart != null || oEnd != null };
+    filterTransition: fStart != null || fEnd != null, opacityTransition: oStart != null || oEnd != null,
+    atFlick: inj.atFlick ?? null }; // P-174 ruling: [perf, complete active+next, total active+next, complete all, total all]
 }
 
 const injOf = (g, si = 0) => { const v = g?.run?.inject?.find((x) => x.seg === si)?.value; return typeof v === 'string' ? JSON.parse(v) : v ?? null; };
@@ -108,10 +109,10 @@ function readBlock(dir) {
 }
 
 function print(out) {
-  console.log('item arm valid | FLICK frames >50 (46/54) >34 (30/38) max yLand | APPROACH frames >50 (46/54) >34 (30/38) max X(y,dt) | deck: in flip blurred fadeInViewMs imgsBefore imgsAfterIn instant');
+  console.log('item arm valid | FLICK frames >50 (46/54) >34 (30/38) max yLand | APPROACH frames >50 (46/54) >34 (30/38) max X(y,dt) | deck: in flip blurred fadeInViewMs imgsBefore imgsAfterIn instant atFlick(cAN/AN/cAll/all)');
   for (const [n, r] of Object.entries(out.items)) {
     const w = (x) => (x && !x.err ? `${x.frames} ${x.c[50]} (${x.c[46]}/${x.c[54]}) ${x.c[34]} (${x.c[30]}/${x.c[38]}) ${x.max}` : x?.err || '-');
-    const d = r.deck && !r.deck.err ? `${r.deck.deckIn} ${r.deck.flip} ${r.deck.blurredFrames} ${r.deck.fadeInViewMs} ${r.deck.imgsBefore} ${r.deck.imgsAfterDeckIn} ${r.deck.revealInstant}` : r.deck?.err || '-';
+    const d = r.deck && !r.deck.err ? `${r.deck.deckIn} ${r.deck.flip} ${r.deck.blurredFrames} ${r.deck.fadeInViewMs} ${r.deck.imgsBefore} ${r.deck.imgsAfterDeckIn} ${r.deck.revealInstant} ${r.deck.atFlick ? r.deck.atFlick.slice(1).join('/') : '-'}` : r.deck?.err || '-';
     console.log(`${n} ${r.arm} ${r.valid ? 'ok' : 'INVALID ' + r.why.join('; ')} | ${w(r.flick)} ${r.yLand} | ${w(r.approach)} ${r.x ? `${r.x.y},${r.x.dt}` : '-'} | ${d}`);
   }
   for (const w of ['flick', 'approach']) {

@@ -4,8 +4,8 @@
 > Fastwork). `patch.diff` and `delta.diff` contain excerpts of Fastwork's code: keep them on local branches, never push.
 
 **Status:** g0.0l rev 2 is built and gated (counts and pixels; snapshot b1789284481295-a455e793). Every rest-pixel stop is
-inside T2 in Chrome (mobile, Reduce Motion, desktop) and in the Simulator. The phone card below is a DRAFT for the lead's
-signature; there is no phone data yet.
+inside T2 in Chrome (mobile, Reduce Motion, desktop) and in the Simulator. Phone check P-174 was signed by the lead
+2026-10-09 ~09:5xZ; the block is running (no result yet).
 **Stage:** F (build + gates) for PR-041, which the user accepted 2026-10-09 07:23:45Z (option instant).
 **Device class / gate:** phone render-bound (people section reveal); touch-only (G) for the phone check. The landing
 rule is less-work: counts and pixels, plus a short phone no-worse check.
@@ -130,12 +130,36 @@ over. Gate 4 re-checks the preload on rev 2.
   decode() diff that led to rev 2.
 - Simulator, round 1: the avatar-row artifact. Round 2: inside T2.
 
-## Phone check card (DRAFT, for the lead's signature)
+## Phone check card: P-174 (signed by the lead 2026-10-09 ~09:5xZ)
 
-The card is drafted before any phone data. The kit is frozen at the hashes below (rev 2 pins).
+Signed as drafted in a3d6ea64, before any P-174 data, with these rulings:
+1. **D1 as drafted:** both windows need d <= +2, and the twins must agree, else OPEN. An OPEN runs no second block
+   without the lead's say.
+2. **A misfire stops the block:** if V shows blurred frames on a flick that set the instant attribute, the runner stops
+   and tells the lead before any landing. The other secondary FLICK reads (fade in view, photo loads) stay
+   descriptive.
+3. **PX_T0=12000 is accepted as a gate-only fix:** every Chrome load freezes at the same page time; see Gates 2. The
+   desktop y 3000 stop (0.136 %, max 37, inside T2) stays disclosed.
+4. **Deck photos complete at each flick mark:** every FLICK run records them. `pb-lite.mjs` gains a PerformanceObserver
+   on the gesture's `fwg:flick` mark, recording [page ms, complete active + next shell, total active + next, complete
+   all shells, total all]. The reader prints it as `atFlick`.
+   - Checked on the Simulator before any phone data (`phone/g0l-simdry.sh`, 09:4xZ): C 7 / 26, V 26 / 26.
+   - The first try matched the bare name `flick` and recorded nothing; the gesture runner prefixes its marks `fwg:`
+     (tools/lib/gesture-rec.mjs `markJs`).
+   - This is the only kit change after the signature, in the same commit as this paragraph: pb-lite.mjs and
+     g0l-read.mjs get new hashes (table below).
+5. **P-173's safety rules:**
+   - cool below 40.0 C before every hold;
+   - stop at an end battery >= 43.0 C, or Critical;
+   - `iphone.mjs wda check` first;
+   - a link or WDA failure is repaired inside the hold (wda stop / start), never posted as a user step.
+   The block runs with CM_TICKET=P-174 under `lock.mjs run iphone --owner fix-scrollcb-g0 --block P-174
+   --max-seconds 3600`.
+
+The card below is unchanged from a3d6ea64 apart from the ticket id. The kit is frozen at the hashes in the table.
 
 ```
-TICKET <P-id from the lead> · V = g0.0l rev 2: JS 4106679e0a8a / CSS 440582cec781 (out/g0-0l/snap/V)
+TICKET P-174 · V = g0.0l rev 2: JS 4106679e0a8a / CSS 440582cec781 (out/g0-0l/snap/V)
        control C = g0.0k (best on main): JS e0b7b1e7e158 / CSS a9d4fa8992d9 (out/g0-0l/snap/C), same base
        HASHES out/g0-0l/snap/HASHES.txt (fa8ce0315555), checked by the kit before every hold; B = the plain baseline
        (the thermal gate's timer page)
@@ -191,7 +215,7 @@ expected minutes: ~60 (12 holds: cooling, ~2-3 min of gates, ~1.5 min of runs; P
 ```
 
 ```
-PREDICTION <P-id> · fix-scrollcb-g0 · 2026-10-09
+PREDICTION P-174 · fix-scrollcb-g0 · 2026-10-09
 1 g0.0l rev 2 (4106679e0a8a / 440582cec781) vs g0.0k (e0b7b1e7e158 / a9d4fa8992d9) · driver G · FLICK and APPROACH > 50
   (twins)
 2 baseline: no G phone run of g0.0k's flick; the cause read's phone runs (pb-land, profile fair, 2026-10-09 06:42Z) on
@@ -214,7 +238,7 @@ PREDICTION <P-id> · fix-scrollcb-g0 · 2026-10-09
 7 decision: as in the ticket
 ```
 
-Kit (sha256, 12), frozen 2026-10-09 09:3xZ for the signature:
+Kit (sha256, 12), frozen for P-174 (ruling 4's two files re-hashed in the signature commit):
 
 | file | sha256 |
 |---|---|
@@ -226,8 +250,8 @@ Kit (sha256, 12), frozen 2026-10-09 09:3xZ for the signature:
 | `phone/g0l-serve.sh` (snapshot pin fa8ce0315555) | 4cdb9c02cac7 |
 | `phone/g0l-k.env` (no K arm) | 2ff0e9ffb678 |
 | `phone/g0l-gates.mjs` / `phone/g0l-read-gates.mjs` (P-129 gates, G6 = the two programs) | 65b5f907c5da / 62c75b64e82f |
-| `phone/g0l-read.mjs` (card reader; selftest ok) | 05ef38c35e57 |
-| `phone/pb-lite.mjs` (FLICK page log) | 7b1692d4e515 |
+| `phone/g0l-read.mjs` (card reader; selftest ok; + atFlick, ruling 4) | 4b6a107914ee |
+| `phone/pb-lite.mjs` (FLICK page log; + photos complete at the flick mark, ruling 4) | 0d2f661fbe6f |
 
 The block and run scripts are text-substitution copies of fix-cm-return's P-173 kit (`fixes/g0-0k/phone/g0k-*.sh`, its
 lineage credited in their headers). The hold script is P-173's, rewritten for two programs per item. The gates are
