@@ -1,8 +1,7 @@
 # Best builds, newest first
 
 The one list of best-build versions (user T-228 #3, 2026-10-07). The lead updates it at every build change: a new
-candidate, a landing, a version replaced or dropped. Times are UTC unless marked +0700. `fixes/PROGRESS.json`'s
-`best` flag is stale from v9 on (it still marks v8); read the current best from this file.
+candidate, a landing, a version replaced or dropped. Times are UTC unless marked +0700. `fixes/PROGRESS.json` (the console's Best build page) follows this file again since 2026-10-09 (g0.0j).
 
 **Current best on main: g0.0j = g0.0i + the people-deck card fix** (JS 9162843e750f / CSS bee7fce9ad56), best since 2026-10-09 00:5xZ: Simulator counts plus the iPhone no-worse check P-172 (less-work rule, lead ruling). On phones and touch screens, the six profile cards in the "people" swipe deck get their height from a container-width formula instead of `aspect-ratio`, so the whole-view layout that every finger move triggers no longer re-lays them out; the look is the same (T2). Rebuild it from main with `node tools/fix.mjs apply g0-0j --reset` (`fixes/g0-0j/patch.diff`, baseline-relative).
 
