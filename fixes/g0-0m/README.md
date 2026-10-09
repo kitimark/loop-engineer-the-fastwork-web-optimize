@@ -18,6 +18,17 @@ primary (R7) and D1 no-worse.
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` (one block appended) and `/_app/immutable/nodes/2.DyWL8TcE.js`
 (the a11y mirror of the hidden state, next to g0.0l's reveal gate `fwRevealGate`).
 
+## In plain words
+
+- **What it tries:** on phones, the people card ("people" section) is drawn while it is still invisible, so the moment it
+  appears needs less drawing work. The look and the behaviour stay the same.
+- **What it costs:**
+  - about +22 MB of graphics memory from page load until the people card shows (and again after scrolling back above it);
+  - find-in-page (Safari's "Find on Page") can match the hidden card's text before the card shows;
+  - one extra repaint of a people-card photo deck in 1 of 3 test loads while the page sits at the top; whether that
+    warms the phone is untested.
+- **Whether it helps** is decided by the phone check below (P-175).
+
 ## What g0.0m is
 
 - **g0.0l** (the best build on main, 0edb02be; `fixes/g0-0l`)
@@ -102,6 +113,8 @@ differ beyond A/A at the same pixels; Chrome with `PX_T0=12000`, Simulator `PX_T
   not match and `fwAx` returns at once), the same-build A/A at these stops is 0.7-1.0 %, and rev 2 desktop (JS
   byte-identical to g0.0l) showed the same region (0u 0.12 % max 212). So these are freeze-phase artifacts of the gate,
   not a look change.
+- **Desktop same-build A/A (A vs A2, both g0.0l), lead's check:** max level 212 at y 0 (over8 1.01 %) and 212 at 0u
+  (0.71 %): the A/A max reaches the A~V max, so the desktop hero diff is within noise.
 - **Simulator** (`out/g0-0m/px-sim-rev3`, stops 0 / 548 / 1300 / 548u / 0u, one session, 14:37-14:40Z): inside T2 at
   every stop. y 0 is the status bar: the clock reads 21:38 on A and V, 21:40 on V2, and load A's bar still carries the
   magenta calibration tint (F-367), which also inflates the A/A count (over8 ~5 % at every stop). y 1300 (shown card)
@@ -190,7 +203,7 @@ KNOWN COST: the paint is moved into the 1-3 frames before the flip (Simulator: 0
 phone path: this is all the iPhone path (touch); desktop and mice run g0.0l
 ```
 
-## Phone check card (draft for the lead's signature; no data before it)
+## Phone check card P-175 (signed by the lead 2026-10-09 14:4xZ, terms as written; prediction frozen)
 
 D was signed by the lead 2026-10-09 with these rulings:
 - **Not a less-work fix.** g0.0m moves paint earlier, adds layer memory at the top and adds idle paints, so the card
@@ -201,7 +214,7 @@ D was signed by the lead 2026-10-09 with these rulings:
   the mechanism is there with the same logic, so the mechanism is CONFIRMED for the device (`fixes/reveal-paint` "I").
 
 ```
-TICKET P-<nnn> · V = g0.0m rev 3: JS 37af49aef32b / CSS 7a8ecdd8f8e4 (out/g0-0m/snap/V)
+TICKET P-175 · V = g0.0m rev 3: JS 37af49aef32b / CSS 7a8ecdd8f8e4 (out/g0-0m/snap/V)
        control C = g0.0l (best on main, 0edb02be): JS 4106679e0a8a / CSS 440582cec781 (out/g0-0m/snap/C), same base
        HASHES out/g0-0m/snap/HASHES.txt (e7947589f4c9), checked by the kit before every hold; B = the plain baseline
 driver G (WDA gesture), P-174's two programs, byte-identical (compiled 22b636f36a82 / 65f6de58009c):
@@ -247,7 +260,7 @@ expected minutes: ~60
 ```
 
 ```
-PREDICTION P-<nnn> · fix-reveal-paint · 2026-10-09
+PREDICTION P-175 · fix-reveal-paint · 2026-10-09
 1 g0.0m rev 3 vs g0.0l (hashes above) · driver G · R7 (FLICK primary, APPROACH secondary), D1 > 50 (twins)
 2 baseline: P-174 (same driver and programs, tool-serious, 2026-10-09 09:56-10:31Z), g0.0l = its V:
   FLICK R7 44 / 48 / 49 / 51 (median 48.5), APPROACH R7 60 / 49 / 54 / 57 (median 55.5); reveal frame Paint 9.5 /
