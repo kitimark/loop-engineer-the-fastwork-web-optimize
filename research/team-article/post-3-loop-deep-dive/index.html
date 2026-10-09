@@ -313,7 +313,7 @@ figcaption b { color: var(--ink); }
     <li><b>41</b> proposals</li>
     <li><b>138</b> user steps</li>
     <li><b>265</b> threads</li>
-    <li><b>~1,640</b> tool tests</li>
+    <li><b>~2,000</b> tool tests</li>
     <li><b>36</b> memory notes</li>
   </ul>
 </header>
@@ -712,7 +712,7 @@ node tools/incident.mjs wait I-004 --timeout 3600   <span class="c"># in the bac
         <tr><td>fg-guard</td><td>Long commands in the foreground: the full test suite, lock holds, waits, A/Bs, phone runs</td><td>An agent reads messages only between tool calls; a 5-minute foreground command makes it deaf (I-170). No opt-out</td></tr>
         <tr><td>scope guard</td><td><code>npm run test:unit</code> fails, naming the files, when a non-tooling branch touched <code>tools/</code>, <code>tests/</code>, hooks or the snapshot</td><td>Only toolsmiths change tooling, in separate commits (I-021)</td></tr>
         <tr><td>baseline pin</td><td>Tools refuse, exit 3, when the frozen copy of the page differs from the snapshot id pinned in <code>baseline.json</code>; A/B verdicts get a <code>BASELINE-MODIFIED:</code> prefix if it changed mid-run</td><td>Every result names the exact build it measured; a re-mirror shows up as a git diff, never silently</td></tr>
-        <tr><td>tests</td><td>About 1,640 tests on a tiny fixture baseline, no Chrome, network or phone; the pre-commit hook runs them whenever tooling is staged</td><td>Agents may fix tools, but only with a covering test, and never by weakening one</td></tr>
+        <tr><td>tests</td><td>About 2,000 tests on a tiny fixture baseline, no Chrome, network or phone; the pre-commit hook runs them whenever tooling is staged</td><td>Agents may fix tools, but only with a covering test, and never by weakening one</td></tr>
       </tbody>
     </table>
   </div>
