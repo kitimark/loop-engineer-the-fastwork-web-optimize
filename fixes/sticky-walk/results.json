@@ -39,7 +39,7 @@
     "aaMax": "187-220",
     "cause": "animation 4s linear infinite vinyl-spin (CSS 3850-3852)"
    },
-   "reading": "T2 by the lead rule; the lead rules"
+   "reading": "T2 (lead ruling on P-172)"
   },
   "avatar": "PASS Chrome 0 px, Simulator consistent 0 (max 31-32, A/A noise of the same size), motionOk; first runs void (crop), re-run 2026-10-09",
   "simulatorG": {
@@ -455,5 +455,12 @@
    "Prediction HIT: Layout >= 5 ms in the window C 152-159 vs V 0-1 per run (-99 %).",
    "The one > 50 frame left in every V run is at y 1747-1752 (51-52 ms; C 61-63 ms at y 1762): the te crossing frame of P-171 (window 1650-1850), not the deck walk."
   ]
+ },
+ "leadRulings": {
+  "date": "2026-10-09",
+  "verdict": "by the card: primary >50 at y 1000-3400 NO SEPARATION at n=4 (ranges touch at 1), threshold-sensitive (both twins lower); descriptive: >34 separated, Layout>=5 ms 152-159 -> 0-1 (prediction HIT), whole-run >50 no worse",
+  "landing": "less-work rule (cost counts + phone no-worse, both met); no gain claim on >50: fewer slow frames over 34 ms, the >50 count unproven at n=4",
+  "look": "T2: only the spinning vinyl label exceeds the limits, and the A/A pairs differ there as much (A~A2 187-200, V~V2 4-220)",
+  "build": "g0.0j = g0.0i + fixcq (fixes/g0-0j/, JS 9162843e750f / CSS bee7fce9ad56)"
  }
 }

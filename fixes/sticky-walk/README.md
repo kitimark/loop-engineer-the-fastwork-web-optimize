@@ -3,7 +3,7 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
 
-**Status:** P-172 phone block done (lead-signed, tool-serious, all holds VALID): finger-down > 50 at y 1000-3400 C 3,1,2,2 vs V 1,1,1,1, NO SEPARATION by the card rule but threshold-sensitive (both twins separate lower); > 34 separated (C 12-18, V 2-6); Layout >= 5 ms 152-159 -> 0-1 (prediction HIT). Waiting for the lead: landing rule and the deck look ruling (split reads T2).
+**Status:** ready to land as **g0.0j** (`fixes/g0-0j/`), lead ruling on P-172: lands on the less-work rule (cost counts plus a phone no-worse check, both met); deck look T2. P-172 by the card: > 50 at y 1000-3400 NO SEPARATION at n = 4, threshold-sensitive; > 34 separated (12-18 vs 2-6); Layout >= 5 ms 152-159 -> 0-1 (prediction HIT). Fewer slow frames over 34 ms; the > 50 count is unproven at n = 4.
 **Stage:** D NAMED (lead, fast path, 2026-10-09 ~21:2xZ, after the drag check). F: build `fixcq`, restacked on g0.0i; gates in "F: build fixcq".
 **Open item (own, outside the deck):** the y 0-600 static-nudge residual (~19 ms per nudge, `sw-map.mjs`, every knock-out arm). In G drags with the served fixcq CSS it is gone (0 big layouts at y < 1000); it appears only when the fixcq rules are injected after load (see "F: build fixcq", gate 5).
 **Device class / gate:** touch-only (G) for the gain; Simulator counts for attribution
@@ -171,7 +171,7 @@ Gate 5 (data `out/sticky-walk/drag-f.json`; interleaved C:1 V:1 C:2 V:2 C:3 V:3,
     and the A/A pairs differ there too: A~A2 up to 187-200 and V~V2 up to 4-220 in the same box. These are rotation phases,
     not the build.
   - b0 without the vinyl card (css y < 685): 0 or 788 css px² at max level 63. Within T2.
-  - Reading by the lead's rule: T2, with the vinyl step excluded as A/A noise (numbers above). The lead's ruling decides.
+  - **Lead ruling (P-172): T2.** The only step over the limits is the spinning vinyl label, and the A/A pairs differ there as much (A~A2 187-200, V~V2 4-220 in the same box).
 
 **Restack on g0.0i (lead 2026-10-09).** `fix.mjs apply sticky-walk --from g0-0i --reset`, then `delta.diff` applied (the
 edits do not overlap: g0.0i adds rules at the end of the CSS). Simulator pixel spot check, g0.0i vs g0.0i + fixcq
@@ -257,8 +257,15 @@ PREDICTION P-<id> · fix-scrollcb-g0 · 2026-10-09
 - **What is left:** the one > 50 frame in every V run sits at y 1747-1752 (51-52 ms). In C the same frame is 61-63 ms at y 1762.
   It is the te crossing frame that P-171 / cm-return targets (window 1650-1850), not the deck walk. fixcq shortens it by
   about 10 ms but does not remove it.
-- Next: the lead picks the landing rule (the less-work rule on the Simulator cost card plus this no-worse check, or GAIN on
-  > 34 and the twins) and rules on the deck look (the split reads T2).
+- **Lead rulings on P-172 (2026-10-09):**
+  - Verdict by the card: the primary (> 50 at y 1000-3400) is NO SEPARATION at n = 4 (the ranges touch at 1), and
+    threshold-sensitive (both twins separate lower). Descriptive: > 34 separated; Layout >= 5 ms 152-159 → 0-1 (prediction
+    HIT); whole-run > 50 no worse.
+  - It **lands on the less-work rule**: the cost counts and the phone no-worse check are both met. No gain is claimed on
+    > 50. In plain words: fewer slow frames over 34 ms; the > 50 count is unproven at n = 4.
+  - Deck look: **T2** (see "Fill / edge split").
+  - The build is **g0.0j** = g0.0i + fixcq (`fixes/g0-0j/`).
+  - F-368 (the te frame remains) is fix-g0-box's P-171 question.
 
 ## Probes
 
