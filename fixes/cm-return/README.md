@@ -161,10 +161,14 @@ with the animation log above: 0 replays.
 - #27: the glass keeps 20 px instead of v14's 20 x (1 - m); in the Simulator the frames at equal m match v14's (gate 4).
 - Simulator only: the #platform section's text and images (above the end) sit a fraction of a device pixel differently
   from g0.0h at two of seven stops (gate 6), presumably from B's taller page.
-- B has v14's always-on, non-passive window wheel listener, added at setup and kept until teardown (JS 15082,
-  15012-15021); g0.0h adds it only when #platform reaches the 200 % zone. In WebKit the first add triggers a full style
-  rebuild (F-360, fix-g0-box): in B it falls in the mount frame (fix-g0-box's Simulator numbers, OBSERVED, n=3, for a
-  build that registers it at mount: mount frame 649.9 vs 639.7 ms, L+S 123.4 vs 114.4 ms).
+- Wheel listener (corrected 2026-10-09, after fix-g0-box's code read): B's end jack N() (JS 15012-15021, called once
+  at setup) returns early while `__msOn` is true, i.e. on touch phones (hover none, coarse pointer, short screen side
+  <= 600 px, motion not reduced; JS 14454-14457). So **on phones B adds no window wheel listener and no non-passive
+  touch jack at all**, at mount or later; only morph-scroll's passive touch set. Where `__msOn` is false (desktop,
+  reduced motion, screens wider than 600 px) B adds v14's non-passive window wheel listener once at setup and keeps
+  it until teardown; g0.0h adds it only when #platform reaches the 200 % zone. In WebKit the first add triggers a full
+  style rebuild (F-360), which there falls in the mount frame. PR-040's risk text named this cost without the
+  phone exception.
 
 ## Not run
 

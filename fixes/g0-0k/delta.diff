@@ -1,0 +1,1639 @@
+# g0.0k delta vs g0.0j (JS 9162843e750f / CSS bee7fce9ad56) -> g0.0k (JS e0b7b1e7e158 / CSS a9d4fa8992d9): PR-040 (cm-return): v14's end of page (CM, K6, menu follows the finger) with the constant 20 px glass, the K6 return fix, the Join sweep fix, g0.0i's clock layer re-keyed by one html.fw-bx line
+# contains excerpts of Fastwork's code: local branches only, never push
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11870,6 +11870,7 @@
+   opacity: 1;
+   filter: blur(calc(var(--earn-out) * 10px));
+   pointer-events: none;
++  /* joinwl-nolift (user T-204 #10/#13): no 8px rise at the end of the page (was translateY(earn-out * -8px)) */
+   transition: opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s;
+   position: relative;
+   overflow: hidden;
+@@ -11896,11 +11897,13 @@
+   border-radius: 999px;
+   display: inline-flex;
+ }
+-.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm),
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+   opacity: 0;
+   translate: 50% 0;
+ }
+-.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
++.start-selling-top-nav.is-hero-pill.svelte-1dcozpm .start-selling-top-nav-earn-box:where(.svelte-1dcozpm),
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
+   clip-path: inset(0 50% round 999px);
+ }
+ .start-selling-top-nav-actions.svelte-1dcozpm > .start-selling-language-switch-wrap {
+@@ -11911,52 +11914,27 @@
+   > .start-selling-language-switch-wrap {
+   translate: calc(var(--earn-w, 0px) + 8px) 0;
+ }
++/* at the end of the page the original closed the gap with --morph (no timer) and the width on its timer */
++.start-selling-top-nav.is-earn-hidden.svelte-1dcozpm:not(.is-hero-pill)
++  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++  > .start-selling-language-switch-wrap {
++  translate: var(--earn-w, 0px) 0;
++}
++.start-selling-top-nav.is-morphing.svelte-1dcozpm
++  .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++  > .start-selling-language-switch-wrap {
++  transform: translateX(calc(clamp(0, calc(var(--morph) / 0.2), 1) * 8px));
++}
+ @media (width<=640px) {
+   .start-selling-top-nav.is-hero-pill.svelte-1dcozpm
+     .start-selling-top-nav-actions:where(.svelte-1dcozpm)
+     > .start-selling-language-switch-wrap {
+     translate: calc(var(--earn-w, 0px) + 4px) 0;
+   }
+-}
+-/* g0.0 (gpu-original, user T-228 #60/#62; the lead's option (b)): away from the hero pill (the top's PR-021 states
+-   above stay), the Join button and the gap before it are the original's again, drawn from --morph on PR-021's
+-   structure: the gap closes with the morph (8px -> 0 over m 0..0.2, no transition while .is-morphing, as the
+-   original's), the button's max-width and the pill box's padding shrink on the original's restarted 0.68 s
+-   transitions, the opacity on its 0.32 s after 0.12 s, and the blur (base rule) follows --earn-out directly (g0.0b: no
+-   8px rise, PR-027 nolift). The button's width is min(box, max-width) as the original's was min(label + padding, max-width); the
+-   label stays centred and the box's dark pill is cut by the button's rounded overflow clip. At m 0 every value is the
+-   rule's above (8px, 11rem, 24px, opacity 1), so the top of the page is unchanged. */
+-.start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
+-  gap: calc((1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 8px);
+-}
+-.start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+-  max-width: calc((1 - var(--earn-out)) * 11rem);
+-  opacity: calc(1 - var(--earn-out));
+-  /* g0.0b (PR-034 rev 2; the user's accepted PR-027 rev 5 "nolift", T-204 #10/#13): no 8px rise at the end of the
+-     page (the original's translateY(earn-out * -8px) is left out); the blur (base rule) and the fade stay */
+-  transition:
+-    max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
+-    opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s;
+-}
+-.start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
+-  padding-inline: calc((1 - var(--earn-out)) * 24px);
+-  transition: padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
+-}
+-@media (width<=640px) {
+-  .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
+-    gap: calc((1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 4px);
+-  }
+-  .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+-    max-width: calc((1 - var(--earn-out)) * 9.5rem);
+-  }
+-  .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
+-    padding-inline: calc((1 - var(--earn-out)) * 16px);
+-  }
+-}
+-@media (prefers-reduced-motion: reduce) {
+-  .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm),
+-  .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
+-    transition: none;
++  .start-selling-top-nav.is-morphing.svelte-1dcozpm
++    .start-selling-top-nav-actions:where(.svelte-1dcozpm)
++    > .start-selling-language-switch-wrap {
++    transform: translateX(calc(clamp(0, calc(var(--morph) / 0.2), 1) * 4px));
+   }
+ }
+ .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill, .is-morphing)
+@@ -12041,8 +12019,6 @@
+     transform-origin: 0;
+     scale: 0.75;
+   }
+-  /* logo-close (T-245; nav-earn rev 1's rule, which g0.0 reverted with the end CSS): the origin follows the morph, 0 at
+-     m 0 as at rest, 50% at m 1 as before, so the scaled logo no longer snaps ~15 px when .is-morphing comes and goes */
+   .start-selling-top-nav.is-morphing.svelte-1dcozpm .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
+     transform-origin: calc(50% * var(--morph));
+   }
+@@ -12334,117 +12310,299 @@
+   .start-selling-profile-shell:not(.is-active-shell):not(.is-active-shell + .start-selling-profile-shell):not(:has(+ .is-active-shell)) {
+   animation: fw-c-shell-hold 0.95s linear;
+ }
+-/* g0-box v3 (gpu-original M3-B, option 3; phones <= 640 px). The nav keeps v0's box per frame (top, width, height,
+-   backdrop blur) and its menu card is untouched, but the nav paints nothing itself: its colour is two composited solid
+-   fills (light #ffffff1a, dark #131922 at opacity --morph: source-over of the two is v0's premultiplied color-mix
+-   exactly), its rounded corner is clip-path inset(0 round r) (a shape mask on the composited layer: a radius change
+-   repaints nothing). v3-W: WebKit only, under html.fw-bx (set by the JS when `GestureEvent` in window); elsewhere
+-   the nav stays v0's. */
+-.fw-bx-fill {
++/* perf(morph-scroll, PROPOSAL): touch phones only (html.fw-ms, set by the morph effect). One extra screen of scroll
++   after #platform (.fw-ms-end); #platform sticks with its bottom on the viewport bottom through it (top = viewport
++   height minus its own height, --fw-ms-h from a ResizeObserver), so the page under the morph holds still exactly as
++   under the old scrollTo pin while the morph follows the scroll. Rev 4: no scroll snap (it made iOS decelerate the
++   whole page fast); a script settles a part-open morph to an end once the scroll rests. */
++html.fw-ms .start-selling-platform {
++  position: sticky;
++  top: calc(100dvh - var(--fw-ms-h, 100dvh));
++}
++.fw-ms-end {
++  position: relative;
++  height: 100lvh;
++  pointer-events: none;
++}
++
++/* perf(compositor-morph, PROPOSAL; arch-compositor-morph). Touch phones in 7c mode with scroll-driven animations
++   (html.fw-cm, set by the nav effect), width <= 640 px, while the nav morphs (.is-morphing): the nav takes its final
++   size and place and draws nothing itself; four nested corner clippers (.fw-cm-c, each with a counter-transformed
++   child .fw-cm-u) cut today's box out of it, and every moving part follows the scroll through generated scroll-driven
++   @keyframes (style#fw-cm-kf, transform / translate / opacity / filter / backdrop-filter only) on the view timeline
++   --fwms of the extra screen. Outside that, the wrappers are display: contents and the nav is today's. */
++.fw-cm-c,
++.fw-cm-u {
++  display: contents;
++}
++.fw-cm-dk,
++.fw-cm-ms {
+   display: none;
+ }
++html.fw-cm {
++  timeline-scope: --fwms;
++}
++html.fw-cm .fw-ms-end {
++  view-timeline: --fwms block;
++}
++/* the frame .is-morphing drops (JS __cmSet adds html.fw-cm-out for two frames): today's :not(.is-morphing) list
++   without its width and background transitions, which would animate the jump from the CM size back to the box */
++html.fw-cm.fw-cm-out .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) {
++  transition:
++    opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
++    transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
++    visibility 0s linear 0.32s;
++}
+ @media (width<=640px) {
+-  html.fw-bx .start-selling-top-nav.svelte-1dcozpm {
+-    background: none;
+-    border-radius: 0;
+-    clip-path: inset(0 round calc(32px - 12px * var(--morph)));
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm > .fw-cm-ms {
++    display: block;
++    position: absolute;
++    left: 0;
++    top: 0;
++    width: var(--panel-w);
++    height: var(--panel-h);
++    visibility: hidden;
++    pointer-events: none;
+   }
+-  html.fw-bx .start-selling-top-nav.is-locale-open.svelte-1dcozpm {
+-    clip-path: none;
+-    border-radius: calc(32px - 12px * var(--morph));
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing {
++    top: 12px;
++    width: var(--panel-w);
++    height: var(--panel-h);
++    border-radius: 0;
++    background: none;
++    -webkit-backdrop-filter: none;
++    backdrop-filter: none;
++    overflow: visible;
++    pointer-events: none;
++    will-change: auto;
++    transition: none;
+   }
+-  html.fw-bx .start-selling-top-nav > .fw-bx-fill {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .fw-cm-c {
+     display: block;
+     position: absolute;
+-    inset: 0;
+-    z-index: 0;
++    width: 2000px;
++    height: 2000px;
++    overflow: hidden;
++    border-radius: 32px;
+     pointer-events: none;
+-    will-change: transform;
+   }
+-  html.fw-bx .start-selling-top-nav.is-locale-open > .fw-bx-fill {
+-    border-radius: inherit;
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .fw-cm-u {
++    display: block;
++    position: absolute;
++    width: var(--panel-w);
++    height: var(--panel-h);
++    pointer-events: none;
+   }
+-  html.fw-bx .start-selling-top-nav > .fw-bx-light {
++  /* u3 carries today's light glass (background + backdrop blur, the backdrop root of the nested language-switch blur,
++     P8); the dark colour is .fw-cm-dk at opacity m over it (= today's color-mix, F-039) */
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing [data-fw-cm="u3"] {
++    pointer-events: auto;
+     background: #ffffff1a;
++    -webkit-backdrop-filter: blur(20px);
++    backdrop-filter: blur(20px);
+   }
+-  html.fw-bx .start-selling-top-nav > .fw-bx-dark {
+-    --morph: inherit;
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c0"], [data-fw-cm="u0"]) {
++    left: 0;
++    top: 0;
++    transform-origin: 0 0;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c1"], [data-fw-cm="u1"]) {
++    right: 0;
++    top: 0;
++    transform-origin: 100% 0;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c2"], [data-fw-cm="u2"]) {
++    left: 0;
++    bottom: 0;
++    transform-origin: 0 100%;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing :is([data-fw-cm="c3"], [data-fw-cm="u3"]) {
++    right: 0;
++    bottom: 0;
++    transform-origin: 100% 100%;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .fw-cm-dk {
++    display: block;
++    position: absolute;
++    inset: 0;
+     background: #131922;
+-    opacity: var(--morph);
+-    will-change: opacity;
++    opacity: 0;
+   }
+-  /* v0's nav background transitions whenever --morph changes outside .is-morphing (0.7 s; 0.7 s for the ready hero
+-     pill at 601-640 px; reduced motion: see below): the dark fill's opacity takes the same transition, same duration,
+-     easing and conditions. */
+-  html.fw-bx .start-selling-top-nav.svelte-1dcozpm:not(.is-morphing) > .fw-bx-dark {
+-    transition: opacity 0.7s cubic-bezier(0.33, 0, 0.2, 1);
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-top-nav-logo:where(.svelte-1dcozpm) {
++    left: 0;
++    transform-origin: 0 50%;
+   }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-morph-panel,
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-morph-backdrop,
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-morph-veil {
++    transform-origin: 0 0;
++  }
+ }
+-/* Reduced motion: the nav opens and closes without a tween (nothing to save per frame), so v3-W steps aside and the
+-   nav is v0's exactly: its own color-mix background (with v0's 0.32 s fade), border-radius, no clip-path, no fills. */
+-@media (width<=640px) and (prefers-reduced-motion: reduce) {
+-  html.fw-bx .start-selling-top-nav.svelte-1dcozpm {
+-    background: color-mix(in srgb, #ffffff1a calc((1 - var(--morph)) * 100%), #131922 calc(var(--morph) * 100%));
++
++/* perf(morph-gpu, N2 reveal; PR-012 rev 1, accepted by the user; by fix-morph-gpu, ported onto v9-final by fix-end-morph-p1). Phones (<= 640 px), only while the morph
++   moves ([data-fw-rv], set by the nav's template effect for 0.001 < m < 1): the nav takes its final size and place,
++   and today's box at m is cut out of it by an inline clip-path; the parts inside follow by inline transforms (JS
++   __rvW). The dark colour is .fw-rv-dark at opacity m over the light background. Settled, the nav is today's. */
++.fw-rv-dark,
++.fw-rv-glass {
++  display: none;
++}
++/* P1b (a), fix-end-morph-p1: a hidden child of the nav with the size the nav takes under [data-fw-rv] (it inherits
++   the nav's --panel-w / --panel-h); JS observes it, so the switch-on needs no layout read. It paints nothing, takes
++   no hit test and is out of the flow. */
++.fw-rv-size {
++  position: fixed;
++  top: 0;
++  left: 0;
++  box-sizing: border-box;
++  width: var(--panel-w);
++  height: var(--panel-h);
++  visibility: hidden;
++  pointer-events: none;
++}
++@media (width<=640px) {
++  .start-selling-top-nav.svelte-1dcozpm[data-fw-rv] {
++    top: 12px;
++    width: var(--panel-w);
++    height: var(--panel-h);
++    border-radius: 0;
++    background: #ffffff1a;
++    -webkit-backdrop-filter: none;
++    backdrop-filter: none;
++    will-change: transform;
++  }
++  /* today's nav box and its backdrop blur, from the same formulas as .start-selling-top-nav at <= 640 px; it paints
++     nothing itself (no background), it only blurs the page under today's box */
++  .fw-rv-glass[data-fw-rv] {
++    --morph: 0;
++    --pill-w: min(984px, calc(100vw - 32px));
++    --pill-h: 52px;
++    --panel-w: calc(100vw - 24px);
++    --panel-h: calc(100vh - 24px);
++    display: block;
++    position: fixed;
++    z-index: 40;
++    left: 50%;
++    top: calc(16px + (12px - 16px) * var(--morph));
++    box-sizing: border-box;
++    width: calc(var(--pill-w) + (var(--panel-w) - var(--pill-w)) * var(--morph));
++    height: calc(var(--pill-h) + (var(--panel-h) - var(--pill-h)) * var(--morph));
+     border-radius: calc(32px - 12px * var(--morph));
+-    clip-path: none;
++    -webkit-backdrop-filter: blur(calc(20px * (1 - var(--morph))));
++    backdrop-filter: blur(calc(20px * (1 - var(--morph))));
++    pointer-events: none;
++    transform: translate(-50%);
+   }
+-  html.fw-bx .start-selling-top-nav > .fw-bx-fill {
+-    display: none;
++  .start-selling-top-nav[data-fw-rv] > .fw-rv-dark {
++    display: block;
++    position: absolute;
++    inset: 0;
++    z-index: 0;
++    background: #131922;
++    pointer-events: none;
++    will-change: opacity;
+   }
+-}
+-@media (600px<width<=640px) {
+-  html.fw-bx .start-selling-top-nav.is-hero-pill.is-hero-chrome-ready.svelte-1dcozpm > .fw-bx-dark {
+-    transition: opacity 0.7s cubic-bezier(0.33, 0, 0.2, 1);
++  .start-selling-top-nav[data-fw-rv] .start-selling-top-nav-bar,
++  .start-selling-top-nav[data-fw-rv] .start-selling-top-nav-logo,
++  .start-selling-top-nav[data-fw-rv] .start-selling-top-nav-actions,
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-col,
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-center,
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-footer {
++    will-change: transform;
+   }
+-}
+-/* [platform-corners] Safari (WebKit bug 312584, a regression since 303819@main, fixed in 313267@main) lets a child with
+-   filter: blur() paint past an ancestor's rounded overflow clip: the blurred background picture of the "discovered"
+-   row's stage showed as a grey square in all four corners. Clip the picture itself to the stage's 5% radius (clip-path
+-   applies after the filter); where the engine already clips it, this changes nothing. */
+-.start-selling-platform-stage-bg {
+-  clip-path: inset(0 round 5%);
+-}
+-/* [join-fade] (user T-242) the Join waitlist button's fade at the end of the page, three defects of the original:
+-   1. its blur (filter, base rule) is cut by the button's box, not by its rounded shape: Safari shows a square block of
+-      blur off the pill's end (over the language switch), Chrome a sliver in the corners. Clip the button itself to its
+-      own pill shape while the menu morphs and the button can still show (until .is-expanded, m 0.92; clip-path applies
+-      after the filter); at rest, open or closed, and under reduced motion (no blur there) nothing changes.
+-   2. the gap before it follows --morph with no transition while .is-morphing, so it is gone ~50 ms into the 680 ms
+-      tween (m 0.2) while the button still shows for 0.44 s more: the language switch touches the fading button. The
+-      gap now flips once, at m 0.2 (--jf-gone 0 -> 1 below, the moment the button starts to leave), and that one change
+-      is timed from the side it lands on: closing waits until the button's opacity is 0 (0.12 s + 0.32 s) and then
+-      takes the button's last 0.24 s of width; reopening (m back under 0.2) starts at once over 0.4 s, the time the
+-      original took over the tween's tail, so the gap is back before the button fades in again. m 0 and m >= 0.2 give
+-      the original's values (8px / 4px, 0). Reduced motion keeps the original (the morph jumps there). */
+-@media (prefers-reduced-motion: no-preference) {
+-  .start-selling-top-nav.is-morphing.svelte-1dcozpm:not(.is-hero-pill, .is-expanded) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+-    clip-path: inset(0 round 999px);
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-backdrop,
++  .start-selling-top-nav[data-fw-rv] .start-selling-morph-veil {
++    transform-origin: 0 0;
++    will-change: transform;
+   }
+ }
+-@media (prefers-reduced-motion: no-preference) {
+-  .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
+-    --jf-gone: clamp(0, calc((var(--morph) / 0.2 - 1) * 1000000 + 1), 1);
+-    gap: calc((1 - var(--jf-gone)) * 8px);
+-    transition: gap calc(0.4s - var(--jf-gone) * 0.16s) cubic-bezier(0.33, 0, 0.2, 1) calc(var(--jf-gone) * 0.44s);
++/* timed fade (PR-032 rev 3, user 03:13Z): at the end of the page under CM (html.fw-cm, phone widths) the Join button
++   leaves and comes back on a timer started by its state flip (.is-earn-hidden: on at m 0.2, off at m 0), never with the
++   finger: opacity and blur on the button's own transitions (0.32 s cubic-bezier(0.33, 0, 0.2, 1) after 0.12 s, the
++   button's appear transition at the top of the page), the pill keeps its shape and place, and the language switch
++   slides by the button's width and the 4 px gap on nav-earn's 0.68 s timer (JS __ewGo). Opacity, filter and translate
++   only (compositor). The button stays on its own layer (will-change), so no layer is made when a fade starts. */
++@media (width<=640px) {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    will-change: opacity, filter;
+   }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-earn-hidden:not(.is-hero-pill) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    translate: none;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-earn-hidden:not(.is-hero-pill) .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
++    clip-path: none;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-earn-hidden:not(.is-hero-pill) .start-selling-top-nav-actions:where(.svelte-1dcozpm) > .start-selling-language-switch-wrap {
++    translate: calc(var(--earn-w, 0px) + 4px) 0;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing .start-selling-top-nav-actions:where(.svelte-1dcozpm) > .start-selling-language-switch-wrap {
++    transform: none;
++  }
+ }
+-/* 3. Safari never ran the pill's padding transition (`transition: padding-inline`, g0.0 rule above): WebKit expands that
+-      logical shorthand to padding-inline-start/end and matches them against the physical padding-left/right that
+-      change, so no transition starts and the pill snaps to its label's width at m 0.2 (the language switch jumps).
+-      The same 0.68 s on the physical longhands; Chrome already ran exactly this. */
+-@media (prefers-reduced-motion: no-preference) {
+-  .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-earn-box:where(.svelte-1dcozpm) {
++@media (width<=640px) and (prefers-reduced-motion: no-preference) {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    filter: blur(0px);
+     transition:
+-      padding-left 0.68s cubic-bezier(0.33, 0, 0.2, 1),
+-      padding-right 0.68s cubic-bezier(0.33, 0, 0.2, 1);
++      opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s,
++      filter 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s;
+   }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-earn-hidden:not(.is-hero-pill) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    filter: blur(10px);
++  }
+ }
+-@media (prefers-reduced-motion: no-preference) and (width<=640px) {
+-  .start-selling-top-nav.svelte-1dcozpm:not(.is-hero-pill) .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
+-    gap: calc((1 - var(--jf-gone)) * 4px);
++/* c3b-K2 (arch-compositor-morph): the CM layers are built near the end while the morph is still closed ("pre":
++   .is-morphing with .fw-cm-pre, JS __cmPreSet). Under pre the nav must look and behave like today's closed pill:
++   the glass is on the bar (its own backdrop, cut to its own box, as today's nav) instead of u3's panel-sized one; today's closed transitions (the scroll-hidden slide by the pill's height, the actions' gap)
++   and the Join button's taps. */
++@media (width<=640px) {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre {
++    transition:
++      opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
++      transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
++      visibility 0s linear 0.32s;
+   }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre:not(.is-scroll-hidden) {
++    transition-delay: 0s;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre.is-scroll-hidden {
++    transform: translate(-50%) translateY(calc(-1 * var(--pill-h) - 24px));
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre [data-fw-cm="u3"] {
++    background: none;
++    -webkit-backdrop-filter: none !important;
++    backdrop-filter: none !important;
++  }
++  /* the glass on the bar (pill height, the corner clippers cut its width to the pill's): its backdrop is cut to its own
++     box, as today's nav's is, and it stays the backdrop root of the language switch's own blur */
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre .start-selling-top-nav-bar:where(.svelte-1dcozpm) {
++    background: #ffffff1a;
++    -webkit-backdrop-filter: blur(20px);
++    backdrop-filter: blur(20px);
++    border-radius: 32px;
++  }
++  /* K-min: only the corner clippers and boxes (c0-c3, u0-u3: they draw nothing but u3's glass, off under pre) run their
++     scroll-driven animations under pre, so only their layers are built early; the parts that draw (the dark overlay, the
++     bar with its glass, the logo, the actions, the panel) keep __cmPrep(0)'s inline values, paint as today's nav paints
++     them, and get their animations (and layers) at the open, as in v13 */
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre :is(.fw-cm-dk, .start-selling-top-nav-bar, .start-selling-top-nav-logo, .start-selling-top-nav-actions, .start-selling-morph-panel, .start-selling-morph-backdrop, .start-selling-morph-veil, .start-selling-morph-center, .start-selling-morph-footer, .start-selling-morph-col) {
++    animation: none !important;
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre .start-selling-top-nav-actions:where(.svelte-1dcozpm) {
++    transition: gap 0.68s cubic-bezier(0.33, 0, 0.2, 1);
++  }
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.is-morphing.fw-cm-pre:not(.is-hero-pill) .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
++    pointer-events: auto;
++  }
+ }
+-/* [P-168 f-B2] de-offscreen knock-out (b28ac944), diagnostic only */
++/* [cm-return: PR-035 platform-corners, carried unchanged] Safari (WebKit bug 312584, a regression since 303819@main, fixed in 313267@main) lets a child with
++   filter: blur() paint past an ancestor's rounded overflow clip: the blurred background picture of the "discovered"
++   row's stage showed as a grey square in all four corners. Clip the picture itself to the stage's 5% radius (clip-path
++   applies after the filter); where the engine already clips it, this changes nothing. */
++.start-selling-platform-stage-bg {
++  clip-path: inset(0 round 5%);
++}
++/* [cm-return: PR-039 keep-phase, carried unchanged] while the morph scene is paused (menu closed) the panel's column
++   tracks hold a still frame instead of a paused animation (P-168 f-B2), so they stop compositing */
+ .start-selling [data-start-selling-scene="paused"] .start-selling-morph-col-track {
+   animation: none !important;
+ }
+@@ -12456,16 +12614,19 @@
+     transform: translateY(-56px);
+   }
+ }
+-/* [menu-layers] the panel countdown on its own small layer while the menu scene is active (T-253 #10, item 2). The
+-   panel clock paints its cells unlayered (cd-strip, countdown-faces), so every frame of a tick's roll repainted the
+-   menu centre's layer (~5.7 MB at 430 px, DPR 3); with the wrapper composited a roll frame repaints only the wrapper
+-   (~1.2 MB). Only while active: closed, the clock is frozen (__cdLive) and the centre is no layer (PR-039
+-   keep-phase), so a wrapper layer there would only add memory. The wrapper is a stacking context at all times
+-   (isolation), so the will-change flip at the scene change never flips its used z-index (auto <-> 0), which WebKit
+-   answers with a Layout (F-351). Nothing inside is positioned against an ancestor above it, there is no blend mode
+-   and nothing in the centre overlaps it, so the isolation paints the same. WebKit only (html.fw-bx, the page's own
+-   `GestureEvent` test, g0-box v3-W): the cost is WebKit's (a re-displayed backing store per roll frame), and Chrome
+-   placed the composited wrapper's digits 1 CSS px higher (3 device px, up to 224 levels; seek gate, OBSERVED). */
++/* [cm-return] the Join's one-shot intro sweep (nav-earn-sheen on ::after) played again each time the CM wrappers switched
++   display (WebKit re-creates the ::after): .fw-cm-quiet (JS, from the first CM frame until the hero pill returns) keeps
++   it at rest. At rest the sweep's start (-130 %) and end (130 %) are both outside the button, so nothing else changes. */
++@media (prefers-reduced-motion: no-preference) {
++  html.fw-cm .start-selling-top-nav.svelte-1dcozpm.fw-cm-quiet:not(.is-hero-pill)
++    .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm):after {
++    animation: none;
++  }
++}
++/* [g0.0k: g0.0i's menu-layers clock layer, carried unchanged onto the CM end] the panel countdown on its own small
++   layer while the menu scene is active (T-253 #10, item 2): a tick's roll repaints only the clock's wrapper instead of
++   the menu centre. WebKit only (html.fw-bx, the page's own `GestureEvent` test; g0.0k sets the class in the nav
++   effect, as g0.0h's v3-W did): Chrome placed the composited wrapper's digits 1 CSS px higher (OBSERVED, g0.0i). */
+ html.fw-bx .start-selling-morph-center .waitlist-closing-countdown {
+   isolation: isolate;
+ }
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -14061,9 +14061,15 @@
+     x = N(0),
+     w = 0,
+     T,
+-    // g0.0 (gpu-original): v0's `> 0.001` again (the end of the page is the original's; nav-earn rev 3's `> 0`, F-243,
+-    // went with the rest of v14's end-of-page code)
+-    E = R(() => s(x) > 0.001),
++    // nav-earn rev 3 (F-243): was `> 0.001`. The morph tween (ZM, ease-out cubic over 680 ms) ends on exactly its
++    // target, but on the close it spends its last ~68 ms between 0.001 and 0, where the bar's :not(.is-morphing)
++    // width / background transitions came back on and restarted about 5 times for sub-pixel changes. `> 0` keeps
++    // .is-morphing (transition: none) until the tween's done frame sets 0.
++    E = R(() => s(x) > 0),
++    // c3b-K: CM's structure (.is-morphing under html.fw-cm) is kept live near the end screen while the morph is closed,
++    // so an open builds no layers (WebKit has no layer pool, F-324). Only the class follows it: x, E and everything
++    // derived from them (inert, aria, the earn and scroll-hidden flags) stay as they were.
++    __cmPreS = N(!1),
+     /*countdown-faces: the panel (.start-selling-morph-panel, opacity clamp(0, (--morph - 0.08) / 0.72, 1), --morph =
+     JM(x), no transition on it) is painted at opacity > 0 only while this is true*/
+     __cdPanelShown = R(() => JM(s(x)) > 0.08),
+@@ -14123,7 +14129,8 @@
+     __ewW = 0,
+     __ewP = 24,
+     __ewM = 176,
+-    __ewG = 8;
++    __ewG = 8,
++    __ehV = !1;
+   const __ewBz = ((x1, y1, x2, y2) => {
+     let X = (t) => ((1 + 3 * x1 - 3 * x2) * t * t + (3 * x2 - 6 * x1) * t + 3 * x1) * t,
+       Y = (t) => ((1 + 3 * y1 - 3 * y2) * t * t + (3 * y2 - 6 * y1) * t + 3 * y1) * t;
+@@ -14153,6 +14160,10 @@
+       (__ewG = parseFloat(getComputedStyle(ie).columnGap) || 0));
+     w !== __ewW && ((__ewW = w), ie.style.setProperty(`--earn-w`, `${w}px`));
+   }
++  // .is-earn-hidden: on at morph >= 0.2 (where the original's width / opacity targets reach 0), off at morph 0
++  function __ewEh(m) {
++    return (__ehV = m >= 0.2 ? !0 : m <= 0 ? !1 : __ehV);
++  }
+   function __ewGo(on, pill) {
+     (!__ewRO && typeof ResizeObserver == `function` && oe && ((__ewRO = new ResizeObserver(__ewMeasure)), __ewRO.observe(oe)));
+     let was = __ewPill;
+@@ -14172,9 +14183,12 @@
+       wr = __ewWrap(),
+       W = __ewW;
+     if (first || !W || d < 1 || !oe.animate || window.matchMedia(`(prefers-reduced-motion: reduce)`).matches) return;
+-    // g0.0: the state changes only with the hero pill (the end of the page draws the original's Join motion in CSS from
+-    // --morph, see the g0.0 block in the CSS), so the gap always moves with it; PR-032's timed fade (cmEnd) is gone
+-    let gap = pill || was,
++    // timed fade (PR-032 rev 3, user 03:13Z): at the end of the page under CM (html.fw-cm, phone widths) the button
++    // keeps its pill shape and place and fades on its CSS opacity / filter transitions (compositor); only the language
++    // switch moves here, by the button's width and the 4 px gap on the same 0.68 s timer (translate, compositor). No
++    // clip-path animation there: WebKit runs clip-path on the main thread (CSSProperties.json lists no acceleration).
++    let cmEnd = !pill && !was && document.documentElement.classList.contains(`fw-cm`) && window.matchMedia(`(width <= 640px)`).matches,
++      gap = pill || was || cmEnd,
+       kb = [],
+       kx = [],
+       kw = [];
+@@ -14184,10 +14198,10 @@
+         X = (W - w) / 2;
+       (kb.push({ translate: `${X}px 0` }),
+         kx.push({ clipPath: `inset(0px ${X}px round 999px)` }),
+-        kw.push({ translate: `${W - w + (gap ? __ewG * (1 - e) : 0)}px 0` }));
++        kw.push({ translate: `${cmEnd ? (W + __ewG) * (1 - e) : W - w + (gap ? __ewG * (1 - e) : 0)}px 0` }));
+     }
+     let o = { duration: d, easing: `linear` };
+-    __ewA = { e0, e1, d, a: [oe.animate(kb, o), __ewBox.animate(kx, o), wr && wr.animate(kw, o)].filter(Boolean) };
++    __ewA = { e0, e1, d, a: (cmEnd ? [wr && wr.animate(kw, o)] : [oe.animate(kb, o), __ewBox.animate(kx, o), wr && wr.animate(kw, o)]).filter(Boolean) };
+   }
+   function ee() {
+     let e = __navEl(`.start-selling-profile-sticky`);
+@@ -14266,7 +14280,37 @@
+         __nsY = window.scrollY;
+       },
+       __nsOnResize = () => {
+-        ((__nsVh = window.innerHeight), (__nsY = window.scrollY), (__nsGeo = null));
++        ((__nsVh = window.innerHeight), (__nsY = window.scrollY));
++        // c3 (compositor-morph): Safari's toolbar moving resizes the viewport while the finger is down. Dropping the
++        // geometry here made the next scroll-engine frame re-measure every theme section (getBoundingClientRect)
++        // right after the viewport change, a synchronous whole-page layout of 13-15 ms inside iE on the iPhone (P-159
++        // open-0 frames). Near and in the end zone (touch phones, the CM path) the edges, the end spacer (100lvh) and
++        // the page height do not change with the toolbar, and the nav's answer is constant there (coverage proof):
++        // keep both geometries and re-measure once, 300 ms after the toolbar's last step (it slides through ~30
++        // innerHeights per move, one resize each), outside any frame's script. Elsewhere, as before.
++        __nsGeo && __msOn && __nsEndNear() ? __nsDefer() : (__nsGeo = null);
++      },
++      __nsLate = 0,
++      __nsSt = 0,
++      // near the end zone: from one viewport above its start (inside the span where the answer is constant)
++      __nsNear = (y) => {
++        let g = __msTick.g;
++        return !!g && y >= g[1] - g[2] - g[0] - g[2];
++      },
++      __nsEndNear = () => __nsNear(__nsY),
++      // scroll position of the last real hit test: an answer is kept only if it was taken near the end zone
++      __nsTy = -1e9,
++      // c3b-a: the re-measure (a whole-page layout) never runs while the page moves near the end screen, where an open
++      // can be the next frame (Simulator: it once fired inside an open frame, 25 ms of forced layout). While a finger is
++      // down or the page moved in the last 150 ms there, it waits 150 ms more; away from the end it runs as before.
++      __nsDefer = (ms = 300) => {
++        ((__nsLate = 1),
++          clearTimeout(__nsSt),
++          (__nsSt = setTimeout(() => {
++            if (__nsEndNear() && (__msTouch || performance.now() - __msT < 150)) return void ((__nsSt = 0), __nsDefer(150));
++            ((__nsSt = 0), (__nsLate = 0), __nsMeasure());
++            __msEnd && (__msTick.g = [__msEnd.offsetHeight, document.documentElement.scrollHeight, window.innerHeight]);
++          }, ms)));
+       },
+       __nsInvalidate = () => {
+         __nsGeo = null;
+@@ -14349,13 +14393,22 @@
+         // the real hit test runs only when the answer can have changed: a forced frame (re-measure, theme class
+         // change), the probe line crossing a cached edge, a moving zone, the morph, a running geometry transition
+         // in the theme sections, or the frame a transition ended in. Otherwise the last answer stands.
+-        // g0.0: the end-of-page skip terms (hit-skip, c3, c3 #1, c3b-a: they read morph-scroll / CM state and rested on
+-        // the sticky #platform's coverage proof) went with that code; while the morph is on (C()) it tests every frame,
+-        // as nav-hit-cache did on the original's jack
+-        let __h = __nsForce || !(__nsPy === __nsPy) || __nsCross(__nsPy, r) || o || C() || __nsTr.size > 0 || __nsTail > 0;
++        // hit-skip: on touch phones (__msOn), while the morph stands past 0.2 the answer cannot show
++        // (is-on-dark = g || m > 0.2), and its elementsFromPoint forced a layout in about half the morph frames
++        // (compositor-morph, P-157 Simulator stacks). Skip it there. __msTick re-tests (queueMicrotask) after any
++        // write that brings m to <= 0.2, so the shown answer is the same; r > 0.2 too, in case the spring moved m.
++        // c3: no hit test while the geometry waits for its deferred re-measure (its rect read would force the layout)
++        // c3 (#1): on the CM path the answer is also kept for 0 < m <= 0.2. From the end zone's top to m 0.2 the probe
++        // hits the sticky #platform at every position, at both viewport heights (coverage proof), so c2's next-frame
++        // re-test (__cmReTest) and the C()-forced test here only repeated the same answer, twice per frame.
++        let __h =
++          !(__nsLate && __nsEndNear() && __nsNear(__nsTy)) &&
++          !(__msOn && __msP > 0.2 && r > 0.2) &&
++          !(__msP > 0 && __cmOn() && __nsNear(__nsTy)) &&
++          (__nsForce || !(__nsPy === __nsPy) || __nsCross(__nsPy, r) || o || C() || __nsTr.size > 0 || __nsTail > 0);
+         (__nsTail > 0 && __nsTail--,
+           // after a real test the layout is clean: re-read the probe line (the nav slides up when scroll-hidden)
+-          __h && ((__nsG = F()), (__nsGeo.probe = __navProbeY()), (__nsForce = !1)),
++          __h && ((__nsG = F()), (__nsGeo.probe = __navProbeY()), (__nsForce = !1), (__nsTy = n)),
+           (__nsPy = r),
+           z(g, __nsG, !0));
+         let t = __nsGeo.track;
+@@ -14383,19 +14436,539 @@
+           e.style.pointerEvents !== pe && (e.style.pointerEvents = pe));
+         t === 0 !== __pfP && ((__pfP = t === 0) ? e.setAttribute(`data-fw-pf-paused`, ``) : e.removeAttribute(`data-fw-pf-paused`));
+       },
+-      // g0.0 (gpu-original, user T-228 #60/#62): from here to the IntersectionObserver the end of the page is the
+-      // original's again: the first swipe down at the end holds the page (wheel / touchmove jack, scrollTo pin) and the
+-      // morph opens by itself over 680 ms (T, ZM), a swipe up closes it the same way. v14's morph-scroll (PR-018 /
+-      // PR-023), compositor-morph (PR-030, K6), the clip-path reveal (PR-012), the pin and listener rework and the
+-      // overscroll hold are gone.
+       C = () => w > 0.001 || r > 0.001,
++      // perf(morph-webkit, build g): no rubber-band on the root while the morph is active, so a push past
++      // the end can't overscroll the page underneath the morph (one style write per morph start/end)
++      __osbV = ``,
++      __osb = () => {
++        let e = C() ? `none` : ``;
++        e !== __osbV && (document.documentElement.style.overscrollBehaviorY = __osbV = e);
++      },
++      // perf(morph-scroll, PROPOSAL): on touch phones the end-of-page morph follows the scroll position instead of
++      // the jack. No non-passive touchmove (N) and no scrollTo pin (L): the page scrolls by itself. One extra screen
++      // of scroll (.fw-ms-end, inserted after #platform) holds #platform in place with position: sticky, and the
++      // morph value is how far the page has scrolled into that screen (0..1), written through __navMorphSet (the
++      // same writes the spring T makes per frame: r/x, then S()). No CSS snap (since rev 4): when the scroll comes to
++      // rest part-open, a script (__msSettle) settles the morph to one end.
++      // Desktop, reduced motion and screens wider than 600 px keep the jack.
++      __msOn =
++        !e.matches &&
++        window.matchMedia(`(hover: none) and (pointer: coarse)`).matches &&
++        Math.min(screen.width, screen.height) <= 600,
++      __msEnd = null,
++      __msP = -1,
++      __msRO = null,
++      // rev 4: no CSS scroll snap (any snap point on the root makes iOS use fast deceleration for the whole page,
++      // WebKit RemoteScrollingCoordinatorProxyIOS::shouldSetScrollViewDecelerationRateFast). Instead, once the finger
++      // is up and the scroll has come to rest (no scroll for 200 ms) with the morph part open, a smooth scroll
++      // finishes it to an end: open when the last move was opening and p >= 0.3, or closing and p >= 0.7 (0.5 if no
++      // move was seen). The morph follows that scroll like any other.
++      // rev 6: waiting for the rest took 3-5 s after a slow swipe (iOS momentum creeps on for seconds). Now, once the
++      // finger is up, the commit happens as soon as the scroll is slow (|v| < 0.5 px/ms, the momentum tail) or at
++      // lift-off when the finger was still; a fast fling keeps its momentum until it leaves the extra screen or slows.
++      // The 200 ms rest timer stays as the fallback (e.g. a scripted scroll). One commit per lift-off (__msGo).
++      // The open/closed choice uses the position 200 ms ahead at the current speed (rev 6b; 500 ms since rev 6d).
++      // rev 6c: waiting for |v| < 0.5 still took 0.6-0.9 s after a 300 px swipe on the phone; inside the extra screen
++      // the commit now happens at lift-off itself (a lift outside it commits once the momentum enters it and slows).
++      // rev 6d: a 200 ms look-ahead sent a slow pull from open (lifted at 0.755) back to open against its momentum.
++      __msY = -1,
++      __msDir = 0,
++      __msTouch = 0,
++      __msTO = 0,
++      __msV = 0,
++      __msT = 0,
++      // rev 7: a fast short flick that barely moved the page before lift-off has no known speed: the first scroll frame
++      // after a rest has no fresh previous sample, so rev 6 read it as v = 0 and committed with q = p, sending a flick
++      // from closed back to closed (and from open back to open); and one or two touch frames under-read a short flick's
++      // speed. Now __msVk counts fresh samples since the last rest or touchstart (the first one seeds v instead of
++      // averaging with 0), __msDy keeps the last move, and a lift while the page moves is a flick that goes where it
++      // points (>= 0.3 px/ms, or one fresh move of >= 3 px), like a paging UIScrollView; a slow or held release decides on
++      // the look-ahead as before. A lift at rest at an end (nothing to commit) lets the first glide frame with a known
++      // speed decide (__msLift 2). A fast glide (|v| >= 0.5) whose look-ahead passes the end it is heading for (q >= 1
++      // opening, q <= 0 closing) keeps the iOS momentum (no scrollTo); if it stops short, the slow-tick rule or the 200 ms
++      // rest timer still commits.
++      __msVk = 0,
++      __msDy = 0,
++      // rev 7b (the user's own fast short swipes, C-049): (1) the page scrolls only after the touchend (async
++      // scrolling), so at lift-off a flick looks like a page at rest, and at an end with Safari's toolbar shown the
++      // page rests 40 px (p 0.95 / 0.05) off the end, where the position rule sent a close flick back to open. Now the
++      // finger itself is read (passive touchmove: __msFv px/ms, + = finger up = opening): a finger still moving at
++      // lift-off (last move < 50 ms before the touchend, >= 0.3 px/ms) commits in its direction when that end is >= 0.1
++      // away (a flick out of the extra screen, or toward the end it is at, is left to the rules below). (2) a commit is
++      // kept (__msWant: 1 open, 0 closed, -1 none; for 1.5 s or until reached, cleared at touchstart, so a later
++      // scripted or link scroll is never pulled back): when the scroll comes to rest short of it (on the phone
++      // something knocked the smooth scroll back while the toolbar moved, cause UNRESOLVED), the rest timer aims at it
++      // again (2 tries) instead of deciding anew from the position. (3) a flick's direction is the sign of the smoothed
++      // speed, not of the last frame's step. A finger move > 50 ms after the previous one starts a new finger speed.
++      __msFy = 0,
++      __msF0 = 0,
++      __msFt = 0,
++      __msFv = 0,
++      __msFn = 0,
++      __msFl = 0,
++      __msWant = -1,
++      __msWt = 0,
++      __msTry = 0,
++      __msLift = 0,
++      __msGo = 0,
++      __msArm = () => {
++        (window.clearTimeout(__msTO), (__msTO = window.setTimeout(() => ((__msGo = 0), __cmPreChk(), __msSettle()), 200)));
++      },
++      // c3b-K: the page came to rest (200 ms after its last scroll frame) within one end-screen height of the end
++      // screen with the morph closed: build CM's structure now, in a still frame, instead of in the open frame
++      // c3b-K: WebKit only. WebKit keeps no pool of composited layers (F-324), so every open rebuilds them; pre builds
++      // them at rest instead. `GestureEvent` is the page's WebKit test (heCss above; a WebKit-only interface, MDN
++      // browser-compat-data api/GestureEvent.json): iOS Safari and Chrome on iOS (WebKit) have it, Android Chrome not.
++      __cmPreWk = `GestureEvent` in window,
++      __cmPreChk = () => {
++        let g = __msTick.g;
++        if (!g || !__cmPreWk || !__cmOn() || __cmPre || __msP > 0 || __msY < 0) return;
++        let e = (__msY - (g[1] - g[2] - g[0])) / g[0];
++        e > -1 && e <= 0 && __cmPreSet(!0);
++      },
++      __msSettle = () => {
++        if (!__msEnd || __msTouch || __msGo) return;
++        let t = __msEnd.offsetHeight,
++          n = document.documentElement.scrollHeight - window.innerHeight,
++          e = t > 0 ? (window.scrollY - (n - t)) / t : 0,
++          // decide on where the momentum would take the scroll: + 500 ms of travel at the current speed (iOS momentum
++          // travels about v x 500 ms: UIScrollView normal deceleration 0.998/ms; rev 4 G records 340-640 ms), so a
++          // quick flick up at 0.28 opens and a slow pull from open to 0.75 closes; a stale speed (> 100 ms old) counts as 0
++          // f: the page is moving now; k: a flick (>= 0.3 px/ms, or one fresh move of >= 3 px whose speed is not known
++          // yet) goes where it points, like a paging UIScrollView; a slow or held release decides on the look-ahead q
++          f = t > 0 && performance.now() - __msT < 100,
++          k = f && (__msVk ? Math.abs(__msV) >= 0.3 : Math.abs(__msDy) >= 3),
++          q = f && __msVk ? e + (500 * __msV) / t : e,
++          o = k ? (__msVk ? __msV > 0 : __msDir > 0) : q >= (__msDir > 0 ? 0.3 : __msDir < 0 ? 0.7 : 0.5),
++          go = (w) => ((__msWant = w ? 1 : 0), (__msWt = performance.now()), (__msGo = 1), window.scrollTo({ top: w ? n : n - t, behavior: `smooth` }));
++        if (!(t > 0)) return;
++        // a kept commit (for 1.5 s, until reached): aim at it again if the scroll came to rest short of it (2 tries).
++        // At or past the end counts as reached: Safari's toolbar showing during a close moves the closed rest 40 px
++        // (p -0.05, still closed), and re-aiming there scrolled the page back 40 px (+0.5 s, rev 7b G run f8a).
++        if (__msWant >= 0 && performance.now() - __msWt < 1500) {
++          if (__msWant ? window.scrollY >= n - 2 : window.scrollY <= n - t + 2) return void (__msWant = -1);
++          return void (e > -0.1 && e < 1.1 && __msTry < 2 && (__msTry++, go(__msWant)));
++        }
++        __msWant = -1;
++        // the finger was still moving at lift-off: go where it points. Rev 7d: a fling down that is fast (finger
++        // >= 5 px/ms) or long (finger travel >= 300 px since the touchstart) is left to its own momentum, so it can carry
++        // the page out of the end screen in one fling (a smooth scrollTo to the closed rest stopped it there); if it slows
++        // inside the screen, the slow-tick rule settles it. The user's closes from open so far: <= 4.06 px/ms, 74-255 px.
++        if (__msFl) return void (e > -0.1 && e < 1.1 && (__msFl > 0 ? e < 0.9 : e > 0.1 && __msFv > -5 && __msFy - __msF0 < 300) && ((__msLift = 0), go(__msFl > 0)));
++        e > 0.002 && e < 0.998 && !(f && __msVk && Math.abs(__msV) >= 0.5 && (o ? q >= 1 : q <= 0)) && go(o);
++      },
++      __msTouchEv = (e) => {
++        let c = e.changedTouches && e.changedTouches[0],
++          s = e.timeStamp;
++        if (e.type === `touchmove`)
++          // a move > 50 ms after the last one (the finger was still) starts a new speed instead of diluting it
++          return void (
++            c &&
++            s > __msFt &&
++            (s - __msFt > 50
++              ? ((__msFv = 0), (__msFn = 0))
++              : ((__msFv = (__msFn ? 0.5 * __msFv : 0) + ((__msFn ? 0.5 : 1) * (__msFy - c.clientY)) / Math.max(1, s - __msFt)), __msFn++),
++            (__msFy = c.clientY),
++            (__msFt = s))
++          );
++        ((__msTouch = e.touches.length),
++          __msTouch
++            ? (window.clearTimeout(__msTO),
++              (__msLift = 0),
++              (__msGo = 0),
++              e.type === `touchstart` &&
++                ((__msVk = 0), (__msWant = -1), (__msTry = 0), (__msFn = 0), (__msFv = 0), c && ((__msFy = __msF0 = c.clientY), (__msFt = s))))
++            : (__msArm(),
++              (__msLift = 2),
++              (__msFl = __msFn && s - __msFt < 50 && Math.abs(__msFv) >= 0.3 ? (__msFv > 0 ? 1 : -1) : 0),
++              // DEBUG (rev 7d checks only): logs nothing unless a driver set window.__msDbg = []
++              Array.isArray(window.__msDbg) && window.__msDbg.push([s, __msFv, __msFn, __msFl, window.scrollY, __msFy - __msF0]),
++              __msSettle(),
++              (__msFl = 0)));
++      },
++      __msTick = (yIn) => {
++        if (!__msEnd) return;
++        // V13 (less work): on the scroll-engine path (L) the y comes from the nav's scroll listener (__nsY, read
++        // there already); a scrollY read here laid out whenever scrollY != 0 (WebKit LocalDOMWindow::scrollY)
++        let y = yIn === void 0 ? window.scrollY : yIn,
++          now = performance.now();
++        (y !== __msY &&
++          (__msY >= 0 &&
++            ((__msDir = y > __msY ? 1 : -1),
++            (__msDy = y - __msY),
++            (now - __msT < 100
++              ? ((__msV = (__msVk ? 0.5 * __msV : 0) + ((__msVk ? 0.5 : 1) * (y - __msY)) / Math.max(1, now - __msT)), __msVk++)
++              : ((__msV = 0), (__msVk = 0)))),
++          (__msY = y),
++          (__msT = now)),
++          // c3b #6: the rest timer and the lift check only within one viewport of the end screen (the last frame's
++          // geometry; none yet: as before). Further up the settle decides nothing (it acts only at e > -0.1), so the
++          // per-frame clearTimeout + setTimeout and the timer's geometry read 200 ms after every stop are skipped there
++          __msTouch ||
++            (__msTick.g && y < __msTick.g[1] - __msTick.g[2] - __msTick.g[0] - __msTick.g[2]) ||
++            (__msArm(),
++            __msLift &&
++              __msVk &&
++              (__msLift > 1 || Math.abs(__msV) < 0.5) &&
++              ((__msLift = 1), __msSettle())));
++        // V13: the geometry is cached on the scroll-engine path, cleared by __msRO and by an innerHeight change
++        // (innerHeight reads no layout in the main frame)
++        let __g = __msTick.g,
++          __ih = window.innerHeight;
++        // c3: a toolbar move (only innerHeight changed) while the nav's re-measure is deferred keeps the spacer height
++        // (100lvh) and the page height: they do not change with the toolbar (Simulator check); the deferred re-measure
++        // (300 ms after the toolbar's last step) reads them again
++        yIn !== void 0 && __g && __g[2] !== __ih && __nsLate
++          ? (__g = __msTick.g = [__g[0], __g[1], __ih])
++          : (yIn === void 0 || !__g || __g[2] !== __ih) &&
++            (__g = __msTick.g = [__msEnd.offsetHeight, document.documentElement.scrollHeight, __ih]);
++        let t = __g[0],
++          e = t > 0 ? (y - (__g[1] - __ih - t)) / t : 0;
++        // c3b-K: away from the end (1.25 end-screen heights above it) the kept structure goes
++        __cmPre && (e < -1.25 || !__cmOn()) && __cmPreSet(!1);
++        // L's _() hit-tested the nav's backdrop (is-on-dark) before this write, i.e. with the panel at the last value.
++        // At m <= 0.2 that answer shows (is-on-dark = g || m > 0.2): test again once the new value is in the DOM.
++        ((e = e > 0 ? (e < 1 ? e : 1) : 0),
++          e !== __msP &&
++            ((__msP = e),
++            __cmOn() ? __cmSet(e) : (__cmLive && __cmClear(), __navMorphSet(e)),
++            e <= 0.2 && (__cmOn() ? e > 0 || __cmReTest() : queueMicrotask(() => (z(g, (__nsG = F()), !0), (__nsForce = !0))))));
++      },
++      // perf(compositor-morph, PROPOSAL; arch-compositor-morph): touch phones (7c mode) with scroll-driven animations and
++      // width <= 640 px. The nav's morph is drawn by scroll-driven CSS animations of transform / opacity / filter /
++      // backdrop-filter only, on a named view timeline over the extra screen (.fw-ms-end, 100lvh tall: cover 0% .. cover 100lvh
++      // = 7c's m = (y - (max - t)) / t; not entry 0%..100%, which ends early when the toolbar makes the viewport shorter
++      // than 100lvh, Simulator OBSERVED), which WebKit 26.4+ runs threaded (UI process) and Chrome on the compositor. The nav
++      // takes its final size (CSS, .is-morphing under html.fw-cm); today's box at m (top 16 -> 12 px, width pill ->
++      // panel, height 52 px -> panel, radius min(32 - 12m, h/2)) is cut out by four nested overflow:hidden corner
++      // clippers, each moved to its corner and scaled to the radius (k = r / 32), each with a counter-transformed child,
++      // so the content keeps its place; every part inside takes today's place at m by a transform (P1's formulas).
++      // Per frame the script no longer writes --morph: the Svelte state x changes only when m crosses a threshold the
++      // template uses (0, 0.08, 0.2, 0.35, 0.4, 0.55, qM), so the classes, inert, aria and tabindex flip where they did.
++      // The animations' values come from one function (__cmVals): inline for the frame the class arrives in (a new
++      // scroll-driven animation is pending for one frame, F-162), and as generated @keyframes for every other frame.
++      __cmMq = window.matchMedia(`(width <= 640px)`),
++      __cmSup =
++        __msOn && !!window.CSS?.supports?.(`(timeline-scope: --a) and (animation-range: cover 0% cover 100lvh)`),
++      __cmOn = () => __cmSup && __cmMq.matches,
++      // c2 (ii): on the CM path the nav's re-test after a write that brings m to <= 0.2 runs at the start of the next
++      // frame (rAF, layout clean), not in a microtask of this tick: there F()'s getBoundingClientRect + elementsFromPoint
++      // forced the style and layout of the nav that just flipped .is-morphing inside the script (P-158 line-up: about
++      // 14 ms of the open-from-closed frame on the phone; Chrome 421 dirty layout objects vs C's 9). The rendering
++      // still lays the nav out once in this frame; the next frame's test reads that clean layout. __nsForce makes the
++      // nav-state pass (_) test again too, whichever runs first.
++      __cmRT = 0,
++      __cmReTest = () => {
++        ((__nsForce = !0),
++          __cmRT ||
++            (__cmRT = requestAnimationFrame(() => {
++              ((__cmRT = 0), __navNode()?.isConnected && (z(g, (__nsG = F()), !0), (__nsForce = !0)));
++            })));
++      },
++      __cmKv = ``,
++      __cmLive = !1,
++      // c3b-K: on: the class arrives with today's m 0 values inline for its first frame (a new scroll-driven animation
++      // is pending for one frame, F-162; the keyframes' fill gives m 0 below the range after that). Off (closed, far
++      // from the end): the inline values go, and the frame .is-morphing drops gets the same transition hold as a close
++      __cmPre = 0,
++      __cmPreSet = (on) => {
++        if (!on === !__cmPre) return;
++        __cmPre = on ? 1 : 0;
++        if (on) __cmPrep(0);
++        else
++          __msP <= 0 &&
++            (__cmLive && __cmClear(),
++            document.documentElement.classList.add(`fw-cm-out`),
++            requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove(`fw-cm-out`))));
++        z(__cmPreS, !!on);
++      },
++      __cmD = null,
++      __cmGb = ``,
++      __cmE = null,
++      __cmG = null,
++      __cmSt = null,
++      __cmCss = ``,
++      __cmGk = ``,
++      // the last bucket (t >= 1): the morph's end is a resting place (the 7d settle stops there), so x and --morph must be
++      // exactly today's 1 there, not the value at which t crossed qM (a still frame at m 1 differed by ~2 % otherwise)
++      __cmK = (t) =>
++        `${+(t > 0)}${+(t > 0.08)}${+(t >= 0.2)}${+(t > 0.2)}${+(t < 0.35)}${+(t > 0.4)}${+(t > 0.55)}${+(t > qM)}${+(t >= 1)}`,
++      // the wrappers: c0 > u0 > c1 > u1 > c2 > u2 > c3 > u3 (glass) > [dark, the header's own children]
++      __cmDom = () => {
++        let h = __navNode();
++        if (!h) return null;
++        if (__cmD && __cmD.h === h && __cmD.c[0].isConnected) return __cmD;
++        let mk = (k, c) => {
++            let d = document.createElement(`div`);
++            // F-307: no new nodes in the accessibility tree (the wrappers are role none, the dark layer and the size
++            // probe are hidden)
++            return ((d.className = c), d.setAttribute(`data-fw-cm`, k), d.setAttribute(/^[cu]/.test(k) ? `role` : `aria-hidden`, /^[cu]/.test(k) ? `none` : `true`), d);
++          },
++          c = [0, 1, 2, 3].map((i) => mk(`c${i}`, `fw-cm-c`)),
++          u = [0, 1, 2, 3].map((i) => mk(`u${i}`, `fw-cm-u`)),
++          dk = mk(`dk`, `fw-cm-dk`),
++          ms = mk(`ms`, `fw-cm-ms`);
++        for (let i = 0; i < 4; i++) (c[i].appendChild(u[i]), i < 3 && u[i].appendChild(c[i + 1]));
++        (u[3].append(dk, ...h.childNodes), h.append(c[0], ms));
++        // the panel's size (CSS --panel-w / --panel-h at this viewport) without a forced layout in the morph frames
++        new ResizeObserver(([e]) => {
++          let b = e.borderBoxSize?.[0],
++            W = b ? b.inlineSize : e.contentRect.width,
++            H = b ? b.blockSize : e.contentRect.height;
++          W > 0 && H > 0 && (!__cmG || __cmG.W !== W || __cmG.H !== H) && ((__cmG = { ...(__cmG || {}), W, H }), __cmGen());
++        }).observe(ms);
++        return (__cmD = { h, c, u, dk, ms });
++      },
++      // today's nav at m, as transforms on the full-size nav (P1's formulas, fix-morph-gpu PR-012 rev 1)
++      __cmVals = (m, G) => {
++        let W = G.W,
++          H = G.H,
++          n = 1 - m,
++          dx = 4 * n,
++          dy = 4 * n,
++          w = W - 8 * n,
++          h = 52 + (H - 52) * m,
++          r = Math.min(32 - 12 * m, h / 2, w / 2),
++          k = r / 32,
++          s = w / W,
++          e = Math.min(1, m / 0.2),
++          o = Math.min(1, Math.max(0, (m - 0.08) / 0.72)),
++          oy = dy + h / 2,
++          q = (x) => +x.toFixed(4),
++          px = (x) => `${q(x)}px`,
++          P = [
++            [dx, dy],
++            [dx + w - W, dy],
++            [dx, dy + h - H],
++            [dx + w - W, dy + h - H],
++          ],
++          v = {};
++        P.forEach(([x, y], i) => {
++          v[`c${i}`] = { transform: `translate(${px(x)}, ${px(y)}) scale(${q(k)})` };
++          v[`u${i}`] = { transform: `scale(${+(1 / k).toFixed(6)}) translate(${px(-x)}, ${px(-y)})` };
++        });
++        // the glass is on u3 itself, like on today's nav: it stays the backdrop root of the nested language-switch blur (P8).
++        // c3: its blur is never scroll-animated: Safari (iOS 26.5 Simulator) drew no glass while a scroll-driven animation
++        // ran backdrop-filter on u3, also when the animation started a frame after the backdrop existed (out/cm glassA/C/D);
++        // __cmSet writes it inline instead, today's value 20px x (1 - m)
++        // cm-return (user T-253 #27): the glass keeps the closed bar's blur through the whole grow; only the fill's colour
++        // fades (.fw-cm-dk at opacity m over the light tint). One constant value: no per-frame style write on u3.
++        v.glass = { "backdrop-filter": `blur(20px)`, "-webkit-backdrop-filter": `blur(20px)` };
++        v.dk = { opacity: `${q(m)}` };
++        v.bar = { translate: `0px ${px(dy)}` };
++        v.logo = { translate: `${px(dx + G.ix + (w / 2 - G.ix) * m - 0.375 * m * G.L)} 0px` };
++        v.act = { transform: `translateX(${px(-dx)})` };
++        // joinwl-nolift (PR-027, user T-204 #10/#13): no 8 px rise, as in today's CSS with nolift
++        // timed fade (PR-032 rev 3): no `earn` / `lang` keys; nothing on the Join button or the language switch follows
++        // the scroll. Their blur, opacity and slide run on a timer from the state flips at m 0.2 / 0 (CSS, __ewGo).
++        v.panel = {
++          opacity: `${q(o)}`,
++          filter: `blur(${px(12 * (1 - o))})`,
++          transform: `translate(${px(W / 2)}, ${px(oy)}) scale(${q(0.96 + 0.04 * m)}) translate(${px(-W / 2)}, ${px(-oy)})`,
++        };
++        v.bd = { transform: `translate(${px(dx + 0.03 * (W - w))}, ${px(dy)}) scale(${+s.toFixed(6)})` };
++        v.veil = { transform: `translate(${px(dx)}, ${px(dy)}) scale(${+s.toFixed(6)}, ${+(h / H).toFixed(6)})` };
++        v.ctr = { translate: `0px ${px(dy + h / 2 - H / 2)}` };
++        v.ftr = { translate: `0px ${px(dy + h - H)}` };
++        (G.cols || []).forEach((f, j) => (v[`col${j}`] = { translate: `0px ${px(f * ((h * W) / w - H))}` }));
++        return v;
++      },
++      // the element (or selector, for the generated rules) of each key
++      __cmSel = {
++        dk: `.fw-cm-dk`,
++        bar: `.start-selling-top-nav-bar`,
++        logo: `.start-selling-top-nav-logo`,
++        act: `.start-selling-top-nav-actions`,
++        earn: `.start-selling-top-nav-btn.is-earn`,
++        lang: `.start-selling-top-nav-actions > .start-selling-language-switch-wrap`,
++        panel: `.start-selling-morph-panel`,
++        bd: `.start-selling-morph-backdrop`,
++        veil: `.start-selling-morph-veil`,
++        ctr: `.start-selling-morph-center`,
++        ftr: `.start-selling-morph-footer`,
++      },
++      __cmQ = (key) =>
++        /^[cu]\d$/.test(key)
++          ? `[data-fw-cm="${key}"]`
++          : /^col\d+$/.test(key)
++            ? `.start-selling-morph-col:nth-child(${+key.slice(3) + 1})`
++            : __cmSel[key],
++      // keyframe offsets per key: the kinks of each formula; a fine grid where the value is not linear in m
++      __cmGrid = (key, G) => {
++        let mk = 6 / ((G.H - 52) / 2 + 12),
++          lin = (a, b, N) => Array.from({ length: N + 1 }, (_, i) => a + ((b - a) * i) / N);
++        return /^u\d$/.test(key)
++          ? [...lin(0, mk, 16), ...lin(mk, 1, 72)]
++          : /^c\d$/.test(key)
++            ? [0, mk, 1]
++            : key === `earn` || key === `lang`
++              ? [0, 0.2, 1]
++              : key === `panel`
++                ? [0, 0.08, 0.8, 1]
++                : key === `logo`
++                  ? lin(0, 1, 8)
++                  : /^col/.test(key)
++                    ? lin(0, 1, 16)
++                    : [0, 1];
++      },
++      __cmGen = () => {
++        let G = __cmG;
++        if (!G || !G.W || G.L == null) return;
++        // c2 (i): the keyframes depend only on these inputs; __cmPrep calls this on every open from closed, and the
++        // whole ~39 KB text used to be rebuilt before it was compared with the last one
++        let gk = `${G.W}|${G.H}|${G.L}|${G.ix}|${(G.cols || []).join(`,`)}`;
++        if (gk === __cmGk) return;
++        __cmGk = gk;
++        let sc = `html.fw-cm .start-selling-top-nav.is-morphing`,
++          v0 = __cmVals(0, G),
++          out = ``;
++        for (let key of Object.keys(v0)) {
++          if (key === `glass`) continue;
++          let fr = [...new Set(__cmGrid(key, G).map((x) => +x.toFixed(6)))].sort((a, b) => a - b),
++            body = fr
++              .map((m) => {
++                let p = __cmVals(m, G)[key];
++                return `${+(m * 100).toFixed(4)}%{${Object.entries(p)
++                  .map(([a, b]) => `${a}:${b}`)
++                  .join(`;`)}}`;
++              })
++              .join(``);
++          out += `@keyframes fw-cm-${key}{${body}}${sc} ${__cmQ(key)}{animation:fw-cm-${key} linear both;animation-timeline:--fwms;animation-range:cover 0% cover 100lvh}`;
++          /*the Join button keeps today's one-shot unmask (CSS 12065) in its list, so the same animation runs on (matched by
++            name) instead of restarting when .is-morphing comes and goes*/
++          key === `earn` &&
++            (out += `@media (prefers-reduced-motion:no-preference){${sc}:not(.is-hero-pill) ${__cmQ(key)}{animation:fw-cm-${key} linear both,0.98s cubic-bezier(0.33,0,0.2,1) 0.52s both svelte-1dcozpm-start-selling-nav-earn-unmask;animation-timeline:--fwms,auto;animation-range:cover 0% cover 100lvh,normal}}`);
++        }
++        if (out === __cmCss) return;
++        __cmCss = out;
++        __cmSt || ((__cmSt = document.createElement(`style`)), (__cmSt.id = `fw-cm-kf`), document.head.appendChild(__cmSt));
++        __cmSt.textContent = out;
++      },
++      // the parts that exist now (the panel mounts lazily), by key
++      // c3 (#4): kept per __cmD once the panel has mounted (every open and close re-queried ~13 nodes); re-queried when
++      // any kept node left the document
++      __cmEls = () => {
++        let D = __cmD,
++          o = {};
++        if (!D) return o;
++        if (__cmE && __cmE.D === D && Object.values(__cmE.o).every((e) => e.isConnected)) return __cmE.o;
++        D.c.forEach((e, i) => (o[`c${i}`] = e));
++        D.u.forEach((e, i) => (o[`u${i}`] = e));
++        for (let [k, s] of Object.entries(__cmSel)) {
++          let e = D.u[3].querySelector(s);
++          e && (o[k] = e);
++        }
++        D.u[3].querySelectorAll(`.start-selling-morph-col`).forEach((e, j) => (o[`col${j}`] = e));
++        o.glass = D.u[3];
++        __cmE = o.panel ? { D, o } : null;
++        return o;
++      },
++      // going live (the frame the nav starts morphing): DOM, geometry, keyframes, and inline values for this frame
++      __cmPrep = (t) => {
++        let D = __cmDom();
++        if (!D) return;
++        let G = __cmG || { W: 0, H: 0 };
++        if (!G.W) {
++          let b = D.ms.getBoundingClientRect();
++          ((G.W = b.width), (G.H = b.height));
++        }
++        let lg = D.u[3].querySelector(__cmSel.logo),
++          br = D.u[3].querySelector(__cmSel.bar);
++        (G.L == null && lg && (G.L = lg.offsetWidth),
++          G.ix == null && br && (G.ix = parseFloat(getComputedStyle(br).getPropertyValue(`--nav-bar-inset-x`)) || 16));
++        G.cols = [...D.u[3].querySelectorAll(`.start-selling-morph-col`)].map(
++          (e) => (parseFloat(e.style.getPropertyValue(`--col-offset`)) || 0) / 100,
++        );
++        __cmG = G;
++        __cmGen();
++        let E = __cmEls(),
++          V = __cmVals(t, G);
++        for (let [k, p] of Object.entries(V)) if (E[k]) for (let [a, b] of Object.entries(p)) E[k].style.setProperty(a, b);
++        __cmLive = !0;
++      },
++      __cmClear = () => {
++        if (!__cmG) return void (__cmLive = !1);
++        let E = __cmEls(),
++          V = __cmVals(0, __cmG);
++        for (let [k, p] of Object.entries(V)) if (E[k]) for (let a of Object.keys(p)) E[k].style.removeProperty(a);
++        __cmLive = !1;
++      },
++      // (c1) the geometry the keyframes need (logo width, bar inset, the panel's column offsets) and the keyframes
++      // themselves, read and generated once the page has been still for 300 ms after load (the panel mounts at idle
++      // too, perf(morph-panel-lazy-mount)), not in the first open frame (iPhone Timeline, P-157 V runs: the first open
++      // ran 45 ms of script and a 27 ms style + 31 ms composite frame after it, ~80 ms frames at m ~0.06 in every run).
++      // The logo's width is intrinsic (scale and translate don't change offsetWidth) and the inset depends only on
++      // the viewport width, so reading them early gives the values __cmPrep would read; __cmPrep still reads what is
++      // missing (the fallback when the end of the page comes first).
++      __cmWarmQ = 0,
++      __cmWarmT = -1e9,
++      __cmWarmN = 0,
++      __cmWarmScroll = () => {
++        __cmWarmT = performance.now();
++      },
++      __cmWarmArm = (ms) => {
++        __cmWarmQ || (__cmWarmQ = window.setTimeout(__cmWarm, ms));
++      },
++      __cmWarmEnd = () => {
++        (window.clearTimeout(__cmWarmQ), (__cmWarmQ = 0), window.removeEventListener(`scroll`, __cmWarmScroll));
++      },
++      __cmWarm = () => {
++        __cmWarmQ = 0;
++        // not a phone width (the fallback in __cmPrep covers a later rotation), or the morph already started
++        if (!__cmOn() || __cmLive) return void __cmWarmEnd();
++        if (performance.now() - __cmWarmT < 300) return void __cmWarmArm(300);
++        let D = __cmDom(),
++          G = __cmG;
++        // the panel's size comes from the ResizeObserver in __cmDom; the columns exist once the panel has mounted
++        let cols = D ? D.u[3].querySelectorAll(`.start-selling-morph-col`) : [];
++        if (!D || !G || !G.W || !cols.length) return void (++__cmWarmN < 60 ? __cmWarmArm(1e3) : __cmWarmEnd());
++        let lg = D.u[3].querySelector(__cmSel.logo),
++          br = D.u[3].querySelector(__cmSel.bar);
++        (G.L == null && lg && (G.L = lg.offsetWidth),
++          G.ix == null && br && (G.ix = parseFloat(getComputedStyle(br).getPropertyValue(`--nav-bar-inset-x`)) || 16));
++        G.cols = [...cols].map((e) => (parseFloat(e.style.getPropertyValue(`--col-offset`)) || 0) / 100);
++        (__cmGen(), __cmWarmEnd());
++      },
++      // __navMorphSet's writes, but the Svelte state x (classes, inert, aria, tabindex, --morph) only when a threshold
++      // is crossed; r / w / a / i (C(), S(), the settle) keep the exact value
++      __cmSet = (t) => {
++        (n && window.cancelAnimationFrame(n), (n = 0), t > 0 && z(b, !0), (w = a = i = r = t));
++        let k = __cmK(t);
++        if (k !== __cmKv) {
++          let was = __cmKv;
++          /*leaving .is-morphing: the nav jumps from its CM size back to today's box, so the :not(.is-morphing) width and
++            background transitions would run (0.68 / 0.7 s); today's tween reaches the box first. html.fw-cm-out holds
++            them off for the flip's frame (CSS), two frames later the list is today's again (no value changes then)*/
++          t <= 0 &&
++            was[0] === `1` &&
++            (document.documentElement.classList.add(`fw-cm-out`),
++            requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove(`fw-cm-out`))));
++          // cm-return: back to closed while pre is on (the nav stays .is-morphing.fw-cm-pre), the closed look needs
++          // __cmPrep(0)'s inline values, as when pre turned on; v14 cleared them here, so after the first grow and return
++          // the bar lost its 4 px offset, the logo its 20 px inset and the actions their -4 px (Simulator WDA wiggle: the
++          // logo jumped 20 px at every crossing of m 0)
++          ((__cmKv = k), t > 0 ? (was[0] === `1` && __cmLive) || __cmPrep(t) : __cmPre ? __cmPrep(0) : __cmClear(), z(x, t, !0));
++        }
++        // cm-return (user T-253 #27): c3's per-m blur write is gone; the glass stays at blur(20px) (set once by __cmPrep)
++        (S(), C() || I());
++      },
++      // the panel's inert lifts on b (ue(): inert = !(b || E)); b is set in the same flush before x shows the panel
++      __navMorphSet = (t) => {
++        (n && window.cancelAnimationFrame(n),
++          (n = 0),
++          t > 0 && z(b, !0),
++          (w = a = i = r = t),
++          z(x, t, !0),
++          S(),
++          C() || I());
++      },
+       T = (e) => {
+         let t = ZM(i, a, e - o);
+-        ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), C() || I());
++        ((r = t.value), (n = t.done ? 0 : window.requestAnimationFrame(T)), z(x, r, !0), S(), __osb(), C() || I());
+       },
+       E = (t) => {
+         if (w !== t || a !== t) {
+-          if (((w = t), z(b, !0), e.matches)) {
++          if (((w = t), z(b, !0), __osb(), e.matches)) {
+             ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
+             return;
+           }
+@@ -14417,9 +14990,9 @@
+           n = window.visualViewport?.height ?? window.innerHeight;
+         return t.height >= n * 0.45 && t.bottom <= n + 8;
+       },
+-      k = (e) => C() || (e > 0 && O()),
++      k = (e) => C() || (e > 0 && u && O()),
+       A = (e) => {
+-        k(e.deltaY) && (C() || (s = window.scrollY), e.preventDefault(), D(e.deltaY));
++        k(e.deltaY) && (C() || (s = __pinY()), e.preventDefault(), D(e.deltaY));
+       },
+       j = (e) => {
+         c = e.touches[0]?.clientY ?? 0;
+@@ -14427,27 +15000,58 @@
+       M = (e) => {
+         let t = e.touches[0]?.clientY ?? c,
+           n = c - t;
+-        ((c = t), k(n) && (C() || (s = window.scrollY), e.preventDefault(), D(n)));
++        ((c = t), k(n) && (C() || (s = __pinY()), e.preventDefault(), D(n)));
+       },
++      // mw10e-arm-scope (F3): the touch listeners go on #platform and the nav header instead of the window, so only
++      // those two subtrees are touch-listener targets. At the end of the page #platform fills >= 45 % of the
++      // viewport (O()) and the expanding header covers the rest as m grows, so the morph's touches start on one of
++      // them. wheel stays on the window (desktop wheel over any part of the page still drives the morph). All of
++      // them are armed once at setup, never at the IO edge.
++      __tt = [],
+       N = () => {
+         d ||
++          __msOn ||
+           ((d = !0),
+           window.addEventListener(`wheel`, A, { passive: !1, capture: !0 }),
+-          window.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }),
+-          window.addEventListener(`touchmove`, M, { passive: !1, capture: !0 }));
++          (__tt = [y(), document.querySelector(`header.start-selling-top-nav`)].filter(Boolean)).forEach((t) => {
++            (t.addEventListener(`touchstart`, j, { passive: !0, capture: !0 }),
++              t.addEventListener(`touchmove`, M, { passive: !1, capture: !0 }));
++          }));
+       },
+       P = () => {
+         d &&
+           ((d = !1),
+           window.removeEventListener(`wheel`, A, !0),
+-          window.removeEventListener(`touchstart`, j, !0),
+-          window.removeEventListener(`touchmove`, M, !0));
++          __tt.forEach((t) => {
++            (t.removeEventListener(`touchstart`, j, !0), t.removeEventListener(`touchmove`, M, !0));
++          }),
++          (__tt = []));
+       },
++      // perf(morph-listeners-once): the original added the window wheel/touchstart/touchmove listeners when
++      // #platform entered the 200% zone (IO below) and removed them when it left. That add is followed by the
++      // ~100 ms iPhone frame at y~1960 (observed). In WebKit's source a window wheel listener triggers a full
++      // style rebuild only when the set of event-region types changes (first wheel listener, first non-passive
++      // one, removal of the last); touch event regions are compiled out on iOS before WebKit 7625. Which listener
++      // costs the frame on the device is unresolved. They are now never removed while the effect lives, and the
++      // zone gate moved into the handlers (k(): `u`), so they act exactly when the original had them attached
++      // (u || C()).
++      // armed once at setup (page load), before any scroll.
+       I = () => {
+-        u || C() ? N() : P();
++        N();
+       },
++      // perf(morph-webkit): the pin fought iOS rubber-band at the end of the page. A morph started during the
++      // overscroll bounce stored s = scrollY > maxY (5312 vs 5220), so every frame scrollTo(s) was clamped to
++      // maxY, scrollY !== s again, and the pin re-fired: scrollY alternated 5220 <-> 5312 at ~13 fps. Now the
++      // pin target is clamped to [0, maxY], and the pin leaves the overscroll range (scrollY > maxY) alone:
++      // iOS springs back to maxY by itself.
++      __pinMax = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
++      __pinY = () => Math.min(window.scrollY, __pinMax()),
+       L = () => {
+-        (_(), C() && window.scrollY !== s && window.scrollTo({ top: s, behavior: `instant` }));
++        if ((_(), __msOn)) return void __msTick(__nsY);
++        if (!C()) return;
++        let e = window.scrollY,
++          t = __pinMax();
++        (s > t && (s = t), e <= t + 1 && Math.abs(e - s) > 1 && window.scrollTo({ top: s, behavior: `instant` }));
+       },
+       R = y(),
+       te = R
+@@ -14475,10 +15079,44 @@
+       document.addEventListener(`transitionend`, __nsTrEnd, !0),
+       document.addEventListener(`transitioncancel`, __nsTrEnd, !0),
+       document.fonts?.ready.then(__nsInvalidate));
+-    (R && te && te.observe(R), _(), m());
+-    // DEBUG ONLY (morph-webkit phone driver, the M driver of iphone.mjs run): drive the morph without a finger through
+-    // the same path a push past the end takes (pin target, E(1) -> tween T -> --morph / classes / S()), hold, E(0),
+-    // repeat; log rAF frame gaps. Safari's evaluate can't await: poll window.__fwMD (JSON). g0.0: v0's pin (no clamp).
++    // g0.0k: html.fw-bx, the WebKit marker g0.0h's v3-W set (the page's own `GestureEvent` test, every width; MDN
++    // browser-compat-data api/GestureEvent.json). g0.0i's clock-layer CSS is scoped to it; v14's end has no v3-W, so the
++    // class is set here alone (no v3-W fills: B's CSS has no other html.fw-bx rule). Chrome never gets it.
++    `GestureEvent` in window && document.documentElement.classList.add(`fw-bx`);
++    (R && te && te.observe(R), _(), m(), N());
++    // morph-scroll setup (touch phones only): the extra screen after #platform and its height var for the sticky top
++    __msOn &&
++      R &&
++      ((__msEnd = document.createElement(`div`)),
++      (__msEnd.className = `fw-ms-end`),
++      __msEnd.setAttribute(`aria-hidden`, `true`),
++      R.after(__msEnd),
++      // passive: they never block or delay the scroll; they only tell the settle when the finger is down
++      [`touchstart`, `touchmove`, `touchend`, `touchcancel`].forEach((t) => window.addEventListener(t, __msTouchEv, { passive: !0 })),
++      // --fw-ms-h: #platform's height plus the sub-pixel gap between its bottom and the rounded page end, so the
++      // sticky hold starts exactly where the page used to end (the old pin's position, to the fraction of a pixel)
++      (__msRO = new ResizeObserver(() => {
++        __msTick.g = null;
++        let e = R.getBoundingClientRect().height,
++          t = document.documentElement.scrollHeight - __msEnd.offsetHeight - (__msEnd.getBoundingClientRect().top + window.scrollY);
++        R.style.setProperty(`--fw-ms-h`, `${e + (t > 0 && t < 1 ? t : 0)}px`);
++      })),
++      __msRO.observe(R),
++      // main (the page's content) grows with lazy content above; body is only one viewport tall here
++      R.parentElement && __msRO.observe(R.parentElement),
++      document.documentElement.classList.add(`fw-ms`),
++      // compositor-morph: the view timeline (CSS) and the wrappers exist from load, so the first morph frame only flips
++      // the class
++      __cmSup &&
++        (document.documentElement.classList.add(`fw-cm`),
++        __cmDom(),
++        window.addEventListener(`scroll`, __cmWarmScroll, { passive: !0 }),
++        __cmWarmArm(2e3)),
++      __msTick());
++    window.__navMorphSet = __navMorphSet;
++    // DEBUG ONLY (morph-webkit phone driver, strip before landing): drive the morph without a finger through
++    // the same path a push past the end takes (pin target, E(1) -> spring T -> --morph / classes / S()),
++    // hold, E(0), repeat; log rAF frame gaps. Safari's evaluate can't await: poll window.__fwMD (JSON).
+     window.__fwMorphDrive = (o = {}) => {
+       let h = o.hold ?? 2e3,
+         c = o.cycles ?? 3,
+@@ -14491,10 +15129,10 @@
+         };
+       return (
+         (window.__fwMD = null),
+-        window.scrollTo({ top: Math.max(0, document.documentElement.scrollHeight - window.innerHeight), behavior: `instant` }),
++        window.scrollTo({ top: __pinMax(), behavior: `instant` }),
+         (async () => {
+           (await d(800), requestAnimationFrame(p), await d(300));
+-          for (let e = 0; e < c; e++) (C() || (s = window.scrollY), E(1), await d(h), E(0), await d(h));
++          for (let e = 0; e < c; e++) (C() || (s = __pinY()), E(1), await d(h), E(0), await d(h));
+           u = !1;
+           let e = (e) => {
+               let t = e.map((e) => e[1]).sort((e, t) => e - t),
+@@ -14515,6 +15153,13 @@
+         (n && window.cancelAnimationFrame(n),
+           window.clearTimeout(l),
+           te?.disconnect(),
++          __msRO?.disconnect(),
++          __cmWarmEnd(),
++          __cmRT && (cancelAnimationFrame(__cmRT), (__cmRT = 0)),
++          __msEnd?.remove(),
++          window.clearTimeout(__msTO),
++          [`touchstart`, `touchmove`, `touchend`, `touchcancel`].forEach((t) => window.removeEventListener(t, __msTouchEv, { passive: !0 })),
++          document.documentElement.classList.remove(`fw-ms`),
+           P(),
+           ne(),
+           e.removeEventListener(`change`, m),
+@@ -14597,31 +15242,231 @@
+   // Chrome resolves the same values either way.
+   var __mkP = null,
+     __mkV = null,
+-    // g0.0: no CM branch (__mkCm / __mkOff / __mkPend went with compositor-morph): every value is written
++    // c3b #5: where the CM morph runs (html.fw-cm, width <= 640 px) the CM rules draw these six from the view timeline
++    // and the threshold classes, not from --morph, so their inline copy is written only at m 0 (the value the rules
++    // read once CM lets go). A later m is kept and written if CM stops applying (a width change) while it is pending.
++    // Not under prefers-reduced-motion: reduce, where the CM Join-button rules (filter, transition) are off and its base
++    // rule still blurs by --earn-out = --morph / 0.2.
++    __mkCm = window.matchMedia(`(width <= 640px)`),
++    __mkRm = window.matchMedia(`(prefers-reduced-motion: reduce)`),
++    __mkPend = null,
++    __mkOff = (v) => v !== `0` && __mkCm.matches && !__mkRm.matches && document.documentElement.classList.contains(`fw-cm`),
+     __mkW = (v) => {
++      if (__mkOff(v)) return void (__mkPend = v);
++      __mkPend = null;
+       if (v === __mkV) return;
+       __mkV = v;
+-      for (let t of [B, re, ie, oe, __mkP, __ewWrap(), __bxDk]) t && t.style.setProperty(`--morph`, v);
++      for (let t of [B, re, ie, oe, __mkP, __ewWrap()]) t && t.style.setProperty(`--morph`, v);
+     };
+-  // g0-box v3 (gpu-original M3-B, option 3; phones <= 640 px): the nav's box and its menu card stay exactly v0's
+-  // (size, top, backdrop blur, card at the box size per frame); only the nav's own paint goes: its colour is two
+-  // composited solid fills (light #ffffff1a, dark #131922 at opacity --morph, which composites to exactly v0's
+-  // color-mix) and its rounded corner is a clip-path inset(0 round r) (a shape mask, no repaint). Built once here.
+-  // v3-W: WebKit only, by the page's own feature test (`GestureEvent` is WebKit-only: MDN browser-compat-data
+-  // api/GestureEvent.json; the same gate as heCss and K6). Elsewhere nothing is created and the CSS (scoped to
+-  // html.fw-bx) does not apply: Chrome keeps v0's nav exactly. The clip-path edge is anti-aliased differently from v0's
+-  // border-radius mid-tween (Chrome up to 226 levels; WebKit up to 218 at 6 of 144 stops: a T3 look-alike, PR-038).
+-  var __bxOn = `GestureEvent` in window,
+-    __bxLt = __bxOn ? document.createElement(`div`) : null,
+-    __bxDk = __bxOn ? document.createElement(`div`) : null;
+-  __bxOn &&
+-    (document.documentElement.classList.add(`fw-bx`),
+-    (__bxLt.className = `fw-bx-fill fw-bx-light`),
+-    (__bxDk.className = `fw-bx-fill fw-bx-dark`),
+-    __bxLt.setAttribute(`aria-hidden`, `true`),
+-    __bxDk.setAttribute(`aria-hidden`, `true`),
+-    I.insertBefore(__bxDk, B),
+-    I.insertBefore(__bxLt, __bxDk));
++  for (let q of [__mkCm, __mkRm]) q.addEventListener(`change`, () => __mkPend !== null && __mkW(__mkPend));
++  // perf(morph-gpu, N2 reveal; PR-012 rev 1, accepted by the user; by fix-morph-gpu, ported onto v9-final by fix-end-morph-p1): on phones (<= 640 px), while the morph
++  // moves (0.001 < m < 1), the nav keeps its final size and place (data-fw-rv in the CSS) and the box today's nav
++  // has at m (top 16 -> 12 px, width pill -> panel, height 52 px -> panel, radius 32 -> 20 px) is cut out of it by
++  // a clip-path. Nothing inside is laid out again per frame: every part takes its today's place at m by a
++  // transform (bar, logo, actions, the panel's columns, veil, title block, footer), the backdrop columns are
++  // clipped to today's panel height, and the dark colour is a layer at opacity m over the light one (the same
++  // colour as today's color-mix). WebKit applies a changed clip-path on a composited layer as a new shape mask
++  // without repainting the content (RenderElement.cpp: ClipPath -> RecompositeLayer when willCompositeClipPath()).
++  // Settled (m = 0 or 1) the attribute and the inline values are off and the nav is exactly today's.
++  var __rvMq = window.matchMedia(`(width <= 640px)`),
++    __rvOn = !1,
++    __rvV = null,
++    __rvP = null,
++    __rvE = null,
++    __rvD = null,
++    __rvG = null,
++    __rvWf = 0,
++    __rvHf = 0,
++    __rvIx = 16,
++    __rvDpr = 1,
++    __rvF = 0,
++    // P1b (a), fix-end-morph-p1: the nav's full (panel) size without a layout read in the frame that switches the
++    // reveal on. A hidden child of the nav (it inherits the nav's --panel-w / --panel-h, CSS .fw-rv-size) has exactly
++    // the size the nav takes under [data-fw-rv]; a ResizeObserver hands over its border box after layout, so no frame
++    // forces a layout for it (P1 read I.offsetWidth/offsetHeight there: a forced style + layout, then a second one
++    // after its own writes). Until the first observation the switch-on reads as before. Phones only (the reveal's media
++    // query); the probe is added one frame after the nav's first template run, i.e. after hydration has walked the
++    // server's nav (a node added during the walk would not match the server HTML).
++    __rvSz = null,
++    __rvSzRO = null,
++    __rvSzQ = 0,
++    __rvSzW = 0,
++    __rvSzH = 0,
++    __rvSzIx = 16,
++    __rvSzInit = () => {
++      __rvSzQ = 0;
++      // compositor-morph: no probe where the CM morph runs (the reveal stays off there, see __rvW); the first template
++      // run can come before the nav effect adds html.fw-cm, this rAF comes after it
++      if (__rvSz || !I || !I.isConnected || typeof ResizeObserver != `function` || document.documentElement.classList.contains(`fw-cm`))
++        return;
++      ((__rvSz = document.createElement(`div`)), (__rvSz.className = `fw-rv-size`), __rvSz.setAttribute(`aria-hidden`, `true`), I.appendChild(__rvSz));
++      (__rvSzRO = new ResizeObserver(([e]) => {
++        let b = e && e.borderBoxSize && e.borderBoxSize[0];
++        if (!b) return;
++        let w = Math.round(b.inlineSize);
++        // --nav-bar-inset-x changes only with the width (the (width <= 640px) rule): a height-only change (a 100dvh
++        // panel at every toolbar step) reads no style here
++        w !== __rvSzW && (__rvSzIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16);
++        ((__rvSzW = w), (__rvSzH = Math.round(b.blockSize)));
++        // the panel size changed while the reveal is on (today only a rotation: on phones --panel-h is 100vh based; a
++        // 100dvh panel would also change with the toolbar): the clip and the parts follow at the same m in this frame
++        // (an observation runs after layout, before paint). The probe's size does not depend on these writes.
++        if (__rvOn && (__rvSzW !== __rvWf || __rvSzH !== __rvHf || __rvSzIx !== __rvIx)) {
++          ((__rvWf = __rvSzW), (__rvHf = __rvSzH), (__rvIx = __rvSzIx));
++          let v = __rvV;
++          ((__rvV = null), __rvW(v));
++        }
++      })).observe(__rvSz);
++    },
++    __rvT = (t, k, v) => t && (v === `` ? t.style.removeProperty(k) : t.style.setProperty(k, v)),
++    // second step of switching off, one frame later: the nav's own backdrop blur comes back and the glass goes
++    __rvFin = () => {
++      __rvF && (cancelAnimationFrame(__rvF), (__rvF = 0));
++      for (let k of [`backdrop-filter`, `-webkit-backdrop-filter`, `transition-property`]) I.style.removeProperty(k);
++      __rvG && !__rvOn && (__rvG.removeAttribute(`data-fw-rv`), __rvG.style.removeProperty(`--morph`));
++    },
++    __rvOff = (v) => {
++      __rvOn = !1;
++      I.removeAttribute(`data-fw-rv`);
++      I.style.removeProperty(`clip-path`);
++      // the clip goes in this frame with no backdrop filter on the nav (the glass, at today's box and blur, stays
++      // one more frame); the nav's own blur comes back next frame (__rvFin)
++      I.style.setProperty(`backdrop-filter`, `none`);
++      I.style.setProperty(`-webkit-backdrop-filter`, `none`);
++      // back at m = 0 the nav's width drops from the panel to the pill while .is-morphing goes: today's
++      // :not(.is-morphing) transition list (background, opacity, transform, visibility, width) must not animate it;
++      // the first four keep their own durations (same order in the reduced-motion list)
++      +v <= 0.001 && I.style.setProperty(`transition-property`, `background, opacity, transform, visibility`);
++      __rvG && __rvG.style.setProperty(`--morph`, v);
++      __rvF = requestAnimationFrame(() => {
++        __rvF = 0;
++        __rvFin();
++        // Safari (iOS Simulator, OBSERVED, cause unknown): after the reveal ends at m = 1 the settled panel stays cut
++        // to the last reveal clip, even with the clip-path gone; switching the nav's backdrop filter off and on once
++        // more, two frames later, clears it. At m = 1 the nav's blur is blur(0px) under an opaque panel, so these two
++        // frames look the same. Not at m = 0 (the pill's blur is visible there; the last clip is the pill itself).
++        +v >= 1 &&
++          (__rvF = requestAnimationFrame(() => {
++            __rvF = 0;
++            if (__rvOn) return;
++            I.style.setProperty(`backdrop-filter`, `none`);
++            I.style.setProperty(`-webkit-backdrop-filter`, `none`);
++            __rvF = requestAnimationFrame(() => ((__rvF = 0), __rvOn || __rvFin()));
++          }));
++      });
++      __rvD && __rvD.style.removeProperty(`opacity`);
++      for (let [t, k] of [[B, `translate`], [re, `left`], [re, `translate`], [ie, `translate`]]) __rvT(t, k, ``);
++      if (__rvE) {
++        __rvT(__rvE.p, `transform-origin`, ``);
++        for (let [t, k] of [[__rvE.b, `transform`], [__rvE.b, `clip-path`], [__rvE.v, `transform`], [__rvE.c, `translate`], [__rvE.f, `translate`]])
++          __rvT(t, k, ``);
++        for (let [e] of __rvE.k) __rvT(e, `translate`, ``);
++      }
++    },
++    __rvW = (v) => {
++      if (v === __rvV) return;
++      __rvV = v;
++      // compositor-morph (PR-030): where the CM morph runs (html.fw-cm: touch phones with scroll-driven animations), it
++      // does the same job (the nav at its final size, today's box cut out, the parts moved by transforms); the reveal
++      // stays off there, and stays the path for phones without scroll-driven animations
++      if (document.documentElement.classList.contains(`fw-cm`)) {
++        __rvOn && __rvOff(v);
++        return;
++      }
++      __rvSz || __rvSzQ || !__rvMq.matches || (__rvSzQ = requestAnimationFrame(__rvSzInit));
++      let m = +v;
++      if (!(__rvMq.matches && m > 0.001 && m < 1)) {
++        __rvOn && __rvOff(v);
++        return;
++      }
++      if (!__rvOn) {
++        __rvOn = !0;
++        // switched on again before the second off step ran: finish it now (the reveal's CSS turns the blur off)
++        __rvF && __rvFin();
++        // P1b (a), fix-end-morph-p1: the two decoration layers are aria-hidden (the a11y diff against C showed them as
++        // two unnamed "generic" nodes while the reveal is on)
++        __rvD ||
++          ((__rvD = document.createElement(`div`)), (__rvD.className = `fw-rv-dark`), __rvD.setAttribute(`aria-hidden`, `true`), I.insertBefore(__rvD, B));
++        // the backdrop blur moves to a sibling sized exactly like today's nav (same CSS formulas from --morph): blurred
++        // inside the full-size nav it would also sample the page beyond today's box (a light glow at the pill's edges)
++        __rvG ||
++          ((__rvG = document.createElement(`div`)), (__rvG.className = `fw-rv-glass`), __rvG.setAttribute(`aria-hidden`, `true`), I.parentNode.insertBefore(__rvG, I));
++        __rvG.setAttribute(`data-fw-rv`, ``);
++        I.setAttribute(`data-fw-rv`, ``);
++        // P1b (a): the cached full size (no layout read here); P1's read only before the first observation
++        __rvSzW > 0
++          ? ((__rvWf = __rvSzW), (__rvHf = __rvSzH), (__rvIx = __rvSzIx))
++          : ((__rvWf = I.offsetWidth),
++            (__rvHf = I.offsetHeight),
++            (__rvIx = parseFloat(getComputedStyle(B).getPropertyValue(`--nav-bar-inset-x`)) || 16));
++        __rvDpr = window.devicePixelRatio || 1;
++      }
++      if (__rvP !== __mkP)
++        ((__rvP = __mkP),
++          (__rvE = __mkP && {
++            p: __mkP,
++            b: __mkP.querySelector(`.start-selling-morph-backdrop`),
++            v: __mkP.querySelector(`.start-selling-morph-veil`),
++            c: __mkP.querySelector(`.start-selling-morph-center`),
++            f: __mkP.querySelector(`.start-selling-morph-footer`),
++            // the columns' own offset is a % of their height (today's panel height): kept by a px translate
++            k: [...__mkP.querySelectorAll(`.start-selling-morph-col`)].map((e) => [
++              e,
++              (parseFloat(e.style.getPropertyValue(`--col-offset`)) || 0) / 100,
++            ]),
++          }));
++      // today's box at m, in the coordinates of the full-size nav (left/top of the full box = 0)
++      let n = 1 - m,
++        Wf = __rvWf,
++        Hf = __rvHf,
++        w = Wf - 8 * n,
++        h = 52 + (Hf - 52) * m,
++        dx = 4 * n,
++        dy = 4 * n,
++        s = w / Wf,
++        px = (e) => `${Math.round(e * 1e4) / 1e4}px`,
++        // whole device pixels for the text-carrying layers (title block, footer, nav bar): today's text is laid
++        // out and drawn on the device-pixel grid, a fractional GPU offset would resample it
++        dp = (e) => px(Math.round(e * __rvDpr) / __rvDpr);
++      I.style.setProperty(
++        `clip-path`,
++        `inset(${px(dy)} ${px(dx)} ${px(Hf - dy - h)} ${px(dx)} round ${px(32 - 12 * m)})`,
++      );
++      __rvD.style.setProperty(`opacity`, String(m));
++      __rvG.style.setProperty(`--morph`, v);
++      B.style.setProperty(`translate`, `0px ${dp(dy)}`);
++      re.style.setProperty(`left`, `0px`);
++      re.style.setProperty(`translate`, `calc(${px(dx + __rvIx + (w / 2 - __rvIx) * m)} - ${50 * m}%) 0px`);
++      ie.style.setProperty(`translate`, `${dp(-dx)} -50%`);
++      if (__rvE) {
++        __rvE.p.style.setProperty(`transform-origin`, `${px(Wf / 2)} ${px(dy + h / 2)}`);
++        // the columns (3 on phones, fixed gaps) scale by w / Wf: widths and positions within 0.1 px of today's
++        __rvT(__rvE.b, `transform`, `translate(${px(dx + 0.03 * (Wf - w))}, ${px(dy)}) scale(${s})`);
++        __rvT(__rvE.b, `clip-path`, `inset(0px 0px ${px(Hf - h / s)} 0px)`);
++        __rvT(__rvE.v, `transform`, `translate(${px(dx)}, ${px(dy)}) scale(${s}, ${h / Hf})`);
++        __rvT(__rvE.c, `translate`, `0px ${dp(dy + h / 2 - Hf / 2)}`);
++        __rvT(__rvE.f, `translate`, `0px ${dp(dy + h - Hf)}`);
++        for (let [e, o] of __rvE.k) __rvT(e, `translate`, `0px ${px(o * (h / s - Hf))}`);
++      }
++    };
++  // P1b (a), fix-end-morph-p1: when the header goes, so do the reveal's own nodes and observer: the size probe and its
++  // ResizeObserver, a queued probe frame, a pending off step, and P1's glass (it sits in the nav's parent, outside
++  // what Svelte removes with the header)
++  ne(
++    () => () => {
++      (__rvSzQ && cancelAnimationFrame(__rvSzQ),
++        (__rvSzQ = 0),
++        __rvF && cancelAnimationFrame(__rvF),
++        (__rvF = 0),
++        __rvSzRO?.disconnect(),
++        (__rvSzRO = null),
++        __rvSz?.remove(),
++        (__rvSz = null),
++        __rvG?.remove(),
++        (__rvG = null),
++        (__rvOn = !1));
++    },
++  );
+   var W = V(B, 2),
+     ue = (n) => {
+       var a = lN(),
+@@ -14739,18 +15584,26 @@
+         ((L = U(I, 1, `start-selling-top-nav svelte-1dcozpm`, null, L, {
+           "is-hero-pill": s(O),
+           "is-hero-chrome-ready": s(h),
+-          "is-morphing": s(E),
++          "is-morphing": s(E) || s(__cmPreS),
++          // c3b-K2: the closed look while pre-built (CSS .fw-cm-pre: today's pill glass, slide, transitions, Join taps)
++          "fw-cm-pre": s(__cmPreS) && !s(E),
+           "is-expanded": s(x) > qM,
+           "is-on-dark": s(g) || s(x) > 0.2,
+           "is-locale-open": s(y),
+           "is-scroll-hidden": s(v) && !s(E),
+           "is-profile-sticky-hidden": s(v) && !s(E),
++          "is-earn-hidden": __ewEh(s(x)),
+         })),
+-          // g0.0: the Join's timed state follows the hero pill only (no .is-earn-hidden at the end of the page)
+-          __ewGo(!s(O), s(O)),
++          // cm-return: .fw-cm-quiet from the first CM frame (live or pre) until the hero pill comes back. The CM wrappers
++          // switch display: contents <-> block with .is-morphing, WebKit then re-creates the Join's ::after and its
++          // one-shot intro sweep played again (Simulator: at every pre on / off near the end; never in g0.0h); the
++          // CSS stops that replay only. The hero pill's own intro (leaving .is-hero-pill) is untouched.
++          s(O) ? I.classList.remove(`fw-cm-quiet`) : (s(E) || s(__cmPreS)) && I.classList.add(`fw-cm-quiet`),
++          __ewGo(!s(O) && !__ehV, s(O)),
+           k(I, `aria-label`, s(o).header.primary),
+           (te = S(I, ``, te, e)),
+           __mkW(e[`--morph`]),
++          __rvW(e[`--morph`]),
+           k(re, `href`, a()),
+           k(re, `aria-label`, s(o).header.home),
+           k(re, `data-selenium`, SE.header.home),
