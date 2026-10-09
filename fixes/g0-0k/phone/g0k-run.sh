@@ -1,4 +1,5 @@
 #!/bin/sh
+# P-173 amendment (lead 04:5xZ): cooling on, phone-temp --below 40.0 before every hold, stop at an end battery >= 43.0 C.
 # g0.0k phone kit for P-173 (lead signed 2026-10-09 ~04:25Z; card fixes/g0-0k/README.md): a text-substitution copy of
 # fix-scrollcb-g0's P-172 kit (fixes/sticky-walk/phone/sw-*.sh; credit fix-scrollcb-g0, fix-menu-layers, fix-g0-box):
 # logs out/g0kp, labels g0k-, owner fix-cm-return, snapshot out/g0kp-snap (C from out/cm-return/snapk/A, V from
@@ -45,7 +46,7 @@ cd "$(dirname "$0")/../../.." || exit 2
 T=$1; shift; LG=out/g0kp; mkdir -p $LG
 sh fixes/g0-0k/phone/g0k-serve.sh start || { echo "BLOCK STOP: servers"; exit 4; }
 if [ "$CM_DRY" = 1 ]; then CM_TICKET=$T CM_DRY=1 sh fixes/g0-0k/phone/g0k-block.sh "$@"; rc=$?; sh fixes/g0-0k/phone/g0k-serve.sh stop; echo "EXIT $rc"; exit $rc; fi
-CM_TICKET=$T CM_COOL=0 CM_THERMAL=serious node tools/lock.mjs run iphone --owner fix-cm-return --block "$T" --max-seconds 3600 --keep 120 -- \
+CM_TICKET=$T CM_COOL=1 CM_THERMAL=serious node tools/lock.mjs run iphone --owner fix-cm-return --block "$T" --max-seconds 3600 --keep 120 -- \
   sh fixes/g0-0k/phone/g0k-block.sh "$@"
 rc=$?
 node tools/thermal.mjs clear --owner fix-cm-return > $LG/thermal-clear-$(date +%s).log 2>&1; cr=$?

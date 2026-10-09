@@ -182,7 +182,23 @@ Signed as drafted below (in 62bcb5e4), before any P-173 data, with these rulings
    rule. Neither case runs a second block without the lead's say. (Applied by hand to the frozen reader's per-threshold
    output; the reader itself is unchanged.)
 
-Kit and reader, frozen before the first counted run (sha256, 12):
+7. **Amendment (lead, signed 04:5xZ, before the restart): option (a).**
+   - Attempt 1 (04:26-04:56Z) stopped at H5 because the phone reached Critical. Battery per hold, start -> end (C):
+     H1 38.4 -> 39.5, H2 39.6 -> 40.7, S0 40.8 -> 41.8, EC1 41.9 -> 42.5, EV1 42.5 -> 42.9 (Critical at the end gate,
+     hold VOID). That is about +1 C per hold under tool-serious with no cooling.
+   - Attempt 1's runs (S0 PASS 58.8 fps; EC1 valid; EV1 void, profileDrift) are kept in `out/g0kp-attempt1/`,
+     descriptive only, never pooled.
+   - The block restarts from H1 with the same card, reader and order.
+   - Cooling is a gate under tool-serious, for this block only: before every hold, `wait.mjs phone-temp --below 40.0`
+     (900 s per wait, waited again on a timeout, at most 4 waits, then stop). The lead chose 40.0 over 38: a hold adds
+     about 1 C, so counted runs start at 40.0 or below and end near 41, under the 44 C ceiling; C V V C balances the order.
+   - The block log prints the start and end battery of every hold (`BATTERY` lines); the result table gets that column.
+   - New stop rule: a hold whose end battery reads >= 43.0 C, or Critical, stops the block (exit 12, or the VOID end
+     gate), and the lead is messaged. No resuming without the lead.
+   - Kit changes for this: `g0k-run.sh` sets CM_COOL=1; `g0k-block.sh` uses the 40.0 C cooling loop, the BATTERY lines
+     and the stop rule. The reader is unchanged.
+
+Kit and reader, frozen before the first counted run (sha256, 12; the amended block and run scripts are in the next table):
 
 | file | sha256 |
 |---|---|
@@ -192,6 +208,15 @@ Kit and reader, frozen before the first counted run (sha256, 12):
 | `fixes/g0-0k/phone/g0k-run.sh` | 80aeda4976fb |
 | `fixes/g0-0k/phone/g0k-serve.sh` (snapshot out/g0kp-snap, HASHES.txt bcb64c57738b) | 937ae8dcb7dd |
 | `fixes/g0-0k/phone/g0k-k.env` (no K arm) | 848094b02c9b |
+
+Amended for attempt 2 (04:5xZ; dry run of all 12 holds ok, served hashes ok; the battery parser was checked on
+attempt 1's real gate lines: 42.5 / 42.89):
+
+| file | sha256 |
+|---|---|
+| `fixes/g0-0k/phone/g0k-block.sh` (40.0 C cooling loop, BATTERY lines, >= 43.0 C stop) | d4bef7eb6605 |
+| `fixes/g0-0k/phone/g0k-run.sh` (CM_COOL=1) | 1892029d1a86 |
+| `fixes/g0-0k/phone/g0k-read.mjs` (unchanged) | d31bfc7a4de6 |
 
 The kit is a text-substitution copy of fix-scrollcb-g0's P-172 kit (`fixes/sticky-walk/phone/sw-*.sh`) with the
 pins above; the reader imports eop-read.mjs's helpers (fix-g0-box). Note from the reader check on P-172's g0.0j data:

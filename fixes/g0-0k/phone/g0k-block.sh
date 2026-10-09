@@ -1,4 +1,5 @@
 #!/bin/sh
+# P-173 amendment (lead 04:5xZ): cooling on, phone-temp --below 40.0 before every hold, stop at an end battery >= 43.0 C.
 # g0.0k phone kit for P-173 (lead signed 2026-10-09 ~04:25Z; card fixes/g0-0k/README.md): a text-substitution copy of
 # fix-scrollcb-g0's P-172 kit (fixes/sticky-walk/phone/sw-*.sh; credit fix-scrollcb-g0, fix-menu-layers, fix-g0-box):
 # logs out/g0kp, labels g0k-, owner fix-cm-return, snapshot out/g0kp-snap (C from out/cm-return/snapk/A, V from
@@ -155,10 +156,16 @@ prehold() {
   [ "$CM_DRY" = 1 ] && { echo "PREHOLD $1 (dry: no park, no cooling, no WDA check)"; return 0; }
   node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1 && echo "PARKED Safari before $1" || echo "PARK before $1 failed (the hold goes on)"
   linkok || relink "before $1"
-  if [ "${CM_COOL:-1}" = 1 ]; then coolwait 38 900 "cooling before $1"; ce=$?
-    if [ $ce -eq 5 ]; then relink "phone-temp LINK-LOST before $1"; coolwait 38 900 "cooling before $1 (after the re-plug)"; ce=$?; fi
-    [ $ce -eq 5 ] && { echo "BLOCK STOP: phone-temp LINK-LOST again before $1 right after a re-plug: message the lead"; exit 11; }
-    [ $ce -eq 0 ] || { echo "BLOCK STOP: the phone did not cool below 38 °C in 900 s before $1 (phone-temp exit $ce)"; exit 6; }; fi
+  # P-173 amendment (lead 04:5xZ): cool below 40.0 C before every hold; a 900 s wait that times out is waited again
+  # (at most 4 waits = 60 min, then stop: nothing runs hot)
+  if [ "${CM_COOL:-1}" = 1 ]; then CT=${CM_COOL_C:-40.0}; nw=0
+    while :; do nw=$((nw + 1)); coolwait $CT 900 "cooling before $1 (wait $nw)"; ce=$?
+      if [ $ce -eq 5 ]; then relink "phone-temp LINK-LOST before $1"; coolwait $CT 900 "cooling before $1 (after the re-plug)"; ce=$?; fi
+      [ $ce -eq 5 ] && { echo "BLOCK STOP: phone-temp LINK-LOST again before $1 right after a re-plug: message the lead"; exit 11; }
+      [ $ce -eq 0 ] && break
+      [ $ce -eq 3 ] && [ $nw -lt 4 ] && { echo "COOL before $1: wait $nw timed out, waiting again"; continue; }
+      echo "BLOCK STOP: the phone did not cool below $CT C before $1 (phone-temp exit $ce after $nw waits)"; exit 6
+    done; echo "COOLED below $CT C before $1 ($nw wait(s))"; fi
   if node tools/iphone.mjs wda check > $LG/wda-check-$1-$(date +%s).log 2>&1; then echo "WDA READY before $1"
   else echo "WDA not ready before $1: one restart"; wdarestart; fi
 }
@@ -169,6 +176,11 @@ hold() {
   else CM_GATE=both node tools/lock.mjs run chrome-measure --owner "$R" --no-timing --max-seconds 600 --doing "$CM_TICKET $h: $*" -- \
       caffeinate -i -s sh $HS $h "$@" > $LG/hold-$h.log 2>&1; e=$?; fi
   echo "$h ($*) exit $e: $(grep -E '^HOLD .* (VALID|VOID|DRY)' $LG/hold-$h.log | tail -1)"
+  # P-173 amendment: battery at the hold's start and end gates; stop at an end battery >= 43.0 C (or Critical: VOID above)
+  BS=$(sed -n 's/^GATE [^ ]*-start .* batt \([0-9.]*\).*/\1/p' $LG/hold-$h.log | tail -1); BE=$(sed -n 's/^GATE [^ ]*-end .* batt [0-9.]*->\([0-9.]*\) C.*/\1/p' $LG/hold-$h.log | tail -1)
+  [ -n "$BE" ] || BE=$(sed -n 's/^GATE [^ ]*-end .* batt \([0-9.]*\) C.*/\1/p' $LG/hold-$h.log | tail -1)
+  echo "BATTERY $h ($*) start ${BS:-?} C end ${BE:-?} C"
+  [ "$CM_DRY" = 1 ] || { [ -n "$BE" ] && awk "BEGIN{exit !($BE >= 43.0)}" && { echo "BLOCK STOP: end battery $BE C >= 43.0 after $h (amendment stop rule): message the lead"; exit 12; }; }
   grep -E '^(RERUN-NEEDED|SENTINEL|GATES .* INVALID|ITEM .* VOID|PROG|PLAN)' $LG/hold-$h.log
   [ "$CM_DRY" = 1 ] || node tools/lock.mjs doing iphone --owner "$R" --between 1 > /dev/null 2>&1
   return $e
