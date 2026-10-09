@@ -1,0 +1,231 @@
+#!/bin/sh
+# g0.0m phone kit (fix-reveal-paint, 2026-10-09; card: fixes/g0-0m/README.md "Phone check card"): a text-substitution copy of
+# P-174's kit (fixes/g0-0l/phone/, fix-scrollcb-g0; credit it and its lineage below) with: logs out/g0mp, labels g0m-, owner
+# fix-reveal-paint, snapshot out/g0-0m/snap (fixes/g0-0m/phone/g0m-snap.sh, HASHES.txt e7947589f4c9) and these pins (the
+# headers below name the older arms; the code's pins are these):
+#   C = g0.0l (best on main, fixes/g0-0l)                  JS 4106679e0a8a  CSS 440582cec781
+#   V = g0.0m rev 3 = g0.0l + reveal-paint (fixes/g0-0m)  JS 37af49aef32b  CSS 7a8ecdd8f8e4
+# The two G programs are byte-identical copies of P-174's (compiled 22b636f36a82 / 65f6de58009c).
+# g0.0l phone kit (card: fixes/g0-0l/README.md "Phone check card"; fix-scrollcb-g0, 2026-10-09): a text-substitution copy of
+# fix-cm-return's P-173 kit (fixes/g0-0k/phone/g0k-*.sh; credit fix-cm-return and its lineage below) with: logs out/g0mp,
+# labels g0l-, owner fix-scrollcb-g0, snapshot out/g0-0m/snap (fixes/g0-0m/phone/g0m-snap.sh, HASHES.txt fa8ce0315555), no K arm,
+# hold script g0l-hold.sh (FLICK + APPROACH programs) and these pins (older headers below name older arms; the code's pins are these):
+#   C = g0.0k (best on main, fixes/g0-0k)                  JS e0b7b1e7e158  CSS a9d4fa8992d9
+#   V = g0.0l = g0.0k + people-blink--b2 (fixes/g0-0l)    JS 4106679e0a8a  CSS 440582cec781
+# P-173 amendment (lead 04:5xZ): cooling on, phone-temp --below 40.0 before every hold, stop at an end battery >= 43.0 C.
+# g0.0k phone kit for P-173 (lead signed 2026-10-09 ~04:25Z; card fixes/g0-0k/README.md): a text-substitution copy of
+# fix-scrollcb-g0's P-172 kit (fixes/sticky-walk/phone/sw-*.sh; credit fix-scrollcb-g0, fix-menu-layers, fix-g0-box):
+# logs out/g0kp, labels g0k-, owner fix-cm-return, snapshot out/g0kp-snap (C from out/cm-return/snapk/A, V from
+# out/cm-return/snapk/V) and these pins (older headers below name older arms; the code's pins are these):
+#   C = g0.0j (best on main, fixes/g0-0j)                         JS 9162843e750f  CSS bee7fce9ad56
+#   V = g0.0k = g0.0j + PR-040's end + html.fw-bx (fixes/g0-0k)   JS e0b7b1e7e158  CSS a9d4fa8992d9
+# Same G program (g-fastshort-g0.json, 38d7fe5d7fa8) and gates (p129-gates-g0.mjs); no K arm; no user step (lead T-256).
+# sticky-walk phone kit for P-172 (lead signed 2026-10-09): a text-substitution copy of fix-menu-layers' P-170b kit
+# (fixes/menu-layers/phone/ml-*.sh, credit fix-menu-layers, fix-g0-box): logs out/g0kp, labels sw-, owner fix-cm-return,
+# snapshot out/g0kp-snap (HASHES.txt 903966683b4f) and these pins (older headers below name older arms; the code's pins are these):
+#   C = g0.0i (fixes/g0-0i, landed e32d8495)          JS 9162843e750f  CSS adb875d94c1f
+#   V = g0.0i + fixcq (fixes/sticky-walk/patch.diff)   JS 9162843e750f  CSS bee7fce9ad56
+# Same G program (g-fastshort-g0.json, 38d7fe5d7fa8: its `approach` phase is the G approach) and gates (p129-gates-g0.mjs);
+# no K arm. One change beyond the substitution: no user step (lead, P-172): a phone that is not ready stops the block (exit 9).
+# menu-layers phone kit (T-253 #10 item 2): a copy of fix-g0-box's eop kit (fixes/g0-box/phone/eop-*.sh on main, 55f5cacd;
+# credit fix-g0-box), made by a text substitution only: logs out/g0kp, labels ml-, owner fix-cm-return, snapshot
+# out/g0kp-snap and these pins (the header below still names the eop kit's g0.0e / g0.0f arms; the pins in the code are these):
+#   C = g0.0h (fixes/g0-0h, landed 55f5cacd)                  JS 9162843e750f  CSS 26d28a0a263b
+#   V = g0.0h + the panel clock layer (fixes/menu-layers)     JS 9162843e750f  CSS adb875d94c1f
+# Same G program (g-fastshort-g0.json, 38d7fe5d7fa8) and gates (p129-gates-g0.mjs); no K arm (ml-k.env empty).
+# end-of-page (eop, lead 2026-10-09, user T-228 #98): a copy of the P-164 g0b kit with its own log dir (out/g0kp), labels
+# eop-, items up to n = 6, and a third arm K (a candidate) pinned in fixes/g0-0k/phone/g0k-k.env (K_NAME, K_DIR =
+# an immutable snapshot dir with K/<JS>, K/<CSS> and HASHES.txt, K_JS, K_CSS, K_HASHES; K_NAME empty = no K arm).
+# Same G program (g-fastshort-g0.json, 38d7fe5d7fa8), the same gates (p129-gates-g0.mjs), Timeline on in counted runs.
+# Header below is the g0b kit's.
+# g0-box phone kit (card: fixes/g0-box/README.md "Phone card draft"): the block driver inside ONE phone hold. A copy of fix-cm-return's P-163 kit
+# (research/end-of-page-fresh/phone/, credit: fix-cm-return, arch-compositor-morph, fix-end-morph) with these pins:
+#   C = g0.0e (g0.0c + join-fade + logo-close, fixes/g0-0e, 8bc50d29) JS 5c39f7a96e41  CSS d4e684032482
+#   V = g0.0f = g0.0e + v3-W (fixes/v3w-g00e/patch.diff)             JS 30fd80ccbb3f  CSS 1d1e5d62a2c4
+# snapshot out/g0kp-snap (C from out/g0box/g00e, V from out/g0box/g00f, read-only), logs out/g0bp, owner fix-cm-return.
+# The P-161..P-163 lessons are kept unchanged (tool-serious via iphone.mjs rearm, Safari parked before the rearm, thermal
+# clear after the hold, the get-ready step on preflight AUTH or "Failed to initialize for UI testing", the --block mark).
+# Original header of the copied file:
+# compositor-morph block driver (card: fixes/compositor-morph/README.md "Phone card"). A copy of fix-end-morph's
+# fixes/end-morph-f12/phone/p155-block.sh (credit: fix-end-morph; P-152 rev 1.4 + park lineage) with the cm names.
+# Runs inside ONE phone hold with the block mark and starts the block's 600 s chrome-measure --no-timing holds in order,
+# one item each (cm-hold.sh). Start the servers first: sh fixes/g0-box/phone/g0b-serve.sh start.
+#   CM_TICKET=P-NNN node tools/lock.mjs run iphone --owner <runner> --block P-NNN --max-seconds 3600 --keep 120 -- \
+#     sh fixes/g0-box/phone/g0b-block.sh H1:WC H2:WV H3:EC1 H4:EV1 H5:EV2 H6:EC2 H7:EC3 H8:EV3 H9:EV4 H10:EC4 H11:TAIL
+#   CM_THERMAL=serious: run `node tools/thermal.mjs clear` right after that command returns (any exit code)
+#   then (attribution, uncounted, after the end sentinel): ... H<n>:AN H<n+1>:AS H<n+2>:AR
+# Rules as P-155: every part starts with cm-serve.sh check, `wda ensure` (I-220) and a Safari restart (I-214); Safari parked on
+# every exit; before every hold: park, phone-temp --below 38 --timeout 900 (xcode-serious profile: the cooling wait is the
+# lead's call, CM_COOL=0 skips it), WDA check (one restart); ONE item per hold; a time-guard VOID (7) is re-run once;
+# H<n>:TAIL = the RERUN-NEEDED counted runs (at most 2), each once as <run>r, then S1.
+# Logs: out/g0bp/hold-<H>.log. CM_DRY=1: calls cm-hold.sh directly (dry: pins and plan only).
+# USB link loss (I-222, d0439a26; lead P-160 go): `usblink.mjs status` before every hold, after every failed hold, and on
+# phone-temp exit 5 (LINK-LOST). A lost link pauses the part (no sleep by any agent: this script polls `usblink.mjs status`
+# every 20 s, at most CM_LINK_MAX s, default 3600; the lead's `usblink.mjs watch --post-step` posts the re-plug step), then
+# `wda ensure` + Safari restart, the I-225 re-arm (tool-serious), ONE uncounted warm-up per arm (H<n>lw<k>C: WC, H<n>lw<k>V: WV),
+# and goes on: a hold that failed with the link lost runs once more. At most 3 link episodes per part (then BLOCK STOP 11).
+# A link loss is never read as "did not cool".
+cd "$(dirname "$0")/../../.." || exit 2
+[ -n "$CM_TICKET" ] || { echo "CM_TICKET is not set: no run"; exit 2; }
+[ $# -gt 0 ] || { echo "usage: CM_TICKET=P-NNN sh fixes/g0-0m/phone/g0m-block.sh H<n>:<item> ... [H<n>:TAIL]"; exit 2; }
+R=${RUNNER:-fix-reveal-paint}; LG=out/g0mp; HS=fixes/g0-0m/phone/g0m-hold.sh; SS=fixes/g0-0m/phone/g0m-serve.sh
+[ -f fixes/g0-0m/phone/g0m-k.env ] && . fixes/g0-0m/phone/g0m-k.env
+mkdir -p $LG
+for spec in "$@"; do it=$(echo "${spec#*:}" | tr ',' '\n' | grep -c .)
+  [ "$it" -gt 1 ] && { echo "PLAN REFUSED: ${spec%%:*} carries $it items (one item per hold)"; exit 2; }; done
+coolwait() { # below timeout why
+  { echo "== $(date -u +%FT%TZ) $3: phone-temp --below $1 --timeout $2"
+    node tools/wait.mjs phone-temp --below "$1" --timeout "$2" --every 60 --owner "$R" --reason "$CM_TICKET $3"; c=$?
+    echo "COOL $3 exit $c"; } >> $LG/cooling.log 2>&1
+  tail -2 $LG/cooling.log | grep -E '^(MET|TIMEOUT|UNAVAILABLE|COOL)'
+  return $(sed -n '$s/^COOL .* exit \([0-9]*\)$/\1/p' $LG/cooling.log)
+}
+[ "$CM_DRY" = 1 ] || trap 'node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "Safari parked (exit trap)"' EXIT
+{ echo "== $(date -u +%FT%TZ) part start: $*"; sh $SS check; } >> $LG/serve-check.log 2>&1 \
+  || { echo "BLOCK STOP: cm-serve.sh check failed (see $LG/serve-check.log)"; exit 4; }
+echo "SERVE CHECK ok: $(tail -5 $LG/serve-check.log | grep -c ' ok$') of $([ -n "$K_NAME" ] && echo 4 || echo 3) servers"
+wdarestart() { # I-220 (5803d436): wda ensure keeps a READY WDA, else restarts what is down; exit 4 = re-plug the cable
+  node tools/iphone.mjs wda ensure --owner "$R" > $LG/wda-ensure-$(date +%s).log 2>&1; we=$?
+  if [ $we -eq 4 ] && [ "$INRELINK" != 1 ] && ! linkok; then relink "wda ensure REPLUG"; return 0; fi
+  [ $we -eq 4 ] && { echo "BLOCK STOP: WDA REPLUG NEEDED (cable; see $LG/wda-ensure-*.log) with usblink $(linkstate): message the lead"; exit 5; }
+  [ $we -eq 0 ] || { echo "BLOCK STOP: wda ensure exit $we (see $LG/wda-ensure-*.log)"; exit 5; }
+  echo "WDA READY (ensure)"
+  PB=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$LG/serve-B.json','utf8')).port)")
+  node tools/iphone.mjs safari-restart --owner "$R" --url "$(node tools/lan.mjs --url --port "$PB")" --timeout 60 > $LG/safari-restart-$(date +%s).log 2>&1 \
+    || { echo "BLOCK STOP: safari-restart failed (see $LG/safari-restart-*.log)"; exit 5; }
+  echo "SAFARI restarted"
+}
+[ "$CM_DRY" = 1 ] || wdarestart
+# CM_THERMAL=serious (P-158 pre-data amendments 2 and 3, lead, user T-228 #15; profile tool-serious, never pooled with
+# xcode-serious). ONE owner of the condition: `iphone.mjs rearm` (I-225, 9c644179). It reads the phone, clears, waits
+# for a plain Nominal/Fair read, then starts its own detached `thermal.mjs set serious` (which holds the condition after
+# rearm exits) and settles 120 s; this script never starts a set of its own. It runs once at the part's start and once
+# more when a hold's start gate reads Critical (that hold then runs once more). The runner ends the condition with
+# `node tools/thermal.mjs clear` right after `lock.mjs run iphone` returns (not in this script's exit trap). FW_PHONE_CONDITION=tool: the iphone.mjs gates post no Xcode step. Xcode is never touched.
+# lead 2026-10-07 (after P-163's first start, I-244): preflight exit 3 (WDA) whose log says "Failed to initialize for UI
+# testing" usually means a locked phone or a missing automation setting: handled like AUTH (exit 10), one step, re-run.
+needsready() { [ "$1" -eq 10 ] || { [ "$1" -eq 3 ] && grep -q 'Failed to initialize for UI testing' "$2"; }; }
+unlockstep() { # why: Safari lost its page target or WDA its session because the phone locked: post ONE user step
+  echo "BLOCK STOP: the phone is not ready ($1); no user step (lead, T-256): message the lead"; exit 9
+  # (from inside this phone hold; one phone step at a time) and wait for its Done instead of exiting (lead lesson 4)
+  US=$(node tools/console.mjs post --by "$R" --kind action --phone --no-record --no-gate --topic g0-0m \
+    --title "$CM_TICKET: get the iPhone ready for the test" \
+    --instructions "Unlock the iPhone and close any message on screen. In Settings > Developer, check that Enable UI Automation is on. Leave Safari open, then press Done." 2>&1)
+  uid=$(echo "$US" | sed -n 's/^POSTED \(C-[0-9]*\).*/\1/p')
+  [ -n "$uid" ] || { echo "BLOCK STOP: unlock step not posted ($US)"; exit 9; }
+  echo "UNLOCK step $uid posted ($1)"
+  node tools/console.mjs wait "$uid" --until done --timeout 3600 --quiet; w=$?
+  [ $w -eq 0 ] || { echo "BLOCK STOP: unlock step $uid not done (wait exit $w)"; exit 9; }
+  echo "UNLOCK $uid done"
+}
+thermalrearm() {
+  RL=$LG/rearm-$(date +%s).log
+  # P-161 10:2xZ: wdarestart leaves Safari on B (the thermal gate's timer page, whose countdown and hero animations run
+  # forever); the phone warmed 39.4 -> 39.8 C on it through a 10 min rearm. Park first, so the rearm waits on a still phone
+  node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
+  node tools/iphone.mjs rearm --owner "$R" --settle 120 > $RL 2>&1; re=$?
+  echo "$(grep -E '^REARM (CLEARED|NOT-NEEDED|STILL-CRITICAL|MISFIT|TIMEOUT|ERROR)' $RL | tail -1) (exit $re)"
+  [ $re -eq 0 ] || { echo "BLOCK STOP: iphone.mjs rearm exit $re (8 still Critical or misfit, 13 timeout; see $RL): message the lead"; exit 10; }
+}
+if [ "$CM_THERMAL" = serious ] && [ "$CM_DRY" != 1 ]; then
+  export CM_PROFILE=tool-serious FW_PHONE_CONDITION=tool
+  # lead 2026-10-07 (after P-161): no `thermal.mjs clear` in the exit trap any more; the runner clears right after
+  # `lock.mjs run iphone` returns (see the header), so the condition's end is outside the hold and its records
+  trap 'node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1; echo "Safari parked (exit trap); now run: node tools/thermal.mjs clear"' EXIT
+  PL=$LG/preflight-$(date +%s).log
+  node tools/iphone.mjs preflight --owner "$R" > $PL 2>&1; pe=$?
+  # end-of-page-fresh (lead, P-161/P-162 lesson 4): a locked phone (preflight AUTH, exit 10) waits on a user unlock step
+  if needsready $pe $PL; then unlockstep "preflight exit $pe: $(tail -1 $PL | cut -c1-120)"; PL=$PL.2; node tools/iphone.mjs preflight --owner "$R" > $PL 2>&1; pe=$?; fi
+  [ $pe -eq 0 ] || { echo "BLOCK STOP: preflight exit $pe ($(tail -1 $PL)): message the lead"; exit 9; }
+  echo "PREFLIGHT ok"
+  thermalrearm
+fi
+LN=0; N0=0
+linkstate() { node tools/usblink.mjs status 2>&1 | tail -1; }
+linkok() { [ "$CM_DRY" = 1 ] && return 0; node tools/usblink.mjs status >> $LG/usblink.log 2>&1; }
+relink() { # why: pause until the link is back, restart WDA + Safari, re-arm, one warm-up per arm
+  LN=$((LN + 1)); LW=lw$LN
+  [ $LN -gt 3 ] && { echo "BLOCK STOP: link lost a 4th time in this part ($1): message the lead"; exit 11; }
+  echo "LINK LOST ($1) $(date -u +%FT%TZ): $(linkstate); paused until usblink status exit 0 (the lead's watch posts the re-plug step), at most ${CM_LINK_MAX:-3600} s"
+  node tools/lock.mjs doing iphone --owner "$R" --text "$CM_TICKET paused: USB link lost, waiting for the re-plug" > /dev/null 2>&1
+  t0=$(date +%s)
+  until node tools/usblink.mjs status >> $LG/usblink.log 2>&1; do
+    [ $(( $(date +%s) - t0 )) -ge "${CM_LINK_MAX:-3600}" ] && { echo "BLOCK STOP: the USB link did not come back in ${CM_LINK_MAX:-3600} s ($(linkstate)): message the lead"; exit 11; }
+    sleep 20
+  done
+  echo "LINK BACK after $(( $(date +%s) - t0 )) s: $(linkstate)"
+  node tools/lock.mjs doing iphone --owner "$R" --clear > /dev/null 2>&1
+  INRELINK=1; wdarestart; INRELINK=0
+  [ "$CM_THERMAL" = serious ] && thermalrearm
+  for A in C V ${K_NAME:+K}; do
+    WH=H$N0$LW$A; echo "WARM-UP after the re-plug: $WH W$A (uncounted)"
+    node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1
+    hold $WH W$A; we2=$?
+    if [ $we2 -ne 0 ]; then linkok && { echo "BLOCK STOP: warm-up $WH exit $we2 with the link ok: message the lead"; exit $we2; }
+      relink "in warm-up $WH"; return 0; fi
+  done
+}
+prehold() {
+  [ "$CM_DRY" = 1 ] && { echo "PREHOLD $1 (dry: no park, no cooling, no WDA check)"; return 0; }
+  node tools/iphone.mjs park --owner "$R" > /dev/null 2>&1 && echo "PARKED Safari before $1" || echo "PARK before $1 failed (the hold goes on)"
+  linkok || relink "before $1"
+  # P-173 amendment (lead 04:5xZ): cool below 40.0 C before every hold; a 900 s wait that times out is waited again
+  # (at most 4 waits = 60 min, then stop: nothing runs hot)
+  if [ "${CM_COOL:-1}" = 1 ]; then CT=${CM_COOL_C:-40.0}; nw=0
+    while :; do nw=$((nw + 1)); coolwait $CT 900 "cooling before $1 (wait $nw)"; ce=$?
+      if [ $ce -eq 5 ]; then relink "phone-temp LINK-LOST before $1"; coolwait $CT 900 "cooling before $1 (after the re-plug)"; ce=$?; fi
+      [ $ce -eq 5 ] && { echo "BLOCK STOP: phone-temp LINK-LOST again before $1 right after a re-plug: message the lead"; exit 11; }
+      [ $ce -eq 0 ] && break
+      [ $ce -eq 3 ] && [ $nw -lt 4 ] && { echo "COOL before $1: wait $nw timed out, waiting again"; continue; }
+      echo "BLOCK STOP: the phone did not cool below $CT C before $1 (phone-temp exit $ce after $nw waits)"; exit 6
+    done; echo "COOLED below $CT C before $1 ($nw wait(s))"; fi
+  if node tools/iphone.mjs wda check > $LG/wda-check-$1-$(date +%s).log 2>&1; then echo "WDA READY before $1"
+  else echo "WDA not ready before $1: one restart"; wdarestart; fi
+}
+hold() {
+  h=$1; shift
+  [ -e $LG/hold-$h.log ] && mv $LG/hold-$h.log $LG/hold-$h.log.prev-$(date +%s)
+  if [ "$CM_DRY" = 1 ]; then CM_GATE=both sh $HS $h "$@" > $LG/hold-$h.log 2>&1; e=$?
+  else CM_GATE=both node tools/lock.mjs run chrome-measure --owner "$R" --no-timing --max-seconds 600 --doing "$CM_TICKET $h: $*" -- \
+      caffeinate -i -s sh $HS $h "$@" > $LG/hold-$h.log 2>&1; e=$?; fi
+  echo "$h ($*) exit $e: $(grep -E '^HOLD .* (VALID|VOID|DRY)' $LG/hold-$h.log | tail -1)"
+  # P-173 amendment: battery at the hold's start and end gates; stop at an end battery >= 43.0 C (or Critical: VOID above)
+  BS=$(sed -n 's/^GATE [^ ]*-start .* batt \([0-9.]*\).*/\1/p' $LG/hold-$h.log | tail -1); BE=$(sed -n 's/^GATE [^ ]*-end .* batt [0-9.]*->\([0-9.]*\) C.*/\1/p' $LG/hold-$h.log | tail -1)
+  [ -n "$BE" ] || BE=$(sed -n 's/^GATE [^ ]*-end .* batt \([0-9.]*\) C.*/\1/p' $LG/hold-$h.log | tail -1)
+  echo "BATTERY $h ($*) start ${BS:-?} C end ${BE:-?} C"
+  [ "$CM_DRY" = 1 ] || { [ -n "$BE" ] && awk "BEGIN{exit !($BE >= 43.0)}" && { echo "BLOCK STOP: end battery $BE C >= 43.0 after $h (amendment stop rule): message the lead"; exit 12; }; }
+  grep -E '^(RERUN-NEEDED|SENTINEL|GATES .* INVALID|ITEM .* VOID|PROG|PLAN)' $LG/hold-$h.log
+  [ "$CM_DRY" = 1 ] || node tools/lock.mjs doing iphone --owner "$R" --between 1 > /dev/null 2>&1
+  return $e
+}
+run1() {
+  prehold $1; hold "$@"; e=$?
+  [ $e -eq 7 ] && { echo "RETRY $1 (time guard)"; prehold $1; hold "$@"; e=$?; }
+  # a start gate that read Critical (thermal-gate exit 3 -> hold VOID exit 5) under the tool-held condition: re-arm, once
+  if [ $e -eq 5 ] && [ "$CM_THERMAL" = serious ] && grep -q 'VOID start gate exit 3' $LG/hold-$1.log; then
+    echo "CRITICAL at $1's start gate: I-225 re-arm"; thermalrearm; prehold $1; hold "$@"; e=$?
+  fi
+  if [ $e -ne 0 ] && [ "$CM_DRY" != 1 ] && ! linkok; then
+    relink "in $1 (exit $e)"; echo "RE-RUN $1 after the re-plug"; prehold $1; hold "$@"; e=$?; fi
+  if [ $e -ne 0 ] && [ "$CM_DRY" != 1 ]; then
+    PF=$LG/preflight-$1-$(date +%s).log; node tools/iphone.mjs preflight --owner "$R" > $PF 2>&1; pf=$?
+    if needsready $pf $PF; then unlockstep "in $1 (exit $e)"; wdarestart; echo "RE-RUN $1 after the unlock"; prehold $1; hold "$@"; e=$?; fi
+  fi
+  [ $e -ne 0 ] && { echo "BLOCK STOP at $1 exit $e"; exit $e; }
+}
+for spec in "$@"; do
+  H=${spec%%:*}; items=$(echo "${spec#*:}" | tr ',' ' ')
+  N0=${H#H}
+  if [ "$items" = TAIL ]; then
+    RR=$(ls $LG/hold-H*.log 2>/dev/null | sort -t H -k 2 -n | while read f; do sed -n 's/^RERUN-NEEDED \([^(]*\) (.*/\1/p' "$f"; done | tr ' ' '\n' | grep -E '^E[CVK][1-6]$' | awk '!s[$0]++' )
+    n=$(echo "$RR" | grep -c .)
+    [ "$n" -gt 2 ] && echo "RERUN over the cap: $(echo $RR) need one; the first 2 are re-run, the rest stay invalid"
+    R1=$(echo "$RR" | sed -n 1p); R2=$(echo "$RR" | sed -n 2p)
+    echo "TAIL re-runs: ${R1:-none}${R2:+ $R2}, then S1, one item per hold"
+    N=${H#H}
+    [ -n "$R1" ] && { run1 H$N ${R1}r; N=$((N + 1)); }
+    [ -n "$R2" ] && { run1 H$N ${R2}r; N=$((N + 1)); }
+    run1 H$N S1
+  else run1 $H $items; fi
+done
+echo "BLOCK PART DONE: $*"

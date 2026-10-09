@@ -1,0 +1,17 @@
+{
+  "name": "g0l-flick",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "g0.0l phone card (fix-scrollcb-g0, 2026-10-09): the people-blink deck-landing flick (pb-land.json's stroke) as ONE segment for the P-129 run gates: reload at the top, 4 s idle (G4), one fast flick up that lands with the profile deck in view (phone 2026-10-09: y 1316-1440), then 3 s rest for the reveal and the photo loads.",
+  "params": { "x": 215 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "pause", "ms": 4000 },
+    { "type": "mark", "name": "flick" },
+    { "type": "stroke", "dir": "up", "px": 300, "ms": 220, "profile": "fling" },
+    { "type": "until", "cond": "settled", "timeoutMs": 5000, "optional": true },
+    { "type": "mark", "name": "landed" },
+    { "type": "pause", "ms": 3000 },
+    { "type": "mark", "name": "flick-end" }
+  ]
+}

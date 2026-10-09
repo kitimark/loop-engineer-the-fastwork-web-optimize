@@ -1,0 +1,165 @@
+# g0.0m rev 3 delta vs g0.0l (JS 4106679e0a8a / CSS 440582cec781) -> g0.0m (JS 37af49aef32b / CSS 7a8ecdd8f8e4): reveal-paint, touch screens only: the hidden people card is held at opacity 0 with will-change opacity instead of visibility hidden, so its layers paint before the reveal; while hidden, what inherited visibility hidden in g0.0l takes no tap (CSS) and is aria-hidden with its focusables at tabindex -1, own values restored at the flip, the profile tabs left as in g0.0l, later-added nodes and app tabindex changes covered by a MutationObserver (JS)
+# contains excerpts of Fastwork's code: local branches only, never push
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -12640,3 +12640,28 @@
+ .start-selling-future[data-fw-reveal="instant"] > .start-selling-future-card {
+   transition: none !important;
+ }
++
++/* [reveal-paint] g0.0m, touch screens only (the query of g0.0l's photo preload): the hidden #people card is rendered at
++   opacity 0 instead of visibility: hidden, and opacity joins its will-change, so WebKit paints the card's and the deck's
++   layers while the card is invisible (at load and at rest) instead of in the reveal frame. visibility: hidden keeps a
++   layer from drawing content (WebKit RenderLayer::computeHasVisibleContent), and an opacity-0 layer draws content only
++   when will-change names opacity (RenderLayerBacking::containsPaintedContent -> Styleable::mayHaveNonZeroOpacity). The
++   reveal then changes only opacity, filter and transform on the composited card (RenderElement::adjustStyleDifference:
++   RecompositeLayer). The card stays at opacity 0 while hidden, so nothing visible changes. While hidden, the descendants
++   that inherited visibility: hidden take no tap either (the people faces set pointer-events: auto; visibility: hidden
++   used to keep them out of hit testing); a pointer-events change is RecompositeLayer, not a repaint (StyleDifference).
++   The profile tabs are left alone: their own rules set their visibility (hidden, or visible on phones and with
++   .is-rail-in), so they behave as in g0.0l, where they are not hidden with the card either. */
++@media (hover: none) and (pointer: coarse) {
++  .start-selling-future:not(.is-visible) > .start-selling-future-card {
++    visibility: visible;
++  }
++  .start-selling-future:not(.is-visible)
++    > .start-selling-future-card
++    *:not(.start-selling-profile-tabs, .start-selling-profile-tabs *) {
++    pointer-events: none !important;
++  }
++  .start-selling-future > .start-selling-future-card {
++    will-change: transform, border-radius, opacity;
++  }
++}
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -12373,14 +12373,119 @@
+         let now = performance.now(),
+           sy = window.scrollY,
+           v = fwRvY === null || now - fwRvT > 200 ? 0 : Math.abs(sy - fwRvY) / Math.max(1, now - fwRvT);
+-        ((fwRvY = sy), (fwRvT = now));
++        ((fwRvY = sy), (fwRvT = now), fwAx(on));
+         if (on === fwRvOn) return;
+         if (((fwRvOn = on), !(fwRvEl ||= document.getElementById(`people`)))) return;
+         window.clearTimeout(fwRvTo);
+         on && v >= 0.8
+           ? (fwRvEl.setAttribute(`data-fw-reveal`, `instant`), (fwRvTo = window.setTimeout(() => fwRvEl.removeAttribute(`data-fw-reveal`), 400)))
+           : fwRvEl.removeAttribute(`data-fw-reveal`);
++      },
++      // [reveal-paint g0.0m rev 3] On touch screens the CSS keeps the hidden card at visibility: visible and opacity 0,
++      // so its layers paint before the reveal (fixes/reveal-paint). visibility: hidden also kept the card out of the
++      // accessibility tree and the focus order. inert would do that too, but clearing inert at the flip repaints the
++      // card's content (WebKit StyleDifference: an effectiveInert change is a Repaint for every renderer that paints;
++      // Simulator: both deck shells repainted in the flip frame, 2 of 2). So, while the card is hidden, everything that
++      // inherited visibility: hidden in g0.0l gets aria-hidden (on the highest such elements) and tabindex -1 (on its
++      // focusable elements); each element's own value is kept and put back at the flip. The profile tabs are left as
++      // in g0.0l: their own rules set their visibility, so they never inherited the card's; the containers around
++      // them get role none and lose their name (aria-hidden would hide the tabs too; a named section stays a region).
++      // A MutationObserver covers elements added while hidden (and tabs that arrive inside a hidden branch) and the
++      // tabindex/href/role/name changes the app makes while hidden. No CSS selector reads aria-*, role or tabindex,
++      // so these writes restyle and repaint nothing (Simulator: flip frame as without them, 2 of 2).
++      fwAxOn = null,
++      fwAxMO = null,
++      fwAxWait = null,
++      fwAxCard = null,
++      fwAxEls = [], // the elements whose attributes were changed
++      fwAxAria = new WeakMap(), // hidden branch root -> its own aria-hidden (null: none)
++      fwAxTab = new WeakMap(), // focusable element -> its own tabindex (null: none)
++      fwAxRole = new WeakMap(), // container of the tabs -> { attribute: its own value (null: none) }
++      fwAxPathAt = [`role`, `aria-label`, `aria-labelledby`],
++      fwAxPath = (el) => {
++        fwAxRole.has(el) || (fwAxRole.set(el, {}), fwAxEls.push(el));
++        let o = fwAxRole.get(el);
++        for (let a of fwAxPathAt) {
++          let v = el.getAttribute(a),
++            to = a === `role` ? `none` : null;
++          v === to || ((o[a] = v), to == null ? el.removeAttribute(a) : el.setAttribute(a, to));
++        }
+       },
++      fwAxTouch = window.matchMedia(`(hover: none) and (pointer: coarse)`),
++      fwAxSel = `a[href], area[href], button, input, select, textarea, iframe, summary, [tabindex], [contenteditable]`,
++      fwAxTabs = `.start-selling-profile-tabs`,
++      fwAxPut = (el, name, map) => {
++        let v = map.get(el);
++        (v == null ? el.removeAttribute(name) : el.setAttribute(name, v), map.delete(el));
++      },
++      fwAxNoTab = (el) => {
++        let v = el.getAttribute(`tabindex`);
++        (v === `-1` && fwAxTab.has(el)) || (fwAxTab.has(el) || fwAxEls.push(el), fwAxTab.set(el, v), el.setAttribute(`tabindex`, `-1`));
++      },
++      fwAxHide = (el) => {
++        if (el.nodeType !== 1 || el.closest(fwAxTabs)) return;
++        if (el.querySelector(fwAxTabs)) {
++          // a container on the way to the tabs: hidden in g0.0l, so it leaves the tree too, but its content keeps its
++          // own state
++          (el.matches(fwAxSel) && fwAxNoTab(el), fwAxPath(el));
++          for (let c of el.children) fwAxHide(c);
++          return;
++        }
++        let up = el;
++        while (up && !fwAxAria.has(up) && up !== fwAxCard) up = up.parentElement;
++        (up && fwAxAria.has(up)) ||
++          (fwAxAria.set(el, el.getAttribute(`aria-hidden`)), fwAxEls.push(el), el.setAttribute(`aria-hidden`, `true`));
++        for (let f of el.matches(fwAxSel) ? [el, ...el.querySelectorAll(fwAxSel)] : el.querySelectorAll(fwAxSel)) fwAxNoTab(f);
++      },
++      fwAxSeen = (ms) => {
++        for (let m of ms)
++          if (m.type === `attributes`)
++            fwAxPathAt.includes(m.attributeName)
++              ? fwAxRole.has(m.target) && fwAxPath(m.target)
++              : m.target.closest(fwAxTabs) || !m.target.matches(fwAxSel) || fwAxNoTab(m.target);
++          else
++            for (let nd of m.addedNodes) {
++              if (nd.nodeType !== 1) continue;
++              let r = nd;
++              if (nd.matches(fwAxTabs) || nd.querySelector(fwAxTabs)) {
++                // tabs inside a hidden branch: unhide that branch and split it around them
++                while (r && !fwAxAria.has(r) && r !== fwAxCard) r = r.parentElement;
++                r && fwAxAria.has(r) ? fwAxPut(r, `aria-hidden`, fwAxAria) : (r = nd);
++              }
++              fwAxHide(r);
++            }
++      },
++      fwAx = (on) => {
++        if (on === fwAxOn || !fwAxTouch.matches) return;
++        let card = document.querySelector(`#people > .start-selling-future-card`);
++        if (!card) {
++          // not rendered yet: try again when #people's content arrives
++          let p = document.getElementById(`people`);
++          p &&
++            !fwAxWait &&
++            (fwAxWait = new MutationObserver(() => (fwAxWait?.disconnect(), (fwAxWait = null), fwAx(fwRvOn)))).observe(p, { childList: !0, subtree: !0 });
++          return;
++        }
++        ((fwAxOn = on), (fwAxCard = card));
++        if (on) {
++          (fwAxMO && (fwAxSeen(fwAxMO.takeRecords()), fwAxMO.disconnect()), (fwAxMO = null));
++          for (let el of fwAxEls)
++            (fwAxAria.has(el) && fwAxPut(el, `aria-hidden`, fwAxAria),
++              fwAxTab.has(el) && fwAxPut(el, `tabindex`, fwAxTab),
++              fwAxRole.has(el) &&
++                (Object.entries(fwAxRole.get(el)).forEach(([a, v]) => (v == null ? el.removeAttribute(a) : el.setAttribute(a, v))),
++                fwAxRole.delete(el)));
++          fwAxEls = [];
++        } else {
++          fwAxHide(card);
++          (fwAxMO ||= new MutationObserver(fwAxSeen)).observe(card, {
++            childList: !0,
++            subtree: !0,
++            attributes: !0,
++            attributeFilter: [`tabindex`, `href`, ...fwAxPathAt],
++          });
++        }
++      },
+       // [people-blink B2] the active deck's lazy photos load during the fling today (8 loads at y 460-1180 on the
+       // iPhone), hidden by the fade; without the fade they would pop in on a visible deck. Load them once the page is
+       // idle after mount instead (1.5 s, then an idle callback, 2 s cap): the active shell and the next one, whose
+@@ -12489,7 +12594,7 @@
+         a = !0;
+         for (let e of r) e();
+         ((r.length = 0), i && window.cancelAnimationFrame(i), window.clearTimeout(fwPreT), fwPreL && window.removeEventListener(`load`, fwPreL), window.clearTimeout(fwRvTo));
+-        (fwIO?.disconnect(), fwRO?.disconnect(), fwR && window.cancelAnimationFrame(fwR), fwClk?.cancel());
++        (fwIO?.disconnect(), fwRO?.disconnect(), fwR && window.cancelAnimationFrame(fwR), fwClk?.cancel(), fwAxMO?.disconnect(), fwAxWait?.disconnect());
+         for (let e of n) window.clearTimeout(e);
+         ((n.length = 0),
+           C(),

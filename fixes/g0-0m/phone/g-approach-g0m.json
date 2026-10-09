@@ -1,0 +1,19 @@
+{
+  "name": "g0l-approach",
+  "version": 1,
+  "screen": [430, 932],
+  "about": "g0.0l phone card (fix-scrollcb-g0, 2026-10-09): P-172's approach (g-fastshort-g0.json's `approach` phase: drags of 520 px in 1200 ms, x 215, 300 ms pause) from the top through the people section and the platform crossing, stopped at y >= 3400 (at most 9 drags), as ONE segment for the P-129 run gates. Drags run at ~0.43 px/ms, under g0.0l's 0.8 px/ms instant gate: the slow path.",
+  "params": { "x": 215 },
+  "steps": [
+    { "type": "reload", "scrollAfterMs": 0 },
+    { "type": "pause", "ms": 4000 },
+    { "type": "mark", "name": "approach" },
+    { "type": "repeat", "times": 9, "until": "y>=3400", "steps": [
+      { "type": "stroke", "dir": "up", "px": 520, "ms": 1200, "profile": "drag" },
+      { "type": "pause", "ms": 300 }
+    ] },
+    { "type": "until", "cond": "settled", "timeoutMs": 3000, "optional": true },
+    { "type": "mark", "name": "approach-end" },
+    { "type": "pause", "ms": 1000 }
+  ]
+}
