@@ -104,7 +104,14 @@ try {
       await page.send('Emulation.setFocusEmulationEnabled', { enabled: true });
       // PX_RM=1: prefers-reduced-motion: reduce (the page's own reduced-motion paths; g0.0l gate)
       if (process.env.PX_RM === '1') await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
-      await gotoAndSettle(page, url, { quietMs: 1500, maxMs: 45000 }); if (CAROUSEL) load.carouselStall = await page.eval(STALL); await sleep(2000);
+      await gotoAndSettle(page, url, { quietMs: 1500, maxMs: 45000 });
+      // PX_T0=<ms> (g0.0l gate): wait until the page's own clock (performance.now) reaches T0 before the carousel stall,
+      // so every load freezes its self-animated content (hero accent, avatar carousel) at the same page time, whatever
+      // network activity moved the settle (g0.0l's photo preload ends the network-quiet wait later). Settle and stall
+      // page times are recorded per load.
+      load.t = { settled: Math.round(await page.eval('performance.now()')) };
+      if (process.env.PX_T0) { const w = +process.env.PX_T0 - load.t.settled; if (w > 0) await sleep(w); else load.t.late = true; }
+      if (CAROUSEL) load.carouselStall = await page.eval(STALL); load.t.stall = Math.round(await page.eval('performance.now()')); await sleep(2000);
       load.scripts = await page.eval(`performance.getEntriesByType('resource').map((e) => e.name.replace(location.origin, '')).filter((n) => n.includes('${NODE}') || n.includes('${CSS}'))`);
       await page.eval(`(() => { const F = ${F}; Date.now = () => F; return 1; })()`); await sleep(2500);
       if (!YS) {

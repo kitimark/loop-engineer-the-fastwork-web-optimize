@@ -1,10 +1,10 @@
 #!/bin/sh
 # g0.0l phone kit (card: fixes/g0-0l/README.md "Phone check card"; fix-scrollcb-g0, 2026-10-09): a text-substitution copy of
 # fix-cm-return's P-173 kit (fixes/g0-0k/phone/g0k-*.sh; credit fix-cm-return and its lineage below) with: logs out/g0lp,
-# labels g0l-, owner fix-scrollcb-g0, snapshot out/g0-0l/snap (fixes/g0-0l/phone/g0l-snap.sh, HASHES.txt 7391321242fa), no K arm,
+# labels g0l-, owner fix-scrollcb-g0, snapshot out/g0-0l/snap (fixes/g0-0l/phone/g0l-snap.sh, HASHES.txt fa8ce0315555), no K arm,
 # hold script g0l-hold.sh (FLICK + APPROACH programs) and these pins (older headers below name older arms; the code's pins are these):
 #   C = g0.0k (best on main, fixes/g0-0k)                  JS e0b7b1e7e158  CSS a9d4fa8992d9
-#   V = g0.0l = g0.0k + people-blink--b2 (fixes/g0-0l)    JS ac48233916ad  CSS 440582cec781
+#   V = g0.0l = g0.0k + people-blink--b2 (fixes/g0-0l)    JS 4106679e0a8a  CSS 440582cec781
 # P-173 amendment (lead 04:5xZ): cooling on, phone-temp --below 40.0 before every hold, stop at an end battery >= 43.0 C.
 # g0.0k phone kit for P-173 (lead signed 2026-10-09 ~04:25Z; card fixes/g0-0k/README.md): a text-substitution copy of
 # fix-scrollcb-g0's P-172 kit (fixes/sticky-walk/phone/sw-*.sh; credit fix-scrollcb-g0, fix-menu-layers, fix-g0-box):

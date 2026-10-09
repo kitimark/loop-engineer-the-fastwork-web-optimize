@@ -3018,7 +3018,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      1,
    ),
    fM = h(`<img loading="lazy" decoding="async" alt=""/>`),
-@@ -11294,28 +12268,158 @@
+@@ -11294,28 +12268,164 @@
    ne(() => {
      let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
        t = window.matchMedia(`(max-width: 860px)`),
@@ -3141,6 +3141,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +      // edge shows beside it. Every image there (the cover too, decoding="async") is also decoded ahead (decode()), so
 +      // the first frame that shows the card does not paint it blank (Simulator s6: the cover was white for one shot).
 +      fwPreT = 0,
++      fwPreL = null,
 +      fwPreload = () => {
 +        let go = () => {
 +          for (let im of document.querySelectorAll(
@@ -3148,7 +3149,12 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +          ))
 +            (im.loading === `lazy` && (im.loading = `eager`), im.decode?.().catch(() => {}));
 +        };
-+        fwPreT = window.setTimeout(() => (window.requestIdleCallback ? window.requestIdleCallback(go, { timeout: 2e3 }) : go()), 1500);
++        // g0.0l rev 2: touch screens only (hover none + coarse pointer), where the instant reveal was asked for; on
++        // desktop Chrome a decode() ahead changed the photos' resampling (gate: 0.80 % at y 900). And only after the
++        // window load event, so the eager images never delay what waits for `load` (fwBoot, the deferred mount).
++        if (!window.matchMedia(`(hover: none) and (pointer: coarse)`).matches) return;
++        let st = () => (fwPreT = window.setTimeout(() => (window.requestIdleCallback ? window.requestIdleCallback(go, { timeout: 2e3 }) : go()), 1500));
++        document.readyState === `complete` ? st() : ((fwPreL = st), window.addEventListener(`load`, st, { once: !0 }));
 +      },
        l = () => {
          i = 0;
@@ -3180,7 +3186,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              Math.abs(n - o) >= 8e-4 && (i = window.requestAnimationFrame(l)));
          }
          let r = document.querySelector(`.pain`);
-@@ -11325,7 +12429,7 @@
+@@ -11325,7 +12435,7 @@
          }
        },
        u = () => {
@@ -3189,7 +3195,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        f = (e) =>
          new Promise((t) => {
-@@ -11337,22 +12441,33 @@
+@@ -11337,22 +12447,33 @@
          }),
        p = () => (c ? Promise.resolve() : new Promise((e) => r.push(e))),
        m = (e) => {
@@ -3228,7 +3234,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              }
            }
        },
-@@ -11360,14 +12475,21 @@
+@@ -11360,14 +12481,21 @@
      return (
        e.addEventListener(`change`, u),
        t.addEventListener(`change`, u),
@@ -3240,7 +3246,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          a = !0;
          for (let e of r) e();
 -        ((r.length = 0), i && window.cancelAnimationFrame(i));
-+        ((r.length = 0), i && window.cancelAnimationFrame(i), window.clearTimeout(fwPreT), window.clearTimeout(fwRvTo));
++        ((r.length = 0), i && window.cancelAnimationFrame(i), window.clearTimeout(fwPreT), fwPreL && window.removeEventListener(`load`, fwPreL), window.clearTimeout(fwRvTo));
 +        (fwIO?.disconnect(), fwRO?.disconnect(), fwR && window.cancelAnimationFrame(fwR), fwClk?.cancel());
          for (let e of n) window.clearTimeout(e);
 -        ((n.length = 0), C(), e.removeEventListener(`change`, u), t.removeEventListener(`change`, u));
@@ -3252,7 +3258,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        }
      );
    });
-@@ -11419,11 +12541,15 @@
+@@ -11419,11 +12547,15 @@
          i = V(r, 2),
          a = V(i, 2),
          o = V(a, 2);
@@ -3271,7 +3277,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        ),
          f(e, t));
      },
-@@ -11443,7 +12569,7 @@
+@@ -11443,7 +12575,7 @@
          f(e, t));
      };
    (m(he, (e) => {
@@ -3280,7 +3286,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(me));
    var ve = V(me, 2),
-@@ -11994,28 +13120,41 @@
+@@ -11994,28 +13126,41 @@
    ne(() => {
      let e = matchMedia(`(prefers-reduced-motion: reduce)`).matches,
        t = 0,
@@ -3334,7 +3340,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                  a < 1 && (t = requestAnimationFrame(n)));
              };
            t = requestAnimationFrame(n);
-@@ -12197,14 +13336,9 @@
+@@ -12197,14 +13342,9 @@
      let e = window.matchMedia(`(prefers-reduced-motion: reduce)`),
        t = !1,
        n = 0,
@@ -3351,7 +3357,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        i = () => {
          (window.clearTimeout(n), z(v, !1), t && !s(g) && (n = window.setTimeout(r, 1e3)));
-@@ -12243,26 +13377,16 @@
+@@ -12243,26 +13383,16 @@
          a = e(r),
          u = e(a),
          d = e(u),
@@ -3387,7 +3393,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (M(a),
          M(r),
          l(() => {
-@@ -12273,8 +13397,12 @@
+@@ -12273,8 +13403,12 @@
              (_ = U(g, 0, `start-selling-platform-secure-network-dash-highlight`, null, _, {
                "is-active": s(v),
              })),
@@ -3400,7 +3406,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          f(t, r));
      },
    );
-@@ -12433,21 +13561,50 @@
+@@ -12433,21 +13567,50 @@
    ne(() => {
      let e = 0,
        t = matchMedia(`(prefers-reduced-motion: reduce)`),
@@ -3455,7 +3461,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      };
    });
    var h = WM();
-@@ -12652,6 +13809,7 @@
+@@ -12652,6 +13815,7 @@
                "is-secure-mesh": s(r).id === `document`,
              })));
          }),
@@ -3463,7 +3469,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
          f(n, i));
      },
    ),
-@@ -12944,7 +14102,18 @@
+@@ -12944,7 +14108,18 @@
      x = N(0),
      w = 0,
      T,
@@ -3483,7 +3489,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      O = R(() => !s(p) && !s(E)),
      A = R(() => s(O) || s(x) > 0.55);
    function j(e) {
-@@ -12952,17 +14121,131 @@
+@@ -12952,17 +14127,131 @@
        ? !1
        : !!(d.some((t) => e.closest(t)) || e.closest(`.commission.shrinking`));
    }
@@ -3504,13 +3510,13 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
 +    for (let r of document.elementsFromPoint(t, n))
 +      if (!T.contains(r) || r.closest(`.start-selling-top-nav-actions, .start-selling-morph-panel`)) return j(r);
 +    return j(null);
-   }
++  }
 +  // perf(nav-hit-cache): the viewport y of F()'s probe point (nav is fixed), measured with the offsets
 +  function __navProbeY() {
 +    if (!T) return 32;
 +    let e = T.getBoundingClientRect();
 +    return e.top + Math.min(e.height, 64) / 2;
-+  }
+   }
 +  // perf(nav-hit-cache): the nav element. Inside the scroll effect below, `T` is the morph spring step (a local
 +  // that shadows the component's bound nav element), so the effect reaches the nav through this function.
 +  function __navNode() {
@@ -3621,7 +3627,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      if (!e) return !1;
      let t = window.getComputedStyle(e);
      if (t.position !== `sticky`) return !1;
-@@ -12997,33 +14280,736 @@
+@@ -12997,33 +14286,736 @@
            (window.clearTimeout(l), f());
        };
      e.matches || t.matches ? f() : (l = window.setTimeout(f, 1140));
@@ -4369,7 +4375,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              ((a = t), (r = t), n && window.cancelAnimationFrame(n), (n = 0), z(x, t, !0), S(), C() || I());
              return;
            }
-@@ -13045,9 +15031,9 @@
+@@ -13045,9 +15037,9 @@
            n = window.visualViewport?.height ?? window.innerHeight;
          return t.height >= n * 0.45 && t.bottom <= n + 8;
        },
@@ -4381,7 +4387,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        j = (e) => {
          c = e.touches[0]?.clientY ?? 0;
-@@ -13055,27 +15041,58 @@
+@@ -13055,27 +15047,58 @@
        M = (e) => {
          let t = e.touches[0]?.clientY ?? c,
            n = c - t;
@@ -4447,7 +4453,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        },
        R = y(),
        te = R
-@@ -13086,7 +15103,89 @@
+@@ -13086,7 +15109,89 @@
              { rootMargin: `200% 0px` },
            )
          : void 0;
@@ -4538,7 +4544,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
      let ne = dE(L, { manageAnimations: !1 });
      return (
        e.addEventListener(`change`, m),
-@@ -13095,13 +15194,64 @@
+@@ -13095,13 +15200,64 @@
          (n && window.cancelAnimationFrame(n),
            window.clearTimeout(l),
            te?.disconnect(),
@@ -4604,7 +4610,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    var I = uN();
    let L, te;
    var B = e(I),
-@@ -13118,10 +15268,251 @@
+@@ -13118,10 +15274,251 @@
    var oe = V(ae, 2),
      le = e(oe, !0);
    (M(oe), M(ie), M(B));
@@ -4856,7 +4862,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        (_(
          u,
          21,
-@@ -13140,7 +15531,7 @@
+@@ -13140,7 +15537,7 @@
                var n = sN();
                let r;
                (l(() => {
@@ -4865,7 +4871,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
                }),
                  f(e, n));
              },
-@@ -13157,7 +15548,16 @@
+@@ -13157,7 +15554,16 @@
          m = e(p, !0);
        M(p);
        var h = V(p, 2);
@@ -4883,7 +4889,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
        var g = V(h, 2),
          v = e(g),
          __ctaBellC = e(v),
-@@ -13193,7 +15593,9 @@
+@@ -13193,7 +15599,9 @@
          M(w),
          M(a),
          l(() => {
@@ -4894,7 +4900,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
              k(a, `aria-hidden`, s(x) < 0.35),
              t(m, s(o).header.future),
              k(v, `tabindex`, s(x) < 0.55 ? -1 : void 0),
-@@ -13210,7 +15612,7 @@
+@@ -13210,7 +15618,7 @@
          f(n, a));
      };
    (m(W, (e) => {
@@ -4903,7 +4909,7 @@ diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8Tc
    }),
      M(I),
      P(
-@@ -13223,15 +15625,26 @@
+@@ -13223,15 +15631,26 @@
          ((L = U(I, 1, `start-selling-top-nav svelte-1dcozpm`, null, L, {
            "is-hero-pill": s(O),
            "is-hero-chrome-ready": s(h),

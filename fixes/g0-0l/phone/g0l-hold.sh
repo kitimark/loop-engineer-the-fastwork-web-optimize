@@ -3,8 +3,8 @@
 # A copy of fix-cm-return's P-173 kit (fixes/g0-0k/phone/g0k-hold.sh; lineage fix-scrollcb-g0's P-172 kit, fix-menu-layers,
 # fix-g0-box, fix-end-morph, arch-compositor-morph) with these changes:
 #   pins  C = g0.0k (best on main, fixes/g0-0k)                        JS e0b7b1e7e158  CSS a9d4fa8992d9
-#         V = g0.0l = g0.0k + people-blink--b2 (fixes/g0-0l)          JS ac48233916ad  CSS 440582cec781
-#   snapshot out/g0-0l/snap (fixes/g0-0l/phone/g0l-snap.sh, HASHES.txt 7391321242fa), logs out/g0lp, owner fix-scrollcb-g0
+#         V = g0.0l = g0.0k + people-blink--b2 (fixes/g0-0l)          JS 4106679e0a8a  CSS 440582cec781
+#   snapshot out/g0-0l/snap (fixes/g0-0l/phone/g0l-snap.sh, HASHES.txt fa8ce0315555), logs out/g0lp, owner fix-scrollcb-g0
 #   programs (instead of fs): FLICK fixes/g0-0l/phone/g-flick-g0l.json (22b636f36a82) and APPROACH g-approach-g0l.json
 #   (65f6de58009c); gates fixes/g0-0l/phone/g0l-gates.mjs (P-129's G1-G6, G6 accepts these two programs); no probe page
 #   items (A*), no K arm.
@@ -29,7 +29,7 @@ FL=fixes/g0-0l/phone/g-flick-g0l.json; PROG_FL=22b636f36a82
 AP=fixes/g0-0l/phone/g-approach-g0l.json; PROG_AP=65f6de58009c
 LOGGER=fixes/g0-0l/phone/pb-lite.mjs
 JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
-C_JS=e0b7b1e7e158; V_JS=ac48233916ad; C_CSS=a9d4fa8992d9; V_CSS=440582cec781
+C_JS=e0b7b1e7e158; V_JS=4106679e0a8a; C_CSS=a9d4fa8992d9; V_CSS=440582cec781
 GM=${CM_GATE:-both}
 case $GM in start|end|both|none) ;; *) echo "CM_GATE must be start, end, both or none (got $GM): no run"; exit 2 ;; esac
 SELF=fixes/g0-0l/phone/g0l-hold.sh; GATES=fixes/g0-0l/phone/g0l-gates.mjs

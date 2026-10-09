@@ -10,7 +10,7 @@ YS=0,300,600,900,1300,1600,2300,3000
 L() { node tools/lock.mjs run chrome-measure --shared --weight "$1" --max-seconds 300 --owner $O --doing "g0.0l gates: $2" -- sh -c "$3"; echo "STEP $2 exit $?"; }
 L check "errors and 404s, g0.0k" 'node tools/fix.mjs check people-blink --viewport both --no-screens'
 L check "errors and 404s, g0.0l" 'node tools/fix.mjs check g0-0l --viewport both --no-screens'
-L probe "pixels mobile" "PX_CAROUSEL=freeze PX_YS=$YS node fixes/g0-0l/gates/px-chrome.mjs mobile A=C,V=V"
+L probe "pixels mobile" "PX_IMGS=1 PX_CAROUSEL=freeze PX_YS=$YS node fixes/g0-0l/gates/px-chrome.mjs mobile A=C,V=V"
 L probe "pixels mobile reduced motion" "PX_RM=1 PX_CAROUSEL=freeze PX_YS=$YS node fixes/g0-0l/gates/px-chrome.mjs mobile A=C,V=V"
-L probe "pixels desktop" "PX_CAROUSEL=freeze PX_YS=0,300,600,900,1300,1600,2300,3000 node fixes/g0-0l/gates/px-chrome.mjs desktop A=C,V=V"
+L probe "pixels desktop" "PX_IMGS=1 PX_CAROUSEL=freeze PX_YS=0,300,600,900,1300,1600,2300,3000 node fixes/g0-0l/gates/px-chrome.mjs desktop A=C,V=V"
 echo EXIT 0
