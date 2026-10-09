@@ -4,8 +4,9 @@
 > Fastwork). `patch.diff` and `delta.diff` contain excerpts of Fastwork's code: keep them on local branches, never push.
 
 **Status:** g0.0l rev 2 is built and gated (counts and pixels; snapshot b1789284481295-a455e793). Every rest-pixel stop is
-inside T2 in Chrome (mobile, Reduce Motion, desktop) and in the Simulator. Phone check P-174 was signed by the lead
-2026-10-09 ~09:5xZ; the block is running (no result yet).
+inside T2 in Chrome (mobile, Reduce Motion, desktop) and in the Simulator. Phone check **P-174 PASSED** (signed by the
+lead 2026-10-09 ~09:5xZ, run 09:56-10:31Z): D1 FLICK d +1, APPROACH d +1, twins agree; 0 blurred frames on every V flick
+(C 51-52). Ready for the lead to land and to update BEST_BUILDS.
 **Stage:** F (build + gates) for PR-041, which the user accepted 2026-10-09 07:23:45Z (option instant).
 **Device class / gate:** phone render-bound (people section reveal); touch-only (G) for the phone check. The landing
 rule is less-work: counts and pixels, plus a short phone no-worse check.
@@ -256,6 +257,69 @@ Kit (sha256, 12), frozen for P-174 (ruling 4's two files re-hashed in the signat
 The block and run scripts are text-substitution copies of fix-cm-return's P-173 kit (`fixes/g0-0k/phone/g0k-*.sh`, its
 lineage credited in their headers). The hold script is P-173's, rewritten for two programs per item. The gates are
 fix-g0-box's P-129 reader with one changed line (G6).
+
+## P-174 result (iPhone, G, tool-serious with cooling below 40.0 C; attempt 2, 2026-10-09 09:56-10:31Z)
+
+**By the card: D1 PASS in both windows; the twins agree. Ruling 2 (misfire): none, 0 blurred frames on every V flick.**
+OBSERVED, iPhone 15 Pro Max, one block. The frozen reader (4b6a107914ee) wrote `out/g0lp/g0l-read.json`.
+
+The block:
+- Attempt 1 stopped at the part start, before any hold. Safari could not open the Mac's twin because the phone was
+  off the Mac's Wi-Fi (incident I-260). The lead had the user reconnect (console step C-138). A probe hold then loaded
+  the twin (SAFARI_RESTARTED in 14.4 s). Attempt 1's log is in `out/g0lp/attempt1-stop/`.
+- Attempt 2 ran in order: H1 WC, H2 WV, H3 S0 (**PASS**, 57.6 fps, slow 1.1 %), H4-H11 EC1 EV1 EV2 EC2 EC3 EV3 EV4
+  EC4, H12 TAIL (no re-runs) and S1 (**PASS**, 57.5 fps, slow 1.8 %).
+- Every hold was VALID, every counted record passed G1-G6, and the induced Serious condition held at every start and
+  end gate.
+- Battery: 35.7-37.4 C over the counted holds. No stop rule fired.
+- Logs: `out/g0lp/p174-block.log`, `hold-H*.log`; runs in `out/g0lp/runs`.
+
+| run | battery start -> end (C) | FLICK frames, > 50 (46 / 54), > 34 (30 / 38), max ms, yLand | APPROACH frames, > 50 (46 / 54), > 34 (30 / 38), max ms | X (y, dt) | deck: in view / flip (ms after the flick), blurred frames, fade in view ms | photos complete at the flick (active + next / all) | instant set |
+|---|---|---|---|---|---|---|---|
+| EC1 | 35.7 -> 36.0 | 414, 0 (0 / 0), 2 (4 / 1), 39, 1369 | 1083, 0 (0 / 0), 6 (12 / 2), 42 | 1732, 18 | 965 / 1082, 52, 816 | 7 / 26 | 0 |
+| EV1 | 36.1 -> 36.4 | 420, 1 (2 / 1), 4 (5 / 3), 56, 1360 | 1075, 1 (1 / 1), 10 (21 / 3), 60 | 1653, 17 | 1110 / 1245, 0, 135 | 26 / 26 | 1 |
+| EV2 | 36.4 -> 36.7 | 414, 1 (2 / 0), 3 (4 / 3), 52, 1416 | 1073, 1 (2 / 0), 8 (17 / 3), 54 | 1774, 19 | 964 / 1082, 0, 118 | 26 / 26 | 1 |
+| EC2 | 36.6 -> 36.9 | 416, 0 (0 / 0), 1 (2 / 1), 40, 1387 | 1068, 0 (1 / 0), 11 (17 / 6), 47 | 1714, 19 | 953 / 1070, 52, 816 | 7 / 26 | 0 |
+| EC3 | 36.9 -> 36.9 | 413, 0 (0 / 0), 2 (4 / 2), 41, 1392 | 1072, 0 (0 / 0), 9 (12 / 2), 45 | 1709, 18 | 946 / 1080, 51, 833 | 7 / 26 | 0 |
+| EV3 | 37.0 -> 37.1 | 414, 0 (1 / 0), 3 (3 / 2), 49, 1360 | 1073, 1 (2 / 0), 11 (20 / 6), 54 | 1704, 19 | 954 / 1089, 0, 135 | 26 / 26 | 1 |
+| EV4 | 37.1 -> 37.2 | 414, 1 (2 / 0), 3 (3 / 3), 51, 1369 | 1069, 5 (5 / 3), 8 (19 / 6), 66 | 1659, 17 | 977 / 1094, 0, 117 | 26 / 26 | 1 |
+| EC4 | 37.3 -> 37.4 | 414, 0 (0 / 0), 2 (4 / 1), 41, 1392 | 1075, 1 (1 / 0), 9 (15 / 4), 53 | 1657, 17 | 963 / 1080, 52, 816 | 7 / 26 | 0 |
+
+**D1, the primary:**
+- **FLICK: PASS.** > 50: C 0, 0, 0, 0 vs V 1, 1, 0, 1; d +1 (limit +2). Twins: > 46 d +2, > 54 d 0; both pass.
+- **APPROACH: PASS.** > 50: C 0, 0, 0, 1 vs V 1, 1, 1, 5; d +1. Twins: > 46 d +1.5, > 54 d +0.5; both pass.
+
+**The secondaries (descriptive):**
+- **Blurred frames, the reason for the fix:** C 51-52 per flick, V 0 on all four.
+- **Fade in view:** C 816-833 ms, V 117-135 ms. V's remainder is the 0.72 threshold: the deck enters the view about
+  120 ms before `.is-visible` turns on.
+- **The instant attribute:** set on every V flick, never on C.
+- **Photos complete at the flick (ruling 4):** V 26 / 26 in every run, C 7 / 26. The 150 ms latency did not leave V
+  short.
+
+**The cost the gain carries, i.e. where V's extra > 50 frames sit** (descriptive; `where50.mjs` / `cross.mjs` read the
+runs' Timeline; scratch, not committed).
+- V has one long frame per window at the people reveal, in both windows.
+- APPROACH: the slow-path `.is-visible` flip at y 609-618. FLICK: the instant reveal, 46-49 ms after the flip.
+
+| reveal frame | dt | Paint ms | Composite ms | style + layout ms |
+|---|---|---|---|---|
+| FLICK, C (4 runs) | 35-41 | 2.5-2.6 | 23-29 | 7.5-12.3 |
+| FLICK, V (4 runs) | 44-51 | 7.9-11.1 | 33-38 | 10.6-12.5 |
+| APPROACH, C (4 runs) | 42-47 | 1.0-1.2 | 29-31 | 10.4-16.6 |
+| APPROACH, V (4 runs) | 49-60 | 7.5-9.7 | 35-42 | 14.6-16.2 |
+
+- Style and layout are the same. **Paint is +6-9 ms and Composite +6-12 ms in V.**
+- On V the 26 deck photos are already decoded when the card first shows, so they paint and upload in the reveal frame.
+  On C most of them are not loaded yet; they come in later frames, which is the blank and blur the user saw.
+- This is OBSERVED in our setup. That the extra paint and composite are these photos is the likely reading, not
+  isolated by a knock-out.
+- V's other > 46 frames:
+  - EV1 / EV2 / EV4 FLICK at rest, 1.7-5.3 s after the flip: Composite 42-49 ms, little main-thread work.
+  - EV4 APPROACH y 2566-2696: three frames of 54-66 ms with almost no recorded work, past the people section.
+    Render-side; cause not traced.
+- A follow-up, not needed to land: let the hidden card paint its photos before the reveal, so the reveal frame only
+  composites. A proposal, if the lead wants one.
 
 ## Not run
 
