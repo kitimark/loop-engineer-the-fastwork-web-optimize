@@ -711,9 +711,12 @@ const isRecording = (a) => MOVIE.test(a) || SCREEN_DIR.test(a);
 // recordings in out/iphone-screen/ whose name carries the deck label "-pb-", recorded while the user keeps Do Not
 // Disturb or Sleep focus on (record them only after the user says focus is on). Every other recording stays denied,
 // and so do players and viewers (open, ffplay, qlmanage, mpv, ...) on any recording.
+// User 2026-10-09 14:3xZ (Claude Code chat, T-170 #137-#140): the same rule also covers the worst-case iPhone
+// recordings, out/iphone-screen/ files whose name carries "-wc-", recorded with Do Not Disturb or Sleep on.
 const DECK_SIM = /(^|\/)out\/people-blink\/(.+\/)?[^/]+\.(mov|mp4|m4v)$/i;
 const DECK_PHONE = /(^|\/)out\/iphone-screen\/[^/]*-pb-[^/]*\.(mov|mp4|m4v)$/i;
-const isDeckRecording = (a) => !/(^|\/)\.\.(\/|$)/.test(a) && (DECK_SIM.test(a) || DECK_PHONE.test(a));
+const WC_PHONE = /(^|\/)out\/iphone-screen\/[^/]*-wc-[^/]*\.(mov|mp4|m4v)$/i;
+const isDeckRecording = (a) => !/(^|\/)\.\.(\/|$)/.test(a) && (DECK_SIM.test(a) || DECK_PHONE.test(a) || WC_PHONE.test(a));
 const isOutImage = (a) => !/(^|\/)\.\.(\/|$)/.test(a) && /(^|\/)out\/.+/.test(a) && FRAME_FILE.test(a);
 function analyzeFrames(prog, argv, findings) {
   const rest = argv.slice(1);
@@ -730,7 +733,7 @@ function analyzeFrames(prog, argv, findings) {
       const outputs = rest.filter((a, k) => rest[k - 1] !== '-i' && FRAME_FILE.test(a));
       const deck = inputs.length > 0 && inputs.every(isDeckRecording) && outputs.length > 0 && outputs.every(isOutImage) &&
         formats.every((f) => /^image2$/i.test(f));
-      if (!deck) return no('An ffmpeg frame export or preview (only the deck recordings in out/people-blink/ and out/iphone-screen/*-pb-*, as image files under out/)');
+      if (!deck) return no('An ffmpeg frame export or preview (only the deck recordings in out/people-blink/ and out/iphone-screen/*-pb-*, and the worst-case recordings out/iphone-screen/*-wc-*, as image files under out/)');
     }
   }
   return undefined;
