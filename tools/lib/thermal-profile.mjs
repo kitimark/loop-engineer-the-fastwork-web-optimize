@@ -1,5 +1,6 @@
 // Phone thermal test profile (incident I-186; user T-162 #3/#5, 2026-10-04): every phone run (iphone.mjs run | scroll |
-// record | gesture) runs under a named profile, checked against the phone's thermal state at the START and END of its hold.
+// record | gesture) runs under a named profile, checked against the phone's thermal state at the START and END of its hold
+// (I-257: except `record` without --profile, a perception recording: no gate, iphone.mjs profileGate).
 //   serious (default): Xcode's Device Conditions > Thermal State "Serious" (Is Induced = Yes), no heat pre-warm
 //                      (gate profile xcode-serious of research/phone-thermal-gate, --accept-induced)
 //   real-serious:      Serious by the phone's own heat (Is Induced = No; I-246, real-heat blocks such as P-165): gate profile
@@ -38,15 +39,16 @@
 // one hold read once), the run files, and the end read. closeHold() makes the end read after the hold's last run
 // (`lock.mjs run` calls it when its command ends; `iphone.mjs profile --end` by hand) and stamps every run file of the
 // hold: meta.profile.end, meta.profile.drift and meta.profileDrift (true when the end read does not fit the profile; the
-// data are kept). A start read that does not fit refuses the run (EXIT_PROFILE) and, when the tester can fix it in Xcode,
-// posts ONE console action step for the tester (de-duplicated per owner + profile while it is open, and for 30 min after
-// the user answered one unless the condition read changed, I-201). A Critical phone under Xcode's Serious condition (the
-// condition right, the phone itself above it) refuses with reason phone-above-condition: with a cool battery (< 38 C)
-// the step asks to stop the condition, wait ~2 min and start Serious again (fix restart-condition, OBSERVED remedy), else
-// no step, wait to cool (I-201; refusalText lists the reason codes; the exit code stays 8, the gate codes
+// data are kept). A start read that does not fit refuses the run (EXIT_PROFILE). I-257 (C-133/134/135; user T-228 #15:
+// the user is never asked for a manual Xcode thermal step): no mode posts a console step for the tester any more; every
+// refusal the thermal tool can fix carries the REARM / CLEAR line for the agent (toolHint). stepFor / postProfileStep /
+// recentProfileStep (the I-186/I-201 step and its 30-min de-duplication) are no longer called by the gate. A Critical
+// phone under Xcode's Serious condition (the condition right, the phone itself above it) refuses with reason
+// phone-above-condition (fix restart-condition with a cool battery < 38 C, OBSERVED remedy; the REARM line does it with
+// the tool), else wait to cool (I-201; refusalText lists the reason codes; the exit code stays 8, the gate codes
 // research/phone-thermal-gate's).
 // I-225 (user T-228 #15): in tool mode (startGate condition 'tool': `iphone.mjs profile --condition tool`, or
-// $FW_PHONE_CONDITION=tool) the condition is ours (tools/thermal.mjs, I-199): a misfit posts no step; a serious one adds
+// $FW_PHONE_CONDITION=tool) the condition is ours (tools/thermal.mjs, I-199); in both modes (I-257) a serious misfit adds
 // the line `REARM … node tools/iphone.mjs rearm --owner <o>` (the probed re-arm, lib/thermal-rearm.mjs), a fair one
 // `CLEAR … node tools/thermal.mjs clear` (toolHint). I-233: a read under a condition carries `holder` (holderName:
 // 'thermal.mjs' while our live set holds that level, else 'Xcode'); the words name it (stateWords, refusalText); in tool
@@ -101,16 +103,16 @@ export function gateVerdict({ err = null, state = null, induced = null, battC = 
 }
 
 /**
- * I-225 (user T-228 #15, lead 10-07): who sets the condition for this hold: 'xcode' (default: the tester in Xcode's Device
- * Conditions, so a fixable misfit posts the tester's console step) or 'tool' (tools/thermal.mjs, I-199: no user step; a
- * serious misfit points to `iphone.mjs rearm`, a fair one to `thermal.mjs clear`). Never both in one block: thermal.mjs set
+ * I-225 (user T-228 #15, lead 10-07): who sets the condition for this hold: 'xcode' (default: an Xcode-held Serious
+ * condition is accepted) or 'tool' (tools/thermal.mjs, I-199: the Serious condition must be ours, I-233). Either way no user
+ * step (I-257): a serious misfit points to `iphone.mjs rearm`, a fair one to `thermal.mjs clear`. Never both in one block: thermal.mjs set
  * replaces Xcode's condition and its clear leaves none (I-199 stage 3). --condition on `iphone.mjs profile`, else
  * $FW_PHONE_CONDITION (every gate of the process: run, scroll, record, gesture), else xcode. Throws on anything else.
  */
 export function parseCondition(v, env = process.env) {
   const x = v ?? env.FW_PHONE_CONDITION ?? 'xcode';
   if (x === 'xcode' || x === 'tool') return x;
-  throw new Error(`--condition must be xcode (default: the tester's Xcode, a console step) or tool (thermal.mjs, I-199: no step, iphone.mjs rearm); got ${x === true || x === '' ? 'nothing' : `"${x}"`} (I-225)`);
+  throw new Error(`--condition must be xcode (default: an Xcode-held Serious condition passes; no step, I-257) or tool (thermal.mjs, I-199: no step, iphone.mjs rearm); got ${x === true || x === '' ? 'nothing' : `"${x}"`} (I-225)`);
 }
 const REARM_REASONS = new Set(['phone-above-condition', 'condition-critical', 'condition-wrong', 'condition-missing', 'condition-not-ours']);
 /** I-225: the tool-mode line after a refusal (what the agent runs itself, no user step), or null. Pure. */
@@ -492,16 +494,16 @@ export async function postProfileStep({ owner, profile, fix, read = null, now = 
 
 /**
  * The hold's start read for `profile` (I-186). A passing read kept in the hold's ledger is reused (`cached`): one read per
- * hold, not per run. Otherwise one read now (`force` always reads); a pass is kept, a misfit throws ProfileRefusal after
- * posting the tester's step (`postStep`; null when no Xcode action fixes it). Returns {ledger, key, record(), saved(file),
- * cached, read, verdict}. `hold` null (no lease, no hold): reads, keeps nothing. `condition` 'tool' (I-225, parseCondition):
- * a misfit posts no step and adds toolHint's line (REARM / CLEAR) after the refusal line instead.
+ * hold, not per run. Otherwise one read now (`force` always reads); a pass is kept, a misfit throws ProfileRefusal with
+ * toolHint's line (REARM / CLEAR) after the refusal line, in either `condition` mode; it never posts a console step (I-257).
+ * Returns {ledger, key, record(), saved(file), cached, read, verdict}. `hold` null (no lease, no hold): reads, keeps
+ * nothing. `condition` 'tool' (I-225, parseCondition): the Serious condition must be thermal.mjs's (I-233).
  * `warmup` (I-246; an uncounted --warmup run): under real-serious, while the hold has no kept start read, the read is made
  * but never kept, and too cool (code 2) passes: the heat pre-warm runs on a phone that is not yet Serious, and the hold's
  * start read is the first counted run's. Every other misfit (ceiling, a condition on, no read) refuses as usual. Its
  * record() says warmup: true; saved() lists nothing (no end-read stamp). Other profiles: `warmup` changes nothing.
  */
-export async function startGate({ profile = DEFAULT_PROFILE, owner, hold, read = () => readThermal(), force = false, log = console.log, postStep = postProfileStep, now = Date.now, condition = 'xcode', warmup = false } = {}) {
+export async function startGate({ profile = DEFAULT_PROFILE, owner, hold, read = () => readThermal(), force = false, log = console.log, now = Date.now, condition = 'xcode', warmup = false } = {}) {
   profile = parseProfile(profile);
   condition = parseCondition(condition);
   const key = hold ? ledgerKey(hold, profile) : null;
@@ -519,16 +521,9 @@ export async function startGate({ profile = DEFAULT_PROFILE, owner, hold, read =
   if (v.code !== 0 || notOurs) {
     const t = refusalText(profile, r, v, { condition });
     let msg = t.line;
-    if (condition === 'tool') { const h = toolHint(profile, t, owner); if (h) msg += `\n${h}`; } // I-225: no Xcode step
-    else if (t.fix && postStep) {
-      try {
-        const p = await postStep({ owner, profile, fix: t.fix, read: r, now: now() });
-        if (p.recent) {
-          const ago = Math.max(0, Math.round((now() - Date.parse(p.step.result?.at ?? p.step.updatedAt)) / 60000));
-          msg += `\nSTEP ${p.step.id} answered ${ago} min ago and the condition read is unchanged (induced ${r.induced ?? 'unknown'}, condition ${r.condition ?? 'none'}): no new step for 30 min after an answer (I-201)`;
-        } else msg += `\nSTEP ${p.step.id} ${p.posted ? 'posted' : 'already open'} on the user console for the tester: ${p.step.title}`;
-      } catch (e) { msg += `\n(no console step: ${e.message})`; }
-    }
+    // I-225/I-257 (user T-228 #15: no manual Xcode steps): in either condition mode the agent fixes it with the thermal
+    // tool (the REARM / CLEAR line); no console step for the tester is ever posted (C-133/134/135)
+    const h = toolHint(profile, t, owner); if (h) msg += `\n${h}`;
     // a misfit read invalidates a kept start read of this hold (the next run reads again; its runs stay listed)
     if (old && !old.end) { try { await withGuard(GUARD, () => { const cur = readJson(ledgerFile(key)); if (cur && !cur.end) writeJson(ledgerFile(key), { ...cur, start: slim(r, v) }); }); } catch {} }
     throw new ProfileRefusal(msg, { verdict: v, read: r, profile, fix: t.fix, reason: t.reason });

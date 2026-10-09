@@ -35,7 +35,7 @@ async function fakePhone() {
 }
 const RUN = (out, ...a) => ['run', '--driver', 'window', '--probe', 'std', '--owner', 'me', '--from', '1500', '--to', '1600', '--settle', '0', '--idle', '0.2', '--hold', '0.2', '--sentinel', '0.2', '--no-park', '--out', out, ...a];
 
-test('serious (the default) is refused on a Fair phone before Safari is touched: exit 8, what to switch in Xcode, ONE console step for the tester', async () => {
+test('serious (the default) is refused on a Fair phone before Safari is touched: exit 8, what is wrong, the REARM line for the agent, no console step (I-257)', async () => {
   const phone = await fakePhone();
   env.FW_IPHONE_PORT = phone.port;
   assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '300').code, 0);
@@ -43,28 +43,26 @@ test('serious (the default) is refused on a Fair phone before Safari is touched:
   let r = await nodeAsync(IPHONE, RUN(out), { env, timeout: 60000 });
   assert.equal(r.code, 8, r.out);
   assert.match(r.stderr, /^REFUSED profile serious \(Serious, induced by Xcode\): phone is Fair, battery 34\.5 C; set Xcode > Window > Devices and Simulators > the phone > Device Conditions > Thermal State > Serious > Start \(leave it on\), then run again \(gate xcode-serious code 2, reason condition-missing, I-186\)$/m);
-  const id = r.stderr.match(/^STEP (C-\d+) posted on the user console/m)?.[1];
-  assert.ok(id, r.stderr);
+  assert.match(r.stderr, /^REARM the thermal tool fixes it \(no user step\): node tools\/iphone\.mjs rearm --owner me /m);
+  assert.doesNotMatch(r.stderr, /^STEP /m);
   assert.deepEqual(phone.events().filter((e) => e.evaluate || e.reload), [], 'Safari untouched');
   assert.ok(!existsSync(out), 'no record');
-  // the second refusal names the same step, posts none
+  // the second run reads again and refuses the same way
   r = await nodeAsync(IPHONE, RUN(out), { env, timeout: 60000 });
   assert.equal(r.code, 8, r.out);
-  assert.match(r.stderr, new RegExp(`^STEP ${id} already open on the user console`, 'm'));
-  const s = steps().filter((x) => x.meta?.phoneProfile);
-  assert.equal(s.length, 1, 'posted once');
-  assert.deepEqual([s[0].id, s[0].kind, s[0].by, s[0].meta.phoneProfile.profile, s[0].meta.phoneProfile.fix], [id, 'action', 'me', 'serious', 'set-serious']);
-  assert.match(s[0].instructions, /Leave it on/);
+  assert.match(r.stderr, /^REARM /m);
+  assert.deepEqual(steps(), [], 'no console step (I-257)');
   assert.equal(reads(), 2, 'a refused start read is not kept: each run reads');
-  // scroll and record refuse the same way, before the (absent) Safari proxy is reached
+  // scroll and record --profile serious refuse the same way, before the (absent) Safari proxy is reached (record without
+  // --profile has no gate, I-257: its own test below)
   env.FW_IPHONE_PORT = String(await freePort());
-  for (const cmd of [['scroll'], ['record', '--seconds', '1']]) {
+  for (const cmd of [['scroll'], ['record', '--seconds', '1', '--profile', 'serious']]) {
     r = node(IPHONE, [...cmd, '--owner', 'me'], { env, timeout: 30000 });
     assert.equal(r.code, 8, `${cmd[0]}: ${r.out}`);
     assert.match(r.stderr, /^REFUSED profile serious/m);
     assert.doesNotMatch(r.stderr, /fetch failed|ECONNREFUSED|openTab/);
   }
-  assert.equal(steps().filter((x) => x.meta?.phoneProfile).length, 1, 'still one step');
+  assert.deepEqual(steps(), [], 'still no step');
   // --profile none does not exist
   r = node(IPHONE, ['scroll', '--owner', 'me', '--profile', 'none'], { env });
   assert.equal(r.code, 1);
@@ -115,10 +113,11 @@ test('fair passes on a Fair phone: the record carries meta.profile (the start re
   r = node(IPHONE, ['profile', '--owner', 'me', '--profile', 'fair'], { env, timeout: 30000 });
   assert.equal(r.code, 8, r.out);
   assert.match(r.stderr, /^REFUSED profile fair \(Nominal or Fair, not induced\): phone is Serious \(induced by Xcode\), battery 33 C; stop it: Xcode > .* > Stop \(leave it off\)/m);
-  assert.match(r.stderr, /^STEP C-\d+ posted on the user console/m);
+  assert.match(r.stderr, /^CLEAR the thermal tool fixes it \(no user step\): node tools\/thermal\.mjs clear --owner me /m);
+  assert.doesNotMatch(r.stderr, /^STEP /m);
 });
 
-test('I-201: a Critical phone under Xcode\'s Serious condition (the 06:14Z read) refuses with exit 8 and its own reason; a cool battery gets ONE restart step per 30 min, a warm one none; a changed condition read gets its own step', async () => {
+test('I-201: a Critical phone under Xcode\'s Serious condition (the 06:14Z read) refuses with exit 8 and its own reason; a cool or warm battery and a changed condition read: the REARM line, never a user step (I-257)', async () => {
   assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '300').code, 0);
   const profile = () => node(IPHONE, ['profile', '--owner', 'me'], { env, timeout: 30000 });
   const HINT = 'the phone itself reads Critical above the Xcode condition Serious; if the battery is cool \\(< 38 °C\\), stop the Xcode condition, wait until a re-read shows below Critical \\(about 2 min\\), then start Serious again; otherwise wait for it to cool; re-read with node tools/iphone\\.mjs profile --owner <you> \\(gate xcode-serious code 3, reason phone-above-condition, I-186\\)';
@@ -129,32 +128,20 @@ test('I-201: a Critical phone under Xcode\'s Serious condition (the 06:14Z read)
   assert.match(r.stderr, new RegExp(`^REFUSED profile serious \\(Serious, induced by Xcode\\): phone is Critical \\(Xcode condition Serious\\), battery 40 C; ${HINT}$`, 'm'));
   assert.doesNotMatch(r.stderr, /^STEP /m);
   assert.deepEqual(steps().filter((x) => x.meta?.phoneProfile), [], 'no step for the tester');
-  // the 06:14Z read, battery 30.19 C: the restart step, once
+  // the 06:14Z read, battery 30.19 C: was the restart step (I-201); since I-257 the REARM line, no step
   writeFileSync(thermal, 'Critical Yes 30.19 Serious\n');
   r = profile();
   assert.equal(r.code, 8, r.out);
   assert.match(r.stderr, new RegExp(`^REFUSED profile serious \\(Serious, induced by Xcode\\): phone is Critical \\(Xcode condition Serious\\), battery 30\\.19 C; ${HINT}$`, 'm'));
-  const id = r.stderr.match(/^STEP (C-\d+) posted on the user console for the tester: Xcode: stop, then restart the iPhone's Serious thermal condition/m)?.[1];
-  assert.ok(id, r.stderr);
-  r = profile();
-  assert.match(r.stderr, new RegExp(`^STEP ${id} already open`, 'm'));
-  // the user clicks Start and Done on the page (lib calls on this test's store); the same read again: no new step
-  const C = await import('../../tools/lib/console.mjs');
-  const prev = process.env.FW_STATE_DIR;
-  process.env.FW_STATE_DIR = env.FW_STATE_DIR;
-  try { await C.start(id); await C.done(id); } finally { if (prev === undefined) delete process.env.FW_STATE_DIR; else process.env.FW_STATE_DIR = prev; }
-  assert.equal(steps().find((x) => x.id === id).status, 'answered');
-  r = profile();
-  assert.equal(r.code, 8, r.out);
-  assert.match(r.stderr, new RegExp(`^STEP ${id} answered \\d+ min ago and the condition read is unchanged \\(induced Yes, condition Serious\\): no new step for 30 min after an answer \\(I-201\\)$`, 'm'));
-  assert.equal(steps().filter((x) => x.meta?.phoneProfile).length, 1);
-  // the condition itself Critical (a changed condition read): the set-Serious step, as before
+  assert.match(r.stderr, /^REARM the thermal tool fixes it \(no user step\): node tools\/iphone\.mjs rearm --owner me /m);
+  assert.doesNotMatch(r.stderr, /^STEP /m);
+  // the condition itself Critical (a changed condition read): the REARM line, no step
   writeFileSync(thermal, 'Critical Yes 30.5 Critical\n');
   r = profile();
   assert.equal(r.code, 8, r.out);
   assert.match(r.stderr, /the Xcode condition is Critical, above the ceiling; set Xcode > .* \(gate xcode-serious code 3, reason condition-critical, I-186\)$/m);
-  assert.match(r.stderr, /^STEP C-\d+ posted on the user console for the tester: Xcode: set the iPhone's Thermal State to Serious/m);
-  assert.equal(steps().filter((x) => x.meta?.phoneProfile).length, 2);
+  assert.match(r.stderr, /^REARM /m);
+  assert.deepEqual(steps(), [], 'no console step (I-257)');
 });
 
 test('inside lock.mjs run chrome-measure --no-timing: the hold\'s first run reads, the rest reuse it; the hold makes the end read, marks drift and logs phoneProfile in holds.log', async () => {
@@ -181,7 +168,7 @@ test('inside lock.mjs run chrome-measure --no-timing: the hold\'s first run read
   assert.equal(line.code, 0, 'the exit code stays the command\'s');
 });
 
-test('I-246: --profile real-serious: a --warmup run on a Fair phone runs (not the start read), a counted one refuses too cool (exit 8, no step), real Serious passes; the end read names real-serious', async () => {
+test('I-246: --profile real-serious: a --warmup run on a Fair phone runs (not the start read), a counted one refuses too cool (exit 8, no step), real Serious passes; the end read names real-serious; an induced phone refuses with the CLEAR line (I-257)', async () => {
   const phone = await fakePhone();
   env.FW_IPHONE_PORT = phone.port;
   assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '300').code, 0);
@@ -217,5 +204,40 @@ test('I-246: --profile real-serious: a --warmup run on a Fair phone runs (not th
   r = node(IPHONE, ['profile', '--owner', 'me', '--profile', 'real-serious'], { env, timeout: 30000 });
   assert.equal(r.code, 8, r.out);
   assert.match(r.stderr, /^REFUSED profile real-serious .*stop it: Xcode > .* > Stop \(leave it off\), then run again \(gate real-serious code 4, reason condition-on, I-186\)$/m);
-  assert.match(r.stderr, /^STEP C-\d+ posted on the user console for the tester: Xcode: stop the iPhone's thermal condition \(test profile real-serious\)$/m);
+  assert.match(r.stderr, /^CLEAR the thermal tool fixes it \(no user step\): node tools\/thermal\.mjs clear --owner me /m);
+  assert.doesNotMatch(r.stderr, /^STEP /m);
+});
+
+// I-257 (C-133/134/135, 2026-10-09): a blind swipe test's `iphone.mjs record` (no --profile) on a Nominal phone posted
+// "Xcode: set the iPhone's Thermal State to Serious" to the user three times. A perception recording needs no thermal
+// profile: record without --profile reads nothing and never refuses; record --profile <p> keeps the gate. No phone
+// command posts a manual Xcode step (user T-228 #15): a misfit refuses (exit 8) with the REARM / CLEAR line for the agent.
+test('I-257: record without --profile on a Nominal phone reads no thermal state, posts no step and records (meta.profile skipped); record --profile serious and scroll still refuse (exit 8, REARM line, no step)', async () => {
+  writeFileSync(thermal, 'Nominal No 31\n');
+  const log = join(tempDir('fw-wip-rec-'), 'wip.jsonl');
+  const p = await startProc(process.execPath, [join(TESTS, 'fixtures', 'fake-webkit-proxy.mjs'), '--port=0', '--url=http://127.0.0.1:9/start', '--page'], { env: { FAKE_WIP_LOG: log }, ready: (s) => /^FAKE_WIP_PORT=\d+$/m.test(s) });
+  procs.push(p);
+  env.FW_IPHONE_PORT = p.stdout().match(/^FAKE_WIP_PORT=(\d+)$/m)[1];
+  assert.equal(lock('acquire', 'iphone', '--lead', '--reason', 'test fixture', '--owner', 'me', '--ttl', '300').code, 0);
+  const out = join(dir, 'rec.json');
+  let r = await nodeAsync(IPHONE, ['record', '--owner', 'me', '--seconds', '1', '--label', 'swipe', '--out', out], { env: { ...env, FW_RECORD_READ_MS: '2000' }, timeout: 60000 });
+  assert.equal(r.code, 0, r.out);
+  assert.doesNotMatch(r.out, /REFUSED|^STEP /m);
+  assert.equal(reads(), 0, 'no xctrace read');
+  const m = JSON.parse(readFileSync(out, 'utf8')).meta;
+  assert.deepEqual(m.profile, { name: null, gate: null, skipped: 'record without --profile: no thermal gate (a perception recording, I-257)' });
+  // an explicit profile keeps the gate: refused before Safari, no step, the agent's REARM line
+  for (const cmd of [['record', '--seconds', '1', '--profile', 'serious'], ['scroll']]) {
+    r = node(IPHONE, [...cmd, '--owner', 'me'], { env, timeout: 30000 });
+    assert.equal(r.code, 8, `${cmd[0]}: ${r.out}`);
+    assert.match(r.stderr, /^REFUSED profile serious .*phone is Nominal, battery 31 C; .*reason condition-missing, I-186\)$/m);
+    assert.match(r.stderr, /^REARM the thermal tool fixes it \(no user step\): node tools\/iphone\.mjs rearm --owner me /m);
+    assert.doesNotMatch(r.stderr, /^STEP /m);
+  }
+  assert.equal(reads(), 2);
+  // `iphone.mjs profile` (the swipe kit's logged read) refuses the same way, no step
+  r = node(IPHONE, ['profile', '--owner', 'me'], { env, timeout: 30000 });
+  assert.equal(r.code, 8, r.out);
+  assert.match(r.stderr, /^REARM /m);
+  assert.deepEqual(steps(), [], 'no console step');
 });

@@ -162,7 +162,7 @@ test('I-225 the gate\'s tool mode (--condition tool / FW_PHONE_CONDITION=tool): 
   assert.equal(P.parseCondition(undefined), 'xcode');
   assert.equal(P.parseCondition('tool'), 'tool');
   assert.equal(P.parseCondition('xcode'), 'xcode');
-  assert.throws(() => P.parseCondition('both'), /--condition must be xcode \(default: the tester's Xcode, a console step\) or tool \(thermal\.mjs, I-199: no step, iphone\.mjs rearm\)/);
+  assert.throws(() => P.parseCondition('both'), /--condition must be xcode \(default: an Xcode-held Serious condition passes; no step, I-257\) or tool \(thermal\.mjs, I-199: no step, iphone\.mjs rearm\)/);
   assert.equal(P.parseCondition(undefined, { FW_PHONE_CONDITION: 'tool' }), 'tool');
   const gate = (read, extra = {}) => P.startGate({ owner: 'int-v11', hold: hold(), read: async () => ({ ...read }), log: () => {}, condition: 'tool', ...extra }).catch((x) => x);
   for (const read of [ABOVE, { ...ABOVE, battC: 40 }, { state: 'Nominal', induced: 'No', battC: 31 }, { state: 'Critical', induced: 'Yes', condition: 'Critical', battC: 33 }]) {
@@ -180,9 +180,11 @@ test('I-225 the gate\'s tool mode (--condition tool / FW_PHONE_CONDITION=tool): 
   e = await gate({ state: 'Serious', induced: 'No', battC: 40 }, { profile: 'fair' });
   assert.doesNotMatch(e.message, /\n(CLEAR|REARM|STEP) /, 'real heat: cool down, nothing to switch');
   assert.equal(C.list().length, 0, 'tool mode posts no step');
-  // the Xcode mode (default) still posts its step
+  // I-257: the Xcode mode (default) posts no step either; the same REARM line
   e = await P.startGate({ owner: 'int-v11', hold: hold(), read: async () => ({ ...ABOVE }), log: () => {} }).catch((x) => x);
-  assert.match(e.message, /\nSTEP C-\d+ posted/);
+  assert.doesNotMatch(e.message, /\nSTEP /);
+  assert.match(e.message, /\nREARM the thermal tool fixes it \(no user step\)/);
+  assert.equal(C.list().length, 0, 'no step in either mode (I-257)');
 });
 
 test('I-233 rearm: Serious induced by a condition that is not ours (Xcode left on) is no NOT-NEEDED: rearm takes it over (set, settle, read) -> took-over, exit 0', async () => {

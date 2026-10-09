@@ -96,7 +96,9 @@
 //        # meta.timeline {file, records, sync}; attribution runs only, never mixed with Timeline-off counted runs (§5.5)
 //
 // Thermal test profile (I-186; user T-162 #3/#5; tools/lib/thermal-profile.mjs): run, scroll, record and gesture take
-// --profile serious|real-serious|fair (default serious; there is no "none"):
+// --profile serious|real-serious|fair (default serious; there is no "none"). I-257: `record` without --profile (a
+// perception recording, e.g. a blind swipe pair whose records are descriptive only) has no thermal gate: no read, no
+// refusal, meta.profile {name: null, gate: null, skipped}; record --profile <p> is gated like the others:
 //   serious      = Xcode's Device Conditions > Thermal State "Serious" (Is Induced = Yes), no heat pre-warm (gate xcode-serious)
 //   real-serious = Serious by the phone's own heat, not induced (gate real-serious; I-246, real-heat blocks): a condition
 //                  refuses (stop it), too cool refuses with no step; its --warmup runs (the heat pre-warm) pass too cool
@@ -106,25 +108,24 @@
 // is inside one, else your iphone lease) is checked at its START (one xctrace Thermal State read, ~25 s, made by the
 // hold's first run before Safari is touched and reused by its later runs; a read is never in the timed part) and at its
 // END (`lock.mjs run` makes it when its command ends; outside a run hold: `iphone.mjs profile --end`). On a misfit at the
-// start the run REFUSES, exit 8, and prints what to switch, e.g. "phone is Nominal; set Xcode > Window > Devices and
-// Simulators > the phone > Device Conditions > Thermal State > Serious > Start (leave it on)"; when an Xcode action fixes
-// it, it also posts ONE console action step for the tester (by the run's owner, de-duplicated per owner and profile while
-// it is open, and for 30 min after the user answered one unless the condition read changed, I-201) and prints its id
-// (STEP C-…); it does not wait for it. The refusal line ends "(gate <gate> code <n>, reason <reason>, I-186)": reason
+// start the run REFUSES, exit 8, and prints what is wrong, e.g. "phone is Nominal; set Xcode > Window > Devices and
+// Simulators > the phone > Device Conditions > Thermal State > Serious > Start (leave it on)", and, when the thermal tool
+// fixes it, the REARM / CLEAR line below for the agent. I-257 (C-133/134/135; user T-228 #15): it never posts a console
+// step for the user (it did before, in the xcode mode); the agent re-arms with the tool. The refusal line ends "(gate <gate> code <n>, reason <reason>, I-186)": reason
 // phone-above-condition (I-201) = Xcode's condition IS Serious and the phone itself is Critical above it: battery < 38 C,
-// stop the condition, wait ~2 min for a re-read below Critical, start Serious again (step restart-condition, at most once
-// per 30 min); else wait for it to cool, no step (reason codes: lib/thermal-profile.mjs refusalText). A misfit at the end keeps the data
+// stop the condition, wait ~2 min for a re-read below Critical, start Serious again (what `rearm` does with the tool);
+// else wait for it to cool (reason codes: lib/thermal-profile.mjs refusalText). A misfit at the end keeps the data
 // and marks every run record of the hold meta.profileDrift: true. Every record carries meta.profile {name, gate, hold,
 // start, end, drift} (start/end: state, induced, condition (the Xcode condition's own level, I-201), battC, gate code).
 // No CLI can set the Xcode condition (devicectl has none,
 // research/thermal-condition-cli). A Simulator session reads nothing (meta.profile.skipped).
 //   node tools/iphone.mjs profile --owner <topic> [--profile serious|real-serious|fair]   # one read now (your lease): exit 0 fits,
-//        # 8 misfit (+ the step); inside your hold it is the hold's start read, so the first run reads nothing more.
-//        # Before a finger test (record) run it first, so a misfit never meets the user's Start.
+//        # 8 misfit (+ the REARM / CLEAR line); inside your hold it is the hold's start read, so the first run reads
+//        # nothing more. Before a gated finger test (record --profile) run it first, so a misfit never meets the user's Start.
 //   node tools/iphone.mjs profile --owner <topic> --end                      # the hold's end read now; exit 8 on drift
-// I-225 (user T-228 #15: no manual Xcode steps): who sets the condition: --condition xcode (default: the tester in Xcode;
-// a fixable misfit posts the console step above) or tool (tools/thermal.mjs, I-199): no user step; a serious misfit adds
-// the line `REARM the thermal tool fixes it (no user step): node tools/iphone.mjs rearm --owner <you> ...`, a fair one
+// I-225 (user T-228 #15: no manual Xcode steps): who sets the condition: --condition xcode (default: an Xcode-held
+// Serious condition passes) or tool (tools/thermal.mjs, I-199; Serious must be ours, I-233). No user step in either
+// (I-257); a serious misfit adds the line `REARM the thermal tool fixes it (no user step): node tools/iphone.mjs rearm --owner <you> ...`, a fair one
 // `CLEAR ... node tools/thermal.mjs clear`. --condition on `profile`; $FW_PHONE_CONDITION=tool sets it for every gate of a
 // process (run, scroll, record, gesture). Never mix the two in one block: thermal.mjs set replaces Xcode's condition and
 // its clear leaves none (I-199 stage 3). I-233: a read under a condition names its holder (`induced by thermal.mjs` when
@@ -221,11 +222,13 @@ function measureGuard(owner) {
 
 /** I-186: the phone's thermal state against the run's --profile (serious, the default, real-serious or fair) at its hold's
  *  start: one read per hold (lib/thermal-profile.mjs startGate; the hold's later runs reuse it), before Safari is touched.
- *  A misfit throws (exit EXIT_PROFILE, 8) after posting the tester's console step. Returns {record(), saved(file)}: the
+ *  A misfit throws (exit EXIT_PROFILE, 8) with the REARM / CLEAR line for the agent, never a console step (I-257). I-257:
+ *  `record` without --profile (a perception recording, e.g. a blind swipe pair) has no gate: no read. Returns {record(), saved(file)}: the
  *  record's meta.profile, and the file's registration for the hold's end read (profileDrift). A Simulator session reads
  *  nothing. I-246: a --warmup run (or FW_PHONE_WARMUP=1; never record) under real-serious passes too cool and is not the
  *  hold's start read (startGate `warmup`). */
 async function profileGate(owner, profile = opt('profile')) {
+  if (cmd === 'record' && profile === undefined) return { record: () => ({ name: null, gate: null, skipped: 'record without --profile: no thermal gate (a perception recording, I-257)' }), saved: async () => {} };
   const name = parseProfile(profile);
   if (process.env.FW_SIM_SESSION) return { record: () => ({ name, gate: PROFILES[name].gate, skipped: 'simulator session' }), saved: async () => {} };
   const warmup = cmd !== 'record' && (flag('warmup') || phoneWarmup());

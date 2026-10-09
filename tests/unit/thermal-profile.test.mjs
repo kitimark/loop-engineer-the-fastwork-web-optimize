@@ -280,14 +280,13 @@ test('refusalText / ProfileRefusal: plain words, what to switch in Xcode, exit 8
   assert.match(e.message, /^REFUSED profile serious .*phone is Fair/);
 });
 
-test('the tester\'s console step: one action step per owner and profile while it is open, not a phone step (I-123 does not apply)', async () => {
-  const read = async () => ({ state: 'Nominal', induced: 'No', battC: 30 });
-  const msgs = [];
-  for (let i = 0; i < 3; i++) {
-    const e = await P.startGate({ owner: 'iphone-runner', hold: hold(), read, log: () => {} }).catch((x) => x);
-    assert.equal(e.exitCode, 8);
-    msgs.push(e.message);
-  }
+// I-257: the gate no longer posts this step (no manual Xcode steps, user T-228 #15; see the I-257 test below); the
+// library helper and its de-duplication stay covered here, called directly.
+test('postProfileStep (no longer called by the gate, I-257): one action step per owner and profile while it is open, not a phone step (I-123 does not apply)', async () => {
+  const read = { state: 'Nominal', induced: 'No', battC: 30 };
+  const post = (o) => P.postProfileStep({ owner: 'iphone-runner', profile: 'serious', fix: 'set-serious', read, ...o });
+  const ps = [];
+  for (let i = 0; i < 3; i++) ps.push(await post());
   let steps = C.list({ pending: true });
   assert.equal(steps.length, 1, 'posted once');
   const s = steps[0];
@@ -295,30 +294,25 @@ test('the tester\'s console step: one action step per owner and profile while it
   assert.match(s.title, /^Xcode: set the iPhone's Thermal State to Serious \(test profile serious\)$/);
   assert.match(s.instructions, /Xcode choose Window > Devices and Simulators, click Devices and select the iPhone; under Device Conditions set Condition to Thermal State and Profile to Serious, then click Start\. Leave it on/);
   assert.deepEqual(s.meta.phoneProfile, { owner: 'iphone-runner', profile: 'serious', fix: 'set-serious', incident: 'I-186', read: { state: 'Nominal', induced: 'No', condition: null } });
-  assert.match(msgs[0], new RegExp(`\\nSTEP ${s.id} posted on the user console`));
-  assert.match(msgs[1], new RegExp(`\\nSTEP ${s.id} already open on the user console`));
+  assert.deepEqual(ps.map((x) => [x.step.id, x.posted]), [[s.id, true], [s.id, false], [s.id, false]]);
   const { isPhoneStep } = await import('../../tools/lib/phone-step.mjs');
   assert.equal(isPhoneStep(s), false);
   // another owner, or the fair profile: their own step
-  await P.startGate({ owner: 'fix-x', hold: hold(), read, log: () => {} }).catch(() => {});
-  await P.startGate({ profile: 'fair', owner: 'iphone-runner', hold: hold(), read: async () => ({ state: 'Serious', induced: 'Yes', battC: 30 }), log: () => {} }).catch(() => {});
+  await post({ owner: 'fix-x' });
+  await P.postProfileStep({ owner: 'iphone-runner', profile: 'fair', fix: 'stop-condition', read: { state: 'Serious', induced: 'Yes', battC: 30 } });
   steps = C.list({ pending: true });
   assert.equal(steps.length, 3);
   assert.match(steps[2].title, /stop the iPhone's thermal condition \(test profile fair\)/);
-  // answered (the tester clicked Done): a later misfit with the same condition read posts no new step for 30 min (I-201),
-  // after that a new one
+  // answered (the tester clicked Done): the same condition read posts no new step for 30 min (I-201), after that a new one
   await C.start(s.id);
   await C.done(s.id);
   assert.equal(C.get(s.id).status, 'answered');
   const mine = () => C.list({ pending: true }).filter((x) => x.meta?.phoneProfile?.owner === 'iphone-runner' && x.meta.phoneProfile.profile === 'serious').length;
-  await P.startGate({ owner: 'iphone-runner', hold: hold(), read, log: () => {} }).catch(() => {});
+  const r = await post();
+  assert.deepEqual([r.step.id, r.posted, r.recent], [s.id, false, true]);
   assert.equal(mine(), 0);
-  await P.startGate({ owner: 'iphone-runner', hold: hold(), read, log: () => {}, now: () => Date.now() + 31 * 60000 }).catch(() => {});
+  await post({ now: Date.now() + 31 * 60000 });
   assert.equal(mine(), 1);
-  // no Xcode fix (no read): no step
-  const n = C.list().length;
-  await P.startGate({ owner: 'z', hold: hold(), read: async () => ({ error: 'xctrace record exit 1' }), log: () => {} }).catch(() => {});
-  assert.equal(C.list().length, n);
 });
 
 test('closeHold: the end read stamps every run record of the hold (profile.end, profileDrift); drift keeps the data; one read per profile; no run, no read', async () => {
@@ -457,64 +451,49 @@ test('I-201 refusalText: a Critical phone under the right Serious condition: res
   assert.equal(t('fair', { state: 'Serious', induced: 'No', battC: 40 }).reason, 'too-hot');
 });
 
-test('I-201 startGate: the 06:14Z read refuses (exit 8, reason phone-above-condition) with ONE restart step per 30 min; a warm battery posts none', async () => {
+test('I-201 startGate: the 06:14Z read refuses (exit 8, reason phone-above-condition; fix restart-condition with a cool battery, none with a warm one) with the REARM line and no step (I-257)', async () => {
   const owner = 'art-worst-cases';
-  const gate = (read, now) => P.startGate({ owner, hold: hold(), read: async () => ({ ...read }), log: () => {}, ...(now ? { now: () => now } : {}) }).catch((x) => x);
-  // warm battery: no step
+  const gate = (read) => P.startGate({ owner, hold: hold(), read: async () => ({ ...read }), log: () => {} }).catch((x) => x);
+  // warm battery
   let e = await gate({ ...READ_0614, battC: 40 });
   assert.ok(e instanceof P.ProfileRefusal);
   assert.deepEqual([e.exitCode, e.verdict.code, e.reason, e.fix], [8, 3, 'phone-above-condition', null]);
   assert.doesNotMatch(e.message, /\nSTEP /);
-  assert.equal(C.list().length, 0);
-  // cool battery: the restart step
+  assert.match(e.message, /\nREARM the thermal tool fixes it \(no user step\): node tools\/iphone\.mjs rearm --owner art-worst-cases /);
+  // cool battery: the restart remedy, done by the tool (REARM), never a user step (was the restart step before I-257)
   e = await gate(READ_0614);
   assert.deepEqual([e.exitCode, e.reason, e.fix], [8, 'phone-above-condition', 'restart-condition']);
-  const id = e.message.match(/\nSTEP (C-\d+) posted on the user console for the tester: (.*)$/)?.[1];
-  assert.ok(id, e.message);
-  const s = C.get(id);
-  assert.equal(s.title, 'Xcode: stop, then restart the iPhone\'s Serious thermal condition (test profile serious)');
-  assert.match(s.instructions, /reads Critical although Xcode's condition is Serious and the battery is cool \(30\.19 C\).*under Device Conditions click Stop\. Wait about 2 minutes.*set Condition to Thermal State and Profile to Serious, then click Start\. Leave it on/);
-  assert.deepEqual(s.meta.phoneProfile, { owner, profile: 'serious', fix: 'restart-condition', incident: 'I-186', read: { state: 'Critical', induced: 'Yes', condition: 'Serious' } });
-  // open: not posted again; answered: not again within 30 min (same condition read), again after
-  e = await gate(READ_0614);
-  assert.match(e.message, new RegExp(`\\nSTEP ${id} already open`));
-  await C.start(id);
-  await C.done(id);
-  e = await gate(READ_0614);
-  assert.match(e.message, new RegExp(`\\nSTEP ${id} answered 0 min ago and the condition read is unchanged \\(induced Yes, condition Serious\\)`));
-  assert.equal(C.list().length, 1);
-  e = await gate(READ_0614, Date.now() + 31 * 60000);
-  assert.match(e.message, /\nSTEP C-\d+ posted/);
-  assert.equal(C.list().length, 2);
+  assert.doesNotMatch(e.message, /\nSTEP /);
+  assert.match(e.message, /\nREARM /);
+  assert.equal(C.list().length, 0);
 });
 
-test('I-201 the tester\'s step: not posted again within 30 min of an answered one for the same owner and profile, unless the condition read changed', async () => {
+test('I-201 the tester\'s step (postProfileStep, no longer called by the gate, I-257): not posted again within 30 min of an answered one for the same owner and profile, unless the condition read changed', async () => {
   const owner = 'art-worst-cases';
   const crit = { state: 'Critical', induced: 'Yes', condition: 'Critical', battC: 31 };
-  const gate = (read, now) => P.startGate({ owner, hold: hold(), read: async () => ({ ...read }), log: () => {}, ...(now ? { now: () => now } : {}) }).catch((x) => x);
-  let e = await gate(crit);
-  const id = e.message.match(/\nSTEP (C-\d+) posted/)?.[1];
-  assert.ok(id, e.message);
+  const post = (read, now, o = owner) => P.postProfileStep({ owner: o, profile: 'serious', fix: 'set-serious', read: { ...read }, ...(now ? { now } : {}) });
+  let p = await post(crit);
+  const id = p.step.id;
+  assert.equal(p.posted, true);
   assert.deepEqual(C.get(id).meta.phoneProfile.read, { state: 'Critical', induced: 'Yes', condition: 'Critical' });
   await C.start(id);
   await C.done(id); // the user: "I set it"
-  // the same read again (the change did not show): no new step, the line says why
-  e = await gate(crit);
-  assert.equal(e.exitCode, 8);
-  assert.match(e.message, new RegExp(`\\nSTEP ${id} answered 0 min ago and the condition read is unchanged \\(induced Yes, condition Critical\\): no new step for 30 min after an answer \\(I-201\\)`));
+  // the same read again (the change did not show): no new step
+  p = await post(crit);
+  assert.deepEqual([p.step.id, p.posted, p.recent], [id, false, true]);
   assert.equal(C.list().length, 1);
   // another owner: its own step
-  await P.startGate({ owner: 'x', hold: hold(), read: async () => ({ ...crit }), log: () => {} }).catch(() => {});
+  await post(crit, undefined, 'x');
   assert.equal(C.list().length, 2);
   // the condition read changed (the Xcode condition now Fair): a new step
-  e = await gate({ ...crit, condition: 'Fair' });
-  const id2 = e.message.match(/\nSTEP (C-\d+) posted/)?.[1];
-  assert.ok(id2 && id2 !== id, e.message);
+  p = await post({ ...crit, condition: 'Fair' });
+  const id2 = p.step.id;
+  assert.ok(p.posted && id2 !== id);
   await C.start(id2);
   await C.done(id2);
   // 31 min after the answers, the same read: a new step
-  e = await gate(crit, Date.now() + 31 * 60000);
-  assert.match(e.message, /\nSTEP C-\d+ posted/);
+  p = await post(crit, Date.now() + 31 * 60000);
+  assert.equal(p.posted, true);
   assert.equal(C.list().length, 4);
   // the pure helper: the window, the read, the profile
   const ans = { status: 'answered', result: { at: new Date(1e12).toISOString() }, meta: { phoneProfile: { owner: 'o', profile: 'serious', read: { state: 'Critical', induced: 'Yes', condition: 'Critical' } } } };
@@ -629,4 +608,29 @@ test('I-246: a real-serious warm-up (the heat pre-warm) passes too cool, is neve
   const f = await P.startGate({ ...o2, profile: 'fair', warmup: true });
   assert.equal(f.record().warmup, undefined);
   assert.equal(P.readLedger(P.ledgerKey(hold('tokW2'), 'fair')).start.code, 0);
+});
+
+// I-257 (C-133/134/135, 2026-10-09: a blind swipe test's `iphone.mjs record` posted "Xcode: set the iPhone's Thermal
+// State to Serious" three times): the user is never asked for a manual Xcode thermal step (user T-228 #15; memory
+// "phone-checks-start-warm"). The gate refuses (exit 8) in every condition mode and tells the AGENT what fixes it with the
+// thermal tool (the REARM / CLEAR line); no console step, whatever the read.
+test('I-257 startGate never posts a console step for the tester (xcode mode, the default, and tool mode): a fixable misfit refuses with exit 8 and the REARM / CLEAR line', async () => {
+  const cases = [
+    ['serious', undefined, { state: 'Nominal', induced: 'No', battC: 30 }, 'condition-missing', /\nREARM the thermal tool fixes it \(no user step\): node tools\/iphone\.mjs rearm --owner me /],
+    ['serious', 'xcode', { state: 'Fair', induced: 'No', battC: 31 }, 'condition-missing', /\nREARM /],
+    ['serious', 'xcode', { ...READ_0614 }, 'phone-above-condition', /\nREARM /], // cool battery: was the restart step (I-201)
+    ['serious', 'xcode', { state: 'Critical', induced: 'Yes', condition: 'Critical', battC: 31 }, 'condition-critical', /\nREARM /],
+    ['fair', 'xcode', { state: 'Serious', induced: 'Yes', condition: 'Serious', battC: 30 }, 'condition-on', /\nCLEAR the thermal tool fixes it \(no user step\): node tools\/thermal\.mjs clear --owner me /],
+    ['real-serious', undefined, { state: 'Serious', induced: 'Yes', condition: 'Serious', battC: 33 }, 'condition-on', /\nCLEAR /],
+    ['serious', 'tool', { state: 'Nominal', induced: 'No', battC: 30 }, 'condition-missing', /\nREARM /],
+  ];
+  for (const [profile, condition, read, reason, hint] of cases) {
+    const e = await P.startGate({ profile, owner: 'me', hold: hold(), read: async () => ({ ...read }), log: () => {}, ...(condition ? { condition } : {}) }).catch((x) => x);
+    const what = `${profile}/${condition ?? 'default'}/${read.state}`;
+    assert.ok(e instanceof P.ProfileRefusal, what);
+    assert.deepEqual([e.exitCode, e.reason], [8, reason], what);
+    assert.match(e.message, hint, what);
+    assert.doesNotMatch(e.message, /\nSTEP /, what);
+  }
+  assert.deepEqual(C.list(), [], 'no console step at all');
 });

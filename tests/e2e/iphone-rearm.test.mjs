@@ -99,7 +99,7 @@ test('I-225 rearm: still Critical after the settle exits 8 (the set stays, the l
   assert.equal(existsSync(join(env.FW_STATE_DIR, 'thermal', 'holder.json')), false);
 });
 
-test('I-225 profile --condition tool (or FW_PHONE_CONDITION=tool): the misfit refuses (exit 8) with the pointer to rearm and posts no user step; the Xcode mode still posts one', async () => {
+test('I-225 profile --condition tool (or FW_PHONE_CONDITION=tool): the misfit refuses (exit 8) with the pointer to rearm and posts no user step; since I-257 the Xcode mode posts none either (the same REARM line)', async () => {
   writeFileSync(env.FAKE_THERMAL_SEQ, 'Critical Yes 34.5 Serious\n');
   holdPhone();
   let r = node(IPHONE, ['profile', '--owner', OWNER, '--condition', 'tool'], { env, timeout: 30000 });
@@ -115,7 +115,9 @@ test('I-225 profile --condition tool (or FW_PHONE_CONDITION=tool): the misfit re
   assert.match(r.stderr, /--condition must be xcode .* or tool/);
   r = node(IPHONE, ['profile', '--owner', OWNER], { env, timeout: 30000 });
   assert.equal(r.code, 8, r.out);
-  assert.match(r.stderr, /^STEP C-\d+ posted on the user console/m);
+  assert.match(r.stderr, /^REARM the thermal tool fixes it \(no user step\)/m);
+  assert.doesNotMatch(r.stderr, /^STEP /m);
+  assert.deepEqual(steps(), [], 'no user step in either mode (I-257)');
 });
 
 test('I-233 tool mode with Xcode\'s Serious left on (P-158 03:07Z): profile --condition tool refuses (condition-not-ours), rearm takes it over (no NOT-NEEDED) and the condition is ours after; the Xcode mode still passes it', async () => {
