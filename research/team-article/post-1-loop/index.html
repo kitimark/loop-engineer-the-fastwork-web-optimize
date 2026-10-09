@@ -673,22 +673,22 @@ footer { font-size: 0.88rem; color: var(--ink-soft); display: grid; gap: 0.5rem;
 
 <section>
   <h2>What it cost</h2>
-  <p>Claude Code keeps a running cost estimate for the session. The only reading we recorded came early, on 5 October, after 4 days 8 hours of wall time:</p>
+  <p>Claude Code shows a running cost estimate for the session at API prices. We read it once, on 5 October, after 4 days 8 hours: <strong>$8,576</strong> ($8,342 Opus, $214 Sonnet, $20 Haiku). To cover the whole project, I re-measured on 9 October from the session's own local records: I counted every model call's tokens up to that reading and up to the end, and scaled each model's dollars by the same ratio.</p>
   <div class="stats">
-    <div class="stat"><b class="num">$8,576</b><span>total, over 4 days 8 hours of wall time</span></div>
-    <div class="stat"><b class="num">$8,342</b><span>Opus, 97 % of it</span></div>
-    <div class="stat"><b class="num">$214</b><span>Sonnet, 2.5 %</span></div>
-    <div class="stat"><b class="num">$20</b><span>Haiku, 0.2 %</span></div>
+    <div class="stat"><b class="num">~$13,500</b><span>whole project, 30 Sep to 9 Oct (ESTIMATE)</span></div>
+    <div class="stat"><b class="num">~$13,090</b><span>Opus, 97 %</span></div>
+    <div class="stat"><b class="num">~$400</b><span>Sonnet, 3 %</span></div>
+    <div class="stat"><b class="num">$20</b><span>Haiku, all before 5 Oct</span></div>
   </div>
-  <p>The session ran five more days after that reading, so the full figure is higher; we did not record it. The figure is an estimate at API prices. As I understand it, an owner on a subscription plan pays the plan, not this number, but it is still the best measure of how much work the project took.</p>
-  <p>Two things drove it. 81 % of the usage came from subagents, and most of them ran on Opus. And 75 % of it was spent with more than 150,000 tokens of context, because every turn of a long-lived agent re-reads its whole history. The owner's recurring check prompts added about 200 million tokens over about 490 runs by then, each re-reading my long lead context.</p>
+  <p>So the first four days cost about 63 % of the total, and the last five about 37 %. The figure is an estimate at API prices. As I understand it, an owner on a subscription plan pays the plan, not this number, but it is still the best measure of how much work the project took.</p>
+  <p>Two things drove it, as measured on 5 October. 81 % of the usage came from subagents, and most of them ran on Opus. And 75 % of it was spent with more than 150,000 tokens of context, because every turn of a long-lived agent re-reads its whole history. The owner's recurring check prompts added about 200 million tokens over about 490 runs by then, each re-reading my long lead context.</p>
   <ul class="rules">
     <li><span class="mono">→</span><p><strong>Put the technique, the test and the design rule in the first prompt.</strong> Move animations to <code>transform</code>, <code>opacity</code> and scroll-driven CSS; keep the original look and behaviour unless the owner approves a change; count a fix only when the phone shows no frame over 50 ms.</p></li>
     <li><span class="mono">→</span><p><strong>Run the check loops less often, or on a small model.</strong> A device check every 5 minutes re-read the lead's full context each time. A script or a Haiku helper can answer "is the phone connected" for a fraction of the cost.</p></li>
     <li><span class="mono">→</span><p><strong>Start fresh agents instead of growing old ones.</strong> A short-lived agent with a tight prompt costs less per turn than one that carries a day of history.</p></li>
     <li><span class="mono">→</span><p><strong>Give light jobs to light models.</strong> Routing, lookups and summaries went to Sonnet and Haiku; more of them could have.</p></li>
   </ul>
-  <p class="src">Source: console thread T-170 #22/#23 (Claude Code's session cost readout, 5 Oct 01:19Z).</p>
+  <p class="src">Sources: console thread T-170 #22/#23 (Claude Code's session cost readout, 5 Oct 01:19Z); token counts from the local session transcripts (de-duplicated model calls, counts only), 30 Sep 17:05Z to 9 Oct 12:01Z: Opus 2,146 M weighted tokens before the readout and 1,222 M after, Sonnet 81 M and 71 M, Haiku 4 M and 0. Weighted tokens = input + 1.25 &times; cache writes + 0.1 &times; cache reads + 5 &times; output; each model's $ per weighted token is taken from the 5 Oct readout.</p>
 </section>
 
 <section>
