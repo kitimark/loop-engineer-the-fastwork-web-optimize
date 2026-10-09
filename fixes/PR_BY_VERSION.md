@@ -7,8 +7,10 @@ Rows marked (unconfirmed) rest on one source only.
 
 ## First build per accepted proposal (newest first)
 
-| Build | Proposals first applied | In g0.0f (best now)? |
+| Build | Proposals first applied | In g0.0k (best now)? |
 |---|---|---|
+| g0.0k | PR-040 end-of-page menu follows the finger with a steady glass (accepted 2026-10-09 03:40Z) | yes |
+| g0.0h | PR-039 menu photo columns kept as a still picture while closed (keep-phase) | yes |
 | g0.0f | PR-038 Safari menu bar drawn by the GPU | yes |
 | g0.0e | PR-037 logo does not jump at menu close | yes |
 | g0.0d | PR-036 Join button fade: clean edges, kept gap | yes |
@@ -25,7 +27,7 @@ Rows marked (unconfirmed) rest on one source only.
 | v3 | PR-002 platform section, less style work (unconfirmed: may be v1-v2) | yes |
 | v1 | PR-013 avatar slider (option keep-st6) | yes |
 
-## Accepted but not in g0.0f
+## Accepted but not in g0.0k
 
 - Removed by the g0.0b rollback (fixes/g0-revert/README.md 133-143): PR-012, PR-018, PR-023, PR-030, PR-032.
 - Accepted but never built into a best build:
@@ -34,4 +36,6 @@ Rows marked (unconfirmed) rest on one source only.
   - PR-025 lighter pictures (a recipe; no re-encoded images committed) (unconfirmed).
   - PR-001 (no arm beat the SVG in P-058).
 - Accepted, no code needed: PR-003, PR-004, PR-005, PR-010, PR-015, PR-020.
-- Not accepted: PR-029 and PR-033 rejected; PR-028 changes requested; PR-039 proposed; PR-016 draft.
+- Not accepted: PR-029 and PR-033 rejected; PR-028 changes requested; PR-016 draft.
+
+Updated by the lead 2026-10-09 (g0.0k best): PR-039 (g0.0h) and PR-040 (g0.0k) added; builds g0.0f-g0.0k carry every "yes" row.
