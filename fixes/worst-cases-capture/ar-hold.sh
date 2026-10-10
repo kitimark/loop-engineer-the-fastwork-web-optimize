@@ -17,6 +17,10 @@
 #       node tools/lock.mjs run chrome-measure --owner cap-worst --no-timing --max-seconds 600 -- \
 #       sh fixes/worst-cases-capture/wc-hold.sh H1 hA1 hV1 hV2 hA2
 # Items <case><arm><n>, A V V A order per case:
+#   u  fixes/worst-cases-capture/g-ar-herofinger-v1.json  the user's own hero gesture (C-146, record --touches ->
+#      gesture-from-record.mjs), reload at the top, same clock alignment as h; names -ar-herofinger-<orig|g0m>
+#   w  fixes/worst-cases-capture/g-ar-herofinger-v2.json  u plus a catch after each up fling (the user's stop taps,
+#      not in the touch log); names -ar-herocatch-<orig|g0m>
 #   h  research/team-article/capture/phone/g/hero-fade-v1.json  12 s rest at the top (countdown window), then 3 slow drags
 #      through the hero cards' fade-out; recorder starts at Mac second :20-:27, driver at :40 (both arms see the same
 #      clock seconds), as in hold.sh
@@ -32,7 +36,7 @@
 # Last line: "HOLD <H> DONE <ok>/<n>" (exit 0) or "HOLD <H> STOP <why>".
 cd "$(dirname "$0")/../.." || exit 2
 H=$1; shift
-R=cap-worst
+R=${FW_AGENT:-cap-worst}  # cap-finger-hero runs it with FW_AGENT=cap-finger-hero (item u, 2026-10-10)
 S=out/wc/snap${WC_SET:+-$WC_SET}; O=out/wc/runs; D=fixes/worst-cases-capture; VV=research/team-article/capture/phone/vv.mjs
 export FW_PHONE_CONDITION=tool
 mkdir -p $O out/iphone-screen
@@ -44,7 +48,7 @@ stamp() { python3 -c "import time,json,sys; print(json.dumps({'label': sys.argv[
 prog() { case $1 in
   h) echo research/team-article/capture/phone/g/hero-fade-v1.json ;; m) echo fixes/g0-0l/phone/g-approach-g0l.json ;;
   p) echo fixes/g0-0l/phone/g-flick-g0l.json ;; e) echo fixes/g0-box/phone/g-fastshort-g0.json ;;
-  f) echo fixes/v8-best/phone/g/flick-hero-v1.json ;; a) echo fixes/worst-cases-capture/g-ar-menu-v1.json ;; c) echo fixes/worst-cases-capture/g-ar-carousel-v1.json ;; t) echo fixes/worst-cases-capture/g-ar-ptitle-v2.json ;; *) echo none ;; esac; }
+  f) echo fixes/v8-best/phone/g/flick-hero-v1.json ;; a) echo fixes/worst-cases-capture/g-ar-menu-v1.json ;; c) echo fixes/worst-cases-capture/g-ar-carousel-v1.json ;; t) echo fixes/worst-cases-capture/g-ar-ptitle-v2.json ;; u) echo fixes/worst-cases-capture/g-ar-herofinger-v1.json ;; w) echo fixes/worst-cases-capture/g-ar-herofinger-v2.json ;; *) echo none ;; esac; }
 cname() { case $1 in h) echo hero ;; m) echo middle ;; p) echo people ;; e) echo end ;; f) echo flick ;; esac; }
 # I-262 (lead's diagnosis, 2026-10-09 13:0xZ): another app's background web views can be listed before Safari's tab, and the
 # tab picker then takes the wrong target. Pin the picker to Safari: FW_IPHONE_APPID=PID:<Safari's pid from WDA activeAppInfo>,
@@ -64,10 +68,12 @@ if [ "$1" = --prep ]; then
     --instructions "Turn on Do Not Disturb or Sleep focus on the iPhone (Control Center, Focus) so no notification can appear, leave Safari open and don't touch the phone. Press Done when it is on; the robot then records the clips (about 15-30 minutes)." \
     > $O/$H-dnd.log 2>&1 || { cat $O/$H-dnd.log; echo "HOLD $H STOP could not post the focus step (another phone step open?)"; exit 4; }
   fi
+  if [ "$WC_FOCUS_STEP" = skip ]; then echo "FOCUS no step (memory deck-recording-pictures: Do Not Disturb stays on; checked in each recording's status bar)"; else
   ID=$(grep -o 'C-[0-9][0-9]*' $O/$H-dnd.log | head -1)
   echo "FOCUS step $ID posted $(date -u +%TZ); waiting for Done"
   node tools/console.mjs wait "$ID" --until answered --timeout 1800 > $O/$H-dnd-wait.log 2>&1 || { tail -2 $O/$H-dnd-wait.log; echo "HOLD $H STOP focus step $ID not answered"; exit 3; }
   echo "FOCUS step $ID answered $(date -u +%TZ): $(tail -1 $O/$H-dnd-wait.log | cut -c1-200)"
+  fi
   node tools/iphone.mjs park --owner $R > /dev/null 2>&1
   node tools/wait.mjs phone-temp --below 40 --timeout 600 --every 60 --owner $R --reason "worst-case captures: cool below 40 C before the block" > $O/$H-cool.log 2>&1
   ce=$?; echo "COOL exit $ce $(tail -1 $O/$H-cool.log | cut -c1-160)"
@@ -90,7 +96,7 @@ for I in "$@"; do
   n=$((n + 1))
   SC=$(echo "$I" | cut -c1); A=$(echo "$I" | cut -c2); G=$(prog $SC)
   [ "$G" = none ] && { echo "HOLD $H STOP unknown item $I"; exit 4; }
-  case $SC in e) NEED=249 ;; h) NEED=230 ;; *) NEED=170 ;; esac   # GESTURE_BUDGET_S (229 / 150) + 20 s set-up; h + 60 s clock waits
+  case $SC in e) NEED=249 ;; h|u|w) NEED=${HF_NEED:-230} ;; *) NEED=170 ;; esac   # GESTURE_BUDGET_S (229 / 150) + 20 s set-up; h + 60 s clock waits
   LEFT=$((CAP - ($(date +%s) - T0)))
   if [ $LEFT -lt $NEED ]; then
     REST=$(echo "$*" | tr ' ' '\n' | tail -n +$n | tr '\n' ' ')
@@ -105,6 +111,8 @@ for I in "$@"; do
   [ "$SC" = a ] && L=$(date -u +%Y%m%dT%H%M%SZ)-ar-menu-$AN
   [ "$SC" = c ] && L=$(date -u +%Y%m%dT%H%M%SZ)-ar-carousel-$AN
   [ "$SC" = t ] && L=$(date -u +%Y%m%dT%H%M%SZ)-ar-ptitle-$AN
+  [ "$SC" = u ] && L=$(date -u +%Y%m%dT%H%M%SZ)-ar-herofinger-$AN
+  [ "$SC" = w ] && L=$(date -u +%Y%m%dT%H%M%SZ)-ar-herocatch-$AN   # v2: the same flings plus the user's stop catches (T-170 #200)   # the user's own hero gesture, replayed (cap-finger-hero, T-170 #193)
   echo "ITEM $I = $L"
   # H1 lesson (13:29Z, hV2): right after a recorder stop the inspector proxy can answer "fetch failed" for a while
   # (the USB link re-forming; thermal.mjs clear saw the tunnel refuse too). Retry the open, at most 6 tries.
@@ -116,7 +124,7 @@ for I in "$@"; do
   [ $k -gt 0 ] && echo "OPEN $I after $k retries"
   sleep 2
   node $VV --port "$PP" --label "$L-start" --out $O/vv.jsonl > /dev/null 2>> $O/$L.vv.err
-  if [ "$SC" = h ]; then python3 -c "import time; s = time.time() % 60; time.sleep(0 if 20 <= s < 28 else (20 - s) % 60)"; fi
+  if [ "$SC" = h ] || [ "$SC" = u ] || [ "$SC" = w ]; then python3 -c "import time; s = time.time() % 60; time.sleep(0 if 20 <= s < 28 else (20 - s) % 60)"; fi
   stamp "$L-pre"
   # recorder cap: 240 s ended both original end runs mid-program (the recorder's stop drops the inspector link, the
   # driver aborts; H3 14:14Z/14:28Z), so the cap is 600 s (ioscap's maximum); wc-hold stops the recorder after the driver
@@ -130,7 +138,7 @@ for I in "$@"; do
     sleep 3; node tools/iphone.mjs open "$U" --owner $R > /dev/null 2>&1
   done
   echo "READY $I after $k retries $(date -u +%TZ)"
-  if [ "$SC" = h ]; then python3 -c "import time; s = time.time() % 60; time.sleep((40 - s) % 60)"; fi
+  if [ "$SC" = h ] || [ "$SC" = u ] || [ "$SC" = w ]; then python3 -c "import time; s = time.time() % 60; time.sleep((40 - s) % 60)"; fi
   stamp "$L-rec"
   node tools/iphone.mjs gesture "$G" --owner $R --label "$L" --out "$O/$L.json" > "$O/$L.log" 2>&1; r=$?
   stamp "$L-post"

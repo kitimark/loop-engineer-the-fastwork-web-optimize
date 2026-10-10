@@ -1,0 +1,762 @@
+{
+ "name": "ar-herofinger-v2",
+ "version": 2,
+ "screen": [
+  430,
+  932
+ ],
+ "about": "T-170 #193/#200 (cap-finger-hero, 2026-10-10): v1 (the converter output of the user's C-146 part 1 touch log) has the user's 7 flings but not the stop taps: a touch that lands during momentum scrolling is not in the page's touch log (OBSERVED in our setup: the coast halts within one frame, e.g. 0.93 px/ms -> 0 at y 618, with no touchstart), so gesture-from-record never saw them. The user's scroll curve shows a stop after every up fling: +284 ms (y 618, then +20 px), +334 ms (y 781, then -41 px), +630 ms (y 766, then -28 px), +650 ms (y 779); the down flings coast back to the top unstopped. v2 adds a catch after each up fling. Limits of the robot: a stroke is >= 40 px (no pure tap), the next stroke starts ~0.85 s after a lift (WDA: ~0.25 s return + ~0.5-0.7 s start, runs 105127Z/105336Z), and a down stroke waits for a still page, so each catch is an up stroke of 40 px (press 80 ms, 120 ms move, 150 ms hold, no momentum) sent with no pause, landing ~0.85 s after the lift (the user: 0.28-0.65 s). To stop the page where the user's stopped (rest y 638, 740, 741, 779), each up fling's lift-off speed is fitted (coast = v x 0.478 s, measured in 105127Z s1; 84 % of it done at +0.87 s; lift-off = 1.79 x px/ms): ms 465 / 277 / 291 / 146 (compiled lift-off 941 / 1293 / 1263 / ~1540 px/s) for the user's px 236 / 199 / 206 / 137 (user ms 276 / 176 / 262 / 163). Down flings and their until y>=300 as in v1; pauses fitted so each down fling starts about when the user's did. Same input on both arms; fixed before any replay.",
+ "params": {
+  "x": 215
+ },
+ "steps": [
+  {
+   "type": "reload",
+   "scrollAfterMs": 0
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "mark",
+   "name": "finger"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 236,
+   "ms": 465,
+   "profile": "fling"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 40,
+   "ms": 120,
+   "profile": "still",
+   "pressMs": 80,
+   "holdMs": 150
+  },
+  {
+   "type": "pause",
+   "ms": 220
+  },
+  {
+   "type": "until",
+   "cond": "y>=300",
+   "timeoutMs": 5000
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 116,
+   "ms": 123,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 100
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 199,
+   "ms": 277,
+   "profile": "fling"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 40,
+   "ms": 120,
+   "profile": "still",
+   "pressMs": 80,
+   "holdMs": 150
+  },
+  {
+   "type": "pause",
+   "ms": 260
+  },
+  {
+   "type": "until",
+   "cond": "y>=300",
+   "timeoutMs": 5000
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 208,
+   "ms": 191,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 100
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 206,
+   "ms": 291,
+   "profile": "fling"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 40,
+   "ms": 120,
+   "profile": "still",
+   "pressMs": 80,
+   "holdMs": 150
+  },
+  {
+   "type": "pause",
+   "ms": 30
+  },
+  {
+   "type": "until",
+   "cond": "y>=300",
+   "timeoutMs": 5000
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 156,
+   "ms": 175,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 100
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 137,
+   "ms": 146,
+   "profile": "fling"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 40,
+   "ms": 120,
+   "profile": "still",
+   "pressMs": 80,
+   "holdMs": 150
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 4000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 4000
+  },
+  {
+   "type": "mark",
+   "name": "end"
+  }
+ ],
+ "source": {
+  "tool": "gesture-from-record",
+  "incident": "I-218",
+  "record": "out/wc/runs/20261010T104514Z-ar-herouser-orig.json (cap-worst worktree, gitignored)",
+  "window": {
+   "fromS": null,
+   "toS": null
+  },
+  "firstTouchT": 76342,
+  "scriptT0Ms": 964,
+  "startScrollY": 0,
+  "overheadMs": 0,
+  "strokes": [
+   {
+    "id": "s1",
+    "userMs": 964,
+    "touchMs": 1059,
+    "userStartY": 0,
+    "userPx": 236,
+    "userContactMs": 221,
+    "userLiftPxPerS": 1606
+   },
+   {
+    "id": "s2",
+    "userMs": 3634,
+    "touchMs": 3643,
+    "userStartY": 639,
+    "userPx": 116,
+    "userContactMs": 154,
+    "userLiftPxPerS": 1771
+   },
+   {
+    "id": "s3",
+    "userMs": 4715,
+    "touchMs": 4801,
+    "userStartY": -1,
+    "userPx": 199,
+    "userContactMs": 130,
+    "userLiftPxPerS": 2119
+   },
+   {
+    "id": "s4",
+    "userMs": 7283,
+    "touchMs": 7327,
+    "userStartY": 741,
+    "userPx": 208,
+    "userContactMs": 187,
+    "userLiftPxPerS": 2040
+   },
+   {
+    "id": "s5",
+    "userMs": 8288,
+    "touchMs": 8410,
+    "userStartY": -2,
+    "userPx": 206,
+    "userContactMs": 180,
+    "userLiftPxPerS": 1473
+   },
+   {
+    "id": "s6",
+    "userMs": 10750,
+    "touchMs": 10778,
+    "userStartY": 741,
+    "userPx": 156,
+    "userContactMs": 187,
+    "userLiftPxPerS": 1667
+   },
+   {
+    "id": "s7",
+    "userMs": 11887,
+    "touchMs": 11961,
+    "userStartY": -2,
+    "userPx": 137,
+    "userContactMs": 129,
+    "userLiftPxPerS": 1578
+   }
+  ],
+  "dropped": [
+   {
+    "atMs": 0,
+    "why": "short: 0 px of finger travel (< 40, a tap or a catch); a catch that stopped a coast is lost",
+    "px": 0
+   }
+  ],
+  "expected": {
+   "tauS": 0.449,
+   "tauFrom": "the user's flings (median)",
+   "score": {
+    "n": 455,
+    "maxAbsDy": 192,
+    "atMs": 3265,
+    "meanAbsDy": 64.1,
+    "p95AbsDy": 154,
+    "startDy": 0,
+    "endDy": -21
+   },
+   "floor": {
+    "n": 455,
+    "maxAbsDy": 192,
+    "atMs": 3265,
+    "meanAbsDy": 63.4,
+    "p95AbsDy": 154,
+    "startDy": 0,
+    "endDy": -21
+   },
+   "curve": [
+    [
+     964,
+     0
+    ],
+    [
+     1064,
+     0
+    ],
+    [
+     1164,
+     56
+    ],
+    [
+     1264,
+     195
+    ],
+    [
+     1364,
+     340
+    ],
+    [
+     1464,
+     461
+    ],
+    [
+     1564,
+     559
+    ],
+    [
+     1664,
+     637
+    ],
+    [
+     1764,
+     699
+    ],
+    [
+     1864,
+     749
+    ],
+    [
+     1964,
+     781
+    ],
+    [
+     2064,
+     781
+    ],
+    [
+     2164,
+     781
+    ],
+    [
+     2264,
+     781
+    ],
+    [
+     2364,
+     781
+    ],
+    [
+     2464,
+     781
+    ],
+    [
+     2564,
+     781
+    ],
+    [
+     2664,
+     781
+    ],
+    [
+     2764,
+     781
+    ],
+    [
+     2864,
+     781
+    ],
+    [
+     2964,
+     781
+    ],
+    [
+     3064,
+     781
+    ],
+    [
+     3164,
+     781
+    ],
+    [
+     3264,
+     781
+    ],
+    [
+     3364,
+     781
+    ],
+    [
+     3464,
+     781
+    ],
+    [
+     3564,
+     781
+    ],
+    [
+     3664,
+     781
+    ],
+    [
+     3764,
+     736
+    ],
+    [
+     3864,
+     580
+    ],
+    [
+     3964,
+     439
+    ],
+    [
+     4064,
+     327
+    ],
+    [
+     4164,
+     237
+    ],
+    [
+     4264,
+     165
+    ],
+    [
+     4364,
+     108
+    ],
+    [
+     4464,
+     62
+    ],
+    [
+     4564,
+     25
+    ],
+    [
+     4664,
+     0
+    ],
+    [
+     4764,
+     0
+    ],
+    [
+     4864,
+     55
+    ],
+    [
+     4964,
+     246
+    ],
+    [
+     5064,
+     426
+    ],
+    [
+     5164,
+     570
+    ],
+    [
+     5264,
+     685
+    ],
+    [
+     5364,
+     777
+    ],
+    [
+     5464,
+     781
+    ],
+    [
+     5564,
+     781
+    ],
+    [
+     5664,
+     781
+    ],
+    [
+     5764,
+     781
+    ],
+    [
+     5864,
+     781
+    ],
+    [
+     5964,
+     781
+    ],
+    [
+     6064,
+     781
+    ],
+    [
+     6164,
+     781
+    ],
+    [
+     6264,
+     781
+    ],
+    [
+     6364,
+     781
+    ],
+    [
+     6464,
+     781
+    ],
+    [
+     6564,
+     781
+    ],
+    [
+     6664,
+     781
+    ],
+    [
+     6764,
+     781
+    ],
+    [
+     6864,
+     781
+    ],
+    [
+     6964,
+     781
+    ],
+    [
+     7064,
+     781
+    ],
+    [
+     7164,
+     781
+    ],
+    [
+     7264,
+     781
+    ],
+    [
+     7364,
+     781
+    ],
+    [
+     7464,
+     686
+    ],
+    [
+     7564,
+     490
+    ],
+    [
+     7664,
+     325
+    ],
+    [
+     7764,
+     192
+    ],
+    [
+     7864,
+     86
+    ],
+    [
+     7964,
+     1
+    ],
+    [
+     8064,
+     0
+    ],
+    [
+     8164,
+     0
+    ],
+    [
+     8264,
+     0
+    ],
+    [
+     8364,
+     0
+    ],
+    [
+     8464,
+     32
+    ],
+    [
+     8564,
+     153
+    ],
+    [
+     8664,
+     288
+    ],
+    [
+     8764,
+     402
+    ],
+    [
+     8864,
+     493
+    ],
+    [
+     8964,
+     567
+    ],
+    [
+     9064,
+     625
+    ],
+    [
+     9164,
+     672
+    ],
+    [
+     9264,
+     710
+    ],
+    [
+     9364,
+     740
+    ],
+    [
+     9464,
+     764
+    ],
+    [
+     9564,
+     781
+    ],
+    [
+     9664,
+     781
+    ],
+    [
+     9764,
+     781
+    ],
+    [
+     9864,
+     781
+    ],
+    [
+     9964,
+     781
+    ],
+    [
+     10064,
+     781
+    ],
+    [
+     10164,
+     781
+    ],
+    [
+     10264,
+     781
+    ],
+    [
+     10364,
+     781
+    ],
+    [
+     10464,
+     781
+    ],
+    [
+     10564,
+     781
+    ],
+    [
+     10664,
+     781
+    ],
+    [
+     10764,
+     781
+    ],
+    [
+     10864,
+     775
+    ],
+    [
+     10964,
+     642
+    ],
+    [
+     11064,
+     502
+    ],
+    [
+     11164,
+     378
+    ],
+    [
+     11264,
+     279
+    ],
+    [
+     11364,
+     200
+    ],
+    [
+     11464,
+     136
+    ],
+    [
+     11564,
+     85
+    ],
+    [
+     11664,
+     44
+    ],
+    [
+     11764,
+     12
+    ],
+    [
+     11864,
+     0
+    ],
+    [
+     11964,
+     0
+    ],
+    [
+     12064,
+     82
+    ],
+    [
+     12164,
+     225
+    ],
+    [
+     12264,
+     348
+    ],
+    [
+     12364,
+     445
+    ],
+    [
+     12464,
+     524
+    ],
+    [
+     12564,
+     586
+    ],
+    [
+     12664,
+     636
+    ],
+    [
+     12764,
+     677
+    ],
+    [
+     12864,
+     709
+    ],
+    [
+     12964,
+     734
+    ],
+    [
+     13064,
+     755
+    ]
+   ]
+  },
+  "v2": "catches inferred from the scroll curve of the same record (frames), see about"
+ }
+}

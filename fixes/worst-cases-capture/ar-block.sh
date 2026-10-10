@@ -7,7 +7,7 @@
 # At the end, always: `node tools/thermal.mjs clear` (the tool-serious condition from H0's rearm).
 # usage (in the background): sh fixes/worst-cases-capture/wc-block.sh "H1:hA1 hV1 hV2 hA2" "H2:pA1 pV1 ..." ...
 cd "$(dirname "$0")/../.." || exit 2
-R=cap-worst; O=out/wc/runs; D=fixes/worst-cases-capture
+R=${FW_AGENT:-cap-worst}; O=out/wc/runs; D=fixes/worst-cases-capture
 st=0; B0=$(date +%s)
 for SPEC in "$@"; do
   H=${SPEC%%:*}; ITEMS=${SPEC#*:}; k=0
@@ -17,7 +17,7 @@ for SPEC in "$@"; do
     HH=$H; [ $k -gt 0 ] && HH=$H.$k
     echo "== $(date -u +%FT%TZ) $HH: $ITEMS"
     rm -f $O/$HH-remaining.txt
-    node tools/lock.mjs run iphone --owner $R --max-seconds 900 --keep 120 --doing "worst-case captures $HH (original vs g0.0l)" -- \
+    node tools/lock.mjs run iphone --owner $R --max-seconds 900 --keep 120 --doing "${HF_DOING:-worst-case captures $HH (original vs g0.0l)}" -- \
       node tools/lock.mjs run chrome-measure --owner $R --no-timing --max-seconds 600 --doing "worst-case captures $HH: quiet Mac for the screen recorder" -- \
       sh $D/ar-hold.sh $HH $ITEMS
     e=$?

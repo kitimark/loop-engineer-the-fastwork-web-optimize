@@ -56,6 +56,13 @@ function windows(cs, seg) {
       ? { back: byT(seg, mark(seg, 'return'), mark(seg, 'end') ?? end) } // v2: past the title and back, then 6 s still
       : { title: byT(seg, mark(seg, 'title'), mark(seg, 'end') ?? end) }; // v1: title stroke + 7 s still
     case 'flick': return { all: byT(seg, mark(seg, 'down1'), mark(seg, 'end') ?? end) };
+    // cap-finger-hero (T-170 #193): the user's own hero gesture. herofinger = the robot replay (mark finger -> mark end);
+    // herouser = the user's own record (record --touches): first touchstart -> last touch + 3 s (different gestures per arm)
+    case 'herofinger': case 'herocatch': return { finger: byT(seg, mark(seg, 'finger'), mark(seg, 'end') ?? end) };
+    case 'herouser': {
+      const ts = (seg.touches || []).map((t) => t[0]);
+      return ts.length ? { finger: byT(seg, Math.min(...ts) - 0.001, Math.max(...ts) + 3000) } : {};
+    }
     default: return {};
   }
 }
@@ -64,7 +71,7 @@ const rows = [];
 for (const f of fs.readdirSync(dir).filter((x) => /-(wc|ar)-[a-z]+-(orig|g0l|v14|g0m)\.json$/.test(x)).sort()) {
   const m = f.match(/^(.*)-(?:wc|ar)-([a-z]+)-(orig|g0l|v14|g0m)\.json$/);
   const rec = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
-  const segs = rec.run?.segments || [];
+  const segs = rec.run?.segments || (rec.frames ? [{ frames: rec.frames, marks: [], touches: rec.touches }] : []); // a plain record (herouser)
   const seg = segs.find((s) => (s.marks || []).length) || segs[0];
   if (!seg) { rows.push({ file: f, error: 'no segment' }); continue; }
   const w = windows(m[2], seg);

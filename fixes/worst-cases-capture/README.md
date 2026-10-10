@@ -178,3 +178,71 @@ Disturb shows on all four runs. GIFs: day8-ptitle-50fps.gif, day8-ptitle-3x.gif 
 | 071845Z orig | 52 (63/43) / 15 (19/9) / 76 ms | 27 / 12 | 25 / 3 |
 
 Mark offsets into each .mov (wc-offsets.mjs) went to art-ar-gifs and the lead.
+
+## The user's own finger through the hero cards (-ar-herouser / -herofinger / -herocatch, 2026-10-10, T-170 #193)
+
+Owner: cap-finger-hero (phone runner), same kit and worktree. A = the original page, V = g0.0m (37af49aef32b /
+7a8ecdd8f8e4); hashes checked before every run. All numbers OBSERVED, iPhone 15 Pro Max, one morning, n = 1-2 per arm:
+illustration, not a verdict.
+
+**1. The user's finger (console step C-146, `hf-user.sh`).** One step, 2 recorded parts, each page opened fresh at the
+top (y 0, innerHeight 775): part 1 the original (10:45Z), part 2 g0.0m (10:46Z). After the user's Start: ioscap screen
+recording + `iphone.mjs record --touches --seconds 22` (I-218), inside a `--no-timing` chrome-measure hold. No thermal
+gate (memory user-steps-first; battery 37.7 C right after). Do Not Disturb on in both (moon in the status-bar strip).
+The user flicked down through the hero cards and back to the top, again and again (orig 7 flings in ~12 s, g0.0m 11
+flings in ~19 s), and stopped each down-the-page flick with the "People still need people" title in view (rest
+y 638-781). The two parts are different gestures, so this row compares how each felt, not like for like:
+
+| record | window | frames | > 34 (30/38) | > 50 (46/54) | worst |
+|---|---|---|---|---|---|
+| 104514Z herouser-orig | first touch -> last + 3 s (15.1 s) | 598 | 88 (138/66) | 33 (44/20) | 103 ms |
+| 104634Z herouser-g0m | same (21.9 s) | 1131 | 4 (8/3) | 0 (0/0) | 44 ms |
+
+**2. The stop taps are not in the touch log (OBSERVED in our setup; reference check pending).** `gesture-from-record.mjs`
+made a 7-fling program from part 1 (`g-ar-herofinger-v1.json`, compiled hash 68e99e5c6e42). It dropped only one touch: a
+0 px tap at 0 ms, before any scroll. But the scroll curve shows a stop after every down-the-page fling with no
+touchstart: the coast halts within one frame (0.93 px/ms -> 0 at y 618, 0.91 -> 0 at y 781, then 0 at 766 and 779),
++284 / +334 / +630 / +650 ms after the lift. After the stop the page drifts +20 / -41 / -28 / 0 px, as if a finger
+is held and dragged. iOS momentum cannot end that early: the robot's own flings at the user's lift-off speeds coasted
+~730 px over ~2 s (tau ~0.48 s), to y 950-1250 (runs below). The user confirmed they tap to stop on the title
+(T-170 #200/#202). Reading: a touch that lands during momentum scrolling stops the scroll in the UI process and is never
+dispatched to the page. OBSERVED; follow-up: check it against WebKit's iOS touch dispatch during scroll-view
+deceleration (WKContentView / UIScrollView touch handling in github.com/WebKit/WebKit) before it becomes a finding.
+
+**3. Robot replays, two programs, A V V A each, tool-serious (`ar-hold.sh` items u and w; `ar-block.sh`).**
+- v1 `g-ar-herofinger-v1.json`: the converter's strokes as recorded. Clock-aligned like the hero item (recorder from
+  :20-:27, driver at :40). Block U1 10:51-10:59Z, Serious 37.4 -> 38.9 C, no drift. The page passes the title (rest y
+  946-1253 vs the user's 638-781). Each run takes 28-30 s vs the user's 17.7 s, because each robot stroke starts
+  ~0.5-1.3 s after it is sent.
+- v2 `g-ar-herofinger-v2.json` (hash 941a8498065f): the same flings plus a catch after each down-the-page fling. The
+  robot cannot copy the tap itself: a stroke is >= 40 px, a down stroke waits for a still page, and the tool sent each
+  catch 2.0-2.5 s after the fling's lift (the gesture runner's page checks between strokes). So the catches (40 px up,
+  80 ms press, 150 ms hold, no momentum) land on a page that has already come to rest. The stop positions come from
+  slower fitted lift-offs (941 / 1293 / 1263 / ~1540 px/s; coast = v x 0.478 s). Rest y 663-786 for the first three
+  stops (user 638-741) and 893-936 for the last (user 779). Block W1 11:08-11:16Z, Serious 36.6 -> 38.6 C, no drift.
+  The rearm waited 4 min for the real-heat Serious after U1 to clear.
+
+| run | program | arm | window (finger -> end) | frames | > 34 (30/38) | > 50 (46/54) | worst |
+|---|---|---|---|---|---|---|---|
+| 105127Z herofinger-orig | v1 | A | 30.3 s | 1264 | 204 (262/163) | 101 (119/83) | 146 ms |
+| 105336Z herofinger-g0m | v1 | V | 28.3 s | 1676 | 18 (21/12) | 3 (5/3) | 75 ms |
+| 105519Z herofinger-g0m | v1 | V | 28.4 s | 1686 | 16 (20/11) | 4 (4/3) | 74 ms |
+| 105719Z herofinger-orig | v1 | A | 29.6 s | 1357 | 168 (202/132) | 83 (97/66) | 154 ms |
+| 110844Z herocatch-orig | v2 | A | 32.5 s | 1303 | 265 (301/221) | 127 (164/108) | 150 ms |
+| 111040Z herocatch-g0m | v2 | V | 31.0 s | 1808 | 40 (58/29) | 6 (9/3) | 89 ms |
+| 111222Z herocatch-g0m | v2 | V | 30.1 s | 1781 | 21 (36/14) | 2 (4/0) | 54 ms |
+| 111421Z herocatch-orig | v2 | A | 32.7 s | 1285 | 254 (310/221) | 134 (158/108) | 154 ms |
+
+No twin reverses a direction (orig vs g0.0m: > 34 168-265 vs 16-40, > 50 83-134 vs 2-6). The windows include the
+robot's slow gaps, so counts per run do not compare with the user's own record (15-22 s). Mark offsets into each .mov
+(`wc-offsets.mjs`, out/wc/hf-offsets.json): finger at 38.8 / 23.1 / 22.8 / 22.8 s (v1) and 40.1 / 23.1 / 22.8 / 22.7 s (v2),
+end ~30 s later. Recordings: out/iphone-screen/<run>.mov in this worktree (user parts: 20261010T104514Z-ar-herouser-orig,
+20261010T104634Z-ar-herouser-g0m). Do Not Disturb (moon) shows on all 10 recordings, with no notification in the strip.
+
+Pitfall (cap-finger-hero): I edited `ar-hold.sh` while block U1 was running it. sh reads a script as it runs, so the
+hold ended with a syntax error after its last item (all 4 runs and the thermal clear were already done; HOLD DONE not
+printed). Never edit a running kit script; copy it, as cap-worst did.
+
+Files: `hf-user.sh` (the user step), `g-ar-herofinger-v1.json`, `g-ar-herofinger-v2.json`; `ar-hold.sh` items u/w, owner
+from FW_AGENT, WC_FOCUS_STEP=skip; `ar-block.sh` owner and --doing from env; `wc-read.mjs` windows herouser / herofinger /
+herocatch. Drivers: out/wc/hf-go.sh, out/wc/hf-go2.sh.
