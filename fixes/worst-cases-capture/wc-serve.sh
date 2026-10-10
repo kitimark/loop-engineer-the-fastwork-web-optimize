@@ -12,7 +12,11 @@
 #        sh fixes/worst-cases-capture/wc-serve.sh stop    stop them (only these two, by their pid files)
 # Phone URLs come from tools/lan.mjs at run time; never copy them into a committed file (Hard rule 12).
 cd "$(dirname "$0")/../.." || exit 2
-S=out/wc/snap
+# WC_SET=menu (Day 8 article pair, lead 2026-10-10): V = v14 (fixes/compositor-morph/v14/rebuild.sh into out/wc/snap-menu/V,
+# JS d23ee885d54f / CSS 4fafb83f1e72) instead of g0.0l; A is the same original page.
+S=out/wc/snap${WC_SET:+-$WC_SET}
+VJ=4106679e0a8a; VC=440582cec781
+[ "$WC_SET" = menu ] && { VJ=d23ee885d54f; VC=4fafb83f1e72; }
 OWNER=${FW_AGENT:-cap-worst}
 J=_app/immutable/nodes/2.DyWL8TcE.js; C=_app/immutable/assets/2.gBuqKVzi.css
 if [ "$1" = snap ]; then
@@ -50,7 +54,7 @@ for X in A V; do
   HJ=$(curl -s http://localhost:$P/$J | shasum -a 256 | cut -c1-12)
   HC=$(curl -s http://localhost:$P/$C | shasum -a 256 | cut -c1-12)
   case "$X:$HJ:$HC" in
-    A:4606120cf392:27776f3d4138|V:4106679e0a8a:440582cec781) ok=ok ;;
+    A:4606120cf392:27776f3d4138|V:$VJ:$VC) ok=ok ;;
     *) ok=WRONG; bad=1 ;;
   esac
   echo "$X pid $(cat $S/serve-$X.pid) port $P served JS $HJ CSS $HC $ok"

@@ -31,7 +31,7 @@
 cd "$(dirname "$0")/../.." || exit 2
 H=$1; shift
 R=cap-worst
-S=out/wc/snap; O=out/wc/runs; D=fixes/worst-cases-capture; VV=research/team-article/capture/phone/vv.mjs
+S=out/wc/snap${WC_SET:+-$WC_SET}; O=out/wc/runs; D=fixes/worst-cases-capture; VV=research/team-article/capture/phone/vv.mjs
 export FW_PHONE_CONDITION=tool
 mkdir -p $O out/iphone-screen
 port() { node -e "console.log(JSON.parse(require('fs').readFileSync('$S/serve-$1.json','utf8')).port)"; }
@@ -42,7 +42,7 @@ stamp() { python3 -c "import time,json,sys; print(json.dumps({'label': sys.argv[
 prog() { case $1 in
   h) echo research/team-article/capture/phone/g/hero-fade-v1.json ;; m) echo fixes/g0-0l/phone/g-approach-g0l.json ;;
   p) echo fixes/g0-0l/phone/g-flick-g0l.json ;; e) echo fixes/g0-box/phone/g-fastshort-g0.json ;;
-  f) echo fixes/v8-best/phone/g/flick-hero-v1.json ;; *) echo none ;; esac; }
+  f) echo fixes/v8-best/phone/g/flick-hero-v1.json ;; a) echo fixes/worst-cases-capture/g-ar-menu-v1.json ;; *) echo none ;; esac; }
 cname() { case $1 in h) echo hero ;; m) echo middle ;; p) echo people ;; e) echo end ;; f) echo flick ;; esac; }
 # I-262 (lead's diagnosis, 2026-10-09 13:0xZ): another app's background web views can be listed before Safari's tab, and the
 # tab picker then takes the wrong target. Pin the picker to Safari: FW_IPHONE_APPID=PID:<Safari's pid from WDA activeAppInfo>,
@@ -59,7 +59,7 @@ node tools/iphone.mjs wda check > $O/$H-wda.log 2>&1 || { tail -2 $O/$H-wda.log;
 if [ "$1" = --prep ]; then
   if [ -n "$WC_FOCUS_STEP" ]; then echo "$WC_FOCUS_STEP (already posted)" > $O/$H-dnd.log; else
   node tools/console.mjs post --by $R --kind action --phone --title "iPhone: turn on Do Not Disturb or Sleep focus for the screen recordings" \
-    --instructions "Turn on Do Not Disturb or Sleep focus on the iPhone (Control Center, Focus) so no notification can appear, leave Safari open and don't touch the phone. Press Done when it is on; the robot then records about 30 minutes of clips." \
+    --instructions "Turn on Do Not Disturb or Sleep focus on the iPhone (Control Center, Focus) so no notification can appear, leave Safari open and don't touch the phone. Press Done when it is on; the robot then records the clips (about 15-30 minutes)." \
     > $O/$H-dnd.log 2>&1 || { cat $O/$H-dnd.log; echo "HOLD $H STOP could not post the focus step (another phone step open?)"; exit 4; }
   fi
   ID=$(grep -o 'C-[0-9][0-9]*' $O/$H-dnd.log | head -1)
@@ -96,9 +96,11 @@ for I in "$@"; do
     echo "HOLD $H STOP budget: $LEFT s left, $I needs $NEED s; requeue: $REST($ok/$((n - 1)) done)"; exit 3
   fi
   sh $D/wc-serve.sh check > $O/$H-check-$I.log 2>&1 || { echo "HOLD $H STOP served hash check failed before $I"; exit 4; }
-  [ "$A" = A ] && { U=$AU; PP=$PA; AN=orig; } || { U=$VU; PP=$PV; AN=g0l; }
+  [ "$A" = A ] && { U=$AU; PP=$PA; AN=orig; } || { U=$VU; PP=$PV; AN=g0l; [ "$WC_SET" = menu ] && AN=v14; }
   safpid
   L=$(date -u +%Y%m%dT%H%M%SZ)-wc-$(cname $SC)-$AN
+  # item a = the Day 8 article pair: the user's -ar- picture rule (2026-10-10), names -ar-menu-orig- / -ar-menu-v14-
+  [ "$SC" = a ] && L=$(date -u +%Y%m%dT%H%M%SZ)-ar-menu-$AN
   echo "ITEM $I = $L"
   # H1 lesson (13:29Z, hV2): right after a recorder stop the inspector proxy can answer "fetch failed" for a while
   # (the USB link re-forming; thermal.mjs clear saw the tunnel refuse too). Retry the open, at most 6 tries.

@@ -138,3 +138,20 @@ middle 135711Z | 135904Z, end 144540Z | 141903Z, both end runs drifted).
   requeue on the time budget, `thermal.mjs clear` at the end), `wc-read.mjs` (window counts), `wc-offsets.mjs` (marks
   as seconds into each recording). Adapted from research/team-article/capture/phone/ (art-worst-cases) and
   fixes/g0-0l/phone/ (fix-scrollcb-g0), credited in their headers.
+
+## Article recordings (-ar-, 2026-10-10; user-approved picture rule for out/iphone-screen/*-ar-*)
+
+Same kit, G robot, tool-serious, focus step C-142, A B B A, 2 runs per arm. Programs fixed before any capture:
+`g-ar-menu-v1.json` (end of page: approach, then 4 slow held pushes), `g-ar-carousel-v1.json` (scroll to the #people
+pill, y ~1710, 12 s at rest), `g-ar-ptitle-v1.json` (the People title stroke of people-v1, then 7 s still). `ar-serve.sh`,
+`ar-hold.sh`, `ar-block.sh` are copies of the wc-* scripts with the g0.0m set (made as copies so a running script was
+never edited). Event windows (seconds into each .mov) went to the lead and art-ar-gifs; `wc-offsets.mjs` reproduces them.
+
+| pair | arm B | runs | page log in the window, original vs B (>34 / >50 / worst) | thermal |
+|---|---|---|---|---|
+| Day 8 menu (P1 -> done) | v14 (d23ee885d54f / 4fafb83f1e72) | 040615Z, 041207Z orig; 040835Z, 041016Z v14 | 174, 139 / 64, 38 / 725, 647 ms vs 28, 15 / 5, 6 / 106, 87 ms | Serious 38.1 -> **Critical 42.1** (drift, all four) |
+| carousel at rest (12 s) | g0.0m (37af49aef32b / 7a8ecdd8f8e4) | 042754Z, 043046Z orig; 042903Z, 042952Z g0m | 17, 20 / 3, 1 / 79, 59 ms vs 0, 0 / 0, 0 / 21, 21 ms | Serious 38.1 -> 39.4 |
+| People title (stroke + 7 s) | g0.0m | 043157Z, 043411Z orig; 043251Z, 043332Z g0m | 3, 7 / 1, 1 / 58, 56 ms vs 2, 2 / 0, 0 / 37, 38 ms | Serious 39.5 -> 40.3 |
+
+The Day 8 end behaves differently by design (the original opens by itself, v14 follows the finger): pictures, not a
+measurement.

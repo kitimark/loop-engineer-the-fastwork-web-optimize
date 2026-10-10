@@ -14,7 +14,7 @@ const ji = process.argv.indexOf('--json');
 const stamps = fs.readFileSync(`${O}/stamps.jsonl`, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
 const median = (a) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : null; };
 const out = [];
-for (const f of fs.readdirSync(O).filter((x) => /-wc-[a-z]+-(orig|g0l)\.json$/.test(x)).sort()) {
+for (const f of fs.readdirSync(O).filter((x) => /-(wc|ar)-[a-z]+-(orig|g0l|v14|g0m)\.json$/.test(x)).sort()) {
   const L = f.replace(/\.json$/, '');
   let rec, fr;
   try { rec = JSON.parse(fs.readFileSync(`${O}/${f}`, 'utf8')); fr = JSON.parse(fs.readFileSync(`${S}/${L}.frames.json`, 'utf8')).frames; } catch { continue; }

@@ -1,0 +1,23 @@
+{
+ "name": "ar-carousel-v1",
+ "version": 1,
+ "screen": [430, 932],
+ "about": "Part 1 article recording (cap-worst, lead 2026-10-10, user T-170 #151 and T-211 #7): the 'hero carousel' = the user carousel, the small profile photos in the community pill of #people (.start-selling-avatars.is-carousel, 104x32 px, doc y ~2050, changes about every 1.03 s; research/article-clips/README.md). Reload, 2 s, robot drags up to put the pill in view (people-v1's carousel drags, from the top: 520, 520, 520 px in 2000 ms each and 200 px in 1000 ms, 'drag' profile, 250 ms apart; ~1,760 px, so the pill sits in the upper half of the view), settle, mark rest, 12 s still (~11 changes), mark end. Same input on both arms; fixed before any capture (swapped from the top-of-page version before it ran).",
+ "params": { "x": 215 },
+ "steps": [
+  { "type": "reload", "scrollAfterMs": 0 },
+  { "type": "pause", "ms": 2000 },
+  { "type": "mark", "name": "scroll" },
+  { "type": "stroke", "dir": "up", "px": 520, "ms": 2000, "profile": "drag" },
+  { "type": "pause", "ms": 250 },
+  { "type": "stroke", "dir": "up", "px": 520, "ms": 2000, "profile": "drag" },
+  { "type": "pause", "ms": 250 },
+  { "type": "stroke", "dir": "up", "px": 520, "ms": 2000, "profile": "drag" },
+  { "type": "pause", "ms": 250 },
+  { "type": "stroke", "dir": "up", "px": 200, "ms": 1000, "profile": "drag" },
+  { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+  { "type": "mark", "name": "rest" },
+  { "type": "pause", "ms": 12000 },
+  { "type": "mark", "name": "end" }
+ ]
+}

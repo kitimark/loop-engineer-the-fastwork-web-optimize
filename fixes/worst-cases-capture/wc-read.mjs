@@ -50,14 +50,17 @@ function windows(cs, seg) {
         // 240 s cap (the link drop ends the driver), so the window every run covers is E20 -> E26: six pushes
         push6: byT(seg, mark(seg, 'E20-close-fast-60px-50ms'), mark(seg, 'E26-close-fast-60px-50ms')) };
     }
+    case 'menu': return { pushes: byT(seg, mark(seg, 'P1-open-slow-hold'), mark(seg, 'done') ?? end) }; // Day 8 -ar- pair
+    case 'carousel': return { rest: byT(seg, mark(seg, 'rest'), mark(seg, 'end') ?? end) }; // article pair, page at rest at the top
+    case 'ptitle': return { title: byT(seg, mark(seg, 'title'), mark(seg, 'end') ?? end) }; // article pair, title stroke + 7 s still
     case 'flick': return { all: byT(seg, mark(seg, 'down1'), mark(seg, 'end') ?? end) };
     default: return {};
   }
 }
 
 const rows = [];
-for (const f of fs.readdirSync(dir).filter((x) => /-wc-[a-z]+-(orig|g0l)\.json$/.test(x)).sort()) {
-  const m = f.match(/^(.*)-wc-([a-z]+)-(orig|g0l)\.json$/);
+for (const f of fs.readdirSync(dir).filter((x) => /-(wc|ar)-[a-z]+-(orig|g0l|v14|g0m)\.json$/.test(x)).sort()) {
+  const m = f.match(/^(.*)-(?:wc|ar)-([a-z]+)-(orig|g0l|v14|g0m)\.json$/);
   const rec = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   const segs = rec.run?.segments || [];
   const seg = segs.find((s) => (s.marks || []).length) || segs[0];

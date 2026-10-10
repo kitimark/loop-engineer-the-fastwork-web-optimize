@@ -1,0 +1,36 @@
+{
+ "name": "ar-menu-v1",
+ "version": 1,
+ "screen": [430, 932],
+ "about": "Part 1 Day 8 article recording (cap-worst, lead 2026-10-10, user-approved -ar- recordings): the end-of-page menu following the finger (v14) against the menu opening by itself (the original). Reload, 3 s, mark approach, steady drags up (520 px in 1200 ms, 300 ms apart, at most 12) to the end; the atEnd wait is optional with a y>=3000 guard (fastshort-g0's rule, because builds pin differently at the end); 1.5 s; then four slow drags at the end, each held still on the glass for 1.5 s before lifting (g-momentum-v1's E strokes: 450 px in 2400 ms): open (up), close (down), open, close, 2 s apart. Same input on both arms; fixed before any capture.",
+ "params": { "x": 215, "dragPx": 450, "dragMs": 2400, "holdMs": 1500 },
+ "steps": [
+  { "type": "reload", "scrollAfterMs": 0 },
+  { "type": "pause", "ms": 3000 },
+  { "type": "mark", "name": "approach" },
+  { "type": "repeat", "times": 12, "until": "atEnd", "steps": [
+   { "type": "stroke", "dir": "up", "px": 520, "ms": 1200, "profile": "drag" },
+   { "type": "pause", "ms": 300 }
+  ] },
+  { "type": "until", "cond": "atEnd", "timeoutMs": 1500, "optional": true },
+  { "type": "until", "cond": "y>=3000", "timeoutMs": 4000 },
+  { "type": "pause", "ms": 1500 },
+  { "type": "mark", "name": "P1-open-slow-hold" },
+  { "type": "stroke", "dir": "up", "px": "$dragPx", "ms": "$dragMs", "profile": "drag", "holdMs": "$holdMs" },
+  { "type": "until", "cond": "settled", "timeoutMs": 8000, "optional": true },
+  { "type": "pause", "ms": 2000 },
+  { "type": "mark", "name": "P2-close-slow-hold" },
+  { "type": "stroke", "dir": "down", "px": "$dragPx", "ms": "$dragMs", "profile": "drag", "holdMs": "$holdMs" },
+  { "type": "until", "cond": "settled", "timeoutMs": 8000, "optional": true },
+  { "type": "pause", "ms": 2000 },
+  { "type": "mark", "name": "P3-open-slow-hold" },
+  { "type": "stroke", "dir": "up", "px": "$dragPx", "ms": "$dragMs", "profile": "drag", "holdMs": "$holdMs" },
+  { "type": "until", "cond": "settled", "timeoutMs": 8000, "optional": true },
+  { "type": "pause", "ms": 2000 },
+  { "type": "mark", "name": "P4-close-slow-hold" },
+  { "type": "stroke", "dir": "down", "px": "$dragPx", "ms": "$dragMs", "profile": "drag", "holdMs": "$holdMs" },
+  { "type": "until", "cond": "settled", "timeoutMs": 8000, "optional": true },
+  { "type": "pause", "ms": 1500 },
+  { "type": "mark", "name": "done" }
+ ]
+}
