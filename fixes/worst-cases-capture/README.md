@@ -162,5 +162,17 @@ the hero's exit, and the 'o' (1.3 s delay, JS 6250-6257) has opened before the c
 check (430x932, both builds, same result) found a visible path: the observer resets the 'o' when the heading leaves
 (JS 6264) and reopens it ~1.0 s (is-stack) + 0.12 s (is-expanded) after it re-enters, with the card at opacity 1.
 `g-ar-ptitle-v2.json` goes ~1,300 px past the title, rests 1.5 s (mark return), comes back 500 px with a held 'still'
-stroke (mark held) and rests 6 s (mark end); `wc-read.mjs` counts v2 runs from return to end. Not yet recorded: the
-first block (05:09Z) stopped before any run because its Do Not Disturb step (C-143) was not answered within 30 min.
+stroke (mark held) and rests 6 s (mark end); `wc-read.mjs` counts v2 runs from return to end. The first block (05:09Z)
+stopped before any run (Do Not Disturb step C-143 unanswered for 30 min); the second (07:15-07:20Z, C-143 reused, A B B A,
+tool-serious, Serious 39.1 -> 40.7 C, no drift) gave 4 clean runs. Path on the phone: up to y 1264-1265, back to y
+774-775 (innerHeight 815 at return, 775 at held). Whether the 'o' visibly opens is for the pictures to show; the frame log
+cannot see it.
+
+| run | return -> end: >34 (30/38) / >50 (46/54) / worst | return -> held >34 / >50 | held -> end >34 / >50 |
+|---|---|---|---|
+| 071555Z orig | 53 (63/36) / 13 (14/8) / 101 ms | 27 / 11 | 26 / 2 |
+| 071706Z g0m | 3 (5/2) / 1 (1/0) / 51 ms | 2 / 1 | 1 / 0 |
+| 071753Z g0m | 3 (3/2) / 1 (1/1) / 66 ms | 2 / 1 | 1 / 0 |
+| 071845Z orig | 52 (63/43) / 15 (19/9) / 76 ms | 27 / 12 | 25 / 3 |
+
+Mark offsets into each .mov (wc-offsets.mjs) went to art-ar-gifs and the lead.
