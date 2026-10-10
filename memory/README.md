@@ -22,6 +22,7 @@ Every agent:
 - [Keep awake only during measurements](keep-awake-only-during-measurements.md): `caffeinate -i -s` inside measurement holds only
 - [Less-work landing rule](less-work-landing-rule.md): a "does less work" fix lands on cost-card counts + a short phone no-worse check; top-3 smoothness fixes keep phone + finger test (countdown waived, T-055)
 - [Console steps only for actions](console-steps-only-for-actions.md): "Your steps" is only for what the user must do; answers, results and FYIs go in a thread (the lead opens it)
+- [Chat lines as steps](chat-lines-as-steps.md): anything that needs the user to type in the Claude Code chat (guard change, permission OK) goes to "Your steps" at once, with the exact line to paste
 - [Milestone 2: heat profiles](milestone-2-heat-profiles.md): after fixes 1-3 are smooth at real Serious, stay smooth from a 42-44 °C start and under Xcode-induced Serious
 - [Phone checks start warm](phone-checks-start-warm.md): tests run at thermal Serious, since T-162 #3 Xcode-induced Serious by default (no heat pre-warm), real heat once for the final build; ceiling 44 °C/Critical; Fair no-worse check at the end; LPM dropped
 - [Heat probe for blog posts](heat-probe-for-blog.md): HEATRATE lines (°C/min per heat method and page) stay reproducible; the user writes blog posts from them (T-247 #10)
