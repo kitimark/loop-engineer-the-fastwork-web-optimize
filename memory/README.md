@@ -18,7 +18,7 @@ Every agent:
 - [Proposal revision visible](proposal-revision-visible.md): after changes-requested the user always sees who revises, the step and the expected time; post rev N+1 once Try-it works
 - [GitHub via gh](github-via-gh.md): read GitHub with the logged-in `gh` CLI (read-only), never plain curl; report if gh is not logged in
 - [No camera access](no-camera-access.md): never open a Mac camera; screen recording only via `ioscap.mjs`
-- [Deck recording pictures](deck-recording-pictures.md): pictures only from the people-blink deck recordings (Simulator, iPhone `-pb-` with Do Not Disturb/Sleep on), via ffmpeg to out/; everything else stays denied
+- [Deck recording pictures](deck-recording-pictures.md): pictures only from the deck, worst-case and article recordings (Simulator, iPhone `-pb-`/`-wc-`/`-ar-`), via ffmpeg to out/; Do Not Disturb stays on, no focus step per recording; everything else denied
 - [Keep awake only during measurements](keep-awake-only-during-measurements.md): `caffeinate -i -s` inside measurement holds only
 - [Less-work landing rule](less-work-landing-rule.md): a "does less work" fix lands on cost-card counts + a short phone no-worse check; top-3 smoothness fixes keep phone + finger test (countdown waived, T-055)
 - [Console steps only for actions](console-steps-only-for-actions.md): "Your steps" is only for what the user must do; answers, results and FYIs go in a thread (the lead opens it)
