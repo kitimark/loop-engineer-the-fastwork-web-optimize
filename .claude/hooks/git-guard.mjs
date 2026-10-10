@@ -716,7 +716,10 @@ const isRecording = (a) => MOVIE.test(a) || SCREEN_DIR.test(a);
 const DECK_SIM = /(^|\/)out\/people-blink\/(.+\/)?[^/]+\.(mov|mp4|m4v)$/i;
 const DECK_PHONE = /(^|\/)out\/iphone-screen\/[^/]*-pb-[^/]*\.(mov|mp4|m4v)$/i;
 const WC_PHONE = /(^|\/)out\/iphone-screen\/[^/]*-wc-[^/]*\.(mov|mp4|m4v)$/i;
-const isDeckRecording = (a) => !/(^|\/)\.\.(\/|$)/.test(a) && (DECK_SIM.test(a) || DECK_PHONE.test(a) || WC_PHONE.test(a));
+// User 2026-10-10 (Claude Code chat, T-170 #149): also the article recordings, out/iphone-screen/ files whose name
+// carries "-ar-", recorded with Do Not Disturb or Sleep on.
+const AR_PHONE = /(^|\/)out\/iphone-screen\/[^/]*-ar-[^/]*\.(mov|mp4|m4v)$/i;
+const isDeckRecording = (a) => !/(^|\/)\.\.(\/|$)/.test(a) && (DECK_SIM.test(a) || DECK_PHONE.test(a) || WC_PHONE.test(a) || AR_PHONE.test(a));
 const isOutImage = (a) => !/(^|\/)\.\.(\/|$)/.test(a) && /(^|\/)out\/.+/.test(a) && FRAME_FILE.test(a);
 function analyzeFrames(prog, argv, findings) {
   const rest = argv.slice(1);
@@ -733,7 +736,7 @@ function analyzeFrames(prog, argv, findings) {
       const outputs = rest.filter((a, k) => rest[k - 1] !== '-i' && FRAME_FILE.test(a));
       const deck = inputs.length > 0 && inputs.every(isDeckRecording) && outputs.length > 0 && outputs.every(isOutImage) &&
         formats.every((f) => /^image2$/i.test(f));
-      if (!deck) return no('An ffmpeg frame export or preview (only the deck recordings in out/people-blink/ and out/iphone-screen/*-pb-*, and the worst-case recordings out/iphone-screen/*-wc-*, as image files under out/)');
+      if (!deck) return no('An ffmpeg frame export or preview (only the deck recordings in out/people-blink/ and out/iphone-screen/*-pb-*, the worst-case recordings out/iphone-screen/*-wc-* and the article recordings out/iphone-screen/*-ar-*, as image files under out/)');
     }
   }
   return undefined;

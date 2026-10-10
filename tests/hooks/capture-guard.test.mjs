@@ -132,6 +132,12 @@ const DENY = [
   'ffmpeg -i out/wc/a-wc-hero.mov -vf fps=10 out/wc/f_%03d.png',
   'ffplay out/iphone-screen/a-wc-hero-orig.mov',
   'open out/iphone-screen/a-wc-hero-orig.mov',
+  // user 2026-10-10 article-recording exception: same rule, no tricks either
+  'ffmpeg -i out/iphone-screen/a-ar-menu.mov -vf fps=10 /tmp/f_%03d.png',
+  'ffmpeg -i out/iphone-screen/../x-ar-.mov -vf fps=10 out/ar/f_%03d.png',
+  'ffmpeg -i out/ar/a-ar-menu.mov -vf fps=10 out/ar/f_%03d.png',
+  'ffplay out/iphone-screen/a-ar-menu.mov',
+  'open out/iphone-screen/a-ar-menu.mov',
   'ffmpeg -f avfoundation -i 0 out/people-blink/x.png',
   'ffplay out/iphone-screen/a-pb-V.mov',
   'open out/iphone-screen/a-pb-V.mov',
@@ -202,6 +208,8 @@ const ALLOW = [
   'ffmpeg -i out/people-blink/s1/C1.mov -vf fps=10 out/people-blink/frames/C1_%04d.png',
   'ffmpeg -ss 2 -i out/iphone-screen/fix-scrollcb-g0-pb-V-20261009T064210Z-1.mov -frames:v 3 out/people-blink/ph/V_%02d.png',
   'ffmpeg -i /Users/x/repo/.claude/worktrees/w/out/iphone-screen/o-pb-K-1.mov -f image2 /Users/x/repo/.claude/worktrees/w/out/pb/K_%03d.jpg',
+  // user 2026-10-10 article-recording exception (pictures of the -ar- recordings)
+  'ffmpeg -i out/iphone-screen/20261010T050000Z-ar-menu-v14.mov -vf fps=50 out/article-gifs/day8.gif',
   // user 2026-10-09 worst-case exception (pictures of the -wc- recordings)
   'ffmpeg -ss 1 -i out/iphone-screen/20261009T132512Z-wc-hero-orig.mov -vf fps=10 out/wc/frames/hero_%03d.png',
   'ffmpeg -i /Users/x/repo/.claude/worktrees/w/out/iphone-screen/20261009T141437Z-wc-end-g0l.mov -i /Users/x/repo/.claude/worktrees/w/out/iphone-screen/20261009T140920Z-wc-end-orig.mov -filter_complex hstack out/article-gifs/day7.gif',
