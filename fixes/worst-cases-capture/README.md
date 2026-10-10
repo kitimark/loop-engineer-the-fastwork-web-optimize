@@ -246,3 +246,78 @@ printed). Never edit a running kit script; copy it, as cap-worst did.
 Files: `hf-user.sh` (the user step), `g-ar-herofinger-v1.json`, `g-ar-herofinger-v2.json`; `ar-hold.sh` items u/w, owner
 from FW_AGENT, WC_FOCUS_STEP=skip; `ar-block.sh` owner and --doing from env; `wc-read.mjs` windows herouser / herofinger /
 herocatch. Drivers: out/wc/hf-go.sh, out/wc/hf-go2.sh.
+
+## End of the page, open and close in one take (-ar-endoc, 2026-10-10)
+
+Owner: cap-end-openclose (phone runner), same kit and worktree. A = the original page, V = g0.0m (37af49aef32b /
+7a8ecdd8f8e4); served hashes checked before every run. All numbers OBSERVED, iPhone 15 Pro Max, one afternoon, n = 2
+per arm: illustration, not a verdict.
+
+**Why a new take.** In the -wc- end runs (`g-fastshort-g0.json`) the open push E21 and the close push E22 came ~3.4 s
+apart on g0.0l but ~13 s apart on the original: between them the program re-approaches the end with `repeat until
+atEnd` (2 drags) and an optional 1.5 s `until atEnd`. The original keeps the page pinned at y 5213 at the end and never
+reports atEnd, so both ran to their limits there; on g0.0l atEnd held at once. A clip of one open and close then had to
+be cut in two separately aligned parts.
+
+**Program `g-ar-endoc-v1.json`** (compiled hash 3d9f1908acf9, 17 strokes, dry run ~41 s, GESTURE_BUDGET_S 150; fixed
+before any capture): reload, 4 s, mark approach, 12 fixed drags up (520 px in 1200 ms, 300 ms apart; the original
+always ran 12, g0 builds reach the end in 11), 1.5 s, mark reset, the slow close drag that comes before E21 in
+fastshort (450 px down in 2000 ms, held 300 ms), 2.5 s at rest, then two cycles: open push as E21 (up 60 px in 50 ms,
+fling, mark O1/O2), a fixed 2.0 s, close push as E22 (down 120 px in 60 ms, fling, mark C1/C2), a fixed 2.0 s (1.0 s
+after C2: mark after-1s), 1 s more at rest (mark done). No atEnd or settled waits. The only untils are `y>=3000`
+guards before each down stroke (the compiler's pull-to-refresh rule); they were met in 3-64 ms on both builds.
+
+**Different by design.** The original pins the page at y 5213-5214 at the end. Its own touch handlers open and close
+the menu, and it opens the menu by itself on a held page; the frame log's scrollY never moves there, so the log can't
+see the menu. g0.0m follows the finger: its menu is real scroll. In both g0.0m runs every open push went
+y 5220/5260 -> 6035 and every close push 6035 -> 5220. So these are pictures of the same input, not of the same motion.
+
+**Block** (`out/wc/eo-go.sh`: `ar-hold.sh` prep E0 then one hold per run, item o, A V V A, 12:54-13:07Z): no focus step
+(Do Not Disturb stays on: the moon shows in the status-bar strip of all four recordings at the window's start and
+end, with no notification); cooled below 40 °C (31.6 °C, at once), `iphone.mjs rearm` (tool-serious), one uncounted
+warm-up flick per arm port. Between runs the battery stayed under the 39.5 °C cooling trigger, so there was no
+cooling wait. No run reached Critical and no profile drifted, so all four runs are clean. Park, `thermal.mjs clear`
+(NONE active) and server stop came after the block.
+
+| run (out/iphone-screen/ and out/wc/runs/) | arm | thermal start -> end | recorder | window O1 -> after-1s |
+|---|---|---|---|---|
+| 20261010T125906Z-ar-endoc-orig | A | Serious 32.1 -> Serious 33.1 °C | 5576 frames, 102.5 s (54.4 fps) | 86.83 -> 99.42 s (12.59 s) |
+| 20261010T130126Z-ar-endoc-g0m | V | Serious 33.5 -> Serious 34.3 °C | 4644, 77.9 s (59.6 fps) | 64.85 -> 74.88 s (10.03 s) |
+| 20261010T130321Z-ar-endoc-g0m | V | Serious 34.5 -> Serious 35.3 °C | 3924, 66.2 s (59.3 fps) | 53.12 -> 63.09 s (9.97 s) |
+| 20261010T130503Z-ar-endoc-orig | A | Serious 35.6 -> Serious 36.4 °C | 4590, 85.8 s (53.5 fps) | 70.79 -> 82.73 s (11.94 s) |
+
+Page frame log (`wc-read.mjs`, case endoc), window = mark O1 to mark after-1s, the whole open-close-open-close take:
+
+| run | frames | > 34 (30/38) | > 50 (46/54) | worst |
+|---|---|---|---|---|
+| 125906Z orig | 355 | 80 (122/64) | 41 (44/39) | 584 ms |
+| 130126Z g0m | 587 | 4 (13/2) | 0 (0/0) | 42 ms |
+| 130321Z g0m | 584 | 3 (8/0) | 0 (0/0) | 37 ms |
+| 130503Z orig | 362 | 61 (88/51) | 33 (38/29) | 542 ms |
+
+- No twin reverses a direction (> 34: 61-80 vs 3-4; > 50: 33-41 vs 0). The original's windows are ~2 s longer (see
+  below), so its counts cover more time. Per cycle (`cyc1` O1 -> O2, `cyc2` O2 -> after-1s): orig > 50 24 + 17 and
+  22 + 11, g0.0m 0 + 0 in both runs.
+
+**Timing on screen** (`eo-offsets.mjs` -> `out/wc/eo-offsets.json`: every mark, plus each push's robot send and return
+time, as seconds into its .mov; clock chain as wc-offsets.mjs, OBSERVED). A push touches the glass during its robot
+call, between "sent" and "returned". Sent, seconds after the O1 mark:
+
+| run | O1 open | C1 close | O2 open | C2 close | close call (C1, C2) |
+|---|---|---|---|---|---|
+| 125906Z orig | +0.12 | +3.16 | +7.07 | +10.03 | 1.79, 1.56 s |
+| 130126Z g0m | +0.00 | +2.86 | +5.60 | +8.35 | 0.72, 0.67 s |
+| 130321Z g0m | +0.01 | +2.79 | +5.47 | +8.24 | 0.67, 0.73 s |
+| 130503Z orig | +0.14 | +3.12 | +6.83 | +9.65 | 1.60, 1.29 s |
+
+- The waits in the program are the same on both builds. On g0.0m O1 -> C1 is 2.8-2.9 s; on the original it is 3.0 s.
+  The 10 s gap of the -wc- runs is gone. The rest of the drift (+0.3 s at C1, +1.3-1.7 s at C2) comes from the robot's
+  own call time: a close stroke's WDA call returns after 1.3-1.8 s on the original vs 0.7 s on g0.0m (opens: 0.7-0.85 s
+  on both). OBSERVED in our setup; cause unknown.
+- For one continuous clip per build, cut each .mov from window.startMovS to window.endMovS and align them on O1. The
+  first open and close then line up within ~0.3 s; the second cycle runs up to ~1.7 s later on the original. A cut
+  aligned on every push can use each push's sentMovS.
+
+Files: `g-ar-endoc-v1.json`, `ar-hold.sh` item o (names -ar-endoc-<orig|g0m>), `wc-read.mjs` case endoc (windows take,
+cyc1, cyc2), `eo-offsets.mjs`. Driver and logs: out/wc/eo-go.sh, out/wc/eo-block.log, out/wc/eo-E0..E4.log;
+status-bar strips out/wc/eo-statusbar/.

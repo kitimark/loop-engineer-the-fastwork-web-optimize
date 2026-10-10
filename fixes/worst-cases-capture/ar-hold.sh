@@ -21,6 +21,8 @@
 #      gesture-from-record.mjs), reload at the top, same clock alignment as h; names -ar-herofinger-<orig|g0m>
 #   w  fixes/worst-cases-capture/g-ar-herofinger-v2.json  u plus a catch after each up fling (the user's stop taps,
 #      not in the touch log); names -ar-herocatch-<orig|g0m>
+#   o  fixes/worst-cases-capture/g-ar-endoc-v1.json  the end of the page: approach, then open/close/open/close pushes on
+#      fixed waits (one take, cap-end-openclose 2026-10-10); names -ar-endoc-<orig|g0m>
 #   h  research/team-article/capture/phone/g/hero-fade-v1.json  12 s rest at the top (countdown window), then 3 slow drags
 #      through the hero cards' fade-out; recorder starts at Mac second :20-:27, driver at :40 (both arms see the same
 #      clock seconds), as in hold.sh
@@ -48,7 +50,7 @@ stamp() { python3 -c "import time,json,sys; print(json.dumps({'label': sys.argv[
 prog() { case $1 in
   h) echo research/team-article/capture/phone/g/hero-fade-v1.json ;; m) echo fixes/g0-0l/phone/g-approach-g0l.json ;;
   p) echo fixes/g0-0l/phone/g-flick-g0l.json ;; e) echo fixes/g0-box/phone/g-fastshort-g0.json ;;
-  f) echo fixes/v8-best/phone/g/flick-hero-v1.json ;; a) echo fixes/worst-cases-capture/g-ar-menu-v1.json ;; c) echo fixes/worst-cases-capture/g-ar-carousel-v1.json ;; t) echo fixes/worst-cases-capture/g-ar-ptitle-v2.json ;; u) echo fixes/worst-cases-capture/g-ar-herofinger-v1.json ;; w) echo fixes/worst-cases-capture/g-ar-herofinger-v2.json ;; *) echo none ;; esac; }
+  f) echo fixes/v8-best/phone/g/flick-hero-v1.json ;; a) echo fixes/worst-cases-capture/g-ar-menu-v1.json ;; c) echo fixes/worst-cases-capture/g-ar-carousel-v1.json ;; t) echo fixes/worst-cases-capture/g-ar-ptitle-v2.json ;; u) echo fixes/worst-cases-capture/g-ar-herofinger-v1.json ;; w) echo fixes/worst-cases-capture/g-ar-herofinger-v2.json ;; o) echo fixes/worst-cases-capture/g-ar-endoc-v1.json ;; *) echo none ;; esac; }
 cname() { case $1 in h) echo hero ;; m) echo middle ;; p) echo people ;; e) echo end ;; f) echo flick ;; esac; }
 # I-262 (lead's diagnosis, 2026-10-09 13:0xZ): another app's background web views can be listed before Safari's tab, and the
 # tab picker then takes the wrong target. Pin the picker to Safari: FW_IPHONE_APPID=PID:<Safari's pid from WDA activeAppInfo>,
@@ -112,6 +114,7 @@ for I in "$@"; do
   [ "$SC" = c ] && L=$(date -u +%Y%m%dT%H%M%SZ)-ar-carousel-$AN
   [ "$SC" = t ] && L=$(date -u +%Y%m%dT%H%M%SZ)-ar-ptitle-$AN
   [ "$SC" = u ] && L=$(date -u +%Y%m%dT%H%M%SZ)-ar-herofinger-$AN
+  [ "$SC" = o ] && L=$(date -u +%Y%m%dT%H%M%SZ)-ar-endoc-$AN   # end of the page, open/close in one take (cap-end-openclose)
   [ "$SC" = w ] && L=$(date -u +%Y%m%dT%H%M%SZ)-ar-herocatch-$AN   # v2: the same flings plus the user's stop catches (T-170 #200)   # the user's own hero gesture, replayed (cap-finger-hero, T-170 #193)
   echo "ITEM $I = $L"
   # H1 lesson (13:29Z, hV2): right after a recorder stop the inspector proxy can answer "fetch failed" for a while

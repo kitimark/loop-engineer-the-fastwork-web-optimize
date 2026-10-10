@@ -58,6 +58,12 @@ function windows(cs, seg) {
     case 'flick': return { all: byT(seg, mark(seg, 'down1'), mark(seg, 'end') ?? end) };
     // cap-finger-hero (T-170 #193): the user's own hero gesture. herofinger = the robot replay (mark finger -> mark end);
     // herouser = the user's own record (record --touches): first touchstart -> last touch + 3 s (different gestures per arm)
+    // cap-end-openclose (2026-10-10): the end of the page, open/close/open/close on fixed waits in one take. Window
+    // (mark O1, mark after-1s] = first open push to ~1 s after the last close stroke returned (the close push lands
+    // ~0.4-0.7 s after its mark); cycles: (O1, O2] and (O2, after-1s]
+    case 'endoc': return { take: byT(seg, mark(seg, 'O1-open-fast-60px-50ms'), mark(seg, 'after-1s') ?? end),
+      cyc1: byT(seg, mark(seg, 'O1-open-fast-60px-50ms'), mark(seg, 'O2-open-fast-60px-50ms')),
+      cyc2: byT(seg, mark(seg, 'O2-open-fast-60px-50ms'), mark(seg, 'after-1s') ?? end) };
     case 'herofinger': case 'herocatch': return { finger: byT(seg, mark(seg, 'finger'), mark(seg, 'end') ?? end) };
     case 'herouser': {
       const ts = (seg.touches || []).map((t) => t[0]);

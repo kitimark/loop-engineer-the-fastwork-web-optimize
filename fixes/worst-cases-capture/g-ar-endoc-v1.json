@@ -1,0 +1,265 @@
+{
+ "name": "ar-endoc-v1",
+ "version": 1,
+ "screen": [
+  430,
+  932
+ ],
+ "about": "End of the page, the menu opened and closed in one take (cap-end-openclose, 2026-10-10; article clip). Built from fixes/g0-box/phone/g-fastshort-g0.json: reload, 4 s, mark approach, 12 fixed drags up (520 px in 1200 ms, 300 ms apart: the passes the original always ran and g0 builds need 11 of), a y>=3000 guard before each down stroke (the compiler's pull-to-refresh rule; met within ~10 ms on both builds, fails only a run whose page left the end), 1.5 s, mark reset, the slow close drag that precedes E21 in fastshort (450 px down in 2000 ms, held 300 ms), 2.5 s at rest; then two cycles of: open push as E21 (up 60 px in 50 ms, fling), a FIXED 2.0 s, close push as E22 (down 120 px in 60 ms, fling), a fixed 2.0 s (1.0 s after the last, mark after-1s), and 1 s more at rest (mark done). No atEnd or settled waits inside the window, so the pushes come on the same clock on both builds (the runner's own still-page check before a down stroke or an up stroke at the end, ~0.1 s, stays). Same input on both arms; fixed before any capture.",
+ "params": {
+  "x": 215
+ },
+ "steps": [
+  {
+   "type": "reload",
+   "scrollAfterMs": 0
+  },
+  {
+   "type": "pause",
+   "ms": 4000
+  },
+  {
+   "type": "mark",
+   "name": "approach"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 520,
+   "ms": 1200,
+   "profile": "drag"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 520,
+   "ms": 1200,
+   "profile": "drag"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 520,
+   "ms": 1200,
+   "profile": "drag"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 520,
+   "ms": 1200,
+   "profile": "drag"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 520,
+   "ms": 1200,
+   "profile": "drag"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 520,
+   "ms": 1200,
+   "profile": "drag"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 520,
+   "ms": 1200,
+   "profile": "drag"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 520,
+   "ms": 1200,
+   "profile": "drag"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 520,
+   "ms": 1200,
+   "profile": "drag"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 520,
+   "ms": 1200,
+   "profile": "drag"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 520,
+   "ms": 1200,
+   "profile": "drag"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 520,
+   "ms": 1200,
+   "profile": "drag"
+  },
+  {
+   "type": "pause",
+   "ms": 300
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "mark",
+   "name": "reset"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "pause",
+   "ms": 2500
+  },
+  {
+   "type": "mark",
+   "name": "O1-open-fast-60px-50ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 2000
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "mark",
+   "name": "C1-close-fast-120px-60ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 2000
+  },
+  {
+   "type": "mark",
+   "name": "O2-open-fast-60px-50ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 2000
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "mark",
+   "name": "C2-close-fast-120px-60ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "mark",
+   "name": "after-1s"
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "mark",
+   "name": "done"
+  }
+ ]
+}
