@@ -8,7 +8,8 @@ On the phone, its reveal frame is 44-60 ms, against 35-47 ms on g0.0k. Paint is 
 **Build:** `fixes/g0-0m/` (g0.0m rev 3 = g0.0l + this change, touch screens only: the CSS that pre-paints the card, and
 CSS + JS that keep the hidden card's taps, AX tree and focus order as in g0.0l).
 **Stage:** R, I, D signed by the lead 2026-10-09 (5 rulings, answered below); F gates done (`fixes/g0-0m/README.md`);
-the phone check card waits for the lead's signature.
+V: P-175 PASSED on the iPhone 2026-10-10 (reveal frame R7 FLICK 50 -> 30.5 ms, APPROACH 48 -> 28 ms;
+D1 PASS; `fixes/g0-0m/README.md` "P-175 result").
 
 Unless a section says Chrome, every number below comes from the iOS 26 Simulator (Safari, 430x775), the P-174 flick
 shape and the LayerTree + Timeline probes in this folder. The verdict rests on counts, areas and MB. Simulator ms are

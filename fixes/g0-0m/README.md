@@ -3,17 +3,16 @@
 > Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
 > Fastwork). `patch.diff` and `delta.diff` contain excerpts of Fastwork's code: keep them on local branches, never push.
 
-**Status:** rev 3 built and gated on counts, pixels and the a11y probe (snapshot b1789284481295-a455e793). D signed by
-the lead 2026-10-09 (Simulator ablations + WebKit main 8f0a69f19a28; now also read on the device branch). The phone check
-card below waits for the lead's signature; no phone data has been taken.
-**Stage:** F (build + gates) done; V (phone) next.
+**Status:** P-175 PASSED (iPhone, 2026-10-10): the people card's reveal frame drops from 50 to 30.5 ms on a flick
+(R7 d -19.5 ms, 4 of 4) and from 48 to 28 ms on the slow approach; D1 no-worse PASS in both windows. Ready to land.
+**Stage:** V done (phone card P-175, below); L is the lead's.
 **Device class / gate:** phone render-bound (raster + allocation in the people card's reveal frame). Chrome at 6x does
 not show this cost. Not a less-work fix (lead ruling 1): the paint moves, it is not removed, so the phone card has a GAIN
 primary (R7) and D1 no-worse.
 **Driver(s) behind the claims:**
 - Simulator WDA flick with LayerTree + Timeline counts (`fixes/reveal-paint/rp-sim.mjs`);
 - Chrome and Simulator pixel gates (`gates/`), `fix.mjs check`;
-- the phone check (G), not run yet.
+- the phone check (G), P-175: GAIN and D1 PASS (below).
 **Topic:** reveal-paint (user T-265; lead's brief). Owner: fix-reveal-paint. Peer: fix-scrollcb-g0 (g0.0l's author).
 **Files touched:** `/_app/immutable/assets/2.gBuqKVzi.css` (one block appended) and `/_app/immutable/nodes/2.DyWL8TcE.js`
 (the a11y mirror of the hidden state, next to g0.0l's reveal gate `fwRevealGate`).
@@ -27,7 +26,8 @@ primary (R7) and D1 no-worse.
   - find-in-page (Safari's "Find on Page") can match the hidden card's text before the card shows;
   - one extra repaint of a people-card photo deck in 1 of 3 test loads while the page sits at the top; whether that
     warms the phone is untested.
-- **Whether it helps** is decided by the phone check below (P-175).
+- **Does it help? Yes, on the iPhone (P-175):** the frame where the people card appears drops from about 50 ms to about
+  30 ms on a quick flick, and from 48 to 28 ms on a slow scroll, with no extra long frames elsewhere.
 
 ## What g0.0m is
 
@@ -277,3 +277,56 @@ PREDICTION P-175 · fix-reveal-paint · 2026-10-09
 6 falsified if: FLICK d > -4 (no gain), or the frames before the flip grow past 50 ms (D1 FAIL)
 7 decision: as in the ticket
 ```
+
+## P-175 result (iPhone, G, tool-serious with cooling below 40.0 C; attempt 2, 2026-10-10 02:52-03:30Z)
+
+**By the card: GAIN on FLICK (R7 d -19.5 ms, 4 of 4 V runs below C's median) and D1 PASS in both windows, twins agree.
+Decision as written: g0.0m becomes the best build (the lead lands it).** OBSERVED, iPhone 15 Pro Max, one block. Frozen
+readers: `g0m-read.mjs` 956c6c9081ec (D1, writes out/g0mp/g0m-read.json), `g0m-reveal.mjs` c259705a92b6 (R7).
+
+The block:
+- Attempt 1 (2026-10-09 15:00Z) stopped at the part start, before any hold: preflight AUTH (XCTest could not enable
+  automation mode). The lead had the user re-plug the phone (C-140); WDA READY again at 02:52Z. Logs in
+  `out/g0mp/attempt1-stop/`.
+- Attempt 2, in order: H1 WC, H2 WV, H3 S0 (**PASS**, 57.6 fps, slow 1.1 %), H4-H11 EC1 EV1 EV2 EC2 EC3 EV3 EV4 EC4,
+  H12 TAIL (no re-runs) with S1 (**PASS**, 56.9 fps, slow 1.6 %).
+- Every hold VALID; all 16 counted records passed G1-G6; the induced Serious condition held at all 24 start and end
+  gates (30 ms timer grid). Cooling below 40.0 C before every hold (1 wait each); battery 33.7 -> 38.1 C, no stop rule.
+- The served files matched the pins at the part start (B 4606120cf392 / 27776f3d4138, C 4106679e0a8a / 440582cec781,
+  V 37af49aef32b / 7a8ecdd8f8e4); the I-260 twin probe (safari-restart to the LAN twin) and preflight passed.
+
+**Primary 1, GAIN: R7** (the longest frame among the reveal frame k and k-3 .. k+3):
+
+| window | C (EC1-EC4) | V (EV1-EV4) | median C / V | d | reading |
+|---|---|---|---|---|---|
+| FLICK (decides) | 49, 59, 51, 48 | 27, 33, 32, 29 | 50 / 30.5 | **-19.5 ms** | **GAIN** (d <= -4, 4 of 4 V below 50) |
+| APPROACH (secondary) | 48, 48, 48, 46 | 28, 31, 28, 28 | 48 / 28 | -20 ms | GAIN |
+
+**Primary 2, D1 no-worse** (frames > 50 per run; twins > 46 / > 54):
+
+| window | C | V | d | > 46 d | > 54 d | reading |
+|---|---|---|---|---|---|---|
+| FLICK | 0, 2, 1, 1 | 1, 0, 0, 0 | -1 | -2 | -0.5 | PASS, twins agree |
+| APPROACH | 0, 0, 1, 1 | 2, 0, 0, 0 | -0.5 | -1 | 0 | PASS, twins agree |
+
+**The reveal frame** (medians; Timeline ms; descriptive):
+
+| | dt | Paint | Composite | Layout | Style | the 5 frames before: max dt / Paint / Composite |
+|---|---|---|---|---|---|---|
+| FLICK C | 50 | 9.8 | 38.3 | 4.1 | 7.0 | 17 / 0.5 / 11.4 |
+| FLICK V | 30.5 | 2.2 | 20.3 | 2.6 | 4.5 | 17 / 0.5 / 11.7 |
+| APPROACH C | 48 | 7.6 | 34.7 | 5.4 | 8.0 | 17 / 0.3 / 7.9 |
+| APPROACH V | 24 | 0.4 | 10.9 | 3.7 | 6.1 | 17 / 0.35 / 8.8 |
+
+- **The moved paint did not show up before the flip on the phone:** the 5 frames before the reveal stay at 17 ms max with
+  the same Paint and Composite on both arms. The Simulator had shown the paint landing there (up to 53 ms composite);
+  on the iPhone it does not cost a frame (OBSERVED; the phone paints those layers earlier, during load or idle, or off
+  the frames read here; not traced).
+- **Against the prediction:** FLICK R7 V 30.5 and d -19.5 fall outside the predicted [37, 48] and [-12, 0], on the good
+  side, and below P-174's g0.0k "floor" (35-41). The prediction underestimated the gain: the closure assumed the reveal
+  frame keeps g0.0k's work, but on V it keeps almost none (Paint 0.4-2.2 ms).
+- The P-174 secondaries hold: 0 blurred frames on all 8 flicks, the instant attribute on every flick, 26 / 26 deck
+  photos complete at the flick, fade in view 108-134 ms on both arms.
+- V's other > 50 frames (EV1: one in FLICK, 57 ms; two in APPROACH, up to 54 ms) are not at the reveal (EV1 R7 27 / 28);
+  not traced. C has more of them (EC2-EC4).
+- Not tested on the phone: the heat effect of the +22 MB and of the idle repaint; finger (F) runs; VoiceOver.
