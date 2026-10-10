@@ -165,8 +165,10 @@ check (430x932, both builds, same result) found a visible path: the observer res
 stroke (mark held) and rests 6 s (mark end); `wc-read.mjs` counts v2 runs from return to end. The first block (05:09Z)
 stopped before any run (Do Not Disturb step C-143 unanswered for 30 min); the second (07:15-07:20Z, C-143 reused, A B B A,
 tool-serious, Serious 39.1 -> 40.7 C, no drift) gave 4 clean runs. Path on the phone: up to y 1264-1265, back to y
-774-775 (innerHeight 815 at return, 775 at held). Whether the 'o' visibly opens is for the pictures to show; the frame log
-cannot see it.
+774-775 (innerHeight 815 at return, 775 at held). The frame log cannot see the 'o'; art-ar-gifs checked the pictures by
+eye (pair orig 071845Z / g0m 071753Z, fewest recorder writer drops): the 'o' starts to open 0.20 s before the held mark on
+both (orig 51.33 s, g0m 27.82 s into the .mov, ~0.5 s after the title stops) and is fully open ~1.0 s later; Do Not
+Disturb shows on all four runs. GIFs: day8-ptitle-50fps.gif, day8-ptitle-3x.gif (out/article-gifs/, main checkout).
 
 | run | return -> end: >34 (30/38) / >50 (46/54) / worst | return -> held >34 / >50 | held -> end >34 / >50 |
 |---|---|---|---|
