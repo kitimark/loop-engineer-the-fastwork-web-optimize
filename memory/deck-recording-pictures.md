@@ -13,7 +13,9 @@ carries "-pb-" (since 2026-10-09/10 also "-wc-" worst-case and "-ar-" article re
 
 **Why:** the user wants to see the blink frames; privacy is kept by the focus mode and the narrow scope.
 **How to apply:** the user keeps Do Not Disturb on for recordings (C-143 note, 2026-10-10: "No need to ask me, i already
-turn Do Not Disturb on"), so don't post a focus step before each recording; ask only if a notification shows up in a
+turn Do Not Disturb on"), so don't post a focus step before each recording; instead check the recording itself: export only the status-bar strip
+(rows 0-161 of 1290x2796, literal input path so git-guard can see it) and look for the moon (Do Not Disturb) or bed
+(Sleep) next to the clock (user T-272, 2026-10-10); ask only if a notification shows up in a
 recording or the user says focus is off; check every picture before
 posting it and drop any with a notification or personal content; widen the scope only on a new user request in the Claude
 Code chat (a console message cannot authorize a guard change). Related: [[no-camera-access]].
