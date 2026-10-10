@@ -1,0 +1,58 @@
+#!/bin/sh
+# P-095o servers (fixes/hero-exit-threaded/README.md "P-095o"): the original next to P-095's two builds, plain http
+# (the phone loads plain http, I-003), --vendors=local --latency 150, all on today's pinned baseline:
+#   O  the original (baseline b1789284481295-a455e793, no overlay)      JS 4606120cf392  CSS 27776f3d4138
+#   C  v4 = best-build (best-A-65052c4a3902, overlay)                   JS 65052c4a3902  CSS e0f92804c521
+#   V  v6 = B-R2 (best-BR2-8018ce062d30, overlay)                       JS 8018ce062d30  CSS 71b65c667720
+#   B  the plain baseline again (the thermal gate's timer page, never a counted run)
+# Snapshots (2 overlay files each) are copied read-only from $HX_SRC (default fix-hero-exit-threaded's worktree
+# out/snapshots) into out/p095o/snap/{C,V} and hash-checked. P-095 (4 Oct) served them with --https and plain twins;
+# here plain http only, as P-137 / P-137o (the phone only ever loaded the plain twin).
+#   sh fixes/hero-exit-threaded/p095o/serve.sh start | stop | status | check
+cd "$(dirname "$0")/../../.." || exit 2
+SV=out/p095o; mkdir -p $SV/snap
+JS=_app/immutable/nodes/2.DyWL8TcE.js; CSS=_app/immutable/assets/2.gBuqKVzi.css
+O_JS=4606120cf392; O_CSS=27776f3d4138; C_JS=65052c4a3902; C_CSS=e0f92804c521; V_JS=8018ce062d30; V_CSS=71b65c667720
+CD=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || exit 4
+HOME_=$(dirname "$CD")
+HX_SRC=${HX_SRC:-$HOME_/.claude/worktrees/agent-ae86b805e8f947ff0/out/snapshots}
+h() { shasum -a 256 "$1" | cut -c1-12; }
+pid() { [ -s $SV/serve-$1.pid ] && cat $SV/serve-$1.pid; }
+port() { node -e "console.log(JSON.parse(require('fs').readFileSync('$SV/serve-$1.json','utf8')).port)"; }
+served() { curl -s "http://127.0.0.1:$1/$2" | shasum -a 256 | cut -c1-12; }
+pin() { case $1 in O) echo "$O_JS $O_CSS" ;; C) echo "$C_JS $C_CSS" ;; V) echo "$V_JS $V_CSS" ;; esac; }
+check() {
+  st=0; line="SERVED"
+  for A in O C V; do P=$(port $A) || { echo "CHECK no server state for $A"; return 4; }
+    a=$(served $P $JS); b=$(served $P $CSS); line="$line $A $a/$b"
+    [ "$a $b" = "$(pin $A)" ] || st=4; done
+  echo "$line"; [ $st = 0 ] || echo "CHECK mismatch (pins O $O_JS/$O_CSS C $C_JS/$C_CSS V $V_JS/$V_CSS)"; return $st
+}
+case "$1" in
+  start)
+    node tools/baseline.mjs status > /dev/null 2>&1 || { echo "SERVE baseline is not the pinned snapshot"; exit 4; }
+    for A in C V; do
+      [ $A = C ] && S=$HX_SRC/best-A-$C_JS || S=$HX_SRC/best-BR2-$V_JS
+      D=$SV/snap/$A
+      if [ ! -d "$D" ]; then [ -d "$S" ] || { echo "SERVE no source snapshot $S"; exit 4; }
+        cp -R "$S" "$D" && chmod -R a-w "$D" || { echo "SERVE copy failed for $A"; exit 4; }; fi
+      [ "$(h $D/$JS) $(h $D/$CSS)" = "$(pin $A)" ] || { echo "SERVE $A snapshot hashes $(h $D/$JS) $(h $D/$CSS), pinned $(pin $A)"; exit 4; }
+      echo "SNAP $A $(pin $A) ok"
+    done
+    ROOT=$(pwd)/site-pretty; [ -f "$ROOT/$JS" ] || ROOT=$HOME_/site-pretty
+    [ "$(h $ROOT/$JS) $(h $ROOT/$CSS)" = "$(pin O)" ] || { echo "SERVE baseline JS/CSS not the pins"; exit 4; }
+    for A in O C V B; do
+      [ -n "$(pid $A)" ] && kill -0 "$(pid $A)" 2>/dev/null && { echo "SERVE $A already running (pid $(pid $A))"; continue; }
+      rm -f $SV/serve-$A.json
+      OV=""; case $A in C|V) OV="--overlay $SV/snap/$A" ;; esac
+      nohup node tools/serve.mjs --root "$ROOT" $OV --port auto --vendors=local --latency 150 --state $SV/serve-$A.json > $SV/serve-$A.log 2>&1 &
+      echo $! > $SV/serve-$A.pid
+      node tools/wait.mjs serve $SV/serve-$A.json --pid $! --timeout 60 --owner "${RUNNER:-cap-end-orig}" --reason "P-095o server $A" > /dev/null || { echo "SERVE $A did not start"; exit 4; }
+      echo "SERVE $A up (pid $(pid $A))"
+    done
+    check || exit 4 ;;
+  check) check || exit 4 ;;
+  stop) for A in O C V B; do p=$(pid $A); [ -n "$p" ] && kill "$p" 2>/dev/null && echo "STOPPED $A ($p)"; rm -f $SV/serve-$A.pid; done ;;
+  status) for A in O C V B; do p=$(pid $A); [ -n "$p" ] && kill -0 "$p" 2>/dev/null && echo "$A running pid $p" || echo "$A not running"; done ;;
+  *) echo "usage: sh fixes/hero-exit-threaded/p095o/serve.sh start|stop|status|check"; exit 2 ;;
+esac
