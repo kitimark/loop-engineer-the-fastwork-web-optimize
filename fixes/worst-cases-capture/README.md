@@ -155,3 +155,12 @@ never edited). Event windows (seconds into each .mov) went to the lead and art-a
 
 The Day 8 end behaves differently by design (the original opens by itself, v14 follows the finger): pictures, not a
 measurement.
+
+**People title v2 (option b, 2026-10-10).** The v1 runs above do not show the title's 'o' opening: the heading's
+IntersectionObserver (threshold 0.35, baseline JS 6261-6267) fires while the #people card is still at opacity 0 under
+the hero's exit, and the 'o' (1.3 s delay, JS 6250-6257) has opened before the card fades in. A headless Chrome DOM
+check (430x932, both builds, same result) found a visible path: the observer resets the 'o' when the heading leaves
+(JS 6264) and reopens it ~1.0 s (is-stack) + 0.12 s (is-expanded) after it re-enters, with the card at opacity 1.
+`g-ar-ptitle-v2.json` goes ~1,300 px past the title, rests 1.5 s (mark return), comes back 500 px with a held 'still'
+stroke (mark held) and rests 6 s (mark end); `wc-read.mjs` counts v2 runs from return to end. Not yet recorded: the
+first block (05:09Z) stopped before any run because its Do Not Disturb step (C-143) was not answered within 30 min.

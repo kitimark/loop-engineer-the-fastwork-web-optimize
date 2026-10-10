@@ -52,7 +52,9 @@ function windows(cs, seg) {
     }
     case 'menu': return { pushes: byT(seg, mark(seg, 'P1-open-slow-hold'), mark(seg, 'done') ?? end) }; // Day 8 -ar- pair
     case 'carousel': return { rest: byT(seg, mark(seg, 'rest'), mark(seg, 'end') ?? end) }; // article pair, page at rest at the top
-    case 'ptitle': return { title: byT(seg, mark(seg, 'title'), mark(seg, 'end') ?? end) }; // article pair, title stroke + 7 s still
+    case 'ptitle': return mark(seg, 'return') != null
+      ? { back: byT(seg, mark(seg, 'return'), mark(seg, 'end') ?? end) } // v2: past the title and back, then 6 s still
+      : { title: byT(seg, mark(seg, 'title'), mark(seg, 'end') ?? end) }; // v1: title stroke + 7 s still
     case 'flick': return { all: byT(seg, mark(seg, 'down1'), mark(seg, 'end') ?? end) };
     default: return {};
   }

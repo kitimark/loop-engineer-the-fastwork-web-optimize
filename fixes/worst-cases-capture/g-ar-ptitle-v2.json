@@ -1,0 +1,25 @@
+{
+ "name": "ar-ptitle-v2",
+ "version": 2,
+ "screen": [430, 932],
+ "about": "Part 1 article recording (cap-worst, lead 2026-10-10 option b): the 'People still need people' title's 'o' opening while the title is visible. v1 failed: the heading's IntersectionObserver (threshold 0.35, JS 6261-6267) fires while the #people card is still hidden (opacity 0) under the hero's exit, so the 'o' (1.3 s delay, JS 6250-6257) has opened before the card fades in (headless Chrome check out/wc/ptitle-check.json, both builds: opens at y ~230-370, card visible from y ~675). The observer resets the 'o' when the heading leaves (JS 6264) and reopens it 1.3 s after it re-enters, and the card stays visible above its flip, so this program goes past the title and comes back: reload, 2 s, mark scroll, drags up 520 + 520 + 260 px (2000/2000/1000 ms, 'drag', 250 ms apart; ~1,300 px, the heading off the top), settle, 1.5 s, mark return, one 'still' stroke down 500 px in 2000 ms (finger held, no momentum; back to y ~800, the title sharp in the upper third), settle, mark held, 6 s still, mark end. Same input on both arms; fixed before any capture.",
+ "params": { "x": 215 },
+ "steps": [
+  { "type": "reload", "scrollAfterMs": 0 },
+  { "type": "pause", "ms": 2000 },
+  { "type": "mark", "name": "scroll" },
+  { "type": "stroke", "dir": "up", "px": 520, "ms": 2000, "profile": "drag" },
+  { "type": "pause", "ms": 250 },
+  { "type": "stroke", "dir": "up", "px": 520, "ms": 2000, "profile": "drag" },
+  { "type": "pause", "ms": 250 },
+  { "type": "stroke", "dir": "up", "px": 260, "ms": 1000, "profile": "drag" },
+  { "type": "until", "cond": "settled", "timeoutMs": 4000, "optional": true },
+  { "type": "pause", "ms": 1500 },
+  { "type": "mark", "name": "return" },
+  { "type": "stroke", "dir": "down", "px": 500, "ms": 2000, "profile": "still" },
+  { "type": "until", "cond": "settled", "timeoutMs": 3000, "optional": true },
+  { "type": "mark", "name": "held" },
+  { "type": "pause", "ms": 6000 },
+  { "type": "mark", "name": "end" }
+ ]
+}

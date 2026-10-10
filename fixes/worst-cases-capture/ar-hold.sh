@@ -44,7 +44,7 @@ stamp() { python3 -c "import time,json,sys; print(json.dumps({'label': sys.argv[
 prog() { case $1 in
   h) echo research/team-article/capture/phone/g/hero-fade-v1.json ;; m) echo fixes/g0-0l/phone/g-approach-g0l.json ;;
   p) echo fixes/g0-0l/phone/g-flick-g0l.json ;; e) echo fixes/g0-box/phone/g-fastshort-g0.json ;;
-  f) echo fixes/v8-best/phone/g/flick-hero-v1.json ;; a) echo fixes/worst-cases-capture/g-ar-menu-v1.json ;; c) echo fixes/worst-cases-capture/g-ar-carousel-v1.json ;; t) echo fixes/worst-cases-capture/g-ar-ptitle-v1.json ;; *) echo none ;; esac; }
+  f) echo fixes/v8-best/phone/g/flick-hero-v1.json ;; a) echo fixes/worst-cases-capture/g-ar-menu-v1.json ;; c) echo fixes/worst-cases-capture/g-ar-carousel-v1.json ;; t) echo fixes/worst-cases-capture/g-ar-ptitle-v2.json ;; *) echo none ;; esac; }
 cname() { case $1 in h) echo hero ;; m) echo middle ;; p) echo people ;; e) echo end ;; f) echo flick ;; esac; }
 # I-262 (lead's diagnosis, 2026-10-09 13:0xZ): another app's background web views can be listed before Safari's tab, and the
 # tab picker then takes the wrong target. Pin the picker to Safari: FW_IPHONE_APPID=PID:<Safari's pid from WDA activeAppInfo>,
