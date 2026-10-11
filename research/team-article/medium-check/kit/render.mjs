@@ -7,6 +7,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { applyAltMedium, altProblems, ALT_FILE, ALT_LIMIT } from '../lib/alt.mjs';
+import { kitMode, sourceResidue } from '../lib/sources.mjs';
 
 export class AltError extends Error {
   constructor(problems) { super('alt text Medium cannot take (nothing written):\n  ' + problems.join('\n  ')); this.problems = problems; }
@@ -145,10 +146,22 @@ ${clips.map((c) => `<tr><td>${c.n}</td><td><code>${h(c.url)}</code></td><td>${c.
   ])];
   if (codeDash.length) notes.push(`- **Paths and code with a hyphen between digits** (Medium's automatic punctuation turns that hyphen into an en dash, see above; check them after the paste; whether a hyphen typed by hand stays is untested): ${codeDash.map((c) => '`' + c + '`').join(', ')}.`);
   if ((kit.warn || []).length) notes.push(`- Walker warnings: ${kit.warn.join('; ')}`);
+  // the sources mode (lib/sources.mjs): what the kit left out, and anything that still reads as a source reference
+  const smode = kitMode(kit), srep = (kit.sources && kit.sources.report) || null;
+  if (smode === 'none') {
+    const residue = [...new Set(parts.flatMap((x) => sourceResidue(x.text)))];
+    if (residue.length) notes.push(`- **Source references left in the text** although the kit is in sources mode none (fix the article or lib/sources.mjs, then rebuild): ${residue.map((r) => '"' + r.replace(/\s+/g, ' ').trim() + '"').join('; ')}.`);
+    for (const p of (srep && srep.inPicture) || []) {
+      const pic = pics.find((x) => x.id === p.figure);
+      notes.push(`- **${pic ? pic.n + ' (\`' + pic.file + '\`)' : '#' + p.figure} still shows "(${p.text})" inside the picture** (the text is part of the drawing: pictures do not change with the sources mode). Decide whether that is fine for Medium; removing it needs a change of the article page.`);
+    }
+    for (const u of (srep && srep.unhandled) || []) notes.push(`- **A source reference was not removed** (no known pattern): "${u.context.slice(0, 120)}"`);
+  }
+  if (smode === 'github' && srep && srep.unmapped && srep.unmapped.length) notes.push(`- **No repo path for ${[...new Set(srep.unmapped)].join(', ')}** in the sources map: those references were removed.`);
 
   writeFileSync(join(KIT, 'CHECKLIST.md'), `# Medium kit: checklist
 
-Everything here is local. Nothing has been uploaded, published or logged in to. Built ${kit.builtAt || ''} from \`${kit.page || ''}\`.
+Everything here is local. Nothing has been uploaded, published or logged in to. Built ${kit.builtAt || ''} from \`${kit.page || ''}\`, sources mode ${smode}${smode === 'github' ? ' (' + kit.sources.base + ')' : ''}.
 
 ## The story
 
@@ -206,8 +219,14 @@ The figure pictures are 2,400 px wide (1,200 CSS px at 2x), light colours. The a
    each and press the quote button once more (or ⌘⌥5) to make it a pull quote. A further press turns it back into
    plain text (OBSERVED).
 ${pulls.map((p) => `   - "${p}"`).join('\n')}
-7. **Links inside the page** (to a day or a source, e.g. "Day 8", "source") can't work on Medium: the words stay,
-   the link is gone. The numbered Sources list at the end stays as it is.
+7. ${smode === 'none' ? `**No Sources section on Medium** (sources mode none, owner's decision T-170 #367): the kit leaves out the
+   article's Sources list and every "source" reference${srep ? ` (${srep.removed} references in ${srep.blocks.length} captions and paragraphs)` : ''}; they come back as
+   GitHub links later. **Links inside the page** (e.g. "Day 8") can't work on Medium: the words stay, the link is gone.`
+  : smode === 'github' ? `**Source links go to GitHub** (sources mode github, ${kit.sources.base}): each "source" in a caption or
+   paragraph is a normal link; the numbered Sources list at the end stays. **Links inside the page** (e.g. "Day 8")
+   can't work on Medium: the words stay, the link is gone.`
+  : `**Links inside the page** (to a day or a source, e.g. "Day 8", "source") can't work on Medium: the words stay,
+   the link is gone. The numbered Sources list at the end stays as it is.`}
 8. **Check.** Run \`medium-dump.js\` in the browser console on the draft, save the JSON, and run
    \`node research/team-article/medium-check/check.mjs --dump <file>\` (README in that folder). Done means
    \`CHECK CLEAN\`. \`contact-sheet.html\` shows every picture in order with its caption, for the look.

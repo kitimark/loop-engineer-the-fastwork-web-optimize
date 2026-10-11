@@ -22,21 +22,28 @@
 //   --only <list>     capture only these pictures (numbers like 05,13 or figure ids like fig-4); the text files and
 //                     kit.json are always rewritten whole
 //   --text-only       capture no pictures (text files and kit.json only)
+//   --sources <mode>  the Medium sources mode (lib/sources.mjs), written into kit.json: none (default: the kit leaves
+//                     out the Sources section and every source reference), github (--github-base <url>, optional
+//                     --sources-map <json>: references link to GitHub), artifact (the page as it is). The transform is
+//                     the one lib/article.mjs uses, run on the page's DOM before the walker; it never touches a
+//                     .cap-area, so the pictures are the same in every mode.
 // Needs a checkout of the study repo: Chrome comes from tools/lib/cdp.mjs (launchChrome). Fonts load from Google
 // Fonts like the page itself does; nothing else goes over the network.
 import { writeFileSync, readFileSync, mkdirSync, copyFileSync, existsSync } from 'node:fs';
 import { join, dirname, relative, resolve, basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { parseArgs, helpIfAsked, UsageError, REPO, DEFAULT_ARTICLE, DEFAULT_CLIPS, mainCheckout } from '../lib/cli.mjs';
+import { parseArgs, helpIfAsked, UsageError, REPO, DEFAULT_ARTICLE, DEFAULT_CLIPS, mainCheckout, SOURCES_SPEC, sourcesFromArgs } from '../lib/cli.mjs';
+import { applySourcesDom, kitRecord } from '../lib/sources.mjs';
 import { render } from './render.mjs';
 import { applyAltMedium, altProblems } from '../lib/alt.mjs';
 import { loadClipTable, clipRowByUid } from '../lib/article.mjs';
 
 const argv = process.argv.slice(2);
 helpIfAsked(import.meta.url, argv);
-let o;
+let o, SOURCES;
 try {
-  o = parseArgs(argv, { page: 'v', out: 'v', gifs: 'v', only: 'v', 'text-only': 'bool' });
+  o = parseArgs(argv, { page: 'v', out: 'v', gifs: 'v', only: 'v', 'text-only': 'bool', ...SOURCES_SPEC });
+  SOURCES = sourcesFromArgs(o);
 } catch (e) { console.error(`usage: ${e.message} (see --help)`); process.exit(2); }
 const PAGE = resolve(o.page || DEFAULT_ARTICLE);
 const KIT = resolve(o.out || join(REPO, 'out', 'article', 'medium-kit'));
@@ -186,6 +193,13 @@ try {
     dark: matchMedia('(prefers-color-scheme: dark)').matches,
     capW: (document.querySelector('.cap') || document.body).getBoundingClientRect().width })`);
   console.log('ENV', JSON.stringify(env));
+  // the sources mode: the same transform as lib/article.mjs, on the page's DOM, before the walker reads it
+  const srcReport = SOURCES ? await page.eval(`(${applySourcesDom.toString()})(document.querySelector('main'), ${JSON.stringify(SOURCES)})`) : null;
+  if (srcReport) {
+    console.log('SOURCES', JSON.stringify({ mode: srcReport.mode, footer: srcReport.footer, removed: srcReport.removed, linked: srcReport.linked, blocks: srcReport.blocks.length, inPicture: srcReport.inPicture.length, unhandled: srcReport.unhandled.length }));
+    for (const u of srcReport.unhandled) console.log('WARN sources: not removed (no known pattern):', u.context.slice(0, 120));
+    for (const p of srcReport.inPicture) console.log(`NOTE sources: "${p.text}" is drawn inside picture #${p.figure}; it stays (pictures do not change)`);
+  }
   const { blocks, warn } = await page.eval(WALKER);
   if (warn.length) console.log('WARN', JSON.stringify(warn));
   const overflow = await page.eval(OVERFLOW);
@@ -206,7 +220,7 @@ try {
       } else if (b.src) b.clip = basename(b.src).replace(/\.[a-z0-9]+$/i, '');
     }
   }
-  kit = { schema: 'fw-medium-kit/1', page: relative(REPO, PAGE), builtAt: new Date().toISOString(), env, warn, overflow, blocks };
+  kit = { schema: 'fw-medium-kit/1', page: relative(REPO, PAGE), builtAt: new Date().toISOString(), sources: kitRecord(SOURCES, srcReport, REPO), env, warn, overflow, blocks };
   const want = (b) => !ONLY || ONLY.has(b.n) || ONLY.has(b.id) || ONLY.has(b.file);
   // pictures not captured this time keep the sizes the last build recorded
   const prev = existsSync(join(KIT, 'kit.json')) ? JSON.parse(readFileSync(join(KIT, 'kit.json'), 'utf8')) : null;

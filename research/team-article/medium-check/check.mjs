@@ -17,6 +17,10 @@
 //   --strict-alt       count alt text cut at Medium's limit as a difference (default: a note)
 //   --allow-unproven   an embed whose Stream address is not visible, or whose loop/autoplay/muted are not visible,
 //                      is a note instead of a difference
+//   --sources <mode>   the Medium sources mode (lib/sources.mjs): none (default: no Sources section and no source
+//                      references in Medium), github (--github-base <url>, --sources-map <json>: references link to
+//                      GitHub), artifact (the page as it is, as in kits built before the switch). A kit built in
+//                      another mode (kit.json "sources") is a WARN line; its captions then show as KIT differences.
 // What it checks: title, subtitle and the disclaimer lines exactly (after normalizing quotes, dashes, spaces);
 // every block in order (missing, extra, moved, changed text as a short word diff, heading level, quote kind, list
 // kind, link targets); every picture in order with its caption and alt text (pictures are re-encoded by Medium, so
@@ -29,10 +33,11 @@ import { relative } from 'node:path';
 import { extractArticleFile } from './lib/article.mjs';
 import { readDumpFile, readHtmlFile, readDump, dumpFromHtml, publicUrlOk } from './lib/medium.mjs';
 import { compareModels } from './lib/compare.mjs';
-import { parseArgs, helpIfAsked, UsageError, DEFAULT_ARTICLE, DEFAULT_CLIPS, REPO, defaultKit } from './lib/cli.mjs';
+import { parseArgs, helpIfAsked, UsageError, DEFAULT_ARTICLE, DEFAULT_CLIPS, REPO, defaultKit, SOURCES_SPEC, sourcesFromArgs } from './lib/cli.mjs';
+import { modeLabel } from './lib/sources.mjs';
 
 const SPEC = { dump: 'v', html: 'v', url: 'v', article: 'v', kit: 'v', clips: 'v', list: 'bool', json: 'bool', 'model-out': 'v',
-  'no-links': 'bool', 'strict-alt': 'bool', 'allow-unproven': 'bool' };
+  'no-links': 'bool', 'strict-alt': 'bool', 'allow-unproven': 'bool', ...SOURCES_SPEC };
 
 export async function run(argv, io = { log: console.log }) {
   const o = parseArgs(argv, SPEC);
@@ -43,7 +48,9 @@ export async function run(argv, io = { log: console.log }) {
   const kit = o.kit === 'none' ? null : (o.kit || defaultKit());
   if (o.kit && o.kit !== 'none' && !existsSync(o.kit)) throw new UsageError(`kit folder not found: ${o.kit}`);
   const clips = o.clips || (existsSync(DEFAULT_CLIPS) ? DEFAULT_CLIPS : null);
-  const src = extractArticleFile(articleFile, { kit, clips });
+  const sources = sourcesFromArgs(o);
+  const src = extractArticleFile(articleFile, { kit, clips, sources });
+  src.sourcesLabel = modeLabel(sources);
 
   let med;
   try {
@@ -61,7 +68,7 @@ export async function run(argv, io = { log: console.log }) {
   }
   if (o['model-out']) writeFileSync(o['model-out'], JSON.stringify(med, null, 1));
   const r = compareModels(src, med, { noLinks: !!o['no-links'], strictAlt: !!o['strict-alt'], allowUnproven: !!o['allow-unproven'] });
-  if (o.json) { io.log(JSON.stringify({ clean: r.issues.length === 0, stats: r.stats, issues: r.issues, notes: r.notes, medium: med.medium, kit: src.kit, warnings: [...src.warnings, ...med.warnings] }, null, 1)); return r.issues.length ? 1 : 0; }
+  if (o.json) { io.log(JSON.stringify({ clean: r.issues.length === 0, sources: src.sourcesLabel, stats: r.stats, issues: r.issues, notes: r.notes, medium: med.medium, kit: src.kit, warnings: [...src.warnings, ...med.warnings] }, null, 1)); return r.issues.length ? 1 : 0; }
   report(src, med, r, o, io);
   return r.issues.length ? 1 : 0;
 }
@@ -73,6 +80,7 @@ function report(src, med, r, o, io) {
   L(`medium-check: article ${rel(src.source)}`);
   L(`  vs Medium ${rel(med.source)} (${m.page || '?'} page, ${m.mode || '?'} markup, root ${m.root || '?'}${m.takenAt ? ', taken ' + m.takenAt : ''})`);
   L(`  alt text from ${src.kit ? 'the kit (' + rel(src.kit.dir) + '/' + src.kit.from + ')' : 'the article (no kit: static rule)'}`);
+  L(`  sources mode ${src.sourcesLabel}${src.kit ? ' (kit: ' + (src.kit.sources || 'not recorded') + ')' : ''}${src.sources ? `: ${src.sources.removed} reference(s) removed, ${src.sources.linked} linked, Sources section ${src.sources.footer}` : ''}`);
   if (m.transfer) L(m.transfer.line);
   for (const w of [...src.warnings.map((x) => 'article: ' + x), ...med.warnings.map((x) => 'Medium: ' + x)]) L('WARN ' + w);
   const by = (t) => r.issues.filter((i) => i.type === t).length;

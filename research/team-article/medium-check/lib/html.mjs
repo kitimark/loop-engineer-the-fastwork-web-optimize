@@ -2,7 +2,8 @@
 //
 // It builds a tree of Element / Text nodes with the few DOM members the scripts and medium-dump.js use:
 // nodeType, tagName (upper case), localName, childNodes, children, parentNode, parentElement, nextElementSibling,
-// getAttribute, hasAttribute, textContent, nodeValue, className. It is not a full HTML5 parser: it handles what
+// getAttribute, hasAttribute, textContent, nodeValue, className, innerHTML (get and set) and remove() (the last two
+// for lib/sources.mjs, which edits captions and drops the Sources section). It is not a full HTML5 parser: it handles what
 // the article page and Medium pages contain (void elements, raw-text elements, self-closing SVG tags, the common
 // implied end tags of p / li / option / tr / td, comments, doctype, character references) and recovers from a
 // stray end tag by ignoring it.
@@ -44,6 +45,14 @@ export class Node {
     for (const c of this.childNodes) s += c.textContent;
     return s;
   }
+  // take this node out of its parent (as the DOM's remove(); lib/sources.mjs drops the Sources section with it)
+  remove() {
+    if (!this.parentNode) return;
+    const sib = this.parentNode.childNodes;
+    const i = sib.indexOf(this);
+    if (i >= 0) sib.splice(i, 1);
+    this.parentNode = null;
+  }
 }
 
 export class Text extends Node {
@@ -74,6 +83,13 @@ export class Element extends Node {
   get attributes() { return Object.entries(this.attrs).map(([name, value]) => ({ name, value })); }
   // the inner HTML, re-serialized (attributes in source order); used to compare a figure between versions
   get innerHTML() { return this.childNodes.map(serialize).join(''); }
+  // replace the children with a parsed fragment (lib/sources.mjs rewrites a caption or paragraph this way)
+  set innerHTML(html) {
+    for (const c of this.childNodes) c.parentNode = null;
+    const frag = parseHTML(String(html ?? ''));
+    this.childNodes = frag.childNodes;
+    for (const c of this.childNodes) c.parentNode = this;
+  }
 }
 
 export class Document extends Element {

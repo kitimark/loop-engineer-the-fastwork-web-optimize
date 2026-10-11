@@ -70,10 +70,13 @@ test('build.mjs refuses to start Chrome outside a chrome-measure hold', () => {
 });
 
 test('model.mjs prints the model, or a summary', () => {
-  const r = spawnSync(process.execPath, [join(HERE, '..', 'model.mjs'), MINI, '--kit', 'none', '--summary'], { encoding: 'utf8' });
+  // the page as it is (--sources artifact), and the Medium default (none: no Sources heading, note and list)
+  const r = spawnSync(process.execPath, [join(HERE, '..', 'model.mjs'), MINI, '--kit', 'none', '--summary', '--sources', 'artifact'], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   const s = JSON.parse(r.stdout);
   assert.deepEqual(s.counts, { p: 9, heading: 4, li: 4, picture: 3, clip: 2, quote: 6, hr: 2 });
+  const n = JSON.parse(spawnSync(process.execPath, [join(HERE, '..', 'model.mjs'), MINI, '--kit', 'none', '--summary'], { encoding: 'utf8' }).stdout);
+  assert.deepEqual(n.counts, { p: 8, heading: 3, li: 2, picture: 3, clip: 2, quote: 6, hr: 2 });
   const full = JSON.parse(spawnSync(process.execPath, [join(HERE, '..', 'model.mjs'), MINI, '--kit', 'none'], { encoding: 'utf8' }).stdout);
   assert.equal(full.schema, 'fw-article-model/1');
   assert.equal(full.blocks.find((b) => b.kind === 'picture').areaHtml, undefined, 'the figure HTML stays out of the printed model');

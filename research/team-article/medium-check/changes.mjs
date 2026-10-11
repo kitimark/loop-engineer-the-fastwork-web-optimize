@@ -6,6 +6,10 @@
 //   node research/team-article/medium-check/changes.mjs --from 105        # versions/p1-v105.html -> index.html
 //   node research/team-article/medium-check/changes.mjs --from 104 --to 105
 // Options: --json (the list as JSON), --dir <article folder> (default research/team-article/artifacts/sixteen-milliseconds)
+//   --sources none|github|artifact   the Medium sources mode of both versions (lib/sources.mjs; default none: no
+//                      Sources section and no source references); github takes --github-base <url>, --sources-map
+//   --from-sources <mode>            the mode the OLD side is in Medium, when it differs: e.g. the draft pasted from
+//                      a kit with sources, now going to none:  changes.mjs --from 109 --to 109 --from-sources artifact
 //
 // It reads both pages into the article model (lib/article.mjs), pairs their blocks in order (lib/compare.mjs) and
 // prints one line per edit in story order: "Day 5 · Sun 4 Oct, paragraph 3 ("It started..."): change text: ...
@@ -20,7 +24,8 @@ import { extractArticle } from './lib/article.mjs';
 import { align, findMoves, kindName } from './lib/compare.mjs';
 import { wordDiff, clip } from './lib/text.mjs';
 import { parseHTML, findAll, isTag } from './lib/html.mjs';
-import { parseArgs, helpIfAsked, UsageError, DEFAULT_ARTICLE } from './lib/cli.mjs';
+import { parseArgs, helpIfAsked, UsageError, DEFAULT_ARTICLE, SOURCES_SPEC, sourcesFromArgs } from './lib/cli.mjs';
+import { modeLabel } from './lib/sources.mjs';
 import { dirname } from 'node:path';
 
 const where = (b) => {
@@ -44,8 +49,10 @@ function pageAssets(html) {
   return { styles: styles + '\n' + sheets, scripts };
 }
 
-export function changes(oldHtml, newHtml) {
-  const A = extractArticle(oldHtml), B = extractArticle(newHtml);
+// opts.sources / opts.fromSources: sources configs (lib/sources.mjs) for the new / old side; none given = artifact
+export function changes(oldHtml, newHtml, opts = {}) {
+  const fromSources = opts.fromSources !== undefined ? opts.fromSources : opts.sources;
+  const A = extractArticle(oldHtml, { sources: fromSources }), B = extractArticle(newHtml, { sources: opts.sources });
   const ops = [];
   const rebuild = new Map(); // new picture number -> reason
   const add = (op, at, text) => ops.push({ op, at, text });
@@ -121,7 +128,7 @@ export function changes(oldHtml, newHtml) {
   const pageWide = [];
   if (assetsA.styles !== assetsB.styles) pageWide.push('the page styles (<style> or stylesheet links) changed');
   if (assetsA.scripts !== assetsB.scripts) pageWide.push('the page scripts changed (Fig. 2 and other drawn figures)');
-  return { from: A, to: B, ops, rebuild: [...rebuild].sort(), renumbered: renumbered.map(([a, b]) => [a.n, b.n, b.file]), pageWide,
+  return { from: A, to: B, sources: [modeLabel(fromSources || null), modeLabel(opts.sources || null)], ops, rebuild: [...rebuild].sort(), renumbered: renumbered.map(([a, b]) => [a.n, b.n, b.file]), pageWide,
     counts: { old: A.blocks.length, new: B.blocks.length, pictures: [A.blocks.filter((x) => x.kind === 'picture').length, B.blocks.filter((x) => x.kind === 'picture').length],
       clips: [A.blocks.filter((x) => x.kind === 'clip').length, B.blocks.filter((x) => x.kind === 'clip').length] } };
 }
@@ -129,6 +136,7 @@ export function changes(oldHtml, newHtml) {
 function printReport(r, names, log = console.log) {
   log(`Medium update: ${names[0]} -> ${names[1]}`);
   log(`blocks ${r.counts.old} -> ${r.counts.new}, pictures ${r.counts.pictures.join(' -> ')}, clips ${r.counts.clips.join(' -> ')}`);
+  if (r.sources) log(`sources mode ${r.sources[0] === r.sources[1] ? r.sources[1] : r.sources.join(' -> ')}`);
   log('');
   if (!r.ops.length) log('Nothing to change in Medium: same text, pictures and clips.');
   else {
@@ -150,7 +158,9 @@ if (process.argv[1] && process.argv[1].endsWith('/changes.mjs')) {
   const argv = process.argv.slice(2);
   helpIfAsked(import.meta.url, argv);
   try {
-    const o = parseArgs(argv, { from: 'v', to: 'v', dir: 'v', json: 'bool' });
+    const o = parseArgs(argv, { from: 'v', to: 'v', dir: 'v', json: 'bool', 'from-sources': 'v', ...SOURCES_SPEC });
+    const sources = sourcesFromArgs(o);
+    const fromSources = o['from-sources'] ? sourcesFromArgs(o, 'from-sources') : sources;
     const dir = o.dir || dirname(DEFAULT_ARTICLE);
     const ver = (v) => join(dir, 'versions', `p1-v${String(v).replace(/^v/, '')}.html`);
     let files;
@@ -158,8 +168,8 @@ if (process.argv[1] && process.argv[1].endsWith('/changes.mjs')) {
     else if (o.from) files = [ver(o.from), o.to ? ver(o.to) : join(dir, 'index.html')];
     else throw new UsageError('give <old.html> <new.html>, or --from <version> [--to <version>]');
     for (const f of files) if (!existsSync(f)) throw new UsageError(`not found: ${f}`);
-    const r = changes(readFileSync(files[0], 'utf8'), readFileSync(files[1], 'utf8'));
-    if (o.json) console.log(JSON.stringify({ files, ops: r.ops, rebuild: r.rebuild, renumbered: r.renumbered, pageWide: r.pageWide, counts: r.counts }, null, 1));
+    const r = changes(readFileSync(files[0], 'utf8'), readFileSync(files[1], 'utf8'), { sources, fromSources });
+    if (o.json) console.log(JSON.stringify({ files, sources: r.sources, ops: r.ops, rebuild: r.rebuild, renumbered: r.renumbered, pageWide: r.pageWide, counts: r.counts }, null, 1));
     else printReport(r, files.map((f) => f.split('/').slice(-2).join('/')));
     process.exit(0);
   } catch (e) {

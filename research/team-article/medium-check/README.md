@@ -34,6 +34,65 @@ the check read that same file, so a kit built before an edit of it shows up as `
 more: the kit build refuses (exit 1, nothing written) an alt over 500 characters or one ending in a cut mark, and
 `kit/render.mjs` alone re-applies the file to an existing `kit.json` (no Chrome) after it changed.
 
+## Sources mode: the Medium version without the Sources section
+
+Owner's decision (T-170 #367, 11 Oct): the Medium version has **no Sources section and no "source" references** for
+now; they come back as real GitHub links once Fastwork approves publishing the source code. The Claude artifact
+(`artifacts/sixteen-milliseconds/index.html`) keeps its Sources section and every reference unchanged. This is a switch,
+`--sources <mode>` on `kit/build.mjs`, `check.mjs`, `model.mjs` and `changes.mjs`, not a hand edit:
+
+| mode | the Medium side |
+|---|---|
+| `none` (default) | no Sources heading, no note paragraphs before the list, no `ol.figsrc`; every `#src-N` link removed with the words and punctuation that exist only for it |
+| `github` (`--github-base <url>`, optional `--sources-map <json>`) | the Sources list stays; each `#src-N` link points to `<base>/<repo path>` from `kit/sources-github.json` (a `src-N` with no path is removed as in `none`, with a warning). Implemented and tested with a fake base; not used yet |
+| `artifact` | the page as it is: what every kit built before the switch contains (a `kit.json` without `sources` counts as `artifact`) |
+
+One function does it for both sides: `lib/sources.mjs` `applySourcesDom` runs on the parsed page in `lib/article.mjs`
+(check, model, changes) and, injected as its source text, on Chrome's DOM in `kit/build.mjs` before the in-page walker,
+so the kit and the check always agree. The build writes the mode and the transform's report into `kit.json`
+(`sources`); `check.mjs` prints `WARN … the kit was built in sources mode X, this run uses Y` when they differ (the
+captions that differ because of it are then also `KIT` stale); `kit/render.mjs` writes the mode into `CHECKLIST.md`
+(step 7 and "Things to know") and lists anything that still reads as a reference. The library functions without a
+sources option (`extractArticle`, `changes`) stay in `artifact` mode, so the artifact's own model does not change. The
+transform never touches anything inside a `.cap-area`: pictures are the same in every mode.
+
+The reference patterns in article v109 (74 `#src-N` links: 71 with the word "source", 3 with "11 Oct"), and what
+`none` makes of them:
+
+| pattern (where) | count | before → after |
+|---|---|---|
+| `(Fig. N; source)` / `(Team N; source)` at the end of a caption | 23 | `… clips (Fig. 1; source)` → `… clips (Fig. 1)` |
+| `(…; source)` after other words: `(table below; source)`, `(Serious set by a tool; source). My taps …`, `(4 runs each, …, before Serious became the rule; source). Clip 3 …` | 3 | `(table below; source).` → `(table below).` |
+| `(Fig. N; source, 11 Oct)`, two links (Fig. 6, 7, 8) | 3 (6 links) | `(Fig. 7; source, 11 Oct). Top:` → `(Fig. 7). Top:` |
+| ` (source).` at the end of a caption, paragraph or list item | 37 | `… real speed (source).` → `… real speed.` |
+| ` (source)` at the end of a caption without a full stop | 2 | `… our own logs (source)` → `… our own logs` |
+| ` (source). More text` inside a paragraph | 2 | `… until the card shows (source). I tried it` → `… until the card shows. I tried it` |
+| footer: `h4` "Sources", the note paragraph "Each figure and clip links to its own entry here…", `ol.figsrc` (44 entries) | 46 blocks | removed |
+| a `(source)` drawn inside a picture: the "If we did it again" cards (`#lessons-numbers`, picture 36) | 1 | **kept**: it is part of the picture, and pictures do not change with the mode (reported in `CHECKLIST.md`; removing it needs an article change) |
+
+General rules (`lib/sources.mjs`): a parenthesis holding only `#src` links goes with the space before it; a `#src`
+run (links joined by commas) after `; ` or `, ` before the closing parenthesis goes with that separator; the same at
+the start (`(source; Fig. 9)` → `(Fig. 9)`) and in the middle (`(a; source; b)` → `(a; b)`). Any other shape (e.g.
+"see <a href="#src-5">the list</a>") is left as it is and reported as a warning ("not removed, no known pattern")
+instead of guessed. In `none` mode the model is also scanned for anything that still reads as a reference (`#src-`,
+"Sources", "(source)", "; source", "see sources"): each is a warning in `check.mjs` and a note in `CHECKLIST.md`.
+
+Kept on purpose, not references (the word "source" as prose, 10 places in v109): "the source code" (disclaimer),
+"the site's compiled source", "a document, the source or a bug report", "the WebKit source" (Day 7 twice, the
+lessons), "the lead had read the source", "read the engine's source" (Day 7, Day 7 decisions), "not yet checked
+against WebKit's source" (Day 11). Also kept: the closing footer note "Draft built from the day-by-day log page …
+Not affiliated with Fastwork." (it comes after the list and is no part of it) and the `hr` before the footer.
+
+`kit/sources-github.json`: `src-N` → repo path, seeded from the first repo path written in each Sources entry
+(`seedMap`), some changed by hand (its `_seeded` note says which); `src-30`, `src-31`, `src-37` have no repo path yet.
+
+```sh
+# the edits that take a draft pasted from a kit with sources to mode none, as a to-do list
+node research/team-article/medium-check/changes.mjs --from 109 --to 109 --from-sources artifact
+# github later: base = the repo's blob URL at the published commit
+node research/team-article/medium-check/kit/build.mjs --sources github --github-base https://github.com/<owner>/<repo>/blob/<ref>
+```
+
 ## After an article update: the owner's commands
 
 From the repo root of the main checkout:
@@ -152,6 +211,13 @@ lines, caption/alt faults, alt cut at the limit, heading level, pull quote, list
 subtitle and disclaimer, link targets, an unproven clip, a cut dump file. `medium-dump.js` also runs end to end in a
 fake browser context (its in-page SHA-256 equals Node's). `changes.mjs` is tested on the fixture and on the committed
 versions (v104 → v105: one paragraph; v105 → v106: pictures 05 and 13 to rebuild, which matches that commit).
+Sources mode (`test/sources.test.mjs`, fixture `article-sources.html` with every reference pattern of v109 plus a
+leading and a middle one, a reference drawn inside a picture and one in an unknown shape): `none` leaves no
+`#src-`/"Sources"/"(source)" in the model and no dangling punctuation, keeps the prose uses of "source" and reports the
+in-picture and unknown ones; `github` links each reference to `<base>/<path>` from a map and keeps the list; no flag
+and `artifact` give the same model as before; the transform's source text runs alone (what the kit injects); a draft
+pasted with sources and checked in `none` lists exactly the source edits; the CLIs' flags and the kit-mode WARN; the
+checklist notes per mode. On the real v109 page: 73 references removed, 46 footer blocks, 1 in a picture, 0 unhandled.
 
 ## Relation to `research/team-article/medium/`
 

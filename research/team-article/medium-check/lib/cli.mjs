@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { sourcesConfig, SourcesError, DEFAULT_MODE, MAP_FILE } from './sources.mjs';
 
 export const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const REPO = resolve(HERE, '..', '..', '..');
@@ -42,6 +43,19 @@ export function parseArgs(argv, spec) {
 }
 
 export class UsageError extends Error {}
+
+// ---- the sources mode (lib/sources.mjs), shared by build.mjs, check.mjs, model.mjs and changes.mjs ----------------
+// --sources none|github|artifact (default none), --github-base <url> (github), --sources-map <json> (github)
+export const SOURCES_SPEC = { sources: 'v', 'github-base': 'v', 'sources-map': 'v' };
+export function sourcesFromArgs(o, key = 'sources') {
+  if (o['sources-map'] && !existsSync(o['sources-map'])) throw new UsageError(`sources map not found: ${o['sources-map']}`);
+  try {
+    return sourcesConfig({ mode: o[key] || DEFAULT_MODE, base: o['github-base'] || null, map: o['sources-map'] || MAP_FILE });
+  } catch (e) {
+    if (e instanceof SourcesError) throw new UsageError(e.message.replace('--sources', '--' + key));
+    throw e;
+  }
+}
 
 /** --help: print the header comment of the calling script (the lines starting with //) and exit 0. */
 export function helpIfAsked(url, argv) {

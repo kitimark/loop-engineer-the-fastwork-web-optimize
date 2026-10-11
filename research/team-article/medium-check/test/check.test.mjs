@@ -168,7 +168,7 @@ test('a dump whose copied text was cut is TRANSFER MISMATCH', () => {
 
 test('check.mjs: exit 0 clean, 1 differences, 2 usage; --json; --html reads a saved page', () => {
   const dir = mkdtempSync(join(tmpdir(), 'mc-check-'));
-  const s = src();
+  const s = extractArticleFile(MINI, { sources: 'none' }); // the CLI's default sources mode (test/sources.test.mjs)
   const clean = join(dir, 'clean.json'), bad = join(dir, 'bad.json'), saved = join(dir, 'saved.html');
   writeFileSync(clean, withTransfer(dumpFromHtml(editorHtml(s))));
   const m = deepCopy(s); C(m, '01').uid = 'ffffffffffffffffffffffffffffffff';
