@@ -85,6 +85,8 @@ case $1 in
         if node tools/thermal.mjs status --owner $O 2>&1 | grep -q '^ACTIVE'; then log "PREP a thermal condition is active: clear it (fair wants none)"; node tools/thermal.mjs clear --owner $O >> $D/RUNLOG.txt 2>&1; fi
         if ! node tools/thermal.mjs status --owner $O 2>&1 | tee -a $D/RUNLOG.txt | grep -q '^NONE'; then log "PREP thermal condition not NONE after clear: stop (the lead's call)"; exit 23; fi
         log "PREP thermal condition NONE"
+        t=$(tC); if node -e "process.exit($t > 37.0 ? 0 : 1)"; then log "PREP cool from $t before the fair profile read"
+          node tools/wait.mjs phone-temp --below 37.0 --every 30 --timeout 2400 --owner $O --reason "phone heat P-068b: cooling before the warm-ups" >> $D/RUNLOG.txt 2>&1; fi
         for a in F B V M; do hcheck $a || exit 21; done
         in_hold "phone heat P-068b warm-ups F B V M" "node tools/iphone.mjs profile --owner $O --profile fair && sh research/phone-heat/p068b.sh warm-inner" >> $D/RUNLOG.txt 2>&1
         rc=$?; log "PREP done exit $rc"; exit $rc;;
@@ -92,6 +94,7 @@ case $1 in
       H1b) segment H1 3 V; segment H1 4 M; reruns H1 5;;
       H2a) segment H2 1 M; segment H2 2 V;;
       H2b) segment H2 3 B; segment H2 4 F; reruns H2 5;;
+      H2r) segment H2 2 V; segment H2 3 B; segment H2 4 F; reruns H2 5;;
       *) echo "part prep|H1a|H1b|H2a|H2b"; exit 2;;
     esac;;
   all)
@@ -104,5 +107,3 @@ case $1 in
     log "ALL DONE";;
   *) sed -n 2,3p "$0"; exit 2;;
 esac
-# padding (keep last): a running 'all' sh resumes reading this file at byte 7354 after its case ends; keep that inside
-############################################################################################################################################################################################################################################################################################################

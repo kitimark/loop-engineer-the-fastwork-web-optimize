@@ -543,3 +543,96 @@ All numbers in this section are OBSERVED (one phone, our setup).
   P-095o) ahead of this block. So the prep now stops unless `thermal.mjs status` reads NONE after a clear (no
   induced condition left), and a segment still above 37.0 °C after the 900 s cooling wait gets one more 900 s wait
   (start mode `cooled-extended`) instead of starting above the window.
+- **Amendment during the prep (00:35Z, before the first sample):** the phone reached this block at real Serious,
+  39.5 °C, after the tool-held blocks before it, and the `fair` profile read refused (exit 8). The prep now cools below
+  37.0 °C before its profile read and the warm-ups (`wait.mjs phone-temp`, 12 min here); restarted in the same hold.
+
+### Result (H1 00:48-01:31Z, H2 01:33-02:14Z, 2026-10-11)
+
+cap-heat-builds ran both sessions in one phone hold (block mark P-068b), attempt 1, battery held at 79-80 % in every
+read (no charging read, no exclusion), thermal state Nominal or Fair at every segment hold's start and end (never
+Serious during a segment). Data stay local in the runner's worktree, `out/p068b/`: `samples.jsonl` (111 samples,
+sha256/12 `556fdf1ff411`), `score.json` (`3218fbb8ab50`), `gates.jsonl`, `RUNLOG.txt`, `seg-<id>.log`. Scored with
+`p068b-score.mjs` (P-068's `scoreSegments`); runner `p068b.sh` sha256/12 `aacb5dc6f7f3`.
+
+**Per segment** (°C; slopes °C/min; corr = corrected to 37.0 °C; idle = 60-180 s, cycles = 210-360 s, descriptive):
+
+| segment | arm | start mode | t0 | t360 | raw | **corr** | idle | cycles | W cycles | thermal start → end | SystemPowerIn median |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| H1-1F | F | cooled | 36.89 | (VOID) | | | | | 2 failed | Fair → (none) | |
+| H1-2B | B | prewarmed (35.89 → 36.19) | 36.29 | 37.79 | +0.262 | **+0.269** | +0.24 | +0.30 | 4 | Fair → Fair | 3116 |
+| H1-3V | V6 | cooled | 36.89 | 37.09 | +0.062 | **+0.057** | +0.04 | +0.08 | 4 | Fair → Nominal | 2059 |
+| H1-4M | M | cooled | 36.79 | 37.00 | +0.065 | **+0.057** | +0.06 | +0.10 | 4 | Nominal → Nominal | 2018 |
+| H1-5F | F (re-run) | cooled | 36.89 | 35.89 | −0.159 | **−0.198** | −0.26 | −0.05 | 5 | Nominal → Nominal | 1088 |
+| H2-1M | M | prewarmed (35.89 → 36.19) | 36.29 | 37.09 | +0.126 | **+0.115** | +0.09 | +0.17 | 4 | Nominal → Fair | 2275 |
+| H2-2V | V6 | direct | 36.69 | 37.19 | +0.110 | **+0.098** | 0.00 | +0.20 | 4 | Nominal → Fair | 1910 |
+| H2-3B | B | cooled | 37.00 | 38.09 | +0.253 | **+0.270** | +0.16 | +0.33 | 4 | Nominal → Fair | 3297 |
+| H2-4F | F | cooled | 37.00 | 35.79 | −0.188 | **−0.221** | −0.22 | −0.18 | 5 | Nominal → Nominal | 1015 |
+
+**Per arm, corrected slope at 37.0 °C (°C/min, H1 / H2) and excess over the floor:**
+
+| arm | H1 / H2 | excess over F, H1 / H2 | predicted (pre-data) | in? |
+|---|---|---|---|---|
+| F floor | −0.198 / −0.221 | 0 | −0.10 [−0.20, +0.05] | H1 in, H2 just below |
+| B original | +0.269 / +0.270 | +0.467 / +0.491 | 0.45 [0.30, 0.65] | **no, below** |
+| V6 (v6) | +0.057 / +0.098 | +0.255 / +0.319 | 0.20 [0.05, 0.35] | yes |
+| M (g0.0m) | +0.057 / +0.115 | +0.255 / +0.336 | 0.05 [−0.10, +0.20] | yes |
+
+**Comparisons** (P-068's ±0.05 rule, both sessions; raw signs agree in every "cooler"):
+
+| pair | dCorr H1 / H2 | dRaw H1 / H2 | reading | predicted |
+|---|---|---|---|---|
+| B − V6 | +0.212 / +0.172 | +0.200 / +0.143 | **V6 runs cooler than B** | |
+| B − M | +0.212 / +0.155 | +0.197 / +0.127 | **M runs cooler than B** | ~85 %: yes |
+| V6 − M | 0.000 / −0.017 | −0.003 / −0.016 | **no detectable change** | "M cooler" ~55 %: no |
+
+- Floor check passes in both sessions (F lowest). The builds remove (B − M) / (B − F) = 45 % (H1) and 32 % (H2) of
+  the original's excess over the floor; v6 removes 45 % / 35 %. Descriptive.
+- System power over F (SystemPowerIn medians, units UNRESOLVED, descriptive): B +2028 / +2282, V6 +971 / +895,
+  M +930 / +1260. Same order as the temperatures (B well above V6 ≈ M).
+- **Reading (OBSERVED, one phone, W driver, at 36-38 °C):** under this routine (3 min idle at the top, then
+  scripted W scrolls to y 5000), g0.0m heats the phone as much as v6. The later work (countdown on the GPU, menu,
+  end of page, people card) is not seen by this routine, plausibly because much of it is at the end of the page or in
+  finger gestures (not checked); at the
+  top of the page v6 and g0.0m idle alike (idle slopes +0.04 / 0.00 vs +0.06 / +0.09).
+
+**B today vs B on 3 Oct (P-068), OBSERVED:**
+
+| | 3 Oct H1 / H2 | 11 Oct H1 / H2 |
+|---|---|---|
+| B corrected | +0.620 / +0.400 | +0.269 / +0.270 |
+| F corrected | −0.085 / −0.105 | −0.198 / −0.221 |
+| **B − F (excess over the floor)** | +0.705 / +0.505 | +0.467 / +0.491 |
+| X (v3) or V6 / M excess | X +0.28 / +0.34 | V6 +0.26 / +0.32, M +0.26 / +0.34 |
+
+- Both arms read lower in absolute terms today, the floor by ~0.11 °C/min: a day-level offset (room, battery state,
+  the hot start after the tool-held blocks; none controlled). Compare days by the excess over F only.
+- On that measure B's H2 agrees within 0.02 °C/min (0.505 vs 0.491). 3 Oct's H1 (0.705) was the pre-warmed segment
+  flagged there (D2); today's H1 B was pre-warmed too, by one W cycle instead of three, and reads 0.467.
+- The snapshot differs (4ad4a84a then, a455e793 now: 6 AVIF thumbnails of the agents-ask list that 3 Oct's mirror
+  missed, in the platform section; whether the W scroll to y 5000 loads them was not checked; no code change). The server differs too (below, D5). No difference
+  in B large enough to see survives the floor correction.
+- For Fig. 6: v3 (3 Oct's X), v6 and g0.0m all sit at an excess of ~0.26-0.34 °C/min, about half of the original's.
+
+**Deviations** (RUNLOG) and whether they matter:
+- **D1: the hot start.** The phone came at real Serious, 39.5 °C, after cap-end-orig's tool-held blocks; it cooled
+  to 37.0 in 12 min before the warm-ups (amendment above). Every segment still started in or just below the window.
+- **D2: H1-1F VOID, F re-run last.** At 150-180 s into H1's first segment the phone link dropped (battery reads failed,
+  three W cycles "fetch failed"); two failed cycles void the segment (README "Validity"). It recovered by itself. The
+  runner re-ran F at the end of H1 (H1-5F), so H1's order became B, V6, M, F: **F ran last in both sessions** (the
+  builds kept the ABC CBA order). F's slope varied little between sessions (−0.198 / −0.221).
+- **D3: H2-2V's first try** refused at its profile read ("state changed during the read", I-186 code 1) before the
+  page opened, no samples; it ran at 01:43Z in the same hold (start direct, 36.79 °C).
+- **D4: two segments pre-warmed** (one uncounted W cycle on B each, 35.89 → 36.19 °C): H1-2B and H2-1M. A pre-warm
+  right before a segment can lift its idle slope (P-068 D2): H1-2B idle +0.24 vs H2-3B +0.16, H2-1M +0.09 vs H1-4M
+  +0.06. The corrected slopes of the pre-warmed and the cooled segment of each arm differ by 0.00 (B) and 0.06 (M).
+- **D5: server and tooling since P-068.** `serve.mjs` now sends `no-cache` + ETag for files production marks
+  immutable (I-131), so every reload revalidates them (P-068 ran with production cache headers); each segment hold
+  now opens with an xctrace thermal read (~20 s, before `open`) and closes with one (after `park`) (I-186); `heat.mjs`
+  passes `--profile fair` to the cycles. The same on every arm today, so within-day comparisons hold; it is one more
+  reason to compare with 3 Oct by the excess over F only.
+- **D6: V6 is served over today's snapshot.** v6 was built and checked on 4ad4a84a; its overlay is JS + CSS only, and
+  the two snapshots differ only in the 6 image files.
+- **D7: no user steps.** The phone settings (Auto-Lock, brightness, Low Power Mode off, position) were not
+  re-confirmed in the console today, and the room was not recorded. Runs carry `--low-power off` as a label.
+- **D8: cycles.** B, V6 and M ran 4 W cycles, F 5 (as P-068's D4: the floor page reloads faster).
