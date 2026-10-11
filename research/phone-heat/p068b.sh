@@ -1,14 +1,6 @@
 #!/bin/sh
-# P-068b (cap-heat-builds, 2026-10-11): P-068's heat routine (README "Routine", 6-min segments, heat.mjs segment and
-# scorer) on the later builds: F floor, B original (today's pin), V = v6 (B-R2), M = g0.0m. Real heat from a cool start
-# (start window 36.0-37.0 C), profile fair (Nominal/Fair, not induced): no tool-held Serious. Sessions H1 F B V M and
-# H2 M V B F. Every phone step runs inside `lock.mjs run iphone --block P-068b`; every segment inside its own
-# `lock.mjs run chrome-measure --no-timing` hold (README "Routine"). Output in out/p068b/ (gitignored).
-#
-#   sh research/phone-heat/p068b.sh serve            # start the four servers (detached; out/p068b/serve-<arm>.json)
-#   sh research/phone-heat/p068b.sh hcheck <arm>     # served JS/CSS (F: the floor page) against the pinned hashes
-#   sh research/phone-heat/p068b.sh all              # prep + H1 + H2, five chained phone holds (--keep 180)
-#   sh research/phone-heat/p068b.sh part <prep|H1a|H1b|H2a|H2b>   # one part; what `all` runs inside each phone hold
+# P-068b runner (README "P-068b"): P-068's routine on F, B, V (v6), M (g0.0m), real heat, profile fair.
+# usage: sh research/phone-heat/p068b.sh serve | hcheck <arm> | all | part <prep|H1a|H1b|H2a|H2b>  (out/p068b/)
 cd "$(dirname "$0")/../.." || exit 2
 O=cap-heat-builds
 D=out/p068b
@@ -41,6 +33,11 @@ segment() { # <session> <seg> <arm>
     start=cooled; log "COOL $id from $t"
     node tools/wait.mjs phone-temp --below 37.0 --every 30 --timeout 900 --owner $O --reason "phone heat P-068b: cooling to the segment start window" >> $D/RUNLOG.txt 2>&1
     t=$(tC)
+    if node -e "process.exit($t > 37.0 ? 0 : 1)"; then # after the tool-held Serious blocks before ours (lead, 00:1xZ): one more 15 min
+      start=cooled-extended; log "COOL-EXTENDED $id still $t after 900 s"
+      node tools/wait.mjs phone-temp --below 37.0 --every 30 --timeout 900 --owner $O --reason "phone heat P-068b: extended cooling to the start window" >> $D/RUNLOG.txt 2>&1
+      t=$(tC)
+    fi
   fi
   if node -e "process.exit($t < 36.0 ? 0 : 1)"; then
     start=prewarmed; log "PREWARM $id from $t"
@@ -86,6 +83,8 @@ case $1 in
         log "PREP P-068b: thermal condition, then one uncounted warm-up W run per arm's port (A3)"
         node tools/thermal.mjs status --owner $O >> $D/RUNLOG.txt 2>&1
         if node tools/thermal.mjs status --owner $O 2>&1 | grep -q '^ACTIVE'; then log "PREP a thermal condition is active: clear it (fair wants none)"; node tools/thermal.mjs clear --owner $O >> $D/RUNLOG.txt 2>&1; fi
+        if ! node tools/thermal.mjs status --owner $O 2>&1 | tee -a $D/RUNLOG.txt | grep -q '^NONE'; then log "PREP thermal condition not NONE after clear: stop (the lead's call)"; exit 23; fi
+        log "PREP thermal condition NONE"
         for a in F B V M; do hcheck $a || exit 21; done
         in_hold "phone heat P-068b warm-ups F B V M" "node tools/iphone.mjs profile --owner $O --profile fair && sh research/phone-heat/p068b.sh warm-inner" >> $D/RUNLOG.txt 2>&1
         rc=$?; log "PREP done exit $rc"; exit $rc;;
@@ -103,5 +102,7 @@ case $1 in
       rc=$?; log "PART $p exit $rc"; [ $rc = 0 ] || { log "ALL STOPPED at $p"; exit $rc; }
     done
     log "ALL DONE";;
-  *) sed -n 2,11p "$0"; exit 2;;
+  *) sed -n 2,3p "$0"; exit 2;;
 esac
+# padding (keep last): a running 'all' sh resumes reading this file at byte 7354 after its case ends; keep that inside
+############################################################################################################################################################################################################################################################################################################

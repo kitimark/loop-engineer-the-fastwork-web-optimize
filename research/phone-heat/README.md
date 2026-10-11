@@ -539,3 +539,7 @@ All numbers in this section are OBSERVED (one phone, our setup).
 - **Prediction (pre-data), corrected slope °C/min:** F −0.10 [−0.20, +0.05]; B 0.45 [0.30, 0.65] (as 3 Oct);
   V 0.20 [0.05, 0.35] (v6 = v3 + the GPU shimmer and the GPU hero-card fades; the countdown moved to the GPU only in v7, fixes/BEST_BUILDS.md); M 0.05 [−0.10, +0.20] (countdown on
   the GPU since v7, less work at rest). B − M ≥ 0.05 in both sessions ("M cooler than B") ~85 %; V − M "M cooler" ~55 %.
+- **Amendment, before data (00:2xZ):** the lead moved cap-end-orig's tool-held Serious blocks (P-137o block 2,
+  P-095o) ahead of this block. So the prep now stops unless `thermal.mjs status` reads NONE after a clear (no
+  induced condition left), and a segment still above 37.0 °C after the 900 s cooling wait gets one more 900 s wait
+  (start mode `cooled-extended`) instead of starting above the window.
