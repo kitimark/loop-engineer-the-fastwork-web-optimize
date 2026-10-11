@@ -214,7 +214,7 @@ deceleration (WKContentView / UIScrollView touch handling in github.com/WebKit/W
   :20-:27, driver at :40). Block U1 10:51-10:59Z, Serious 37.4 -> 38.9 C, no drift. The page passes the title (rest y
   946-1253 vs the user's 638-781). Each run takes 28-30 s vs the user's 17.7 s, because each robot stroke starts
   ~0.5-1.3 s after it is sent.
-- v2 `g-ar-herofinger-v2.json` (hash 941a8498065f): the same flings plus a catch after each down-the-page fling. The
+- v2 `g-ar-herofinger-v2.json` (compiled hash 13b7b2c21740 as run; 941a8498065f was an earlier dry run before s10 became 146 ms; correction 2026-10-11): the same flings plus a catch after each down-the-page fling. The
   robot cannot copy the tap itself: a stroke is >= 40 px, a down stroke waits for a still page, and the tool sent each
   catch 2.0-2.5 s after the fling's lift (the gesture runner's page checks between strokes). So the catches (40 px up,
   80 ms press, 150 ms hold, no momentum) land on a page that has already come to rest. The stop positions come from
@@ -358,3 +358,84 @@ longest frame among the reveal frame and the 3 frames on each side of it (P-175'
   the flick window is the same).
 
 Files: `rf.sh` / `rf-read.mjs` (cap-end-orig), driver `d11-go.sh` part 1; reader output out/wc/rf-read.json.
+
+## Day 11: the swipe replay and the 9 Oct slow drags on three builds: original, g0.0l, g0.0m (2026-10-11)
+
+Owner: cap-end-openclose (phone runner), same kit and worktree. Three arms in one block: O = the original page (baseline
+snapshot, JS 4606120cf392 / CSS 27776f3d4138), L = g0.0l (4106679e0a8a / 440582cec781), M = g0.0m (37af49aef32b /
+7a8ecdd8f8e4). L and M are served from out/g0-0m/snap (HASHES e7947589f4c9, built from main's patches). Hashes were
+checked before every run. All numbers OBSERVED, iPhone 15 Pro Max, one morning, 2 runs per build per input:
+illustration, not a counted verdict.
+
+**Block** (`d11-go.sh`, `tri-serve.sh`, `tri-hold.sh`, `tri-block.sh`, kit committed before any data; 04:30-05:15Z, right
+after the reveal flick in the same phone session). Tool-held Serious, the same as the 9 Oct and 10 Oct runs: prep P0
+cooled below 40 °C, ran `iphone.mjs rearm` and one uncounted warm-up flick per port. The hold's thermal reads were
+Serious 37.3 -> 40.0 °C. The runner cooled the phone once, before the middle holds (40.0 -> 38.0 °C in 5 min,
+`phone-temp --below auto`). No drift, no Critical, no run lost. Rotations: each build first, middle and last once per
+input. Every run was screen-recorded (as on 9 Oct). Do Not Disturb (moon) shows in the status-bar strip of all 34 Day 11
+recordings, with no notification. At the end: Safari parked, servers stopped. The runner's `thermal.mjs clear`
+failed once ("RSD … closed the connection"); the retry inside a new phone hold found no active condition.
+Reader: `wc-read.mjs`, windows exactly as 9 / 10 Oct (`out/wc/read.json`).
+
+**1. The user's swipe replay** (input: `g-ar-herofinger-v2.json`, compiled 13b7b2c21740, the 10 Oct -herocatch program:
+the user's hero flings plus a catch after each down-the-page fling; clock-aligned recorder; window mark finger -> mark end).
+Names -ar-herocatch3-<arm>.
+
+| run | build | thermal (hold) | frames | > 34 (30/38) | > 50 (46/54) | worst |
+|---|---|---|---|---|---|---|
+| 043030Z | O original | Serious 37.6 -> 38.8 | 1281 | 263 (299/231) | 141 (176/120) | 154 ms |
+| 043242Z | L g0.0l | Serious 37.6 -> 38.8 | 1822 | 20 (33/14) | 4 (7/3) | 57 ms |
+| 043422Z | M g0.0m | Serious 37.6 -> 38.8 | 1791 | 20 (32/10) | 3 (4/3) | 70 ms |
+| 043641Z | M g0.0m | Serious 38.8 -> 39.5 | 1799 | 20 (35/14) | 2 (3/1) | 58 ms |
+| 043840Z | L g0.0l | Serious 38.8 -> 39.5 | 1818 | 26 (39/17) | 6 (10/4) | 67 ms |
+| 044022Z | O original | Serious 38.8 -> 39.5 | 1324 | 265 (322/228) | 156 (178/136) | 184 ms |
+
+10 Oct, same input: original 265, 254 / 127, 134; g0.0m 40, 21 / 6, 2 (> 34 / > 50). Today the original is at the same
+level and g0.0m is at the low end of its 10 Oct range. g0.0l and g0.0m don't differ on this input (20-26 vs 20, > 50 4-6 vs 2-3).
+
+**2. The 9 Oct slow drags** (same programs and windows as 9 Oct):
+- hero: `hero-fade-v1.json` (0ce8d22e12c6), 12 s at rest at the top ("rest", the countdown), then 3 slow drags through
+  the hero cards' fade-out ("fade"); recorder clock-aligned.
+- middle: `g-approach-g0l.json` (65f6de58009c), slow drags to y >= 3,400. Windows by page y: people deck 1000-1700, dark
+  section 1850-2100, #platform switch 2500-2760, and "all" (approach -> approach-end).
+- people: `g-flick-g0l.json` (22b636f36a82), one fast flick that lands on the people deck, then 3 s (window flick -> flick-end).
+- carousel (optional, it fit): `g-ar-carousel-v1.json` (cca86c6f758c), scroll to the #people pill (y ~1,710), then 12 s at rest.
+
+Each cell is > 34 (30/38) / > 50 (46/54) / worst ms, one per run, in run order.
+
+| input, window | O original | L g0.0l | M g0.0m |
+|---|---|---|---|
+| hero, rest (12 s) | 7 (10/6) / 3 (4/3) / 56; 8 (11/6) / 1 (1/0) / 53 | 0 / 0 / 28; 1 (1/1) / 0 / 43 | 1 (2/1) / 0 / 45; 1 (2/1) / 0 / 43 |
+| hero, fade (3 slow drags) | 51 (83/34) / 14 (18/11) / 102; 91 (108/77) / 40 (55/34) / 135 | 3 (6/1) / 1 (1/1) / 55; 7 (11/5) / 4 (4/2) / 89 | 4 (8/1) / 0 / 41; 6 (7/4) / 2 (3/2) / 82 |
+| middle, deck y 1000-1700 | 56 (62/45) / 31 (33/28) / 250; 26 (37/13) / 7 (8/7) / 140 | 0 (1/0) / 0 / 31; 1 (1/0) / 0 / 37 | 0 / 0 / 28; 1 (5/0) / 0 / 36 |
+| middle, dark y 1850-2100 | 29 (29/29) / 13 (15/13) / 137; 32 (33/32) / 28 (28/28) / 320 | 0 (1/0) / 0 / 32; 1 (2/0) / 0 / 36 | 0 (1/0) / 0 / 34; 1 (2/0) / 0 / 37 |
+| middle, switch y 2500-2760 | 2 (2/1) / 0 / 42; 2 (4/1) / 0 (1/0) / 50 | 0 (1/0) / 0 / 34; 0 / 0 / 28 | 0 (1/0) / 0 / 31; 0 (1/0) / 0 / 31 |
+| middle, all (top -> y 3400) | 114 (130/95) / 53 (61/49) / 250; 84 (113/66) / 44 (46/43) / 320 | 5 (9/3) / 1 (1/0) / 51; 6 (9/2) / 1 (1/0) / 51 | 3 (6/1) / 0 / 42; 5 (12/3) / 0 (1/0) / 48 |
+| people, one flick | 27 (42/18) / 8 (11/4) / 105; 39 (52/36) / 26 (29/20) / 141 | 4 (4/3) / 0 (1/0) / 50; 5 (5/4) / 0 (1/0) / 48 | 3 (5/3) / 0 (1/0) / 49; 3 (3/1) / 1 (1/1) / 55 |
+| carousel, rest (12 s) | 22 (29/9) / 1 (1/0) / 52; 28 (34/16) / 2 (5/2) / 59 | 0 / 0 / 22; 0 / 0 / 22 | 0 / 0 / 17; 0 / 0 / 22 |
+
+Runs (out/iphone-screen/ and out/wc/runs/, `20261011T` + time): hero 044616Z, 044836Z orig / 044247Z, 045216Z g0l /
+044433Z, 045035Z g0m; middle 050046Z, 050349Z orig / 050135Z, 050244Z g0l / 045936Z, 050441Z g0m; people 050549Z,
+050904Z orig / 050633Z, 050828Z g0l / 050709Z, 050744Z g0m; carousel 051004Z, 051425Z orig / 051103Z, 051326Z g0l /
+051153Z, 051238Z g0m (names -wc-hero|middle|people-<arm>, -ar-carousel-<arm>). Thermal (hold reads): hero Serious 39.6 -> 40.0,
+middle 37.8 -> 38.8, people 38.9 -> 39.2, carousel 39.2 -> 39.7 °C.
+
+- **Against 9 Oct** (clean runs, table "Headline" above; same programs, windows, profile and kit): the original and g0.0l
+  land where they did. Hero fade: original 46, 88 then vs 51, 91 now (> 34); g0.0l 4, 6 vs 3, 7. Whole middle approach:
+  original 93, 104 vs 114, 84; g0.0l 5, 4 vs 5, 6. People flick: original 19 (one run) vs 27, 39; g0.0l 4, 3 vs 4, 5. So
+  today's g0.0m rows can stand beside the 9 Oct section.
+- **g0.0m vs g0.0l on these inputs:** about level. Slow drags and the flick count 0-7 frames over 34 ms on both, and 0-4
+  over 50 ms. The only window where g0.0m is lower on both runs is > 50 in the whole middle approach (0, 0 vs 1, 1), one
+  frame per run (g0.0l's 51 ms frame at y ~610, the people card's reveal, see the 9 Oct notes). Read it as a hint, n = 2.
+  The reveal itself is item "Day 11 reveal flick" above.
+- **Threshold-sensitive:** every g0.0l-vs-g0.0m difference flips with the ±4 ms twins (e.g. middle all > 34: 5, 6 vs 3, 5,
+  but > 30: 9, 9 vs 6, 12). Original vs the new builds holds at every twin, except the small > 50 counts in the #platform
+  switch (0, 0 vs 0, 0; > 46: 0, 1 vs 0, 0) and the carousel rest (1, 2 vs 0, 0; > 54: 0, 2 vs 0, 0), as on 9 Oct.
+- **Mac load:** load1 at run start was 4.9-17.2 for most runs. During carousel 051326Z g0l (start 10.4, end 30.4) and
+  051425Z orig (start 38.4, end 24.9) something else loaded the Mac. Both runs' counts match their twins (0 / 0 and 28 vs
+  22), so they are kept. This is noted because the recorder delivered 56.1 fps there (58.8-60 elsewhere).
+
+Files: `tri-serve.sh`, `tri-hold.sh` (ar-hold.sh with three arms; item w -> -ar-herocatch3-), `tri-block.sh` (cooling between
+holds, re-run after a hot stop), `d11-go.sh` (prep, reveal flick, swipe replay, slow drags, park, thermal clear);
+`wc-read.mjs` / `wc-offsets.mjs` accept digits in case names. Logs: out/wc/d11-block.log, out/wc/d11-*.log; status-bar
+strips out/wc/d11-statusbar/.
