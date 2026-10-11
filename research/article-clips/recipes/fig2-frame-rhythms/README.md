@@ -62,11 +62,13 @@ ffmpeg -nostdin -v error -y -framerate 60 -start_number 0 -i out/fig2-frame-rhyt
   -r 60 -fps_mode cfr -movflags +faststart -an <main checkout>/out/article-video/fig2-frame-rhythms-60fps.mp4
 ```
 
-Upload (the owner's step, with the owner's token; the script takes any clip name, also one outside its ALL list):
+Upload (the owner's step, with the owner's token). The clip is first in the script's ALL list (Fig. 2 comes before the
+first clip on the page), and the script is safe to run again (T-170 #349): clips whose row says ready=true are skipped,
+a clip already on Stream is reused instead of uploaded twice, so a plain run uploads only this one:
 
 ```sh
-sh research/article-clips/upload-cf-stream.sh --dry-run fig2-frame-rhythms-60fps
-sh research/article-clips/upload-cf-stream.sh fig2-frame-rhythms-60fps
+sh research/article-clips/upload-cf-stream.sh --dry-run      # with the token set: "would upload fig2-frame-rhythms-60fps", 19 skips
+sh research/article-clips/upload-cf-stream.sh                # or name just this clip: ... upload-cf-stream.sh fig2-frame-rhythms-60fps
 ```
 
 ## Checks (`run.sh` prints them; `RERUN=1` adds the determinism check)
