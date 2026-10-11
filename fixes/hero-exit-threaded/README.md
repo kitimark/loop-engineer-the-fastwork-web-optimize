@@ -1014,6 +1014,100 @@ after P-091, ahead of P-092 / P-093 / P-094 (hero is top-1, T-035 / T-046).
 - **Files.** The runner's `out/p095/` (BLOCKLOG, holds/gates/runs.jsonl). Scores are in `out/hext/p095/scoreF.json`,
   `framesF.json` and `out/hext/p095-score.log`; the Mac load read is in `p095mac.mjs`.
 
+### P-095o: the original next to v4 and v6 on P-095's hero script, 2026-10-11 (for the article's Fig. 7; OBSERVED)
+
+Runner cap-end-orig, on the lead's request (the user wants the original in Fig. 7 next to P-095's v4 "C" and v6 "V").
+One block in the same phone hold as end-bg's P-137o, 03:47-04:20Z. Kit committed before any data: `p095o/` (serve.sh,
+hold.sh, block.sh, read.mjs; 9ce5d041, with the heat step from 5746e088). Read:
+`node fixes/hero-exit-threaded/p095o/read.mjs <runner>/out/p095o/runs`.
+
+- **Arms** (served JS/CSS hashed before every item, plain http, `--vendors=local --latency 150`, today's baseline
+  b1789284481295-a455e793):
+  - O = the original (no overlay, JS 4606120cf392 / CSS 27776f3d4138);
+  - C = v4 = best-build (`best-A-65052c4a3902`, CSS e0f92804c521);
+  - V = v6 = B-R2 (`best-BR2-8018ce062d30`, CSS 71b65c667720).
+  - C and V are copied read-only from fix-hero-exit-threaded's snapshots.
+- **Kept from the P-095 card:**
+  - driver G, `gestures/hero-pass-v1.json` (compiled c414f67158e3, as on 4 Oct);
+  - Timeline on in counted runs, band y 1..780;
+  - scoreF.mjs's void rules plus LPM per run (no run was void);
+  - the frame scorer framesF.mjs, unchanged (40d0d302c3f1);
+  - sentinels S0/S1 on C with `iphone.mjs run --driver scroll --heat-sentinel` (bottom ≥ 58, scroll ≥ 44).
+- **Deviations:**
+  1. Three arms, so the order is a rotated 3-arm Latin square: O C V | C V O | V O C, 3 counted runs per arm.
+  2. **Heat profile.** 4 Oct (P-095) ran at REAL thermal Serious, 41.4-42.5 °C. Today ran at Xcode's Serious device
+     condition, held by the thermal tool (`iphone.mjs rearm`). The gate is thermal-gate.mjs `--accept-induced` at the
+     phone hold's edges. Before each Mac hold a heat step ran: a re-arm when the phone reads Critical, then cooling
+     below 39 °C. The battery stayed at 38.6-39.6 °C.
+  3. **The two days never pool:** different profiles and different snapshots (4 Oct: -4ad4a84a). Compare only within
+     today's block.
+  4. One warm-up per arm, then S0, in the first hold, right after end-bg's block (no cooling wait between the blocks,
+     lead).
+  5. O's writer line for scoreF's writer share is the baseline's `s` at JS 4163. That share is reported only.
+- **Block:**
+  - 5/5 holds VALID, no void runs, no re-runs.
+  - S0 PASS (bottom 60, scroll 59) and S1 PASS (60 / 59.1).
+  - Start gate: Serious, induced, 39.6 °C. End gate: Serious, induced, 38.7 -> 38.6 °C.
+  - Mac load1 3.2-6.4 at run starts.
+  - The condition was cleared afterwards (`thermal.mjs clear`: NONE) and Safari was parked.
+
+**Band frames (moving frames, y 1..780) per run.** Heat in the run records is the hold's start and end read: Serious,
+38.8-38.9 -> 39.1 °C in every hold.
+
+| run | arm | frames | > 30 | **> 34** | > 38 | > 46 | **> 50** | > 54 | writer share |
+|---|---|---|---|---|---|---|---|---|---|
+| O1 | O | 541 | 50 | **25** | 16 | 8 | **5** | 3 | 0.791 |
+| C1 | C | 540 | 31 | **17** | 6 | 3 | **3** | 2 | 0.746 |
+| V1 | V | 541 | 29 | **13** | 7 | 4 | **2** | 1 | 0.017 |
+| C2 | C | 541 | 34 | **18** | 5 | 0 | **0** | 0 | 0.745 |
+| V2 | V | 578 | 18 | **6** | 6 | 2 | **1** | 0 | 0.016 |
+| O2 | O | 524 | 49 | **31** | 22 | 9 | **7** | 4 | 0.761 |
+| V3 | V | 568 | 17 | **7** | 6 | 3 | **3** | 2 | 0.018 |
+| O3 | O | 504 | 60 | **41** | 21 | 11 | **9** | 5 | 0.724 |
+| C3 | C | 557 | 38 | **18** | 6 | 3 | **3** | 2 | 0.781 |
+
+**Per arm.**
+
+| | O (original) | C (v4) | V (v6) |
+|---|---|---|---|
+| > 34 per run | 25, 31, 41 | 17, 18, 18 | 13, 6, 7 |
+| > 34 median | **31** | **18** | **7** |
+| > 50 per run | 5, 7, 9 | 3, 0, 3 | 2, 1, 3 |
+| > 50 median | **7** | **3** | **2** |
+
+**Comparisons** (the same range rule as P-137o; BETTER = the ranges do not touch):
+- **C vs O, > 34: BETTER.** 17-18 against 25-41.
+  - The > 30 twin says BETTER. The > 38 twin says BETTER with the median at most half (6 vs 21), so the >34 word is
+    "threshold-sensitive" only in how strong it is. All three thresholds point the same way.
+  - At > 50: BETTER, median at most half (0-3 vs 5-9).
+- **V vs O: BETTER, median at most half** at > 34 (6-13 vs 25-41), at both twins, and at > 50 (1-3 vs 5-9).
+- **V vs C, P-095's own pair:**
+  - At > 34: BETTER, median at most half (6-13 vs 17-18). The > 38 twin overlaps (6-7 vs 5-6), so this is
+    threshold-sensitive.
+  - At > 50: OVERLAP (1-3 vs 0-3).
+  - P-095's delta line (median V − median C): > 34 −11, > 50 −1. On 4 Oct it was −15 and −1.
+- Writer share: O 0.72-0.79 and C 0.75-0.78 (the per-frame writer runs on both), V 0.016-0.018 (R2's CSS path is
+  active). The same split as P-095's a-C / a-V lines.
+- Per moving frame (scoreF), O has the most style work (S 4.0-4.2 vs C 2.3-2.4, V 1.7). C has the most paint area
+  (Ppx 179-193 k vs O 92-98 k, V 64-70 k).
+
+**Today against 4 Oct** (descriptive; different heat profile and snapshot):
+- C: 27, 37, 22 on 4 Oct; 17, 18, 18 today. The ranges are apart, lower today.
+- V: 26, 8, 12 on 4 Oct; 13, 6, 7 today. The ranges overlap.
+- The hotter real-Serious phone on 4 Oct (41-42.5 °C) is the likely reason C was higher then. That cause is
+  UNRESOLVED: no same-day check was made.
+
+**For Fig. 7.** Show today's three arms from this one block, slow hero-band frames over 34 ms per run:
+
+| arm | per run | median |
+|---|---|---|
+| original | 25, 31, 41 | 31 |
+| v4 | 17, 18, 18 | 18 |
+| v6 | 13, 6, 7 | 7 |
+
+Over 50 ms: 5-9 / 0-3 / 1-3. Keep 4 Oct's P-095 numbers (27/37/22 vs 26/8/12) as their own panel or a footnote. They
+are real heat, today is induced Serious, so the two days should not share one axis.
+
 ### Blind finger swipe A/B: best-build (A) vs B-R2 (B), driver F (2026-10-04 07:13-07:22Z)
 
 Key drawn 03:29:16Z before any step; run by iphone-runner (`swipehx.mjs`, `iphone.mjs record`), plain-http twins with
