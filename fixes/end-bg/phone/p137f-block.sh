@@ -27,6 +27,7 @@ fi
 hold() { # H items...
   h=$1; shift
   [ -e $LG/hold-$h.log ] && mv $LG/hold-$h.log $LG/hold-$h.log.prev-$(date +%s)
+  if [ "$P137F_DRY" != 1 ]; then sh fixes/end-bg/phone/heat-step.sh "$R" $LG/runs $h; hs=$?; [ $hs -eq 0 ] || { echo "$h heat step exit $hs (re-arm failed)"; return 5; }; fi   # heat step in the phone hold, before the Mac hold (2026-10-11)
   if [ "$P137F_DRY" = 1 ]; then P137F_GATE=$GMODE sh $HS $h "$@" > $LG/hold-$h.log 2>&1; e=$?
   else P137F_GATE=$GMODE node tools/lock.mjs run chrome-measure --owner "$R" --no-timing --max-seconds 600 --doing "P-137o $h: $* (original / pictures on / pictures off, end of page, phone)" -- \
       caffeinate -i -s sh $HS $h "$@" > $LG/hold-$h.log 2>&1; e=$?; fi
@@ -59,5 +60,13 @@ for spec in "$@"; do
     else run1 0 $H ${R1}r ${R2}r; N=H$(( ${H#H} + 1 )); run1 $LAST $N S1; fi
   else run1 $LAST $H $items; fi
 done
-[ "$P137F_CLEAR" = 1 ] && [ "$P137F_DRY" != 1 ] && clear_cond
+[ "$P137F_CLEAR" = 1 ] && [ "$P137F_DRY" != 1 ] && [ ! -e $LG/NO_CLEAR ] && clear_cond   # NO_CLEAR (lead 00:1xZ): P-095o follows back to back on the same condition
 echo "BLOCK PART DONE: $*"
+# THEN_P095O (lead 2026-10-11 00:1xZ: block 2 and P-095o back to back on the same tool-held condition, one phone hold):
+# after a complete block 2, the hold's mark becomes P-095o and P-095o's driver runs here; it clears the condition at its end.
+if [ -e $LG/THEN_P095O ] && [ "$P137F_DRY" != 1 ]; then
+  node tools/lock.mjs doing iphone --owner "$R" --block P-095o > /dev/null 2>&1
+  echo "P-095o start $(date -u +%TZ) (log out/p095o/block.log)"
+  TICKET=P-095o P095O_CLEAR=1 sh fixes/hero-exit-threaded/p095o/block.sh H1:wO,wC,wV,S0 H2:O1,C1,V1 H3:C2,V2,O2 H4:V3,O3,C3 H5:TAIL > out/p095o/block.log 2>&1
+  echo "P-095o exit $? $(date -u +%TZ): $(tail -1 out/p095o/block.log)"
+fi

@@ -29,6 +29,7 @@ fi
 hold() { # H items...
   h=$1; shift
   [ -e $LG/hold-$h.log ] && mv $LG/hold-$h.log $LG/hold-$h.log.prev-$(date +%s)
+  if [ "$P095O_DRY" != 1 ]; then sh fixes/end-bg/phone/heat-step.sh "$R" $LG/runs $h; hs=$?; [ $hs -eq 0 ] || { echo "$h heat step exit $hs (re-arm failed)"; return 5; }; fi   # heat step in the phone hold, before the Mac hold (2026-10-11)
   if [ "$P095O_DRY" = 1 ]; then P095O_GATE=$GMODE sh $HS $h "$@" > $LG/hold-$h.log 2>&1; e=$?
   else P095O_GATE=$GMODE node tools/lock.mjs run chrome-measure --owner "$R" --no-timing --max-seconds 600 --doing "P-095o $h: $* (original vs v4 vs v6, hero, phone)" -- \
       caffeinate -i -s sh $HS $h "$@" > $LG/hold-$h.log 2>&1; e=$?; fi
