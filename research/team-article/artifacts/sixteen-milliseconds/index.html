@@ -1524,8 +1524,9 @@ table.rec td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; w
   }
   function draw(now) {
     const t = now - start;
-    if (t >= nextAt) { beforeT = t; nextAt = t + gaps[gi % gaps.length]; gi++; }
-    if (t >= wNext) { worstT = t; wNext = t + worst[wi % worst.length]; wi++; }
+    // 4 ms slack: display frames are 16.67 ms (60 Hz) or 8.33 ms (120 Hz) apart, so a 16.7 ms gap must not wait a whole extra frame
+    if (t >= nextAt - 4) { beforeT = t; nextAt = t + gaps[gi % gaps.length]; gi++; }
+    if (t >= wNext - 4) { worstT = t; wNext = t + worst[wi % worst.length]; wi++; }
     ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = css('--ink'); ctx.font = '700 28px ' + css('--display');
     ctx.fillText('Same thumb, three frame rhythms', 80, 46);
