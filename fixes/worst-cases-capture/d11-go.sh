@@ -10,6 +10,8 @@
 #      optional carousel rest (c) only while the block so far took <= OPT_MAX_MIN (default 45) minutes
 #   end: park Safari, `thermal.mjs clear` (inside a phone hold), stop the servers
 # Rotations (each arm first, middle and last once per item group): w O L M M L O; h L M O O M L; m M O L L O M; p O L M M L O.
+# The first phone hold waits in the queue up to D11_QUEUE_S (default 21600 s = 6 h; lock.mjs run's own default, 3600 s,
+# timed out behind two long blocks on 2026-10-11 01:37Z); a queue time-out ends the runner without the finish step.
 # usage (in the background, from anywhere): sh fixes/worst-cases-capture/d11-go.sh [--from 1|2|3]
 cd "$(dirname "$0")/../.." || exit 2
 export FW_AGENT=${FW_AGENT:-cap-end-openclose} WC_FOCUS_STEP=skip FW_PHONE_CONDITION=tool
@@ -28,12 +30,12 @@ log "== d11 start $(date -u +%FT%TZ) from part $FROM"
 sh $D/tri-serve.sh >> $L 2>&1 || { log "servers failed"; finish 4; }
 # the phone comes after other agents' heat runs: a prep that could not cool below 40 C in 10 min (exit 6) tries once more
 for P in P0 P0b; do
-  node tools/lock.mjs run iphone --owner $R --max-seconds 900 --keep 120 --doing "Day 11 captures: cool below 40 C, rearm (tool Serious), warm-ups" -- \
+  node tools/lock.mjs run iphone --owner $R --timeout ${D11_QUEUE_S:-21600} --max-seconds 900 --keep 120 --doing "Day 11 captures: cool below 40 C, rearm (tool Serious), warm-ups" -- \
     sh $D/tri-hold.sh $P --prep > out/wc/d11-$P.log 2>&1
   e=$?; grep -v http out/wc/d11-$P.log | tail -7 | tee -a $L
   [ $e -eq 6 ] || break
 done
-[ $e -eq 0 ] || { log "P0 prep exit $e: no block"; finish 4; }
+[ $e -eq 0 ] || { log "P0 prep exit $e: no block"; grep -q "timed out after" out/wc/d11-$P.log && { sh $D/tri-serve.sh stop >> $L 2>&1; log "D11 EXIT 3 queue time-out $(date -u +%FT%TZ)"; exit 3; }; finish 4; }
 if [ "$FROM" -le 1 ]; then
   log "== part 1 reveal flick $(date -u +%TZ)"
   node tools/lock.mjs run iphone --owner $R --max-seconds 900 --keep 120 --doing "Day 11 reveal flick: g0.0l vs g0.0m, A V V A (screen recording)" -- \
