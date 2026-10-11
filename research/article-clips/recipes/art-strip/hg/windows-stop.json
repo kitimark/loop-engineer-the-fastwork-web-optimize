@@ -1,0 +1,24 @@
+[
+ {
+  "id": "hero-gesture-stop-3x-A",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261010T110844Z-ar-herocatch-orig.mov",
+  "ss": 42.614,
+  "mode": "grid",
+  "a": 0,
+  "n": 96,
+  "W": 1010,
+  "SH": 100,
+  "pw": 3
+ },
+ {
+  "id": "hero-gesture-stop-3x-B",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261010T111222Z-ar-herocatch-g0m.mov",
+  "ss": 25.348,
+  "mode": "grid",
+  "a": 0,
+  "n": 96,
+  "W": 1010,
+  "SH": 100,
+  "pw": 3
+ }
+]

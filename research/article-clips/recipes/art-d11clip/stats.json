@@ -1,0 +1,94 @@
+[
+ {
+  "id": "day11-reveal-60fps-A",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261011T042723Z-ar-revealflick-g0l.mov",
+  "ss": 36.4333,
+  "mode": "grid",
+  "a": 0,
+  "n": 314,
+  "W": 645,
+  "SH": 96,
+  "pw": 3,
+  "png": "$SCRATCH/art-d11clip/strips/day11-reveal-60fps-A.png",
+  "M0": 36.44167,
+  "D": 5.3,
+  "gt34": 3,
+  "gt50": 0,
+  "gt100": 0,
+  "max": 47,
+  "halfRttMs": [
+   1.0,
+   3.5
+  ],
+  "chain": "rf: perf->wall (driver sync) -> uptime (linear fit of 18 stamps 04:31-04:43Z, slope -0.46 ms/min, max residual 0.00 ms, extrapolated) -> PTS"
+ },
+ {
+  "id": "day11-reveal-60fps-B",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261011T042826Z-ar-revealflick-g0m.mov",
+  "ss": 12.17,
+  "mode": "grid",
+  "a": 0,
+  "n": 317,
+  "W": 645,
+  "SH": 96,
+  "pw": 3,
+  "png": "$SCRATCH/art-d11clip/strips/day11-reveal-60fps-B.png",
+  "M0": 12.17833,
+  "D": 5.3,
+  "gt34": 1,
+  "gt50": 0,
+  "gt100": 0,
+  "max": 42,
+  "halfRttMs": [
+   2.0,
+   4.0
+  ],
+  "chain": "rf: perf->wall (driver sync) -> uptime (linear fit of 18 stamps 04:31-04:43Z, slope -0.46 ms/min, max residual 0.00 ms, extrapolated) -> PTS"
+ },
+ {
+  "id": "day11-reveal-2x-A",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261011T042723Z-ar-revealflick-g0l.mov",
+  "ss": 36.4333,
+  "mode": "grid",
+  "a": 0,
+  "n": 87,
+  "W": 796,
+  "SH": 112,
+  "pw": 3,
+  "png": "$SCRATCH/art-d11clip/strips/day11-reveal-2x-A.png",
+  "M0": 36.44167,
+  "D": 1.5,
+  "gt34": 2,
+  "gt50": 0,
+  "gt100": 0,
+  "max": 47,
+  "halfRttMs": [
+   1.0,
+   3.5
+  ],
+  "chain": "rf: perf->wall (driver sync) -> uptime (linear fit of 18 stamps 04:31-04:43Z, slope -0.46 ms/min, max residual 0.00 ms, extrapolated) -> PTS"
+ },
+ {
+  "id": "day11-reveal-2x-B",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261011T042826Z-ar-revealflick-g0m.mov",
+  "ss": 12.17,
+  "mode": "grid",
+  "a": 0,
+  "n": 89,
+  "W": 796,
+  "SH": 112,
+  "pw": 3,
+  "png": "$SCRATCH/art-d11clip/strips/day11-reveal-2x-B.png",
+  "M0": 12.17833,
+  "D": 1.5,
+  "gt34": 1,
+  "gt50": 0,
+  "gt100": 0,
+  "max": 42,
+  "halfRttMs": [
+   2.0,
+   4.0
+  ],
+  "chain": "rf: perf->wall (driver sync) -> uptime (linear fit of 18 stamps 04:31-04:43Z, slope -0.46 ms/min, max residual 0.00 ms, extrapolated) -> PTS"
+ }
+]

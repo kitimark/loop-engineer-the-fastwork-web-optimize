@@ -1,0 +1,17 @@
+[0:v]setpts=PTS-STARTPTS,fps=60,trim=end_frame=432,setpts=PTS-STARTPTS,crop=1290:2295:0:162,scale=188:334:flags=lanczos,setsar=1,split=6[x00][x01][x02][x03][x04][x05];
+[x00]trim=start_frame=0:end_frame=1,setpts=PTS-STARTPTS,pad=196:362:4:28:color=white,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='0 ms':x=(w-tw)/2:y=6:fontsize=16:fontcolor=0x444444[y00];
+[x01]trim=start_frame=84:end_frame=85,setpts=PTS-STARTPTS,pad=196:362:4:28:color=white,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='1400 ms':x=(w-tw)/2:y=6:fontsize=16:fontcolor=0x444444[y01];
+[x02]trim=start_frame=180:end_frame=181,setpts=PTS-STARTPTS,pad=196:362:4:28:color=white,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='3000 ms':x=(w-tw)/2:y=6:fontsize=16:fontcolor=0x444444[y02];
+[x03]trim=start_frame=324:end_frame=325,setpts=PTS-STARTPTS,pad=196:362:4:28:color=white,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='5400 ms':x=(w-tw)/2:y=6:fontsize=16:fontcolor=0x444444[y03];
+[x04]trim=start_frame=336:end_frame=337,setpts=PTS-STARTPTS,pad=196:362:4:28:color=white,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='5600 ms':x=(w-tw)/2:y=6:fontsize=16:fontcolor=0x444444[y04];
+[x05]trim=start_frame=390:end_frame=391,setpts=PTS-STARTPTS,pad=196:362:4:28:color=white,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='6500 ms':x=(w-tw)/2:y=6:fontsize=16:fontcolor=0x444444[y05];
+[y00][y01][y02][y03][y04][y05]hstack=inputs=6,pad=1188:ih+40:(ow-iw)/2:40:color=white,drawtext=fontfile=/System/Library/Fonts/HelveticaNeue.ttc:text='before (original site)':x=8:y=12:fontsize=22:fontcolor=black[r0];
+[1:v]setpts=PTS-STARTPTS,fps=60,trim=end_frame=432,setpts=PTS-STARTPTS,crop=1290:2295:0:162,scale=188:334:flags=lanczos,setsar=1,split=6[x10][x11][x12][x13][x14][x15];
+[x10]trim=start_frame=0:end_frame=1,setpts=PTS-STARTPTS,pad=196:362:4:28:color=white,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='0 ms':x=(w-tw)/2:y=6:fontsize=16:fontcolor=0x444444[y10];
+[x11]trim=start_frame=84:end_frame=85,setpts=PTS-STARTPTS,pad=196:362:4:28:color=white,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='1400 ms':x=(w-tw)/2:y=6:fontsize=16:fontcolor=0x444444[y11];
+[x12]trim=start_frame=180:end_frame=181,setpts=PTS-STARTPTS,pad=196:362:4:28:color=white,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='3000 ms':x=(w-tw)/2:y=6:fontsize=16:fontcolor=0x444444[y12];
+[x13]trim=start_frame=324:end_frame=325,setpts=PTS-STARTPTS,pad=196:362:4:28:color=white,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='5400 ms':x=(w-tw)/2:y=6:fontsize=16:fontcolor=0x444444[y13];
+[x14]trim=start_frame=336:end_frame=337,setpts=PTS-STARTPTS,pad=196:362:4:28:color=white,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='5600 ms':x=(w-tw)/2:y=6:fontsize=16:fontcolor=0x444444[y14];
+[x15]trim=start_frame=390:end_frame=391,setpts=PTS-STARTPTS,pad=196:362:4:28:color=white,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='6500 ms':x=(w-tw)/2:y=6:fontsize=16:fontcolor=0x444444[y15];
+[y10][y11][y12][y13][y14][y15]hstack=inputs=6,pad=1188:ih+40:(ow-iw)/2:40:color=white,drawtext=fontfile=/System/Library/Fonts/HelveticaNeue.ttc:text='after (final build g0.0l)':x=8:y=12:fontsize=22:fontcolor=black[r1];
+[r0][r1]vstack=inputs=2,pad=1188:ih+44:0:0:color=white,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='iPhone 15 Pro Max - Safari - three slow drags from the top of the page - ms into the stretch':x=(w-tw)/2:y=h-30:fontsize=15:fontcolor=0x444444

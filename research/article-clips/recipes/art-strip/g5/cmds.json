@@ -1,0 +1,3 @@
+{
+ "hero-gesture-long": "ffmpeg -nostdin -v error -y -ss 40.814 -t 11.80 -i .claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261010T110844Z-ar-herocatch-orig.mov -ss 23.548 -t 11.80 -i .claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261010T111222Z-ar-herocatch-g0m.mov -i $SCRATCH/art-strip/strips/hero-gesture-long-60fps-A.png -i $SCRATCH/art-strip/strips/hero-gesture-long-60fps-B.png -filter_complex_script $SCRATCH/art-strip/g5/hero-gesture-long.txt -map \"[out]\" -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p -r 60 -movflags +faststart -an out/article-video/hero-gesture-long-60fps-strip.mp4"
+}

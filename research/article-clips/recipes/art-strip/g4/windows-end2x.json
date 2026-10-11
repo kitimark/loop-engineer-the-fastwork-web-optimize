@@ -1,0 +1,46 @@
+[
+ {
+  "id": "day7-end-openclose-2x-s1-A",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261009T144540Z-wc-end-orig.mov",
+  "ss": 183.4483,
+  "mode": "grid",
+  "a": 0,
+  "n": 60,
+  "W": 796,
+  "SH": 112,
+  "pw": 3
+ },
+ {
+  "id": "day7-end-openclose-2x-s1-B",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261009T141903Z-wc-end-g0l.mov",
+  "ss": 111.9933,
+  "mode": "grid",
+  "a": 0,
+  "n": 60,
+  "W": 796,
+  "SH": 112,
+  "pw": 3
+ },
+ {
+  "id": "day7-end-openclose-2x-s2-A",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261009T144540Z-wc-end-orig.mov",
+  "ss": 197.058,
+  "mode": "grid",
+  "a": 0,
+  "n": 60,
+  "W": 796,
+  "SH": 112,
+  "pw": 3
+ },
+ {
+  "id": "day7-end-openclose-2x-s2-B",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261009T141903Z-wc-end-g0l.mov",
+  "ss": 115.403,
+  "mode": "grid",
+  "a": 0,
+  "n": 60,
+  "W": 796,
+  "SH": 112,
+  "pw": 3
+ }
+]

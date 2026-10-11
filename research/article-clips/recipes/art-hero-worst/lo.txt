@@ -1,0 +1,1 @@
+setpts=PTS-STARTPTS,fps=60,crop=1290:2295:0:162,scale=216:384

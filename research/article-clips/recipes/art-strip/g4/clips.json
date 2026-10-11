@@ -1,0 +1,12 @@
+[
+ {
+  "name": "hero-gesture-stop-full",
+  "frames": 240,
+  "window": "20261010T110844Z-ar-herocatch-orig.mov from 41.014 s | 20261010T111222Z-ar-herocatch-g0m.mov from 23.748 s, 240 grid frames"
+ },
+ {
+  "name": "opening-end-openclose",
+  "frames": 204,
+  "window": "20261009T144540Z-wc-end-orig.mov from 183.348 s | 20261009T141903Z-wc-end-g0l.mov from 111.893 s, 102 grid frames; 20261009T144540Z-wc-end-orig.mov from 196.958 s | 20261009T141903Z-wc-end-g0l.mov from 115.303 s, 102 grid frames"
+ }
+]

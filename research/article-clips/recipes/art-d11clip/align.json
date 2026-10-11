@@ -1,0 +1,30 @@
+{
+ "A": {
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261011T042723Z-ar-revealflick-g0l.mov",
+  "ss": 36.4333,
+  "M0": 36.44166666666667,
+  "T": 36.74504868173972,
+  "off": -0.30338,
+  "flip": 0.4719999998342246,
+  "reveal": {
+   "movEnd": 37.26204868173227,
+   "dt": 47,
+   "y": 669
+  },
+  "revealEndRel": 0.5169999999925494
+ },
+ "B": {
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261011T042826Z-ar-revealflick-g0m.mov",
+  "ss": 12.17,
+  "M0": 12.178333333333333,
+  "T": 12.485378238838166,
+  "off": -0.30704,
+  "flip": 0.46800000010989606,
+  "reveal": {
+   "movEnd": 12.981378238881007,
+   "dt": 31,
+   "y": 663
+  },
+  "revealEndRel": 0.49600000004284084
+ }
+}

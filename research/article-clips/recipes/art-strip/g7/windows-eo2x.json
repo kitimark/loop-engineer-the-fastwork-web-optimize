@@ -1,0 +1,24 @@
+[
+ {
+  "id": "end-openclose-take-2x-A",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261010T125906Z-ar-endoc-orig.mov",
+  "ss": 86.65,
+  "mode": "grid",
+  "a": 0,
+  "n": 270,
+  "W": 796,
+  "SH": 112,
+  "pw": 3
+ },
+ {
+  "id": "end-openclose-take-2x-B",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261010T130126Z-ar-endoc-g0m.mov",
+  "ss": 64.55,
+  "mode": "grid",
+  "a": 0,
+  "n": 270,
+  "W": 796,
+  "SH": 112,
+  "pw": 3
+ }
+]

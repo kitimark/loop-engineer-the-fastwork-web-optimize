@@ -1,0 +1,15 @@
+## 20261010T104514Z-ar-herouser-orig
+zero-movement touch pairs (t, scrollY): 76371-76453 y0
+stop | flick touch | crossing y242 | flip y600 | landing t, y | settles at | still until next touch | 2 s after landing: >34 / >50 | long frames (+ms after landing, label) | o-widen window: frames, mean dt
+1 | 77419 | 77682 (+263) | 77923 | 77923, y618 | y639 @+1214 | 2085 ms | 8 / 3 | 50@+61F 96@+157F 49@+412D 37@+449D 80@+791R 51@+969D 39@+1253O 37@+1318O | 35, 26.1 ms (max 39)
+2 | 81165 | 81356 (+191) | 81508 | 81623, y781 | y741 @+852 | 2072 ms | 8 / 1 | 43@+123F 36@+159D 39@+232D 59@+670R 36@+948. 36@+984. 39@+1713O 38@+1939O | 35, 26.5 ms (max 39)
+3 | 84797 | 85028 (+231) | 85340 | 85592, y766 | y741 @+357 | 1546 ms | 11 / 3 | 38@+68D 46@+114D 36@+150D 39@+189D 39@+228D 61@+521R 41@+1105O 66@+1316O 50@+1366O 89@+1455O 36@+1491O | 18, 37.1 ms (max 89)
+4 | 88335 | 88582 (+247) | 88869 | 89107, y779 | y779 @+0 | 5930 ms | 7 / 1 | 78@+507R 41@+670. 36@+924O 35@+1309O 38@+1376O 45@+1543O 35@+1578O | 29, 31.9 ms (max 45)
+## 20261010T104634Z-ar-herouser-g0m
+zero-movement touch pairs (t, scrollY): 16469-16534 y0
+stop | flick touch | crossing y242 | flip y600 | landing t, y | settles at | still until next touch | 2 s after landing: >34 / >50 | long frames (+ms after landing, label) | o-widen window: frames, mean dt
+1 | 17087 | 17316 (+229) | 17617 | 17883, y781 | y781 @+0 | 1705 ms | 0 / 0 | - | 50, 16.7 ms (max 17)
+2 | 20927 | 21133 (+206) | 21420 | 21692, y788 | y788 @+0 | 1731 ms | 0 / 0 | - | 51, 16.7 ms (max 17)
+3 | 24712 | 24868 (+156) | 25041 | 25061, y657 | y765 @+634 | 2098 ms | 0 / 0 | - | 51, 16.7 ms (max 17)
+4 | 28163 | 28585 (+422) | 29462 | 29646, y628 | y765 @+1131 | 1396 ms | 0 / 0 | - | 55, 16.7 ms (max 33)
+5 | 31931 | 32106 (+175) | 32359 | 32694, y908 | y781 @+484 | 1798 ms | 0 / 0 | - | 55, 16.7 ms (max 17)

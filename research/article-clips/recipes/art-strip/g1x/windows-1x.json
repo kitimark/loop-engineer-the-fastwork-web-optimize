@@ -1,0 +1,46 @@
+[
+ {
+  "id": "opening-ptitle-1x-A",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261010T071845Z-ar-ptitle-orig.mov",
+  "ss": 50.33,
+  "mode": "grid",
+  "a": 0,
+  "n": 210,
+  "W": 890,
+  "SH": 100,
+  "pw": 3
+ },
+ {
+  "id": "opening-ptitle-1x-B",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261010T071753Z-ar-ptitle-g0m.mov",
+  "ss": 26.82,
+  "mode": "grid",
+  "a": 0,
+  "n": 210,
+  "W": 890,
+  "SH": 100,
+  "pw": 3
+ },
+ {
+  "id": "opening-carousel-1x-A",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261010T042754Z-ar-carousel-orig.mov",
+  "ss": 36.4,
+  "mode": "grid",
+  "a": 0,
+  "n": 282,
+  "W": 600,
+  "SH": 80,
+  "pw": 2
+ },
+ {
+  "id": "opening-carousel-1x-B",
+  "mov": ".claude/worktrees/agent-a4147eb3c10989361/out/iphone-screen/20261010T042903Z-ar-carousel-g0m.mov",
+  "ss": 19.94,
+  "mode": "grid",
+  "a": 0,
+  "n": 282,
+  "W": 600,
+  "SH": 80,
+  "pw": 2
+ }
+]

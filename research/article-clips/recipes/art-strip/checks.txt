@@ -1,0 +1,5 @@
+ffmpeg -nostdin -v error -y -i out/article-video/middle-60fps.mp4 -i out/article-video/middle-60fps-strip.mp4 -lavfi "[0]crop=1296:1192:0:0[a];[1]crop=1296:1192:0:0[b];[a][b]psnr=stats_file=$SCRATCH/art-strip/psnr-middle.txt" -f null - && echo psnr-middle ok;
+ffmpeg -nostdin -v error -y -i out/article-video/day10-people-60fps.mp4 -i out/article-video/day10-people-60fps-strip.mp4 -lavfi "[0]crop=1296:1192:0:0[a];[1]crop=1296:1192:0:0[b];[a][b]psnr=stats_file=$SCRATCH/art-strip/psnr-people.txt" -f null - && echo psnr-people ok;
+ffmpeg -nostdin -v error -y -i out/article-video/middle-60fps-strip.mp4 -vf "crop=645:1:0:1194,format=gray" -f rawvideo $SCRATCH/art-strip/ph-middle.raw && echo ph-middle ok;
+ffmpeg -nostdin -v error -y -i out/article-video/hero-worst-cards-strip.mp4 -vf "crop=645:1:0:1229,format=gray" -f rawvideo $SCRATCH/art-strip/ph-hero3x.raw && echo ph-hero3x ok;
+ffmpeg -nostdin -v error -y -i out/article-video/day10-people-3x-strip.mp4 -vf "crop=796:1:0:1474,format=gray" -f rawvideo $SCRATCH/art-strip/ph-people3x.raw && echo ph-people3x ok;

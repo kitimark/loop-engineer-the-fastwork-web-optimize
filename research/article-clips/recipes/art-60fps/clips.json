@@ -1,0 +1,47 @@
+[
+ {
+  "name": "day10-people",
+  "frames": 156,
+  "window": "fix-scrollcb-g0-pb-V-20261009T064210Z-1791528140392.mov raw 22-178 after 52.9 s (grid 22) | fix-scrollcb-g0-pb-K-20261009T064518Z-1791528432500.mov raw 23-179 after 21.86 s (grid 23)"
+ },
+ {
+  "name": "day10-people-wc",
+  "frames": 156,
+  "window": "20261009T134759Z-wc-people-orig.mov raw 71-227 after 25 s (grid 71) | 20261009T134853Z-wc-people-g0l.mov raw 73-229 after 8.28 s (grid 73)"
+ },
+ {
+  "name": "middle",
+  "frames": 132,
+  "window": "20261009T135711Z-wc-middle-orig.mov raw 10-142 after 84.09 s (grid 10) | 20261009T135904Z-wc-middle-g0l.mov raw 23-155 after 15.98 s (grid 23)"
+ },
+ {
+  "name": "day7-end",
+  "frames": 102,
+  "window": "20261009T144540Z-wc-end-orig.mov from 183.3483 s | 20261009T141903Z-wc-end-g0l.mov from 111.8933 s, 102 grid frames"
+ },
+ {
+  "name": "opening-end",
+  "frames": 80,
+  "window": "20261009T144540Z-wc-end-orig.mov from 183.348 s | 20261009T141903Z-wc-end-g0l.mov from 111.893 s, 80 grid frames"
+ },
+ {
+  "name": "day5-hero",
+  "frames": 432,
+  "window": "20261009T132512Z-wc-hero-orig.mov from 50.4 s | 20261009T132633Z-wc-hero-g0l.mov from 95.571 s, 432 grid frames"
+ },
+ {
+  "name": "day3-carousel",
+  "frames": 252,
+  "window": "20261010T042754Z-ar-carousel-orig.mov from 36.9 s | 20261010T042903Z-ar-carousel-g0m.mov from 20.44 s, 252 grid frames"
+ },
+ {
+  "name": "day8-ptitle",
+  "frames": 240,
+  "window": "20261010T071845Z-ar-ptitle-orig.mov from 49.53 s | 20261010T071753Z-ar-ptitle-g0m.mov from 26.02 s, 240 grid frames"
+ },
+ {
+  "name": "day8-menu",
+  "frames": 528,
+  "window": "20261010T041207Z-ar-menu-orig.mov from 80.4 s | 20261010T041016Z-ar-menu-v14.mov from 76.68 s, 264 grid frames; 20261010T041207Z-ar-menu-orig.mov from 88.01 s | 20261010T041016Z-ar-menu-v14.mov from 84.17 s, 264 grid frames"
+ }
+]

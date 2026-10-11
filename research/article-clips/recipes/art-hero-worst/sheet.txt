@@ -1,0 +1,1 @@
+fps=4,crop=1290:2295:0:162,scale=120:213,drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='%{pts\:flt}':x=2:y=2:fontsize=12:fontcolor=red,tile=9x6
