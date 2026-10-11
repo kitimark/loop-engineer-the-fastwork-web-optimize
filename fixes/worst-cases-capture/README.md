@@ -321,3 +321,40 @@ call, between "sent" and "returned". Sent, seconds after the O1 mark:
 Files: `g-ar-endoc-v1.json`, `ar-hold.sh` item o (names -ar-endoc-<orig|g0m>), `wc-read.mjs` case endoc (windows take,
 cyc1, cyc2), `eo-offsets.mjs`. Driver and logs: out/wc/eo-go.sh, out/wc/eo-block.log, out/wc/eo-E0..E4.log;
 status-bar strips out/wc/eo-statusbar/.
+
+## Day 11 reveal flick: g0.0l vs g0.0m (-ar-revealflick, 2026-10-11)
+
+Owner: cap-end-openclose (phone runner), kit by cap-end-orig (`rf.sh`, `rf-read.mjs`, landed in e05ec4cf), run from this
+worktree (the allowed recorder app). All numbers OBSERVED, iPhone 15 Pro Max, n = 2 per build: a recording for the
+article, not a verdict (the verdict is P-175's, fixes/g0-0m/README.md).
+
+- **Builds:** A = g0.0l (JS 4106679e0a8a / CSS 440582cec781), V = g0.0m (37af49aef32b / 7a8ecdd8f8e4). Both were built
+  from main's patches (`fixes/g0-0m/phone/g0m-snap.sh`: `fix.mjs apply g0-0l|g0-0m --reset`, HASHES.txt e7947589f4c9, the same
+  as P-175). Served plain http, `--latency 150 --vendors=local`, hashes checked before every run.
+- **Input:** one fast robot flick from the top that lands on the People card. This is P-174/P-175's FLICK
+  (`fixes/g0-0m/phone/g-flick-g0m.json`, compiled 22b636f36a82): reload, 4 s, mark flick, up 300 px in 220 ms, until
+  settled, mark landed, 3 s, mark flick-end. `pb-lite.mjs` was injected so the reader finds the card's `+is-visible` flip.
+  No Timeline.
+- **Block** (`d11-go.sh` part 1, 04:27-04:30Z, A V V A): tool-held Serious (prep P0: cooled below 40 °C, `iphone.mjs rearm`,
+  one uncounted warm-up flick per port). The hold's thermal reads were Serious 36.7 -> 37.3 °C, no drift, no Critical.
+  Do Not Disturb was on: the moon shows in every recording's status-bar strip, with no notification.
+
+The window is mark flick to mark flick-end (~7 s). The reveal frame is the first frame after the flip. R7 is the
+longest frame among the reveal frame and the 3 frames on each side of it (P-175's primary).
+
+| run (out/iphone-screen/ and out/rf/runs/) | build | frames | > 34 (30/38) | > 50 (46/54) | longest | reveal frame (after the flip) | R7 | lands at y |
+|---|---|---|---|---|---|---|---|---|
+| 20261011T042723Z-ar-revealflick-g0l | A g0.0l | 410 | 5 (5/4) | 0 (1/0) | 47 ms | 47 ms (+45 ms) | 47 | 1347 |
+| 20261011T042826Z-ar-revealflick-g0m | V g0.0m | 418 | 2 (3/2) | 0 (0/0) | 42 ms | 31 ms (+28 ms) | 31 | 1416 |
+| 20261011T042903Z-ar-revealflick-g0m | V g0.0m | 415 | 3 (5/2) | 1 (1/1) | 61 ms | 31 ms (+28 ms) | 31 | 1421 |
+| 20261011T042942Z-ar-revealflick-g0l | A g0.0l | 414 | 3 (4/2) | 2 (2/2) | 70 ms | 56 ms (+53 ms) | 56 | 1360 |
+
+- The reveal frame is 47 and 56 ms on g0.0l and 31 and 31 ms on g0.0m. This is the same picture as P-175 (~50 -> 30.5 ms):
+  g0.0m paints the hidden card before it shows.
+- The flick window's longest frames are not the reveal: g0.0m 61 ms at y 1403 and g0.0l 70 ms at y 1344 come as the
+  flick lands, after the reveal. This read does not say what they are (no Timeline in these runs). The g0.0m run 042826Z
+  had its longest frame (42 ms) at y 0, before the flick moved the page.
+- Recorder: 59.7-59.8 fps delivered on all four (the first g0.0l recording is 44 s long because its ready step waited;
+  the flick window is the same).
+
+Files: `rf.sh` / `rf-read.mjs` (cap-end-orig), driver `d11-go.sh` part 1; reader output out/wc/rf-read.json.
