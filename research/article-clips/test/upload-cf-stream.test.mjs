@@ -104,11 +104,13 @@ function noLeak(sb, r) {
   assert.ok(!readFileSync(sb.argvLog, 'utf8').includes(TOKEN), 'token in curl argv');
 }
 
-test('ALL lists 20 clips in page order, Fig. 2 first, no duplicates', () => {
-  assert.equal(ALL.length, 20);
+test('ALL lists 22 clips in page order, Fig. 2 first, Day 2 and Day 5 clips in place, no duplicates', () => {
+  assert.equal(ALL.length, 22);
   assert.equal(ALL[0], 'fig2-frame-rhythms-60fps');
   assert.equal(ALL[1], 'hero-gesture-long-60fps-strip');
-  assert.equal(new Set(ALL).size, 20);
+  assert.equal(ALL.indexOf('day2-laggy-same-60fps-strip'), ALL.indexOf('end-openclose-take-60fps-strip') + 1);
+  assert.equal(ALL.indexOf('day5-breakthrough-60fps-strip'), ALL.indexOf('day3-carousel-60fps-strip') + 1);
+  assert.equal(new Set(ALL).size, 22);
 });
 
 test('fresh upload: uploads, names, waits for ready, writes rows in page order; no token in argv or output', async () => {
@@ -288,14 +290,14 @@ test('--dry-run: with credentials says would reuse / would upload and changes no
   } finally { m.server.close(); }
 });
 
-test('--dry-run without credentials: all 20 in page order, lookup skipped, no API call', async () => {
+test('--dry-run without credentials: all 22 in page order, lookup skipped, no API call', async () => {
   const m = await mockStream();
   try {
     const sb = sandbox();
     const r = await run(sb, m, ['--dry-run'], { creds: false });
     assert.equal(r.code, 0, r.out);
     const lines = r.out.trim().split('\n');
-    assert.equal(lines.length, 20);
+    assert.equal(lines.length, 22);
     assert.ok(lines.every((l) => l.startsWith('lookup skipped for ')));
     assert.deepEqual(lines.map((l) => l.split(' ')[3]), ALL);
     assert.doesNotMatch(r.out, /would (reuse|upload)/);

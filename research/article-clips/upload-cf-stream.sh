@@ -10,7 +10,7 @@
 #   3. Run:
 #        sh research/article-clips/upload-cf-stream.sh --dry-run                 # what a run would do, per clip
 #        sh research/article-clips/upload-cf-stream.sh day8-menu-60fps-strip     # one clip
-#        sh research/article-clips/upload-cf-stream.sh                           # all 20, in page order
+#        sh research/article-clips/upload-cf-stream.sh                           # all 22, in page order
 #        sh research/article-clips/upload-cf-stream.sh --delete <uid>            # remove one upload
 #        sh research/article-clips/upload-cf-stream.sh --tag                     # name the clips already in the .tsv
 #        sh research/article-clips/upload-cf-stream.sh --check                   # compare Stream's names and state with the .tsv
@@ -50,7 +50,7 @@ set -eu
 DIR=${CF_STREAM_DIR:-out/article-video}
 OUT=${CF_STREAM_OUT:-research/article-clips/cf-stream-links.tsv}   # committed (owner T-170 #268): clip, video id, Medium link, ready; no secrets
 BASE=${CF_API_BASE:-https://api.cloudflare.com/client/v4}
-ALL="fig2-frame-rhythms-60fps hero-gesture-long-60fps-strip hero-gesture-stop-1x-strip opening-carousel-1x-strip end-openclose-take-60fps-strip day3-carousel-60fps-strip end-openclose-take-2x-strip hero-gesture-stop-2x-strip hero-gesture-stop-full-60fps-strip day8-navrise-closeup-2x day8-menu-60fps-strip day8-menu-2x-strip day9-join-closeup-2x-hq day9-logo-closeup-2x-hq day10-people-60fps-strip day10-people-wc-60fps-strip day11-reveal-60fps-strip day11-reveal-2x-strip hero-cards-return-60fps-strip middle-60fps-strip"
+ALL="fig2-frame-rhythms-60fps hero-gesture-long-60fps-strip hero-gesture-stop-1x-strip opening-carousel-1x-strip end-openclose-take-60fps-strip day2-laggy-same-60fps-strip day3-carousel-60fps-strip day5-breakthrough-60fps-strip end-openclose-take-2x-strip hero-gesture-stop-2x-strip hero-gesture-stop-full-60fps-strip day8-navrise-closeup-2x day8-menu-60fps-strip day8-menu-2x-strip day9-join-closeup-2x-hq day9-logo-closeup-2x-hq day10-people-60fps-strip day10-people-wc-60fps-strip day11-reveal-60fps-strip day11-reveal-2x-strip hero-cards-return-60fps-strip middle-60fps-strip"
 PARAMS="loop=true&autoplay=true&muted=true"
 PREFIX=${CF_STREAM_PREFIX:-fastwork-web-optimize}
 POLL_S=${CF_STREAM_POLL_S:-2}
