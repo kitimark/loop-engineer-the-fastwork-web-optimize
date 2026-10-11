@@ -1,0 +1,1097 @@
+<title>Sixteen Milliseconds: The Casebook</title>
+<meta name="description" content="Part 2 of Sixteen Milliseconds: ten worked cases from making a local mirror of fastwork.com scroll smoothly on an iPhone 15 Pro Max, each with symptom, measurement, root cause, fix, numbers and cost.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column (~42rem) of ten case files. Each case opens with a five-cell rendering-pipeline strip
+   (Script, Style, Layout, Paint, Composite) that marks where its cost lived, then the same six rows in the same order.
+   Charts break out to a wider measure and are drawn to scale from the numbers in SOURCES.md. The frame ruler is the
+   one bold element. Type is shared with Part 1 so the series reads as one. */
+:root {
+  color-scheme: light;
+  --ground: #f2f4f6;
+  --panel: #fbfcfd;
+  --ink: #141a22;
+  --ink-soft: #4b5664;
+  --rule: #d3d9e0;
+  --signal: #2743c9;   /* accent: links, "after" marks, the touched pipeline cell */
+  --before: #7d8796;   /* "before" marks */
+  --late: #c4401f;     /* over the 50 ms goal (semantic) */
+  --warn: #a87908;     /* the 34 ms line and near bands (semantic) */
+  --code-bg: #e8ecf1;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Literata", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --measure: 42rem;
+  --wide: 58rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #0f1318;
+    --panel: #151b22;
+    --ink: #e3e8ee;
+    --ink-soft: #9eabba;
+    --rule: #2a3440;
+    --signal: #93a6ff;
+    --before: #8592a3;
+    --late: #ff8a6b;
+    --warn: #e2b84a;
+    --code-bg: #1b232c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #0f1318;
+  --panel: #151b22;
+  --ink: #e3e8ee;
+  --ink-soft: #9eabba;
+  --rule: #2a3440;
+  --signal: #93a6ff;
+  --before: #8592a3;
+  --late: #ff8a6b;
+  --warn: #e2b84a;
+  --code-bg: #1b232c;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font: 400 1.0625rem/1.68 var(--body);
+  padding-inline: max(16px, 4vw);
+  padding-block: 2rem 5rem;
+}
+main { display: grid; gap: 3rem; justify-items: center; }
+main > * { width: 100%; max-width: var(--measure); }
+main > .wide { max-width: var(--wide); }
+
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.1; margin: 0; }
+h1 { font-size: clamp(2.5rem, 7vw, 4.6rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 3.4vw, 2.05rem); font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: 1.1rem; font-weight: 700; }
+p { margin: 0; }
+a { color: var(--signal); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 2px; }
+strong { font-weight: 600; }
+code, .mono { font-family: var(--mono); font-size: 0.86em; }
+:not(pre) > code { background: var(--code-bg); padding: 0.05em 0.3em; border-radius: 3px; overflow-wrap: anywhere; }
+.num, td, .chart { font-variant-numeric: tabular-nums; }
+.label {
+  font: 600 0.72rem/1.3 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.stack { display: grid; gap: 1rem; }
+
+/* Banner and series nav */
+.banner { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; align-items: baseline; padding: 0.75rem 1rem; border: 1px dashed var(--ink-soft); border-radius: 6px; font-size: 0.9rem; line-height: 1.5; }
+.series { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; font: 600 0.8rem/1.4 var(--mono); }
+.series span[aria-current] { color: var(--ink); border-bottom: 2px solid var(--signal); }
+
+/* Masthead */
+header.masthead { display: grid; gap: 1.1rem; }
+.dek { font-size: 1.22rem; line-height: 1.5; color: var(--ink-soft); }
+
+/* Status chips: form carries the meaning, not only colour */
+.st { display: inline-block; font: 600 0.66rem/1 var(--mono); letter-spacing: 0.08em; padding: 0.22em 0.45em 0.2em; border-radius: 3px; vertical-align: 0.12em; white-space: nowrap; }
+.st-c { background: var(--ink); color: var(--ground); border: 1px solid var(--ink); }
+.st-o { border: 1px solid var(--ink-soft); color: var(--ink-soft); }
+.st-u { border: 1px dashed var(--warn); color: var(--warn); }
+.legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; font-size: 0.92rem; color: var(--ink-soft); align-items: baseline; }
+
+/* Figures and charts */
+figure { margin: 0; display: grid; gap: 0.6rem; }
+figcaption { font-size: 0.9rem; line-height: 1.5; color: var(--ink-soft); }
+.chart { width: 100%; min-height: 4rem; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: var(--mono); fill: var(--ink-soft); }
+.chart .t-ink { fill: var(--ink); }
+.chart .t-late { fill: var(--late); }
+.chart .t-warn { fill: var(--warn); }
+.chart .t-after { fill: var(--signal); }
+.chart .ax { stroke: var(--rule); stroke-width: 1; fill: none; }
+.chart .grid { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 2 3; fill: none; }
+.chart .ln-late { stroke: var(--late); stroke-width: 1.5; stroke-dasharray: 5 3; fill: none; }
+.chart .ln-warn { stroke: var(--warn); stroke-width: 1.5; stroke-dasharray: 5 3; fill: none; }
+.chart .ln-ref { stroke: var(--ink-soft); stroke-width: 1; stroke-dasharray: 2 2; fill: none; }
+.chart .band-late { fill: var(--late); opacity: 0.12; }
+.chart .band-warn { fill: var(--warn); opacity: 0.14; }
+.chart .band-ok { fill: var(--signal); opacity: 0.16; }
+.chart .d-before { fill: var(--before); stroke: var(--panel); stroke-width: 1; }
+.chart .d-after { fill: var(--signal); stroke: var(--panel); stroke-width: 1; }
+.chart .r-before { stroke: var(--before); stroke-width: 2; fill: none; }
+.chart .r-after { stroke: var(--signal); stroke-width: 2; fill: none; }
+.chart .b-before { fill: var(--before); }
+.chart .b-after { fill: var(--signal); }
+.chart .tick { stroke: var(--ink); stroke-width: 2; fill: none; }
+.chart .tick-late { stroke: var(--late); stroke-width: 2; fill: none; }
+.chart .gap-late { fill: var(--late); opacity: 0.16; }
+.chart .gap-ok { fill: var(--signal); opacity: 0.1; }
+.chart .ontime { fill: var(--signal); opacity: 0.85; }
+.key { display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; font: 400 0.8rem/1.4 var(--mono); color: var(--ink-soft); }
+.key i { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 50%; margin-right: 0.35rem; vertical-align: -0.05rem; }
+.key .k-before { background: var(--before); }
+.key .k-after { background: var(--signal); }
+.key .k-late { background: var(--late); border-radius: 1px; height: 0.2rem; vertical-align: 0.2rem; }
+.key .k-warn { background: var(--warn); border-radius: 1px; height: 0.2rem; vertical-align: 0.2rem; }
+
+/* Hero ruler */
+.ruler { display: grid; gap: 0.9rem; padding: clamp(1rem, 3vw, 1.6rem); background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; }
+
+/* Instruments table and case index */
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; line-height: 1.45; }
+th, td { text-align: left; vertical-align: top; padding: 0.55rem 0.7rem 0.55rem 0; border-top: 1px solid var(--rule); }
+th { font: 600 0.72rem/1.3 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); border-top: 0; }
+td.n { white-space: nowrap; }
+.index td:first-child { font-family: var(--mono); font-size: 0.82rem; white-space: nowrap; }
+.index a { text-decoration: none; }
+.index a:hover { text-decoration: underline; }
+
+/* Code */
+pre { margin: 0; background: var(--code-bg); border-radius: 6px; padding: 0.9rem 1rem; overflow-x: auto; font: 400 0.82rem/1.55 var(--mono); }
+pre .c { color: var(--ink-soft); }
+
+/* Case files */
+.case { display: grid; gap: 1.6rem; padding-top: 1.4rem; border-top: 3px solid var(--ink); scroll-margin-top: 1rem; }
+.case-head { display: grid; gap: 0.65rem; }
+.case-meta { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; }
+.pipe { display: inline-grid; grid-template-columns: repeat(5, auto); gap: 2px; font: 600 0.62rem/1 var(--mono); letter-spacing: 0.05em; text-transform: uppercase; }
+.pipe span { padding: 0.35em 0.5em; border: 1px solid var(--rule); color: var(--ink-soft); }
+.pipe span.on { background: var(--signal); border-color: var(--signal); color: var(--ground); }
+.pipe.off span { border-style: dashed; }
+.pipe-alt { font: 600 0.62rem/1 var(--mono); letter-spacing: 0.05em; text-transform: uppercase; padding: 0.35em 0.5em; border: 1px solid var(--signal); color: var(--signal); }
+.build { font: 400 0.8rem/1.4 var(--mono); color: var(--ink-soft); }
+.row { display: grid; gap: 0.55rem; }
+.row > .label { color: var(--signal); }
+.row ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.35rem; }
+.src { font: 400 0.76rem/1.5 var(--mono); color: var(--ink-soft); border-top: 1px dashed var(--rule); padding-top: 0.6rem; overflow-wrap: anywhere; }
+.case .wide-fig { width: min(var(--wide), calc(100vw - 2 * max(16px, 4vw))); justify-self: center; }
+
+/* Small comparison table inside cases */
+.cmp td.b { color: var(--ink-soft); }
+.cmp td.a { color: var(--ink); font-weight: 600; }
+
+/* Closing checklist */
+.rules { margin: 0; padding-left: 1.3rem; display: grid; gap: 0.5rem; }
+footer { display: grid; gap: 0.75rem; font-size: 0.9rem; color: var(--ink-soft); border-top: 1px solid var(--rule); padding-top: 1.25rem; }
+
+@media (max-width: 520px) {
+  body { font-size: 1rem; }
+  .pipe { font-size: 0.56rem; }
+  th, td { padding-right: 0.5rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<main>
+  <p class="banner"><span class="label">Personal study</span> <span>Educational, done on a local mirror of the public homepage fastwork.com. Not affiliated with Fastwork. Code shown here is written for this article unless a line says otherwise.</span></p>
+
+  <nav class="series" aria-label="Series">
+    <a href="https://claude.ai/artifact/<private-artifact>" target="_blank" rel="noopener">Part 1: Building an AI Loop from Scratch</a>
+    <span aria-current="page">Part 2: The Casebook</span>
+    <a href="https://claude.ai/artifact/<private-artifact>" target="_blank" rel="noopener">Part 3: Wiring the Loop</a>
+  </nav>
+
+  <header class="masthead">
+    <p class="label">Sixteen Milliseconds · Part 2</p>
+    <h1>The Casebook</h1>
+    <p class="dek">Ten worked cases from making one marketing homepage scroll smoothly on an iPhone 15 Pro Max. Each case gives the symptom, how we measured it, the root cause with the engine source where we could find it, the fix with its numbers, and what the fix cost.</p>
+    <p>Part 1 tells how a team of AI agents and one person ran this study. This part is for web developers who want the techniques. The page is fastwork.com's homepage, frozen as one snapshot so every number below measures the same bytes. The current best build is called <strong>g0.0l</strong>. Every case below is a change that is in it, or a lesson we needed to get there.</p>
+  </header>
+
+  <section class="wide ruler" aria-labelledby="ruler-h">
+    <div class="stack" style="max-width: var(--measure)">
+      <p class="label" id="ruler-h">The unit of everything below</p>
+      <h2>One frame on the phone is 16.7 ms. The goal was zero frames over 50.</h2>
+      <p>Safari on the iPhone updates the page at about 60 times a second, so an on-time frame is 16.7 ms apart from the last. We counted the gaps between frames. A gap over 50 ms (three frames' worth) is what the user called lag, and the target was none. A gap over 34 ms is the secondary count. Because a frame of 49 ms and one of 51 ms are not really different, every count also comes with its twins at ±4 ms.</p>
+    </div>
+    <figure>
+      <div class="chart" data-chart="ruler" aria-label="A 0 to 60 millisecond ruler. One 60 Hz frame is 16.7 ms. Lines mark the 34 ms and 50 ms thresholds, with shaded twin bands from 30 to 38 and 46 to 54 ms. Chrome's tick thresholds sit at 37.5 and 54.2 ms."></div>
+      <figcaption>Drawn to scale. Safari stamps each frame at 1 ms resolution and its long gaps are not snapped to 16.7 ms steps, so the phone uses plain ms thresholds. Chrome runs at 120 Hz on our Mac and its stamps are snapped to 8.33 ms ticks, so in Chrome "over 34" means 5 ticks or more (37.5 ms) and "over 50" means 7 or more (54.2 ms). Source: <code>research/architecture/measurement-protocol-v2.md</code> §3.2.</figcaption>
+    </figure>
+  </section>
+
+  <section class="stack" aria-labelledby="inst-h">
+    <p class="label">The four instruments</p>
+    <h2 id="inst-h">What each tool can see, and what it can't</h2>
+    <p>No single tool showed the whole problem. We used four, in this order, and every number in this article says which one produced it.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Instrument</th><th>What it is</th><th>Good for</th><th>Blind to</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Chrome, CPU 6x</strong></td><td>Desktop Chrome, phone viewport 430x932, touch, the main thread slowed 6x</td><td>Fast A/Bs and call trees. 6x reproduced the iPhone's long-frame counts under a scripted scroll</td><td>GPU and raster cost, WebKit-only behaviour, the finger</td></tr>
+          <tr><td><strong>iOS Simulator</strong></td><td>iPhone 15 Pro Max Simulator (iOS 26.5) with Safari's Timeline</td><td>WebKit counts: layouts, style recalcs, paints, layers, memory, call stacks</td><td>Time. Its ms run on a Mac CPU and never count as a gain</td></tr>
+          <tr><td><strong>iPhone, scripted</strong></td><td>The real phone (iOS 26.6.1 Safari). Driver S scrolls by script, W runs a window of scripted steps</td><td>Real frame gaps on the device</td><td>Touch paths, the toolbar, bounce</td></tr>
+          <tr><td><strong>iPhone, robot finger</strong></td><td>Driver G: real touch strokes from WebDriverAgent (Apple's UI-test driver)</td><td>Touch, flings, the finger's own code paths; with Timeline, what each long frame spent</td><td>How it feels. A person judged that in blind swipe pairs (Part 1)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Phone checks ran as registered blocks named <code>P-nnn</code>: one question, a control build (C) and a variant (V) on the same base, runs in C V V C C V V C order, a heat check before and after, and a prediction written down before any data. <a href="https://claude.ai/artifact/<private-artifact>#protocol" target="_blank" rel="noopener">Part 3</a> explains the machinery. Here it matters for one reason: when a case says "P-172, G, 4 runs per arm", that is where the number came from.</p>
+    <div class="legend"><span><span class="st st-c">CONFIRMED</span> a reference (spec, docs, engine source) agrees; cited</span><span><span class="st st-o">OBSERVED</span> our own data only, in our setup</span><span><span class="st st-u">UNRESOLVED</span> references are silent</span></div>
+  </section>
+
+  <section class="wide stack" aria-labelledby="idx-h">
+    <p class="label">Index</p>
+    <h2 id="idx-h">Ten cases</h2>
+    <div class="tablewrap">
+      <table class="index">
+        <thead><tr><th>Case</th><th>Where the cost was</th><th>Fix</th><th>Headline number (device, driver)</th></tr></thead>
+        <tbody>
+          <tr><td><a href="#c1">01</a></td><td>Script, style, layout, paint</td><td><a href="#c1">Hand the motion to the compositor</a></td><td>Paint per menu frame 11.5-12.0 → 3.2-3.3 (iPhone, G)</td></tr>
+          <tr><td><a href="#c2">02</a></td><td>Layout</td><td><a href="#c2">Size the deck with container units, not aspect-ratio</a></td><td>Layouts of 5 ms+ per drag 152-159 → 0-1 (iPhone, G)</td></tr>
+          <tr><td><a href="#c3">03</a></td><td>Style</td><td><a href="#c3">Never add the first wheel listener mid-scroll</a></td><td>Crossing frame median 50 → 19 ms (iPhone, G)</td></tr>
+          <tr><td><a href="#c4">04</a></td><td>Paint, composite</td><td><a href="#c4">Keep the glass steady, fade only its colour</a></td><td>Paints per end-of-page frame 3.23 → 0.63 (Simulator)</td></tr>
+          <tr><td><a href="#c5">05</a></td><td>Paint</td><td><a href="#c5">Give a ticking clock its own small layer</a></td><td>Big-layer repaints per menu open 196 → 11 (Simulator)</td></tr>
+          <tr><td><a href="#c6">06</a></td><td>Composite</td><td><a href="#c6">Hold a hidden animation as a still picture</a></td><td>Graphics memory 27.6 → 12.4 MB (Simulator)</td></tr>
+          <tr><td><a href="#c7">07</a></td><td>Paint (a look, not a stall)</td><td><a href="#c7">Skip a time-based reveal when the user flings</a></td><td>Blurred frames per flick 51-52 → 0 (iPhone, G)</td></tr>
+          <tr><td><a href="#c8">08</a></td><td>The device</td><td><a href="#c8">Treat heat as a variable</a></td><td>Warming 0.40-0.62 → 0.19-0.24 °C/min (iPhone, W)</td></tr>
+          <tr><td><a href="#c9">09</a></td><td>The reading</td><td><a href="#c9">Read a result: ticks, twins, sentinels, A/A</a></td><td>Chrome 6x matches the phone at distance 0.17</td></tr>
+          <tr><td><a href="#c10">10</a></td><td>The reading</td><td><a href="#c10">Don't show frame timing in a GIF</a></td><td>A GIF can't hold a 16.7 ms frame</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================== CASE 1 ============================== -->
+  <article class="case" id="c1" aria-labelledby="c1-h">
+    <div class="case-head">
+      <div class="case-meta"><span class="label">Case 01</span><span class="pipe" aria-label="Pipeline stages: script, style, layout and paint were the cost"><span class="on">Script</span><span class="on">Style</span><span class="on">Layout</span><span class="on">Paint</span><span>Composite</span></span></div>
+      <h2 id="c1-h">Hand the motion to the compositor</h2>
+      <p class="build">Countdown roll (PR-017) · end-of-page menu morph (PR-030, in g0.0k and g0.0l)</p>
+    </div>
+
+    <div class="row"><p class="label">Symptom</p>
+      <p>Two things on the page moved from script on every frame: the countdown's rolling digits and, at the end of the page, the menu bar that grows into a full panel as you keep scrolling. Both stuttered whenever the page had other work, because they could only move when the main thread finished a frame.</p>
+    </div>
+
+    <div class="row"><p class="label">How we measured</p>
+      <ul>
+        <li>Chrome 154 traces (430x932 DPR 3): countdown callbacks per roll, and main-thread frames with every other animation frozen.</li>
+        <li>Simulator Timeline: paints and layouts per menu open.</li>
+        <li>iPhone block P-157 (driver G, 4 runs per arm, Timeline on): Layout, Paint and style records per menu frame.</li>
+      </ul>
+    </div>
+
+    <div class="row"><p class="label">Root cause</p>
+      <p>Each digit ran its own <code>requestAnimationFrame</code> loop: a spring stepped in 16 ms substeps, writing <code>transform</code> inline every frame. The menu morph wrote sizes, radius, blur and colours from a scroll callback. Every one of those writes costs a style pass, and the size writes a layout and a repaint, on WebKit's main thread.</p>
+      <p>The engines can run an animation without the page at all. WebKit builds an accelerated animation as a Core Animation animation in the UI process, and the web process doesn't tick it while it runs <span class="st st-c">CONFIRMED</span> (WebKit <code>KeyframeEffect.cpp</code> canBeAccelerated l.1926-1971, safari-7624 branch 0f8c6795). Safari on iOS 26.4+ also runs qualifying scroll-driven animations on the scrolling thread <span class="st st-c">CONFIRMED</span> (webkit.org/blog/17862; <code>UnifiedWebPreferences.yaml</code> 8316-8329). Only <code>transform</code>, <code>opacity</code>, <code>filter</code> and <code>backdrop-filter</code> qualify.</p>
+    </div>
+
+    <div class="row"><p class="label">Fix</p>
+      <p>For the countdown: sample the same spring once at 60 Hz and hand the samples to the engine as keyframes. The motion is the same; nothing runs per frame.</p>
+<pre><span class="c">// Before: one style write per frame, from script</span>
+function roll(cell, from, to) {
+  const t0 = performance.now();
+  requestAnimationFrame(function step(now) {
+    cell.style.transform = `translateY(${spring(now - t0, from, to)}px)`;
+    if (!settled(now - t0)) requestAnimationFrame(step);
+  });
+}
+
+<span class="c">// After: sample the spring once, let the compositor play it</span>
+function roll(cell, from, to) {
+  const frames = [];
+  for (let t = 0; t &lt;= SETTLE_MS; t += 1000 / 60)
+    frames.push({ transform: `translateY(${spring(t, from, to)}px)` });
+  cell.animate(frames, { duration: SETTLE_MS, easing: 'linear', fill: 'both' });
+}</pre>
+      <p>For the menu: every part follows the scroll through keyframes on a view timeline. One function computes each part's transform, opacity and filter for a morph value, and generates the keyframes from it. The changing rounded corner has no transform form, so it is rebuilt from four corner clippers, each scaled by r/32 and counter-scaled inside.</p>
+<pre>.menu-zone { view-timeline: --menu block; }
+.menu-part {
+  animation: grow linear both;          <span class="c">/* the shorthand resets the timeline, so: */</span>
+  animation-timeline: --menu;           <span class="c">/* longhands come after it */</span>
+  animation-range: cover 0% cover 100lvh;  <span class="c">/* survives the toolbar */</span>
+}
+@keyframes grow { from { transform: scale(.42); } to { transform: none; } }</pre>
+    </div>
+
+    <div class="row"><p class="label">Before / after</p>
+      <figure class="wide-fig">
+        <div class="chart" data-chart="c1" aria-label="Records per menu frame on the iPhone, ranges over 4 runs per arm. Layout 2.23 to 2.38 before, 1.00 to 1.04 after. Paint 11.45 to 12.01 before, 3.19 to 3.28 after. Style recalcs 1.82 to 1.90 before, 2.13 to 2.18 after."></div>
+        <div class="key"><span><i class="k-before"></i>C: script-driven menu (v9-final)</span><span><i class="k-after"></i>V: compositor menu (CM v1.1)</span></div>
+        <figcaption>Timeline records per menu frame, range over 4 runs per arm. iPhone 15 Pro Max, driver G, block P-157, Serious thermal state induced by Xcode.</figcaption>
+      </figure>
+      <div class="tablewrap"><table class="cmp">
+        <thead><tr><th>Count</th><th>Before</th><th>After</th><th>Instrument</th></tr></thead>
+        <tbody>
+          <tr><td>Countdown script callbacks per roll</td><td class="b n">23-26</td><td class="a n">1</td><td>Chrome 154, 3 loads</td></tr>
+          <tr><td>Main-thread frames per 6 s, everything else frozen</td><td class="b n">205</td><td class="a n">79</td><td>Chrome 154</td></tr>
+          <tr><td>Paints / layouts per menu open</td><td class="b n">559 / 181</td><td class="a n">145 / 125</td><td>Simulator</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="row"><p class="label">Cost and caveats</p>
+      <ul>
+        <li><strong>Style stays.</strong> Every rendering update ticks every active scroll-driven animation and invalidates its target's style <span class="st st-c">CONFIRMED</span> (<code>AnimationTimelinesController.cpp</code> 140-180, <code>WebAnimation.cpp</code> 1554-1576). The phone agrees: style recalcs went up, not down.</li>
+        <li><strong>Layout did not go to zero.</strong> The prediction was at most 0.3 per frame; the phone measured 1.00-1.04. Simulator call stacks found why: of 291 layouts forced inside script, 158 came from <code>elementsFromPoint</code> in a hit test and 44 from reading <code>window.scrollY</code> <span class="st st-o">OBSERVED</span>. On WebKit, reading <code>scrollY</code> while layout is dirty forces a layout <span class="st st-c">CONFIRMED</span> (<code>LocalDOMWindow.cpp</code> 1477-1481). The compositor can't remove a read your script makes.</li>
+        <li><strong>No frame-time gain on the phone</strong> in this block: frames over 50 ms per menu frame overlapped (0.1-0.3 % vs 0.2-0.5 %) <span class="st st-o">OBSERVED</span>.</li>
+        <li><strong>Starting is not free.</strong> Starting an accelerated animation on an element that is not yet composited forces a compositing update on the main thread <span class="st st-c">CONFIRMED</span> (<code>KeyframeEffect.cpp</code> 2015-2017, <code>RenderLayerCompositor.cpp</code> 3813-3830). The countdown's phone check (P-093, driver W) found +1 frame over 50 ms per run near the top, 0 in every C run and 1-2 in every V run, within its no-worse limit; cause untested.</li>
+        <li><strong>Not every easing qualifies.</strong> Time-based animations with <code>steps()</code> or <code>linear()</code> with points stay on WebKit's main thread on 26.x <span class="st st-c">CONFIRMED</span> (canBeAccelerated). Keyword <code>linear</code> between dense keyframes is fine.</li>
+        <li><strong>Big blurs can get slower.</strong> Making a full-screen 14 px blur eligible for the compositor doubled the next frame's Composite (phone 74 vs 42 ms) <span class="st st-o">OBSERVED</span>. Count Composite, not only Paint.</li>
+        <li>WebKit asks Core Animation for 80-120 Hz on every animation it creates <span class="st st-c">CONFIRMED</span> (<code>PlatformCAAnimationRemote.mm</code> 609-613), but whether our phone actually drew them faster than 60 Hz is <span class="st st-u">UNRESOLVED</span>.</li>
+      </ul>
+    </div>
+    <p class="src">Sources: research/gpu-lessons/README.md §1.1-1.2 · fixes/cd-roll-ca/README.md 147-154, 210-219, 1016-1023 · fixes/compositor-morph/README.md 194-214 · research/architecture/gpu-compositor-playbook.md 29-33, 64-72, 113-115, 137, 153-156</p>
+  </article>
+
+  <!-- ============================== CASE 2 ============================== -->
+  <article class="case" id="c2" aria-labelledby="c2-h">
+    <div class="case-head">
+      <div class="case-meta"><span class="label">Case 02</span><span class="pipe" aria-label="Pipeline stage: layout was the cost"><span>Script</span><span>Style</span><span class="on">Layout</span><span>Paint</span><span>Composite</span></span></div>
+      <h2 id="c2-h">Size the deck with container units, not aspect-ratio</h2>
+      <p class="build">Build g0.0j · CSS only, phones and touch screens · finding F-366</p>
+    </div>
+
+    <div class="row"><p class="label">Symptom</p>
+      <p>Dragging a finger down the page, frames over 34 ms bunched up between y 1000 and 3400. Nothing visible changed in that stretch; the page was just scrolling.</p>
+    </div>
+
+    <div class="row"><p class="label">How we measured</p>
+      <ul>
+        <li>A Simulator cost map: at every 200 px from the top, a 1 px programmatic scroll out and back, and the largest Layout record in the next 300 ms. A programmatic scroll marks sticky and fixed boxes dirty the same way a drag does.</li>
+        <li>Knock-out arms: CSS that removes one suspect at a time, added after load. They change the look, so they are for attribution only.</li>
+        <li>Simulator robot-finger drags, then iPhone block P-172 (driver G, 4 runs per arm, Timeline on).</li>
+      </ul>
+    </div>
+
+    <div class="row"><p class="label">Root cause</p>
+      <p>Every 1 px nudge cost a 20-35 ms layout while either of the page's two sticky boxes existed. Making both non-sticky removed it; either one alone kept it. Hiding the people section's profile deck removed it too. The deck holds six cards side by side in a horizontal snap row, each sized like this:</p>
+<pre>.deck  { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; }
+.card  { flex: 0 0 100%; aspect-ratio: 353 / 764; height: auto; }</pre>
+      <div class="tablewrap"><table class="cmp">
+        <thead><tr><th>Knock-out (Simulator, y 800-3400)</th><th>Largest layout per nudge</th></tr></thead>
+        <tbody>
+          <tr><td>Control: both boxes sticky</td><td class="b n">median 22.7-25.7 ms</td></tr>
+          <tr><td>Both boxes made non-sticky</td><td class="a n">median 0.5 ms</td></tr>
+          <tr><td>Deck hidden</td><td class="a n">0.5-0.7 ms</td></tr>
+          <tr><td>Only the active card shown</td><td class="n">9.7-15.9 ms (scales with card count)</td></tr>
+          <tr><td>Cards at the same fixed height, no aspect-ratio</td><td class="a n">median 0.4 ms</td></tr>
+        </tbody>
+      </table></div>
+      <p>The source explains half the chain. When the layout viewport moves, WebKit marks every fixed and sticky renderer for layout <span class="st st-c">CONFIRMED</span> (<code>LocalFrameView.cpp</code> 3822-3834, WebKit main e64e2891). A full block layout re-dirties its percent-height descendants and invalidates the preferred widths of aspect-ratio boxes on that chain <span class="st st-c">CONFIRMED</span> (<code>RenderBlockFlow.cpp</code> 588, 638, 807-841). Which link carries a sticky box's layout into the deck's cards is <span class="st st-u">UNRESOLVED</span>; the knock-outs carry the attribution.</p>
+    </div>
+
+    <div class="row"><p class="label">Fix</p>
+      <p>Give the cards the same height without asking them to derive it from their own layout. The deck becomes an inline-size container and the height comes from its width:</p>
+<pre>.deck { container-type: inline-size; }
+.card { /* aspect-ratio removed */ height: calc(100cqi * 764 / 353); }</pre>
+      <p>The card is the deck's full content width, so this is the same box: 844.078125 px tall at 430 px wide, in both builds. <code>container-type: inline-size</code> adds only style and inline-size containment, no layout or paint containment <span class="st st-c">CONFIRMED</span> (<code>StyleComputedStyle.cpp</code> 458-468, WebKit main e8c36a19). The one new constraint is that the deck's width can't depend on its children; a gate checked it is equal at six viewports.</p>
+    </div>
+
+    <div class="row"><p class="label">Before / after</p>
+      <figure class="wide-fig">
+        <div class="chart" data-chart="c2a" aria-label="Layout records of 5 ms or more per run, finger down at y 1000 to 3400. Before: 159, 153, 152, 155. After: 1, 0, 1, 1."></div>
+        <div class="chart" data-chart="c2b" aria-label="Frames over 34 ms per run in the same window. Before: 18, 12, 12, 13. After: 2, 3, 5, 6."></div>
+        <div class="key"><span><i class="k-before"></i>C: g0.0i</span><span><i class="k-after"></i>V: g0.0j</span></div>
+        <figcaption>One dot per run, finger down at y 1000-3400. iPhone 15 Pro Max, driver G, block P-172, tool-induced Serious thermal state, 4 runs per arm. Simulator drags agree: layouts of 5 ms or more per run 129-169 → 2-4, frames delivered 1051-1101 → 1180-1203.</figcaption>
+      </figure>
+    </div>
+
+    <div class="row"><p class="label">Cost and caveats</p>
+      <ul>
+        <li><strong>The goal count did not separate.</strong> Frames over 50 ms in the window went 3, 1, 2, 2 → 1, 1, 1, 1. The ranges touch at 1, so by the block's rule that is no separation at n = 4, and it is threshold-sensitive (see <a href="#c9">case 9</a>). It landed as a "does less work" fix, not as a 50 ms win.</li>
+        <li><strong>One long frame is left</strong> at y ~1750 in every run (51-52 ms, down from 61-63). It is a different cause: <a href="#c3">case 3</a>.</li>
+        <li><strong>Serve it, don't inject it.</strong> Injected after load, the same rules left 34-47 big layouts near the top; served in the stylesheet they left none. Why is <span class="st st-u">UNRESOLVED</span>.</li>
+        <li><strong>A Simulator-only look difference.</strong> After a swipe some deck photos were painted at a different resampling quality (the new build as sharp or sharper). WebKit's image quality controller paints scaled bitmaps at low quality while a bitmap's drawn size changes <span class="st st-c">CONFIRMED</span> as code (<code>ImageQualityController.cpp</code> 46, 196-228); that it explains these shots is <span class="st st-o">OBSERVED</span>. The difference stayed inside the project's look-alike limits.</li>
+      </ul>
+    </div>
+    <p class="src">Sources: fixes/sticky-walk/README.md 26-63, 103-108, 134-163, 234-268 · fixes/g0-0j/README.md · finding F-363, F-366, F-368</p>
+  </article>
+
+  <!-- ============================== CASE 3 ============================== -->
+  <article class="case" id="c3" aria-labelledby="c3-h">
+    <div class="case-head">
+      <div class="case-meta"><span class="label">Case 03</span><span class="pipe" aria-label="Pipeline stage: style was the cost"><span>Script</span><span class="on">Style</span><span>Layout</span><span>Paint</span><span>Composite</span></span></div>
+      <h2 id="c3-h">Never add the first wheel listener mid-scroll</h2>
+      <p class="build">Build g0.0k · finding F-360</p>
+    </div>
+
+    <div class="row"><p class="label">Symptom</p>
+      <p>On every drag toward the end of the page, one frame at y ~1750 ran long: 61-63 ms on the phone before case 2, 51-52 ms after it. Always the same place.</p>
+    </div>
+
+    <div class="row"><p class="label">How we measured</p>
+      <ul>
+        <li>Simulator robot-finger drags with Timeline, a patched <code>addEventListener</code> log and a MutationObserver, so each long frame could be matched to what the page did in it.</li>
+        <li>Ablation arms: move each of the frame's three jobs elsewhere, one at a time.</li>
+        <li>iPhone block P-173 (driver G, 4 runs per arm): the longest frame between y 1650 and 1850, called X.</li>
+      </ul>
+    </div>
+
+    <div class="row"><p class="label">Root cause</p>
+      <p>At that y an IntersectionObserver with a 200 % root margin sees the end-of-page section come within reach. Its callback did three things in one frame: gave 21 images their <code>src</code>, lifted <code>inert</code> on the hidden panel, and added three window listeners, among them a non-passive <code>wheel</code> listener.</p>
+      <div class="tablewrap"><table class="cmp">
+        <thead><tr><th>Arm (Simulator, 3 loads each)</th><th>That frame</th><th>Its layout + style</th></tr></thead>
+        <tbody>
+          <tr><td>As built</td><td class="b n">102.5-117.7 ms</td><td class="b n">158-171 ms</td></tr>
+          <tr><td>Wheel listener added once at load instead</td><td class="a n">33.5-59.0 ms</td><td class="a n">48-52 ms</td></tr>
+          <tr><td>Image <code>src</code> or <code>inert</code> moved out</td><td class="b n">130-154 ms</td><td class="b n">175-227 ms</td></tr>
+          <tr><td>Listeners added later, at y ~3990</td><td colspan="2">a new 82-117 ms frame there</td></tr>
+        </tbody>
+      </table></div>
+      <p>The wheel listener alone carried the spike, and moving it only moved the spike. The source says why. The first window <code>wheel</code> listener changes the root style's event-listener region types, and <code>Document::invalidateEventListenerRegions()</code> then schedules a full style rebuild <span class="st st-c">CONFIRMED</span> (WebKit main, <code>LocalDOMWindow.cpp</code> 2150-2172, <code>Document.cpp</code> 6648-6663). The types are inherited, so every element's style is involved, and passive listeners change the set too <span class="st st-c">CONFIRMED</span> (<code>StyleAdjuster.cpp</code> 227-262). Touch listeners take an early return unless touch event regions are on <span class="st st-c">CONFIRMED</span> (<code>Document.cpp</code> 12723-12730); whether shipping iOS Safari turns them on is <span class="st st-u">UNRESOLVED</span>, and in our data the touch pair was cheap <span class="st st-o">OBSERVED</span>.</p>
+    </div>
+
+    <div class="row"><p class="label">Fix</p>
+      <p>Register global listeners once, at load or teardown, and switch their behaviour with a flag. In g0.0k the phone path goes further: it never adds a wheel listener at all (phones only need passive touch listeners, registered at setup).</p>
+<pre>let armed = false;
+addEventListener('wheel', e =&gt; { if (armed) onWheelNearEnd(e); },
+                 { passive: false, capture: true });   <span class="c">// once, at load</span>
+
+new IntersectionObserver(([entry]) =&gt; {
+  armed = entry.isIntersecting;                        <span class="c">// no listener add here</span>
+}, { rootMargin: '200% 0px' }).observe(endSection);</pre>
+    </div>
+
+    <div class="row"><p class="label">Before / after</p>
+      <figure class="wide-fig">
+        <div class="chart" data-chart="c3" aria-label="The crossing frame on the iPhone, one dot per run. Before: 49, 51, 51, 49 ms. After: 19, 19, 19, 17 ms."></div>
+        <div class="key"><span><i class="k-before"></i>C: g0.0j</span><span><i class="k-after"></i>V: g0.0k</span><span><i class="k-warn"></i>34 ms</span><span><i class="k-late"></i>50 ms</span></div>
+        <figcaption>The longest frame between y 1650 and 1850, one dot per run. iPhone 15 Pro Max, driver G, block P-173, tool-induced Serious, 4 runs per arm. Its layout + style fell from a median 31.7 ms to 4.3 ms. The Simulator showed the same: that frame 128-149 → 20-29 ms, paints in it 19-20 → 1.</figcaption>
+      </figure>
+    </div>
+
+    <div class="row"><p class="label">Cost and caveats</p>
+      <ul>
+        <li>A non-passive wheel listener present from load makes every wheel and trackpad scroll wait for the main thread. So scope it: in our build, desktops and reduced-motion users keep the listener, added once at mount, and phones never get one.</li>
+        <li>The rebuild still happens once at load. That is a load-time cost, paid during hydration, before anyone scrolls.</li>
+        <li>About 5-8 ms of layout + style still runs at the crossing in the Simulator (background p90 1.5 ms). It no longer makes a long frame.</li>
+      </ul>
+    </div>
+    <p class="src">Sources: fixes/g0-box/README.md 1127-1200, 1352-1375 · fixes/g0-0k/README.md 118-140, 302-344 · finding F-360</p>
+  </article>
+
+  <!-- ============================== CASE 4 ============================== -->
+  <article class="case" id="c4" aria-labelledby="c4-h">
+    <div class="case-head">
+      <div class="case-meta"><span class="label">Case 04</span><span class="pipe" aria-label="Pipeline stages: paint and composite were the cost"><span>Script</span><span>Style</span><span>Layout</span><span class="on">Paint</span><span class="on">Composite</span></span></div>
+      <h2 id="c4-h">Keep the glass steady, fade only its colour</h2>
+      <p class="build">PR-040 "steady glass" end of page · build g0.0k</p>
+    </div>
+
+    <div class="row"><p class="label">Symptom</p>
+      <p>The menu bar at the end of the page is frosted glass: <code>backdrop-filter: blur(20px)</code> over a light tint. As the bar grows into the dark menu panel, the original page blurs less and darkens. In our compositor version (case 1) the glass vanished and came back while the finger moved near the start of the grow.</p>
+    </div>
+
+    <div class="row"><p class="label">How we measured</p>
+      <p>Simulator, robot finger wiggling around the start of the grow (6 short strokes), a screenshot after each move, and a sharpness score of the glass region: 0.02-0.09 when frosted, up to 1.87 when the glass is missing.</p>
+    </div>
+
+    <div class="row"><p class="label">Root cause</p>
+      <p>With the blur radius on a scroll-driven animation, the glass was missing in 12 of 33 shots <span class="st st-o">OBSERVED</span>, cause unknown. The earlier script version avoided that by writing <code>blur(20px × (1 − m))</code> from script at each step, which brings back per-frame style writes. And a changing blur value is expensive by itself: WebKit repaints a filtered element's contents on frames where the filter value changes <span class="st st-o">OBSERVED</span> (at rest, a constant <code>blur(0px)</code> cost nothing measurable), while Chrome never runs blur animations on the compositor <span class="st st-c">CONFIRMED</span> (Blink <code>compositor_animations.cc</code>, failure reason 4096).</p>
+    </div>
+
+    <div class="row"><p class="label">Fix</p>
+      <p>Don't animate the blur. Keep it at 20 px for the whole grow and put the darkening on a separate layer whose opacity follows the morph. The original page mixes the tint from a 10 % white toward a dark navy; a dark layer at opacity m over the light tint gives the same path.</p>
+<pre>.bar { backdrop-filter: blur(20px); background: #ffffff1a; isolation: isolate; }  <span class="c">/* set once */</span>
+.bar::before {                                    <span class="c">/* the dark fill, under the content */</span>
+  content: ""; position: absolute; inset: 0; z-index: -1; background: #131922;
+  animation: darken linear both;
+  animation-timeline: --menu;
+}
+@keyframes darken { from { opacity: 0 } to { opacity: .9999 } }  <span class="c">/* stay off 1: see below */</span></pre>
+      <p>The <code>.9999</code> end is deliberate: in WebKit, an opacity change that crosses 1 is a Layout-level style difference, not a repaint-only one <span class="st st-c">CONFIRMED</span> (<code>StyleDifference.cpp</code> 192-209, tag 7624.4.5).</p>
+    </div>
+
+    <div class="row"><p class="label">Before / after</p>
+      <figure class="wide-fig">
+        <div class="chart" data-chart="c4" aria-label="Per frame at the end of the page in the Simulator. Paints 3.23 before, 0.63 after. Layouts 0.81 before, 0.44 after. Style recalcs 1.00 before, 1.43 after."></div>
+        <div class="key"><span><i class="k-before"></i>g0.0j: menu opens by itself on a held page</span><span><i class="k-after"></i>g0.0k: menu follows the finger, steady glass</span></div>
+        <figcaption>Per frame at the end of the page, Simulator, 5 robot swipes into the end and 5 back, 1 load per build. Each metric has its own scale; bars start at zero. These rows compare the whole end-of-page rework, of which the steady glass is one part. The wiggle test found the glass frosted in all 17 shots.</figcaption>
+      </figure>
+      <p>On the phone (P-173, driver G, 4 runs per arm) frames over 50 ms at the end were 0 in every run of both builds, and the share of frames over 34 ms stayed in the same range (0.13-0.27 % before, 0.17-0.30 % after).</p>
+    </div>
+
+    <div class="row"><p class="label">Cost and caveats</p>
+      <ul>
+        <li><strong>It changes the look.</strong> The glass no longer clears as the menu opens. That made it a proposal with live A and B pages; the user accepted it (PR-040).</li>
+        <li><strong>Style work went up</strong>, as case 1 predicts: style recalcs per frame 1.00 → 1.43 in the Simulator, and 45-49 style records of 5 ms or more per phone run at the end, against 0-1 before. None of them made a frame over 50 ms.</li>
+        <li><strong>Memory at rest went up</strong> with the menu closed: 46 layers / 77.2 MB → 53 / 103.6 MB, because the menu's layers are built ahead of the first open.</li>
+      </ul>
+    </div>
+    <p class="src">Sources: fixes/cm-return/README.md 20-46 · fixes/g0-0k/README.md 64-92, 302-344 · fixes/FINDINGS.md P4 (line 36) · research/architecture/gpu-compositor-playbook.md 71, 178</p>
+  </article>
+
+  <!-- ============================== CASE 5 ============================== -->
+  <article class="case" id="c5" aria-labelledby="c5-h">
+    <div class="case-head">
+      <div class="case-meta"><span class="label">Case 05</span><span class="pipe" aria-label="Pipeline stage: paint was the cost"><span>Script</span><span>Style</span><span>Layout</span><span class="on">Paint</span><span>Composite</span></span></div>
+      <h2 id="c5-h">Give a ticking clock its own small layer</h2>
+      <p class="build">Build g0.0i · two CSS rules, Safari only</p>
+    </div>
+
+    <div class="row"><p class="label">Symptom</p>
+      <p>Nothing the user could point at. The open menu holds a second countdown, and a layer census in the Simulator showed it repainting a big layer once a second. This case is a "does less work" fix: fewer bytes moved per frame, no frame-time claim.</p>
+    </div>
+
+    <div class="row"><p class="label">How we measured</p>
+      <p>Simulator layer census (layers, backing memory) and paint counts per layer over one menu open, stepped frame by frame.</p>
+    </div>
+
+    <div class="row"><p class="label">Root cause</p>
+      <p>The open menu's centre is its own WebKit layer: 406x389 CSS px at device pixel ratio 3, a 5.7 MB backing store. The clock's digit cells paint into it without a layer of their own. Each roll (about 0.4 s, once a second) changes their transform every frame, and WebKit re-displays the centre: 196 paints of that layer over one open.</p>
+      <p>The invalidated rectangle is already small. But each display of a layer swaps its buffers, marks the new one non-volatile and copies the previously painted area forward <span class="st st-c">CONFIRMED</span> (WebKit main 6d3243c9, <code>ImageBufferSet.cpp</code> 42-75, 103-148), and the copy covers the whole layer after a 200 ms volatility timer fires between rolls <span class="st st-c">CONFIRMED</span> (<code>RemoteLayerBackingStoreCollection.mm</code> 45, 124-143). Whether Core Animation then re-uploads the whole surface is <span class="st st-u">UNRESOLVED</span>.</p>
+    </div>
+
+    <div class="row"><p class="label">Fix</p>
+<pre>.menu-centre .clock { isolation: isolate; }                 <span class="c">/* always */</span>
+.menu[data-scene="active"] .menu-centre .clock {
+  will-change: transform;                                    <span class="c">/* only while shown */</span>
+}</pre>
+      <p>The wrapper becomes a 1.2 MB layer only while the menu is open. The constant <code>isolation</code> matters: toggling <code>will-change</code> on a <code>z-index: auto</code> element flips its used z-index between auto and 0, and WebKit answers that with a Layout, not a recomposite <span class="st st-c">CONFIRMED</span> (<code>StyleAdjuster.cpp</code> 391-410, <code>StyleDifference.cpp</code> 428-429, WebKit main f9dcd0ee).</p>
+    </div>
+
+    <div class="row"><p class="label">Before / after</p>
+      <figure class="wide-fig">
+        <div class="chart" data-chart="c5" aria-label="Over one menu open in the Simulator: paints of the 5.7 MB centre layer 196 before, 11 after; backing store re-displayed about 1117 MB before, about 287 MB after."></div>
+        <div class="key"><span><i class="k-before"></i>g0.0h</span><span><i class="k-after"></i>g0.0i</span></div>
+        <figcaption>Over one stepped menu open, Simulator. The 11 left are the menu's own growth steps. Backing re-displayed = paints × layer size, an estimate of bytes moved.</figcaption>
+      </figure>
+      <p>On the phone (P-170b, driver G, 2 runs per arm) the first open frame was 16.5 ms in both builds, the open median 17 ms in both, and 0 frames over 50 ms in both: no worse.</p>
+    </div>
+
+    <div class="row"><p class="label">Cost and caveats</p>
+      <ul>
+        <li>One more layer and 1.2 MB while the menu is open (53 / 77.3 MB → 54 / 78.5 MB). With the menu closed, nothing changes.</li>
+        <li>Chrome drew the composited digits 1 CSS px higher <span class="st st-o">OBSERVED</span>, so the rules apply only in Safari, keyed on the page's own <code>'GestureEvent' in window</code> test.</li>
+        <li>Mid-open, the clock's glyph edges antialias slightly differently in the Simulator; at rest the frames are identical.</li>
+        <li>The phone check ran with 2 runs per arm because the first block (3 per arm) was voided by its heat check (49.4 fps at 43 °C; see <a href="#c8">case 8</a>).</li>
+      </ul>
+    </div>
+    <p class="src">Sources: fixes/menu-layers/README.md 18-60, 88-91 · fixes/g0-0i/README.md 14-62 · finding F-351</p>
+  </article>
+
+  <!-- ============================== CASE 6 ============================== -->
+  <article class="case" id="c6" aria-labelledby="c6-h">
+    <div class="case-head">
+      <div class="case-meta"><span class="label">Case 06</span><span class="pipe" aria-label="Pipeline stage: compositing memory was the cost"><span>Script</span><span>Style</span><span>Layout</span><span>Paint</span><span class="on">Composite</span></span></div>
+      <h2 id="c6-h">Hold a hidden animation as a still picture</h2>
+      <p class="build">PR-039 "keep-phase" · build g0.0h</p>
+    </div>
+
+    <div class="row"><p class="label">Symptom</p>
+      <p>None visible. The closed menu holds four columns of photos that drift up and down when it is open. Closed, their animation was paused, and the Simulator's census still counted their layers and graphics memory at the top of the page, far from the menu.</p>
+    </div>
+
+    <div class="row"><p class="label">How we measured</p>
+      <p>Simulator layer census at the top of the page, and a phase check: how far the columns jump when the menu re-opens (one frame of their motion is 0.14-0.16 px).</p>
+    </div>
+
+    <div class="row"><p class="label">Root cause</p>
+      <p>A paused keyframe effect on <code>transform</code> keeps its element composited; a static 2D transform does not <span class="st st-c">CONFIRMED</span> (WebKit main 94a902b2, <code>RenderLayerCompositor.cpp</code> 3902-3910 and 3949-3951). So <code>animation-play-state: paused</code> saves the ticks but keeps the layers, and anything that overlaps them may need layers too.</p>
+    </div>
+
+    <div class="row"><p class="label">Fix</p>
+      <p>When the menu closes, freeze each column at its current frame as a plain transform and drop the animation. When it opens, remove the transform and restart the animation at the same phase with a negative delay.</p>
+<pre>function hold(track) {
+  const [anim] = track.getAnimations();
+  track.dataset.phase = anim.currentTime % anim.effect.getTiming().duration;
+  track.style.transform = getComputedStyle(track).transform;  <span class="c">// still picture</span>
+  track.style.animation = 'none';                             <span class="c">// no effect, no layer</span>
+}
+function resume(track) {
+  track.style.transform = '';
+  track.style.animation = '';
+  track.style.animationDelay = `-${track.dataset.phase}ms`;   <span class="c">// same phase</span>
+}</pre>
+    </div>
+
+    <div class="row"><p class="label">Before / after</p>
+      <figure class="wide-fig">
+        <div class="chart" data-chart="c6" aria-label="Top of the page in the Simulator. Layers 158 before, 152 after. Graphics memory 27.6 MB before, 12.4 MB after."></div>
+        <div class="key"><span><i class="k-before"></i>g0.0f</span><span><i class="k-after"></i>g0.0h</span></div>
+        <figcaption>Top of the page, menu closed, Simulator, 1 load. Re-open jump 0-0.34 px (before: 0-0.36 px). iPhone P-169 (driver W with Timeline, 3 runs per arm): the frame where the menu starts playing, median 71 → 69 ms; scroll-phase counts no worse at every threshold.</figcaption>
+      </figure>
+    </div>
+
+    <div class="row"><p class="label">Cost and caveats</p>
+      <ul>
+        <li>One computed-style read per column at the moment the menu closes. It runs at a still moment, never in a scroll frame.</li>
+        <li>No frame-time gain is claimed. This landed on fewer layers and less memory, plus a phone check that nothing got worse.</li>
+      </ul>
+    </div>
+    <p class="src">Sources: fixes/g0-0h/README.md 8-46 · fixes/g0-box/README.md "colpause" and "P-169 result"</p>
+  </article>
+
+  <!-- ============================== CASE 7 ============================== -->
+  <article class="case" id="c7" aria-labelledby="c7-h">
+    <div class="case-head">
+      <div class="case-meta"><span class="label">Case 07</span><span class="pipe" aria-label="Pipeline stage: paint, a look problem rather than a stall"><span>Script</span><span>Style</span><span>Layout</span><span class="on">Paint</span><span>Composite</span></span></div>
+      <h2 id="c7-h">Skip a time-based reveal when the user flings</h2>
+      <p class="build">PR-041 "instant" · build g0.0l, the current best</p>
+    </div>
+
+    <div class="row"><p class="label">Symptom</p>
+      <p>A fast fling down from the top lands on the people section, and its profile deck "blinks": it arrives white, then blurred, then turns sharp. The original site does it too.</p>
+    </div>
+
+    <div class="row"><p class="label">How we measured</p>
+      <ul>
+        <li>iPhone, driver G flicks (300 px in 220 ms from the top), Timeline on, plus screen-capture frame numbers.</li>
+        <li>Simulator flicks with a sharpness score per screenshot; Chrome screencast of a synthetic fling.</li>
+        <li>Then block P-174 (driver G, 4 runs per arm) with a page log that counts frames where the deck is in view while its blur is still running.</li>
+      </ul>
+    </div>
+
+    <div class="row"><p class="label">Root cause</p>
+      <p>This was not a stall. The screen capture showed <strong>0 frame gaps over 34 ms</strong> during the fling <span class="st st-o">OBSERVED</span>. The page drew every frame on time; it drew the wrong picture. The card holding the deck is hidden (<code>opacity: 0</code>, <code>blur(14px)</code>, 48 px lower) until a scroll threshold, and then plays a time-based fade. The trigger, in Fastwork's code:</p>
+<pre><span class="c">// Fastwork bundle, prettified baseline JS line 11310 (quoted for attribution)</span>
+z(y, e.matches || i / r &gt;= 0.72, !0)</pre>
+      <p>That sets the reveal once the hero is 72 % scrolled; the fade then runs 0.7-1.6 s. A fling covers the distance from that threshold to the deck in about 0.5 s, so the deck arrives mid-fade. Its eight lazy photos also load during the fling, behind the blur <span class="st st-o">OBSERVED</span>. Every frame-time metric in this study was blind to it.</p>
+    </div>
+
+    <div class="row"><p class="label">Fix</p>
+      <p>Measure scroll speed at the moment the threshold flips. Above 0.8 px/ms (phone flings measured 1.04-2.89), take the end state at once; slower scrolls keep the original fade. On touch screens, load and decode the deck's photos after the page's load event, so a sharp card is also a complete one.</p>
+<pre>let lastY = scrollY, lastT = performance.now();
+function onScrollFrame(now) {                    <span class="c">// already runs once per rAF while scrolling</span>
+  const speed = Math.abs(scrollY - lastY) / (now - lastT);   <span class="c">// px per ms</span>
+  lastY = scrollY; lastT = now;
+  if (!shown &amp;&amp; progress() &gt;= 0.72) {
+    if (speed &gt;= 0.8) section.dataset.reveal = 'instant';
+    section.classList.add('is-visible');
+    setTimeout(() =&gt; delete section.dataset.reveal, 400);
+    shown = true;
+  }
+}
+<span class="c">/* CSS */</span>
+[data-reveal="instant"] .card { transition: none; }</pre>
+    </div>
+
+    <div class="row"><p class="label">Before / after</p>
+      <figure class="wide-fig">
+        <div class="chart" data-chart="c7a" aria-label="Frames per flick with the deck in view while its blur still runs. Before: 52, 52, 51, 52. After: 0, 0, 0, 0."></div>
+        <div class="chart" data-chart="c7b" aria-label="Milliseconds the fade is visible with the deck in view. Before: 816, 816, 833, 816. After: 135, 118, 135, 117."></div>
+        <div class="key"><span><i class="k-before"></i>C: g0.0k</span><span><i class="k-after"></i>V: g0.0l</span></div>
+        <figcaption>One dot per flick. iPhone 15 Pro Max, driver G, block P-174, tool-induced Serious, 4 runs per arm. The ~120 ms left is the gap between the deck entering the view and the 0.72 threshold. Deck photos complete at the flick: 7 of 26 before, 26 of 26 after.</figcaption>
+      </figure>
+    </div>
+
+    <div class="row"><p class="label">Cost and caveats</p>
+      <ul>
+        <li><strong>The reveal frame got heavier.</strong> The decoded photos now paint and upload in the frame that shows the card: Paint +6-9 ms and Composite +6-12 ms, that frame 44-60 ms instead of 35-47 ms <span class="st st-o">OBSERVED</span>. Frames over 50 ms per flick went 0, 0, 0, 0 → 1, 1, 0, 1, inside the block's no-worse limit of +2. A next step would let the hidden card paint ahead so the reveal only composites.</li>
+        <li><strong>Decoding ahead changed resampling</strong> in Chrome desktop by up to 0.8 % of pixels, so the preload is limited to touch screens.</li>
+        <li><strong>A scroll-driven reveal was considered</strong> and not proposed. Safari 26 supports it <span class="st st-c">CONFIRMED</span> (<code>ScrollDrivenAnimationsEnabled</code> stable from the safari-7622 branch), but a page stopped inside the range would show a half-blurred card, and whether 26.6.1 runs it threaded is <span class="st st-u">UNRESOLVED</span>.</li>
+        <li>It changes the look of fast scrolls, so it went to the user as a proposal with A and B pages; <a href="https://claude.ai/artifact/<private-artifact>#day" target="_blank" rel="noopener">Part 3 follows that path</a> from the user's report to the phone check.</li>
+      </ul>
+    </div>
+    <p class="src">Sources: fixes/people-blink/README.md 18-82 · fixes/g0-0l/README.md 261-320 · fixes/BEST_BUILDS.md line 10 · finding F-371</p>
+  </article>
+
+  <!-- ============================== CASE 8 ============================== -->
+  <article class="case" id="c8" aria-labelledby="c8-h">
+    <div class="case-head">
+      <div class="case-meta"><span class="label">Case 08</span><span class="pipe-alt">Around the pipeline: the device</span></div>
+      <h2 id="c8-h">Treat heat as a variable</h2>
+      <p class="build">research/phone-heat (P-068) · research/serious-heat</p>
+    </div>
+
+    <div class="row"><p class="label">Symptom</p>
+      <p>The phone got warm during test blocks, and results drifted with it. The same build measured smooth at the start of an hour and laggy at the end. Later, the user asked for the page to stay smooth in the phone's hot "Serious" thermal state.</p>
+    </div>
+
+    <div class="row"><p class="label">How we measured</p>
+      <p>One identical 6-minute routine (3 minutes untouched at the top, then scripted window runs) on four pages, in two sessions, with the battery held at 80 % on the cable. The score is the battery temperature slope, corrected to a 37 °C start.</p>
+      <ul>
+        <li><strong>Floor:</strong> a static page as tall as Fastwork's, with no images, fonts, scripts or animation.</li>
+        <li><strong>apple.com:</strong> a heavy product page, loaded live by the phone as an outside reference.</li>
+        <li><strong>Fastwork, original</strong>, and <strong>Fastwork with the fixes of that day</strong> (before the countdown fix).</li>
+      </ul>
+    </div>
+
+    <div class="row"><p class="label">What we found</p>
+      <figure class="wide-fig">
+        <div class="chart" data-chart="c8" aria-label="Corrected warming rate in degrees per minute, session 1 and 2. Floor -0.085 and -0.105. apple.com 0.055 and -0.013. Fastwork original 0.620 and 0.400. Fastwork with fixes 0.192 and 0.238."></div>
+        <figcaption>Battery temperature slope, °C per minute, corrected to a 37 °C start; one bar per session. iPhone 15 Pro Max, driver W, 2026-10-03. The fixes removed 61 % and 32 % of the original page's warming above the floor.</figcaption>
+      </figure>
+      <p>The page's own always-on work heated the phone: above the floor, the original Fastwork page warmed it 5 to 5.5 times as fast as apple.com did <span class="st st-o">OBSERVED</span>. Then we looked at what heat does to the page:</p>
+      <ul>
+        <li><strong>The GPU side slows, the CPU does not.</strong> Under induced Serious a CPU loop ran at the same speed, and a sustained GPU animation ran about 25-35 % slower <span class="st st-o">OBSERVED</span> (n = 3, cause unknown). So "move more to the GPU" helps only work that waits on the main thread.</li>
+        <li><strong>Timers land on a 30 ms grid.</strong> WebKit's thermal mitigation aligns DOM timers <span class="st st-c">CONFIRMED</span> (<code>DOMTimer.h</code>:54). A repeating timer re-arms from when it actually fired, so <code>setInterval(f, 1000)</code> fires every 1020 ms and a once-a-second clock skips a second about every 50 s <span class="st st-c">CONFIRMED</span> (WebKit main bdc535f8, <code>Timer.cpp</code> 502-520, <code>DOMTimer.cpp</code> 436-448), and the phone showed 1020 ms gaps <span class="st st-o">OBSERVED</span>.</li>
+        <li><strong>rAF is not halved</strong> by default; that needs the aggressive mitigation preference, off by default since WebKit a8c0b8f <span class="st st-c">CONFIRMED</span>. Heat and Low Power Mode do turn off the high frame rate Core Animation could otherwise grant <span class="st st-c">CONFIRMED</span> (Apple, "Optimizing iPhone and iPad apps to support ProMotion displays").</li>
+        <li><strong>Most heat lag sat right after load:</strong> 17 % of moving frames slow in the first 8.5 s, 7 % from 8.5 to 20 s, 1 % after <span class="st st-o">OBSERVED</span> (8 robot-finger runs).</li>
+      </ul>
+    </div>
+
+    <div class="row"><p class="label">What we changed in the method</p>
+      <ul>
+        <li>Every phone block starts with one uncounted warm-up run per build's port, because a cold first run is slow.</li>
+        <li>A <strong>sentinel</strong>: the control build must still reach 58 fps at the bottom and 44 fps while scrolling. A failure voids every run since the last passing one. Idle fps is no heat check: it stays at 60 while the phone throttles.</li>
+        <li>Phone checks now run in a fixed hot state, Serious induced by a tool, so every run starts equally warm. Results from different heat profiles are never pooled.</li>
+        <li>Under real heat, the phone cools between blocks until the battery is 0.5 °C under the last passing sentinel's temperature. <a href="https://claude.ai/artifact/<private-artifact>#devices" target="_blank" rel="noopener">Part 3</a> shows where these checks sit in a block.</li>
+      </ul>
+    </div>
+
+    <div class="row"><p class="label">Caveats</p>
+      <ul>
+        <li>Battery temperature lags the chip. It is a cooling cue, never a validity check; the sentinel decides.</li>
+        <li>One phone, one day, apple.com live and not frozen. The system power readings agreed in direction, but their units are <span class="st st-u">UNRESOLVED</span>, so no watts are claimed.</li>
+      </ul>
+    </div>
+    <p class="src">Sources: research/phone-heat/README.md 337-414 · research/serious-heat/README.md 14-70 · research/architecture/measurement-protocol-v2.md §5.2-5.3 (283-320)</p>
+  </article>
+
+  <!-- ============================== CASE 9 ============================== -->
+  <article class="case" id="c9" aria-labelledby="c9-h">
+    <div class="case-head">
+      <div class="case-meta"><span class="label">Case 09</span><span class="pipe-alt">Around the pipeline: the reading</span></div>
+      <h2 id="c9-h">Read a result: ticks, twins, sentinels, A/A</h2>
+      <p class="build">research/architecture/measurement-protocol-v2.md · research/cpu-throttle-calibration</p>
+    </div>
+
+    <div class="row"><p class="label">Symptom</p>
+      <p>Early on, results flipped between runs, a Chrome win didn't show on the phone, and a 49 ms frame and a 51 ms frame got opposite verdicts. These are the rules that made a number mean the same thing twice.</p>
+    </div>
+
+    <div class="row"><p class="label">Calibrate the fast tool to the device</p>
+      <p>The iPhone is not slow at JavaScript: on a CPU microbenchmark it matched this Mac's Chrome at 1x (261 vs 255 ms). Its page still janks, because WebKit's costs differ and every miss costs a whole 16.7 ms frame. So we matched the symptom instead. Under the same scripted scroll:</p>
+      <div class="tablewrap"><table class="cmp">
+        <thead><tr><th>Scroll phase, mean of 3 runs</th><th>Frames &gt; 34 ms</th><th>&gt; 50 ms</th><th>Worst</th><th>Distance</th></tr></thead>
+        <tbody>
+          <tr><td>iPhone 15 Pro Max, Safari</td><td class="n">15.7</td><td class="n">5.7</td><td class="n">104 ms</td><td class="n">0</td></tr>
+          <tr><td>Chrome mobile 4x</td><td class="b n">3.3</td><td class="b n">0.7</td><td class="b n">52 ms</td><td class="b n">0.60</td></tr>
+          <tr><td>Chrome mobile 6x</td><td class="a n">12.3</td><td class="a n">5.0</td><td class="a n">89 ms</td><td class="a n">0.17</td></tr>
+          <tr><td>Chrome mobile 20x</td><td class="b n">108.3</td><td class="b n">97.7</td><td class="b n">428 ms</td><td class="b n">13.18</td></tr>
+        </tbody>
+      </table></div>
+      <p>6x is a calibration for this page and this scroll, not "the iPhone is 6x slower". It slows only the main thread <span class="st st-o">OBSERVED</span>, so it can't show raster, GPU or WebKit-only costs (cases 4-7 needed the Simulator and the phone).</p>
+    </div>
+
+    <div class="row"><p class="label">Count in the device's own units</p>
+      <p>Chrome on a 120 Hz screen stamps frames on 8.33 ms ticks, so Chrome counts use ticks (the ruler at the top). Safari stamps the start of each rendering update at 1 ms resolution <span class="st st-c">CONFIRMED</span> (<code>Document.cpp</code> l.8959, <code>Page.cpp</code> 2424-2428), and in 198,349 phone gaps the long ones spread smoothly with no peaks at 33.3 or 50 ms <span class="st st-o">OBSERVED</span>. So the phone uses plain ms thresholds. Safari asks for 60 Hz page updates only as a hint <span class="st st-c">CONFIRMED</span> (pref <code>PreferPageRenderingUpdatesNear60FPSEnabled</code>), and finger runs show stretches of ~80 Hz, so frame counts from touch runs don't compare with scripted runs; ms thresholds do.</p>
+    </div>
+
+    <div class="row"><p class="label">Report the twins</p>
+      <p>Every threshold count comes with the counts at ±4 ms. A verdict that changes at either twin is called <strong>threshold-sensitive</strong>. Here is case 2's goal count, read that way:</p>
+      <figure class="wide-fig">
+        <div class="chart" data-chart="c9" aria-label="Frames per run over 46, 50 and 54 ms, before and after. Over 46: before 4, 2, 2, 3; after 1, 1, 1, 1. Over 50: before 3, 1, 2, 2; after 1, 1, 1, 1. Over 54: before 1, 1, 1, 1; after 0, 0, 0, 0."></div>
+        <div class="key"><span><i class="k-before"></i>C: g0.0i</span><span><i class="k-after"></i>V: g0.0j</span></div>
+        <figcaption>Block P-172, iPhone, driver G, finger down at y 1000-3400, one dot per run (stacked where runs tie). At 50 ms the two arms touch at 1: no separation. At 46 and at 54 they separate. Because a twin disagrees, the result is threshold-sensitive, and the article above does not claim a 50 ms win for case 2.</figcaption>
+      </figure>
+    </div>
+
+    <div class="row"><p class="label">Know your noise floor</p>
+      <ul>
+        <li><strong>A/A first.</strong> Measure the baseline against itself. Screenshot diffs of 0-0.4 % were the countdown's and carousels' own phase, not a change. A Chrome verdict is "better" only when the two ranges don't overlap over at least 3 runs.</li>
+        <li><strong>Host load moves the numbers.</strong> On the unchanged page, frames over 20 ms were ~66 at a load average under 6 and 96-103 at 6-15. Never compare a busy-host A/B with a quiet-host A/A.</li>
+        <li><strong>Small n, exact tests.</strong> A phone block is 4 runs per arm in C V V C C V V C order; the strongest one-sided result 4 against 4 can give is p = 1/70. That is why several cases above landed on "does less work, and no worse" rather than on a 50 ms win.</li>
+        <li><strong>The driver bounds the claim.</strong> A scripted scroll never runs touch handlers: making a <code>touchmove</code> listener passive measured flat (52.7 vs 52.5 fps). Touch, bounce and toolbar effects need the robot finger or a person.</li>
+        <li><strong>Check the logger can fire.</strong> A MutationObserver watching the wrong container reported 0 added notes while 11 were added. Before trusting a zero, make the counter count something.</li>
+      </ul>
+    </div>
+    <p class="src">Sources: research/cpu-throttle-calibration/README.md 25-62 · research/architecture/measurement-protocol-v2.md 16-33, 153-185, 312-343 · fixes/sticky-walk/README.md 240-256 · fixes/FINDINGS.md 41, 59-63 · CLAUDE.md "Reading results.json"</p>
+  </article>
+
+  <!-- ============================== CASE 10 ============================== -->
+  <article class="case" id="c10" aria-labelledby="c10-h">
+    <div class="case-head">
+      <div class="case-meta"><span class="label">Case 10</span><span class="pipe-alt">Around the pipeline: the reading</span></div>
+      <h2 id="c10-h">Don't show frame timing in a GIF</h2>
+      <p class="build">research/team-article/capture/medium-visuals.mjs</p>
+    </div>
+
+    <div class="row"><p class="label">Symptom</p>
+      <p>For the Medium copy of Part 1, the page's live pacing animation ("smooth" next to "one late frame") had to become an animated GIF. At a typical GIF rate of 12-15 fps the difference vanishes: every frame is slow, so the late ones no longer stand out.</p>
+    </div>
+
+    <div class="row"><p class="label">Root cause</p>
+      <p>A GIF stores each frame's delay in hundredths of a second <span class="st st-c">CONFIRMED</span> (GIF89a specification §23, "Delay Time"). And browsers treat very short delays as long ones: WebKit plays any delay under 11 ms as 100 ms <span class="st st-c">CONFIRMED</span> (<code>ImageDecoderCG.cpp</code> 591-596, WebKit main e6eb9ebd), and Chromium does the same for 10 ms or less <span class="st st-c">CONFIRMED</span> (<code>deferred_image_decoder.cc</code> 301-306, Chromium main 6140d183). Both comments cite Firefox's behaviour. So the fastest rate that plays the same everywhere is 20 ms per frame, 50 fps, and 16.7 ms can't be written at all.</p>
+      <figure class="wide-fig">
+        <div class="chart" data-chart="c10" aria-label="Frame times over 200 ms, to scale. Phone on time: a frame every 16.7 ms. Phone with one late frame: a 58 ms gap. GIF at 20 ms: a frame every 20 ms. GIF with the late frame held 60 ms. GIF asking for 10 ms: played as 100 ms."></div>
+        <div class="key"><span><i class="k-late"></i>gap over 34 ms</span></div>
+        <figcaption>Each tick is a new picture on screen, 0-200 ms, to scale. A GIF can show that a frame was late, rounded to 10 ms, but never the 60 Hz rhythm itself, and certainly not the phone's 80-120 Hz stretches.</figcaption>
+      </figure>
+    </div>
+
+    <div class="row"><p class="label">Fix</p>
+      <p>Draw the illustration on a virtual clock (the page's <code>requestAnimationFrame</code> and <code>performance.now</code> replaced before it runs), step it at 20 ms per GIF frame, and hold each late frame for its rounded length. For recorded before/after clips at 30 fps, alternate delays of 30, 30 and 40 ms so three frames take exactly 100 ms and the clock keeps time.</p>
+<pre>const delayCs = ms =&gt; Math.max(2, Math.round(ms / 10));  <span class="c">// GIF units; 2 = 20 ms floor</span>
+delayCs(16.7)  <span class="c">// 2  → plays 20 ms: the smooth lane runs at 50 fps</span>
+delayCs(58)    <span class="c">// 6  → plays 60 ms: the late frame stays visibly late</span></pre>
+    </div>
+
+    <div class="row"><p class="label">Caveats</p>
+      <ul>
+        <li>A GIF is a schematic of pacing, not a recording. It says so in its caption.</li>
+        <li>In an HTML page, draw pacing live (a canvas on <code>requestAnimationFrame</code>) or use video.</li>
+      </ul>
+    </div>
+    <p class="src">Sources: research/team-article/capture/medium-visuals.mjs 20-31 · commit c203f5ab · w3.org/Graphics/GIF/spec-gif89a.txt §23 · WebKit Source/WebCore/platform/graphics/cg/ImageDecoderCG.cpp · Chromium third_party/blink/renderer/platform/graphics/deferred_image_decoder.cc</p>
+  </article>
+
+  <section class="stack" aria-labelledby="carry-h">
+    <p class="label">What carried over</p>
+    <h2 id="carry-h">Eight rules we now check first</h2>
+    <ol class="rules">
+      <li>Find the stage before the fix: script, style, layout, paint or composite. A Simulator call stack tells a forced read from the engine's own work.</li>
+      <li>Move per-frame motion to <code>transform</code>, <code>opacity</code> or <code>filter</code> on a scroll or time timeline, and expect the style pass to stay.</li>
+      <li>Remove every layout read in a moving frame. A removed read moves the forced layout to the next reader until none are left.</li>
+      <li>Watch for boxes that size themselves from their own layout (aspect-ratio, percent heights) inside anything sticky.</li>
+      <li>Add global listeners at load; gate them with a flag.</li>
+      <li>Don't animate a blur; animate what sits over it.</li>
+      <li>Give small, frequently changing content its own small layer, and keep its stacking context constant.</li>
+      <li>Ask what a frame-time metric can't see: a reveal that plays on time can still look broken.</li>
+    </ol>
+  </section>
+
+  <footer>
+    <nav class="series" aria-label="Series">
+      <a href="https://claude.ai/artifact/<private-artifact>" target="_blank" rel="noopener">Part 1: Building an AI Loop from Scratch</a>
+      <span aria-current="page">Part 2: The Casebook</span>
+      <a href="https://claude.ai/artifact/<private-artifact>" target="_blank" rel="noopener">Part 3: Wiring the Loop</a>
+    </nav>
+    <p>Every number in this article is mapped to its source file and line in <code>SOURCES.md</code> next to this page. Builds are named by the study's best-build list (<code>fixes/BEST_BUILDS.md</code>); g0.0l is the current best as of 2026-10-09. Engine claims carry a status word; where the engine source agreed, the file, lines and branch or commit are named.</p>
+    <p>Personal, educational study of a local mirror of fastwork.com. Not affiliated with Fastwork. The phone numbers come from one iPhone 15 Pro Max on iOS 26.6.1; the Simulator is the iPhone 15 Pro Max Simulator on iOS 26.5; Chrome is version 154 on an M1 Pro Mac.</p>
+  </footer>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  // Every value below is copied from the study's records; SOURCES.md maps each to its file and line.
+  var C = {
+    c1: { type: 'range', unit: 'records per menu frame', min: 0, max: 13, ticks: [0, 2, 4, 6, 8, 10, 12],
+      rows: [
+        { label: 'Layout · C 2.23-2.38', v: [2.23, 2.38], k: 'before' },
+        { label: 'Layout · V 1.00-1.04', v: [1.00, 1.04], k: 'after' },
+        { label: 'Paint · C 11.45-12.01', v: [11.45, 12.01], k: 'before' },
+        { label: 'Paint · V 3.19-3.28', v: [3.19, 3.28], k: 'after' },
+        { label: 'Style recalcs · C 1.82-1.90', v: [1.82, 1.90], k: 'before' },
+        { label: 'Style recalcs · V 2.13-2.18', v: [2.13, 2.18], k: 'after' }
+      ] },
+    c2a: { type: 'dots', title: 'Layout records of 5 ms or more, per run', unit: 'records', min: 0, max: 170, ticks: [0, 40, 80, 120, 160],
+      rows: [
+        { label: 'C g0.0i · 159, 153, 152, 155', v: [159, 153, 152, 155], k: 'before' },
+        { label: 'V g0.0j · 1, 0, 1, 1', v: [1, 0, 1, 1], k: 'after' }
+      ] },
+    c2b: { type: 'dots', title: 'Frames over 34 ms, per run', unit: 'frames', min: 0, max: 20, ticks: [0, 5, 10, 15, 20],
+      rows: [
+        { label: 'C g0.0i · 18, 12, 12, 13', v: [18, 12, 12, 13], k: 'before' },
+        { label: 'V g0.0j · 2, 3, 5, 6', v: [2, 3, 5, 6], k: 'after' }
+      ] },
+    c3: { type: 'dots', title: 'Crossing frame at y 1650-1850, per run', unit: 'ms', min: 0, max: 60, ticks: [0, 10, 20, 30, 40, 50, 60],
+      lines: [{ v: 16.7, t: '16.7', k: 'ref' }, { v: 34, t: '34', k: 'warn' }, { v: 50, t: '50', k: 'late' }],
+      rows: [
+        { label: 'C g0.0j · 49, 51, 51, 49 ms', v: [49, 51, 51, 49], k: 'before' },
+        { label: 'V g0.0k · 19, 19, 19, 17 ms', v: [19, 19, 19, 17], k: 'after' }
+      ] },
+    c4: { type: 'bars', groups: [
+        { title: 'Paints per frame', bars: [{ t: 'g0.0j', v: 3.23, k: 'before' }, { t: 'g0.0k', v: 0.63, k: 'after' }] },
+        { title: 'Layouts per frame', bars: [{ t: 'g0.0j', v: 0.81, k: 'before' }, { t: 'g0.0k', v: 0.44, k: 'after' }] },
+        { title: 'Style recalcs per frame (went up)', bars: [{ t: 'g0.0j', v: 1.00, k: 'before' }, { t: 'g0.0k', v: 1.43, k: 'after' }] }
+      ] },
+    c5: { type: 'bars', groups: [
+        { title: 'Paints of the 5.7 MB centre layer, one open', bars: [{ t: 'g0.0h', v: 196, k: 'before' }, { t: 'g0.0i', v: 11, k: 'after' }] },
+        { title: 'Backing re-displayed, one open (MB, approx.)', bars: [{ t: 'g0.0h', v: 1117, k: 'before' }, { t: 'g0.0i', v: 287, k: 'after' }] }
+      ] },
+    c6: { type: 'bars', groups: [
+        { title: 'Layers at the top of the page', bars: [{ t: 'g0.0f', v: 158, k: 'before' }, { t: 'g0.0h', v: 152, k: 'after' }] },
+        { title: 'Graphics memory (MB)', bars: [{ t: 'g0.0f', v: 27.6, k: 'before' }, { t: 'g0.0h', v: 12.4, k: 'after' }] }
+      ] },
+    c7a: { type: 'dots', title: 'Blurred deck frames per flick', unit: 'frames', min: 0, max: 60, ticks: [0, 10, 20, 30, 40, 50, 60],
+      rows: [
+        { label: 'C g0.0k · 52, 52, 51, 52', v: [52, 52, 51, 52], k: 'before' },
+        { label: 'V g0.0l · 0, 0, 0, 0', v: [0, 0, 0, 0], k: 'after' }
+      ] },
+    c7b: { type: 'dots', title: 'Fade visible with the deck in view', unit: 'ms', min: 0, max: 900, ticks: [0, 200, 400, 600, 800],
+      rows: [
+        { label: 'C g0.0k · 816, 816, 833, 816 ms', v: [816, 816, 833, 816], k: 'before' },
+        { label: 'V g0.0l · 135, 118, 135, 117 ms', v: [135, 118, 135, 117], k: 'after' }
+      ] },
+    c8: { type: 'hbars', unit: '°C per minute', min: -0.2, max: 0.7, ticks: [-0.2, 0, 0.2, 0.4, 0.6],
+      rows: [
+        { label: 'Floor page · −0.085 / −0.105', v: [-0.085, -0.105], k: 'before' },
+        { label: 'apple.com · +0.055 / −0.013', v: [0.055, -0.013], k: 'before' },
+        { label: 'Fastwork original · +0.620 / +0.400', v: [0.620, 0.400], k: 'late' },
+        { label: 'Fastwork with fixes · +0.192 / +0.238', v: [0.192, 0.238], k: 'after' }
+      ] },
+    c9: { type: 'dots', title: 'Frames per run over each threshold', unit: 'frames', min: 0, max: 5, ticks: [0, 1, 2, 3, 4, 5],
+      rows: [
+        { label: '> 46 ms · C 4, 2, 2, 3', v: [4, 2, 2, 3], k: 'before' },
+        { label: '> 46 ms · V 1, 1, 1, 1', v: [1, 1, 1, 1], k: 'after' },
+        { label: '> 50 ms · C 3, 1, 2, 2 (touches V at 1)', v: [3, 1, 2, 2], k: 'before' },
+        { label: '> 50 ms · V 1, 1, 1, 1', v: [1, 1, 1, 1], k: 'after' },
+        { label: '> 54 ms · C 1, 1, 1, 1', v: [1, 1, 1, 1], k: 'before' },
+        { label: '> 54 ms · V 0, 0, 0, 0', v: [0, 0, 0, 0], k: 'after' }
+      ] }
+  };
+
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function fmt(v) { return (Math.round(v * 1000) / 1000).toString().replace('-', '−'); }
+  function wrap(w, h, inner, label) {
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '" role="img" aria-label="' + esc(label || '') + '">' + inner + '</svg>';
+  }
+  function fs(w) { return w < 420 ? 11 : 12; }
+
+  // Dot or range strip: one labelled row per series, shared x scale, optional threshold lines.
+  function strip(d, W, label) {
+    var f = fs(W), pl = 6, pr = 14, top = d.title ? f + 10 : 4, linesTop = d.lines ? f + 8 : 0;
+    var rowH = f + 44, h = top + linesTop + d.rows.length * rowH + f + 16;
+    var x = function (v) { return pl + (v - d.min) / (d.max - d.min) * (W - pl - pr); };
+    var s = '';
+    if (d.title) s += '<text x="' + pl + '" y="' + f + '" class="t-ink" font-size="' + f + '">' + esc(d.title) + '</text>';
+    var y0 = top + linesTop, y1 = y0 + d.rows.length * rowH;
+    d.ticks.forEach(function (t) {
+      s += '<line class="grid" x1="' + x(t) + '" x2="' + x(t) + '" y1="' + y0 + '" y2="' + y1 + '"/>';
+      var anchor = t === d.ticks[d.ticks.length - 1] ? 'end' : (t === d.ticks[0] ? 'start' : 'middle');
+      s += '<text x="' + x(t) + '" y="' + (y1 + f + 6) + '" text-anchor="' + anchor + '" font-size="' + f + '">' + fmt(t) + '</text>';
+    });
+    s += '<line class="ax" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y1 + '" y2="' + y1 + '"/>';
+    (d.lines || []).forEach(function (L) {
+      s += '<line class="ln-' + L.k + '" x1="' + x(L.v) + '" x2="' + x(L.v) + '" y1="' + (y0 - 2) + '" y2="' + y1 + '"/>';
+      s += '<text x="' + x(L.v) + '" y="' + (top + f) + '" text-anchor="middle" font-size="' + f + '" class="t-' + (L.k === 'late' ? 'late' : L.k === 'warn' ? 'warn' : 'ink') + '">' + esc(L.t) + '</text>';
+    });
+    d.rows.forEach(function (r, i) {
+      var ry = y0 + i * rowH, ly = ry + f + 2, dy = ry + f + 14;
+      s += '<text x="' + pl + '" y="' + ly + '" font-size="' + f + '" class="' + (r.k === 'after' ? 't-after' : 't-ink') + '">' + esc(r.label) + '</text>';
+      if (d.type === 'range') {
+        var a = x(r.v[0]), b = x(r.v[1]);
+        if (b - a < 4) { var m = (a + b) / 2; a = m - 2; b = m + 2; }
+        s += '<rect x="' + a + '" y="' + (dy - 5) + '" width="' + (b - a) + '" height="10" rx="2" class="b-' + r.k + '"/>';
+      } else {
+        var lo = Math.min.apply(null, r.v), hi = Math.max.apply(null, r.v);
+        if (hi > lo) s += '<line class="r-' + r.k + '" x1="' + x(lo) + '" x2="' + x(hi) + '" y1="' + dy + '" y2="' + dy + '"/>';
+        var seen = {};
+        r.v.forEach(function (v) {
+          var n = seen[v] = (seen[v] || 0) + 1;
+          var cx = x(v), cy = dy + (n - 1) * 7;
+          s += '<circle cx="' + cx + '" cy="' + cy + '" r="4.5" class="d-' + r.k + '"/>';
+        });
+      }
+    });
+    return wrap(W, h, s, label);
+  }
+
+  // Before/after bar pairs, each group on its own zero-based scale.
+  function bars(d, W, label) {
+    var f = fs(W), pl = 6, pr = 70, groupH = f + 46, h = d.groups.length * groupH + 4, s = '';
+    d.groups.forEach(function (g, gi) {
+      var gy = gi * groupH, max = 0;
+      g.bars.forEach(function (b) { max = Math.max(max, b.v); });
+      var lab = 52, span = W - pl - pr - lab;
+      s += '<text x="' + pl + '" y="' + (gy + f) + '" font-size="' + f + '" class="t-ink">' + esc(g.title) + '</text>';
+      g.bars.forEach(function (b, bi) {
+        var by = gy + f + 8 + bi * 17, bw = Math.max(1.5, b.v / max * span);
+        s += '<text x="' + pl + '" y="' + (by + 11) + '" font-size="' + (f - 1) + '">' + esc(b.t) + '</text>';
+        s += '<rect x="' + (pl + lab) + '" y="' + by + '" width="' + bw + '" height="13" rx="2" class="b-' + b.k + '"/>';
+        s += '<text x="' + (pl + lab + bw + 6) + '" y="' + (by + 11) + '" font-size="' + (f - 1) + '" class="' + (b.k === 'after' ? 't-after' : 't-ink') + '">' + fmt(b.v) + '</text>';
+      });
+    });
+    return wrap(W, h, s, label);
+  }
+
+  // Signed horizontal bars around zero, two per row (sessions 1 and 2).
+  function hbars(d, W, label) {
+    var f = fs(W), pl = 6, pr = 14, rowH = f + 38, top = 4;
+    var y1 = top + d.rows.length * rowH, h = y1 + f + 26;
+    var x = function (v) { return pl + (v - d.min) / (d.max - d.min) * (W - pl - pr); };
+    var s = '';
+    d.ticks.forEach(function (t) {
+      s += '<line class="' + (t === 0 ? 'ax' : 'grid') + '" x1="' + x(t) + '" x2="' + x(t) + '" y1="' + top + '" y2="' + y1 + '"/>';
+      s += '<text x="' + x(t) + '" y="' + (y1 + f + 6) + '" text-anchor="middle" font-size="' + f + '">' + fmt(t) + '</text>';
+    });
+    s += '<text x="' + (W - pr) + '" y="' + (y1 + 2 * f + 12) + '" text-anchor="end" font-size="' + f + '">' + esc(d.unit) + '</text>';
+    d.rows.forEach(function (r, i) {
+      var ry = top + i * rowH;
+      s += '<text x="' + pl + '" y="' + (ry + f + 2) + '" font-size="' + f + '" class="' + (r.k === 'after' ? 't-after' : r.k === 'late' ? 't-late' : 't-ink') + '">' + esc(r.label) + '</text>';
+      r.v.forEach(function (v, j) {
+        var by = ry + f + 8 + j * 12, a = x(Math.min(0, v)), b = x(Math.max(0, v));
+        var cls = r.k === 'late' ? 'band-late' : 'b-' + (r.k === 'after' ? 'after' : 'before');
+        s += '<rect x="' + a + '" y="' + by + '" width="' + Math.max(1.5, b - a) + '" height="9" rx="1.5" class="' + cls + '"' + (r.k === 'late' ? ' style="opacity:.85"' : '') + '/>';
+      });
+    });
+    return wrap(W, h, s, label);
+  }
+
+  // The frame ruler (hero): 0-60 ms.
+  function ruler(W, label) {
+    var f = fs(W), pl = 8, pr = 16, max = 60, h = 150;
+    var x = function (v) { return pl + v / max * (W - pl - pr); };
+    var yA = 46, s = '';
+    s += '<rect x="' + x(30) + '" y="' + (yA - 14) + '" width="' + (x(38) - x(30)) + '" height="40" class="band-warn"/>';
+    s += '<rect x="' + x(46) + '" y="' + (yA - 14) + '" width="' + (x(54) - x(46)) + '" height="40" class="band-late"/>';
+    s += '<rect x="' + x(0) + '" y="' + (yA - 6) + '" width="' + (x(16.667) - x(0)) + '" height="24" class="ontime"/>';
+    [16.667, 33.333, 50].forEach(function (v) { s += '<line class="ln-ref" x1="' + x(v) + '" x2="' + x(v) + '" y1="' + (yA - 14) + '" y2="' + (yA + 26) + '"/>'; });
+    s += '<line class="ln-warn" x1="' + x(34) + '" x2="' + x(34) + '" y1="' + (yA - 22) + '" y2="' + (yA + 26) + '"/>';
+    s += '<line class="ln-late" x1="' + x(50) + '" x2="' + x(50) + '" y1="' + (yA - 22) + '" y2="' + (yA + 26) + '"/>';
+    s += '<text x="' + x(8.33) + '" y="' + (yA + 10) + '" text-anchor="middle" font-size="' + f + '" style="fill:var(--ground)">16.7 ms</text>';
+    s += '<text x="' + x(34) + '" y="' + (yA - 26) + '" text-anchor="middle" font-size="' + f + '" class="t-warn">&gt; 34</text>';
+    s += '<text x="' + x(50) + '" y="' + (yA - 26) + '" text-anchor="middle" font-size="' + f + '" class="t-late">&gt; 50 goal: 0</text>';
+    var yAx = yA + 34;
+    s += '<line class="ax" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + yAx + '" y2="' + yAx + '"/>';
+    [0, 10, 20, 30, 40, 50, 60].forEach(function (t) {
+      s += '<line class="ax" x1="' + x(t) + '" x2="' + x(t) + '" y1="' + yAx + '" y2="' + (yAx + 4) + '"/>';
+      s += '<text x="' + x(t) + '" y="' + (yAx + f + 6) + '" text-anchor="' + (t === 0 ? 'start' : t === 60 ? 'end' : 'middle') + '" font-size="' + f + '">' + t + (t === 60 ? ' ms' : '') + '</text>';
+    });
+    var yK = yAx + 2 * f + 16;
+    s += '<text x="' + pl + '" y="' + yK + '" font-size="' + (f - 1) + '">Shaded: phone twin bands, 30-38 and 46-54 ms</text>';
+    s += '<line class="tick" x1="' + x(37.5) + '" x2="' + x(37.5) + '" y1="' + (yAx - 9) + '" y2="' + (yAx - 1) + '"/>';
+    s += '<line class="tick" x1="' + x(54.17) + '" x2="' + x(54.17) + '" y1="' + (yAx - 9) + '" y2="' + (yAx - 1) + '"/>';
+    s += '<text x="' + pl + '" y="' + (yK + f + 6) + '" font-size="' + (f - 1) + '">Axis marks: Chrome k≥5 37.5 ms, k≥7 54.2 ms</text>';
+    return wrap(W, h, s, label);
+  }
+
+  // GIF pacing strips: 0-200 ms.
+  function gif(W, label) {
+    var f = fs(W), pl = 6, pr = 14, max = 200, rowH = f + 30;
+    var x = function (v) { return pl + v / max * (W - pl - pr); };
+    var seq = function (step, n) { var a = []; for (var i = 0; i <= n; i++) a.push(Math.round(i * step * 10) / 10); return a; };
+    var rows = [
+      { t: 'Phone, every frame on time (16.7 ms)', v: seq(16.667, 12) },
+      { t: 'Phone, one late frame (58 ms)', v: [0, 16.7, 33.3, 50, 108, 124.7, 141.3, 158, 174.7, 191.3] },
+      { t: 'GIF at 20 ms per frame (50 fps)', v: seq(20, 10) },
+      { t: 'GIF, the late frame held 60 ms', v: [0, 20, 40, 60, 120, 140, 160, 180, 200] },
+      { t: 'GIF asking for 10 ms: played as 100 ms', v: [0, 100, 200] }
+    ];
+    var h = rows.length * rowH + f + 18, s = '';
+    rows.forEach(function (r, i) {
+      var ry = i * rowH, ty = ry + f + 2, y = ry + f + 10;
+      s += '<text x="' + pl + '" y="' + ty + '" font-size="' + f + '" class="t-ink">' + esc(r.t) + '</text>';
+      for (var j = 0; j < r.v.length; j++) {
+        var v = r.v[j], nx = r.v[j + 1];
+        if (nx !== undefined) {
+          var late = nx - v > 34;
+          s += '<rect x="' + x(v) + '" y="' + y + '" width="' + (x(nx) - x(v)) + '" height="14" class="' + (late ? 'gap-late' : 'gap-ok') + '"/>';
+        }
+        var lateTick = j > 0 && v - r.v[j - 1] > 34;
+        s += '<line class="' + (lateTick ? 'tick-late' : 'tick') + '" x1="' + x(v) + '" x2="' + x(v) + '" y1="' + y + '" y2="' + (y + 14) + '"/>';
+      }
+    });
+    var yAx = rows.length * rowH + 2;
+    s += '<line class="ax" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + yAx + '" y2="' + yAx + '"/>';
+    [0, 50, 100, 150, 200].forEach(function (t) {
+      s += '<text x="' + x(t) + '" y="' + (yAx + f + 6) + '" text-anchor="' + (t === 0 ? 'start' : t === 200 ? 'end' : 'middle') + '" font-size="' + f + '">' + t + (t === 200 ? ' ms' : '') + '</text>';
+    });
+    return wrap(W, h, s, label);
+  }
+
+  function draw(el) {
+    var id = el.getAttribute('data-chart'), W = Math.max(280, Math.round(el.clientWidth || 600));
+    var label = el.getAttribute('aria-label') || '';
+    var d = C[id], out = '';
+    if (id === 'ruler') out = ruler(W, label);
+    else if (id === 'c10') out = gif(W, label);
+    else if (d && (d.type === 'dots' || d.type === 'range')) out = strip(d, W, label);
+    else if (d && d.type === 'bars') out = bars(d, W, label);
+    else if (d && d.type === 'hbars') out = hbars(d, W, label);
+    el.innerHTML = out;
+    el.setAttribute('data-w', W);
+  }
+  function drawAll() {
+    var els = document.querySelectorAll('[data-chart]');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i], W = Math.round(el.clientWidth || 600);
+      if (String(W) !== el.getAttribute('data-w')) draw(el);
+    }
+  }
+  drawAll();
+  var t = null;
+  window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(drawAll, 120); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+})();
+</script>

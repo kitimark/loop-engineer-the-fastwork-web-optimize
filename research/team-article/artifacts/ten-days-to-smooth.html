@@ -1,0 +1,495 @@
+<title>Ten Days to Smooth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a session logbook. One column of day pages, each split into three lanes (you, lead, agents); charts sit between the header and the log. */
+:root{
+  --paper:#f2f4f6; --sheet:#ffffff; --ink:#18212b; --muted:#5a6673; --rule:#d5dbe1;
+  --you:#b5651d; --lead:#0f7c80; --agents:#6a4fb3; --good:#2f7d32; --bad:#b3261e; --warn:#9a6a00;
+  --you-soft:#f6e7da; --lead-soft:#dcefef; --agents-soft:#e8e2f5;
+  --f-display:"Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --f-body:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --paper:#11161c; --sheet:#182029; --ink:#e4e9ee; --muted:#9aa6b2; --rule:#2c3640;
+  --you:#e7a15f; --lead:#4fc3c7; --agents:#a68ef0; --good:#7cc47f; --bad:#f08a80; --warn:#e0b44c;
+  --you-soft:#3a2a1c; --lead-soft:#15393b; --agents-soft:#2c2545;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#11161c; --sheet:#182029; --ink:#e4e9ee; --muted:#9aa6b2; --rule:#2c3640;
+  --you:#e7a15f; --lead:#4fc3c7; --agents:#a68ef0; --good:#7cc47f; --bad:#f08a80; --warn:#e0b44c;
+  --you-soft:#3a2a1c; --lead-soft:#15393b; --agents-soft:#2c2545;
+}
+body{background:var(--paper);color:var(--ink);font:17px/1.6 var(--f-body);margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:20px;padding-block:40px 80px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(2.2rem,5vw,3.4rem);font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.6rem;font-weight:700}
+h3{font-size:1.05rem;font-weight:700}
+p{margin:0}
+.mono,time{font-family:var(--f-mono);font-size:.82em;font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{max-width:65ch;color:var(--ink);font-size:1.1rem}
+.stack{display:flex;flex-direction:column;gap:14px}
+header.top{display:flex;flex-direction:column;gap:16px;padding-bottom:28px;border-bottom:1px solid var(--rule)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.tally{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.tally div{background:var(--sheet);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.tally b{font-family:var(--f-display);font-size:1.7rem;font-variant-numeric:tabular-nums}
+.tally small{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);line-height:1.35}
+section{padding-block:36px;border-bottom:1px solid var(--rule);display:flex;flex-direction:column;gap:18px}
+.note{font-size:.9rem;color:var(--muted);max-width:75ch}
+.chart{background:var(--sheet);border:1px solid var(--rule);border-radius:6px;padding:16px;overflow-x:auto}
+.chart svg{display:block;min-width:640px;width:100%;height:auto}
+.chart text{font-family:var(--f-mono);fill:var(--muted)}
+.chart .lbl{fill:var(--ink)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:10px}
+ul{margin:0;padding-left:1.1em}
+li{margin:.2em 0}
+.day{background:var(--sheet);border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.day>summary{list-style:none;cursor:pointer;padding:16px 18px;display:grid;grid-template-columns:auto 1fr auto;gap:4px 16px;align-items:baseline}
+.day>summary::-webkit-details-marker{display:none}
+.day>summary:focus-visible{outline:2px solid var(--lead);outline-offset:-2px}
+.day .date{font-family:var(--f-mono);font-size:.85rem;color:var(--muted);white-space:nowrap}
+.day .chev{font-family:var(--f-mono);color:var(--muted)}
+.day[open] .chev{transform:rotate(90deg)}
+.day .counts{grid-column:2/4;font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
+.lanes{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--rule)}
+.lane{padding:14px 18px;display:flex;flex-direction:column;gap:8px;font-size:.95rem;border-left:1px solid var(--rule)}
+.lane:first-child{border-left:0}
+.lane h4{margin:0;font-family:var(--f-mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase}
+.lane.you h4{color:var(--you)} .lane.lead h4{color:var(--lead)} .lane.agents h4{color:var(--agents)}
+.lane.you{background:linear-gradient(var(--you-soft),var(--you-soft)) top/100% 3px no-repeat}
+.lane.lead{background:linear-gradient(var(--lead-soft),var(--lead-soft)) top/100% 3px no-repeat}
+.lane.agents{background:linear-gradient(var(--agents-soft),var(--agents-soft)) top/100% 3px no-repeat}
+.friction{border-top:1px dashed var(--rule);padding:12px 18px;font-size:.9rem;display:flex;gap:10px}
+.friction b{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--bad);white-space:nowrap;padding-top:.2em}
+q{font-style:italic}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:.72rem;padding:1px 7px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.pill.good{color:var(--good)} .pill.bad{color:var(--bad)} .pill.warn{color:var(--warn)}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+td.num{font-variant-numeric:tabular-nums;text-align:right;font-family:var(--f-mono);font-size:.85rem}
+.tablebox{overflow-x:auto}
+.quote{font-family:var(--f-display);font-size:1.25rem;font-weight:500;color:var(--you)}
+footer{padding-top:28px;font-size:.85rem;color:var(--muted);display:flex;flex-direction:column;gap:8px;max-width:80ch}
+@media (max-width:760px){
+  .lanes{grid-template-columns:1fr}
+  .lane{border-left:0;border-top:1px solid var(--rule)}
+  .lane:first-child{border-top:0}
+  .day>summary{grid-template-columns:1fr auto}
+  .day .date{grid-column:1/3}
+  .day .counts{grid-column:1/3}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <span class="eyebrow">Session logbook · 30 Sep 17:05 → 9 Oct 12:57 UTC</span>
+  <h1>Ten Days to Smooth</h1>
+  <p class="lede">What you said and decided, what the lead (Claude) did and decided, and what the agents it started did, day by day. It covers the study that took the fastwork.com homepage on your iPhone 15 Pro Max in Safari from <q>laggy at the top and ending</q> to <q>all done</q>.</p>
+  <div class="legend"><span style="--c:var(--you)">You</span><span style="--c:var(--lead)">Lead (Claude, main session)</span><span style="--c:var(--agents)">Agents the lead started</span></div>
+  <div class="tally">
+    <div><b>10</b><small>days (9 Oct is partial)</small></div>
+    <div><b>~1,240</b><small>your messages, answers and chat rows</small></div>
+    <div><b>~1,440</b><small>lead replies in console threads</small></div>
+    <div><b>442</b><small>agents started by the lead</small></div>
+    <div><b>2,412</b><small>commits on main</small></div>
+    <div><b>41</b><small>proposals: 36 accepted, 2 rejected</small></div>
+    <div><b>262</b><small>incidents opened and handled</small></div>
+    <div><b>139</b><small>steps you did in the console</small></div>
+  </div>
+</header>
+
+<section>
+  <span class="eyebrow">The shape of it</span>
+  <h2>Activity per day</h2>
+  <p class="note">Each row has its own scale, and its peak is labelled. The busy days were 1 Oct, when the tools were built, and 4 Oct, the v6 breakthrough and your 330 thread messages. After 6 Oct there was less building and more checking: fewer agents and commits, but the thread replies stayed high.</p>
+  <div class="chart" id="activity" role="img" aria-label="Per-day activity: your messages, lead thread replies, agents started, commits"></div>
+</section>
+
+<section>
+  <span class="eyebrow">How decisions were made</span>
+  <h2>Your proposal decisions</h2>
+  <p class="note">The agents posted 41 proposals in the console, each with a live Try-it page. You decided every one. Each dot is a decision, placed at its time. A ring means your note said it felt ultra smooth.</p>
+  <div class="chart" id="proposals" role="img" aria-label="Timeline of proposal decisions from 2 to 9 October"></div>
+</section>
+
+<section>
+  <span class="eyebrow">Where the page got smoother</span>
+  <h2>The best-build path</h2>
+  <p class="note">Each best build replaced the one before it only after a phone check: a phone no-worse check, a blind swipe or your own OK. On 7 Oct you asked for the original end-of-page motion back, and the g0 line started from v14 with that end restored.</p>
+  <div class="chart" id="builds" role="img" aria-label="Best builds from the original page to g0.0l"></div>
+</section>
+
+<section>
+  <span class="eyebrow">Who worked</span>
+  <h2>The agent team</h2>
+  <div class="grid2">
+    <div class="chart" id="agents" role="img" aria-label="Agents started by role"></div>
+    <div class="card">
+      <h3>How the roles worked together</h3>
+      <ul>
+        <li><b>Fix owners</b> took one problem each, in their own copy of the repo, and measured it under the shared Chrome lock.</li>
+        <li><b>Toolsmiths</b> fixed one tool bug (an "incident") each, test first. They were the largest group, because the tools grew with every problem.</li>
+        <li><b>Reviewers</b> checked finished fixes adversarially. They sent several fixes back before landing.</li>
+        <li><b>Design engineers and architects</b> worked out the rendering maths, the measurement protocol and the GPU playbook.</li>
+        <li><b>Management (mgmt-ops, desks, steward)</b> took routing, digests and device watching off the lead after you called the lead a bottleneck on 4 Oct.</li>
+        <li><b>Mappers and helpers</b> did read-only lookups; on 9 Oct they wrote this summary, one helper per stretch of days.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Your rules</span>
+  <h2>Decisions you made that shaped the whole study</h2>
+  <div class="tablebox"><table>
+    <thead><tr><th>When (UTC)</th><th>Your decision</th><th>What it changed</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">30 Sep 18:06</td><td>Mirror the site locally, study only</td><td>Every fix was measured on a local copy; nothing was published from the repo.</td></tr>
+      <tr><td class="mono">30 Sep 19:33</td><td>One agent per topic, each in its own worktree</td><td>Up to a dozen fixes ran in parallel without editing each other's files.</td></tr>
+      <tr><td class="mono">30 Sep 20:15</td><td>Rebase only, no merge commits</td><td>Linear history: every fix can be found, reverted or stacked again.</td></tr>
+      <tr><td class="mono">30 Sep 21:21</td><td>The goal: <q>SOOOOO ULTRA SMOOTH</q>; the lead orchestrates</td><td>The lead got standing authority to land and spawn agents.</td></tr>
+      <tr><td class="mono">1 Oct 07:20</td><td>Freeze the site</td><td>One frozen build: a new live build could never change results.</td></tr>
+      <tr><td class="mono">1 Oct 12:08</td><td>Confirm platform claims against references</td><td>Claims stay OBSERVED until a doc, source or bug report agrees.</td></tr>
+      <tr><td class="mono">1 Oct 13:50</td><td>Judge lag by swiping A/B, not watching clips</td><td>Blind swipe pairs became the final test for smoothness.</td></tr>
+      <tr><td class="mono">1 Oct 14:19</td><td>A click-through console for your tasks</td><td>Steps, threads and proposals moved out of the long chat.</td></tr>
+      <tr><td class="mono">2 Oct</td><td>Never open the Mac camera</td><td>After QuickTime recorded from it for about 80 s, only a hardened recorder may capture the phone screen.</td></tr>
+      <tr><td class="mono">3 Oct 15:21</td><td>PR-010: the "almost identical" rule</td><td>Look-alike fixes may land within fixed pixel limits; anything more becomes a proposal.</td></tr>
+      <tr><td class="mono">4 Oct</td><td>Proactive by default; Serious heat by default</td><td>Agents pull their next step; phone tests start warm, as in real use.</td></tr>
+      <tr><td class="mono">7 Oct 15:38</td><td>The original end-of-page motion back</td><td>The g0 line: keep the original's feel, make it cheaper.</td></tr>
+      <tr><td class="mono">8 Oct</td><td>Phone problems: the lead fixes them first (T-256)</td><td>You get a phone step only when there is evidence it is needed.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Day by day</span>
+  <h2>The log</h2>
+  <p class="note">Open a day to see the three lanes. "Friction" lists what went wrong, including the lead's own mistakes.</p>
+  <div class="stack" id="days">
+
+<details class="day" open>
+  <summary><span class="date">Wed 30 Sep</span><h3>From one iPhone complaint to an agent team</h3><span class="chev">›</span><span class="counts">72 agents · 125 commits · incidents I-001–I-022</span></summary>
+  <div class="lanes">
+    <div class="lane you"><h4>You</h4><ul>
+      <li>Connected Safari on your iPhone; framed it as a personal, educational study.</li>
+      <li>17:53 after scrolling: <q>laggy at the top and ending</q>, the two target areas.</li>
+      <li>Asked if Chrome at 4x CPU slowdown shows the same code problem (it became the 6x calibration).</li>
+      <li>Set the rules: worktrees, rebase only, tests for tools, memory in the project; 21:21 set the goal.</li>
+      <li>23:05: <q>you were interrupted a lot</q>; the lead must delegate.</li>
+    </ul></div>
+    <div class="lane lead"><h4>Lead</h4><ul>
+      <li>Built the mirror, the tool test suite, the git hooks and the hard rules.</li>
+      <li>Landed the first fixes: layout animations, the idle countdown, forced layout in the commission section.</li>
+      <li>Created mgmt-ops as its delegated operator (23:06).</li>
+    </ul></div>
+    <div class="lane agents"><h4>Agents</h4><ul>
+      <li>4 researchers: static analysis, mirror, Chrome throttle sweep, iPhone calibration.</li>
+      <li>Wave-1 fix owners, one per topic; 12 toolsmiths; ~13 reviewers.</li>
+      <li>An architecture team; a navigation benchmark showed text search beats Serena for most questions.</li>
+    </ul></div>
+  </div>
+  <p class="friction"><b>Friction</b><span>You found a dirty main, idle Chrome and a blocked commit queue before the lead did. The Mac reached load 58, so none of the evening's 9 A/B tests ran on a quiet machine.</span></p>
+</details>
+
+<details class="day">
+  <summary><span class="date">Thu 1 Oct</span><h3>Protocol v2, the phone as ground truth, the console</h3><span class="chev">›</span><span class="counts">88 agents · 542 commits · 16 steps · PR-001 · 16 context compactions</span></summary>
+  <div class="lanes">
+    <div class="lane you"><h4>You</h4><ul>
+      <li>Ran finger tests A, B, E1, F1, F2: all <q>still laggy</q>.</li>
+      <li>Froze the site; challenged the lead's "Chrome 154 limitation" claim.</li>
+      <li>Proposed swipe A/B (lag = not following the finger) and a console for your tasks.</li>
+      <li>18:56: set the real target, restyle cut from ~345 elements to ~30.</li>
+      <li>Framed it as a ~24 h loop-engineering experiment and asked for the lead's own findings.</li>
+    </ul></div>
+    <div class="lane lead"><h4>Lead</h4><ul>
+      <li>Landed measurement protocol v2, the frozen-snapshot tooling, the gesture and Simulator tools, the console, threads and proposals.</li>
+      <li>Landed the page-end panel fix and the hero avatar fix (20:49).</li>
+      <li>Reordered the Chrome queue 65 times by priority.</li>
+    </ul></div>
+    <div class="lane agents"><h4>Agents</h4><ul>
+      <li>A design-engineering team for rendering maths; iphone-runner for finger prep and cooling.</li>
+      <li>Toolsmiths built the console, status board, shared test lane and temperature-based cooling.</li>
+      <li>~25 reviews, including two NEEDS-WORK.</li>
+    </ul></div>
+  </div>
+  <p class="friction"><b>Friction</b><span>Lead mistakes: unnamed agents could not message each other; the Chrome 154 claim was retracted (<q>I passed it on too confidently</q>); your Done on C-009 went unnoticed for ~4 min; a changed PR-001 decision was missed. The phone overheated at 41.5 °C and USB dropped repeatedly.</span></p>
+</details>
+
+<details class="day">
+  <summary><span class="date">Fri 2 Oct</span><h3>First best builds, and a camera scare</h3><span class="chev">›</span><span class="counts">35 agents · 225 commits · PR-001–PR-007</span></summary>
+  <div class="lanes">
+    <div class="lane you"><h4>You</h4><ul>
+      <li>Accepted PR-001 to PR-005 and PR-007.</li>
+      <li>Proposed 3 faces per countdown digit (became PR-007 "full").</li>
+      <li>23:00: asked for research on GPU-accelerated CSS.</li>
+    </ul></div>
+    <div class="lane lead"><h4>Lead</h4><ul>
+      <li>v1, v2 and v3 became best builds (10:06–11:49).</li>
+      <li>Landed scene-scope, the cheaper section switch.</li>
+      <li>Cut the full test suite from 299 s to 162 s.</li>
+    </ul></div>
+    <div class="lane agents"><h4>Agents</h4><ul>
+      <li>Fix owners for the countdown, the platform section and the avatar slider.</li>
+      <li>A toolsmith built ioscap, the hardened screen recorder.</li>
+    </ul></div>
+  </div>
+  <p class="friction"><b>Friction</b><span>A screen recording through QuickTime recorded the Mac camera for about 80 s (08:47). It led to the no-camera rule and a recorder that can only see the iPhone screen.</span></p>
+</details>
+
+<details class="day">
+  <summary><span class="date">Sat 3 Oct</span><h3>The countdown moves to the GPU; heat becomes a goal</h3><span class="chev">›</span><span class="counts">48 agents · 221 commits · PR-008–PR-013</span></summary>
+  <div class="lanes">
+    <div class="lane you"><h4>You</h4><ul>
+      <li>Accepted PR-008 to PR-011, including PR-010's "almost identical" rule.</li>
+      <li>Found that every reply came from the lead and asked for routing to owners.</li>
+      <li>Set the next milestone: stay smooth at the phone's Serious thermal state.</li>
+    </ul></div>
+    <div class="lane lead"><h4>Lead</h4><ul>
+      <li>v4 became best (15:48).</li>
+      <li>Moved project memory into the repo.</li>
+      <li>Reported the heat verdict: this page heats the phone more than apple.com.</li>
+    </ul></div>
+    <div class="lane agents"><h4>Agents</h4><ul>
+      <li>fix-cd-strip: the countdown as sliding strips on the GPU (PR-008).</li>
+      <li>Toolsmiths built thread routing.</li>
+    </ul></div>
+  </div>
+  <p class="friction"><b>Friction</b><span>The console overlay covered the Threads page. The disk filled up (I-095).</span></p>
+</details>
+
+<details class="day">
+  <summary><span class="date">Sun 4 Oct</span><h3>The busiest day: the v6 breakthrough</h3><span class="chev">›</span><span class="counts">59 agents · 532 commits · 330 thread messages from you · 9 proposals accepted</span></summary>
+  <div class="lanes">
+    <div class="lane you"><h4>You</h4><ul>
+      <li>Preferred v6 in both blind swipes.</li>
+      <li class="quote">PR-021: <q>SOOOO ULTRA SMOOOOTH, LET'S DO IT REAL QUICK.</q></li>
+      <li>Named the lead as the bottleneck; asked for proactive agents and warm (Serious) phone tests.</li>
+      <li>23:33: asked for the team article (T-170).</li>
+    </ul></div>
+    <div class="lane lead"><h4>Lead</h4><ul>
+      <li>v6 best at 07:33: hero cards fade on the GPU instead of script each frame. v7 followed that evening.</li>
+      <li>Added desks, roles v3 and the GitHub-via-gh rule.</li>
+    </ul></div>
+    <div class="lane agents"><h4>Agents</h4><ul>
+      <li>Desk agents took routing; fix owners for the menu morph, the Join button and the countdown roll.</li>
+    </ul></div>
+  </div>
+  <p class="friction"><b>Friction</b><span>Stale status rows; console steps stuck on "Getting page ready"; you found the phone idle before the lead did.</span></p>
+</details>
+
+<details class="day">
+  <summary><span class="date">Mon 5 Oct</span><h3>v8 and v9-final; the articles get planned</h3><span class="chev">›</span><span class="counts">63 agents · 372 commits · PR-023–PR-026</span></summary>
+  <div class="lanes">
+    <div class="lane you"><h4>You</h4><ul>
+      <li>Accepted PR-023 to PR-026; on v8: very smooth.</li>
+      <li>Created the GitHub repo for the articles; asked about end-of-page background pictures.</li>
+      <li>Asked for a cheaper team (the clerk moved to Sonnet).</li>
+    </ul></div>
+    <div class="lane lead"><h4>Lead</h4><ul>
+      <li>v8 (01:46 +07) and v9-final (17:21 +07) became best.</li>
+      <li>Recorded the cost readout: $8,576 by 01:19Z.</li>
+    </ul></div>
+    <div class="lane agents"><h4>Agents</h4><ul>
+      <li>Article and publish planners; v9.2 failed its phone check and never landed.</li>
+    </ul></div>
+  </div>
+  <p class="friction"><b>Friction</b><span>Medium blocked automated drafting. A heat-check bug (I-201) was the lead's; it said so.</span></p>
+</details>
+
+<details class="day">
+  <summary><span class="date">Tue 6 Oct</span><h3><q>We did it</q></h3><span class="chev">›</span><span class="counts">31 agents · 138 commits · PR-012, PR-027–PR-030</span></summary>
+  <div class="lanes">
+    <div class="lane you"><h4>You</h4><ul>
+      <li>03:25, on the GPU menu reveal (PR-012 option B): <q>we did it</q>; highest priority.</li>
+      <li class="quote">15:49, PR-030: <q>It's SOOOO ULTRA SMOOTH, we did it.</q></li>
+      <li>New rules: use a free iPhone, read engine source first, turn breakthroughs into practices.</li>
+    </ul></div>
+    <div class="lane lead"><h4>Lead</h4><ul>
+      <li>Set up a private demo deploy; freed 29 GB of disk.</li>
+      <li>The v10 phone test stopped at the heat ceiling.</li>
+    </ul></div>
+    <div class="lane agents"><h4>Agents</h4><ul>
+      <li>arch-compositor-morph put the end-of-page menu card on the GPU (PR-030).</li>
+    </ul></div>
+  </div>
+  <p class="friction"><b>Friction</b><span>USB and WebDriverAgent failures cost phone time.</span></p>
+</details>
+
+<details class="day">
+  <summary><span class="date">Wed 7 Oct</span><h3>Back to the original feel: the g0 line</h3><span class="chev">›</span><span class="counts">18 agents · 128 commits · PR-031–PR-035</span></summary>
+  <div class="lanes">
+    <div class="lane you"><h4>You</h4><ul>
+      <li>Picked v11 in a blind swipe.</li>
+      <li>Accepted PR-031, PR-032, PR-034, PR-035; rejected PR-029 and PR-033.</li>
+      <li>15:38: asked for the original end-of-page behaviour back.</li>
+    </ul></div>
+    <div class="lane lead"><h4>Lead</h4><ul>
+      <li>Started the best-builds list (T-228).</li>
+      <li>v14 passed its phone check; g0.0b and g0.0c became best.</li>
+    </ul></div>
+    <div class="lane agents"><h4>Agents</h4><ul>
+      <li>fix-g0-revert rebuilt the end on v14 (PR-034).</li>
+    </ul></div>
+  </div>
+  <p class="friction"><b>Friction</b><span>An answer table was malformed; a phone slot stayed stuck.</span></p>
+</details>
+
+<details class="day">
+  <summary><span class="date">Thu 8 Oct</span><h3>Polishing the end of the page</h3><span class="chev">›</span><span class="counts">17 agents · 89 commits · PR-036–PR-039</span></summary>
+  <div class="lanes">
+    <div class="lane you"><h4>You</h4><ul>
+      <li>Accepted PR-036 to PR-039.</li>
+      <li>T-256: phone problems are the lead's to fix first.</li>
+    </ul></div>
+    <div class="lane lead"><h4>Lead</h4><ul>
+      <li>g0.0d → g0.0f (05:20), then g0.0h and g0.0i, each after a phone no-worse check.</li>
+      <li>Reported the real-heat result.</li>
+    </ul></div>
+    <div class="lane agents"><h4>Agents</h4><ul>
+      <li>fix-cm-return answered PR-030's glass flicker.</li>
+      <li>fix-g0-box and menu-layers trimmed graphics memory.</li>
+    </ul></div>
+  </div>
+  <p class="friction"><b>Friction</b><span>PR-030's frosted glass flickered on the phone, so the menu return had to be redone.</span></p>
+</details>
+
+<details class="day">
+  <summary><span class="date">Fri 9 Oct</span><h3><q>All done</q>, and the story gets written</h3><span class="chev">›</span><span class="counts">11 agents · 40 commits · PR-040, PR-041 · until 12:57 UTC</span></summary>
+  <div class="lanes">
+    <div class="lane you"><h4>You</h4><ul>
+      <li class="quote">PR-040: <q>It's SOOOO ULTRAA SMOOTHHH</q>. PR-041: <q>It's SOOO ULTRA SMOOTHHHHH</q></li>
+      <li>10:56: said the rendering work is all done.</li>
+      <li>Asked in chat to widen the picture guard to the deck recordings; commented on Part 1; opened T-267.</li>
+    </ul></div>
+    <div class="lane lead"><h4>Lead</h4><ul>
+      <li>g0.0j, g0.0k and g0.0l became best.</li>
+      <li>Published the three blog posts and applied your page comments.</li>
+      <li>Made the guard change you asked for in chat.</li>
+    </ul></div>
+    <div class="lane agents"><h4>Agents</h4><ul>
+      <li>fix-reveal-paint: g0.0m pre-paints the people card.</li>
+      <li>cap-worst: worst-case iPhone captures; five helpers wrote this summary.</li>
+    </ul></div>
+  </div>
+  <p class="friction"><b>Friction</b><span>The lead's first explanation of the late repaint was wrong: async decode was refuted by 5 more flicks. The iPhone tab picker chose another app's page (I-262).</span></p>
+</details>
+
+  </div>
+</section>
+
+<footer>
+  <p><b>Sources.</b> Console threads, steps and proposals; the lead's transcript; git history on main; the incident store; <span class="mono">fixes/BEST_BUILDS.md</span>; five helper summaries. Times are UTC unless marked +07.</p>
+  <p><b>How to read the counts.</b> "Your messages" counts rows, including step answers and chat lines, so it overstates unique messages. Agent roles come from spawn names. 9 Oct stops at 12:57 UTC. The helpers marked a few points as inferred; they are left out or worded as such.</p>
+  <p>Your words are quoted only from proposal notes and short phrases; no personal data appears on this page.</p>
+</footer>
+</div>
+
+<script>
+(function(){
+  var days=["30 Sep","1 Oct","2 Oct","3 Oct","4 Oct","5 Oct","6 Oct","7 Oct","8 Oct","9 Oct"];
+  var series=[
+    {name:"Your messages and answers",c:"--you",v:[95,195,81,85,363,151,79,75,72,41]},
+    {name:"Lead thread replies",c:"--lead",v:[0,75,134,97,286,258,178,183,162,71]},
+    {name:"Agents started",c:"--agents",v:[72,88,35,48,59,63,31,18,17,11]},
+    {name:"Commits on main",c:"--ink",v:[125,542,225,221,532,372,138,128,89,40]}
+  ];
+  var NS="http://www.w3.org/2000/svg";
+  function el(n,a,t){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(t!=null)e.textContent=t;return e;}
+  function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+
+  // activity small multiples
+  (function(){
+    var W=900,L=190,R=20,rowH=64,top=8,H=top+series.length*rowH+26;
+    var s=el("svg",{viewBox:"0 0 "+W+" "+H});
+    var cw=(W-L-R)/days.length;
+    series.forEach(function(se,i){
+      var y0=top+i*rowH, base=y0+rowH-14, max=Math.max.apply(null,se.v), h=rowH-26;
+      s.appendChild(el("text",{x:0,y:y0+rowH/2,class:"lbl","font-size":13},se.name));
+      s.appendChild(el("line",{x1:L,x2:W-R,y1:base,y2:base,stroke:"var(--rule)"}));
+      se.v.forEach(function(v,j){
+        var bh=v/max*h, x=L+j*cw+cw*.18, w=cw*.64;
+        var r=el("rect",{x:x,y:base-bh,width:w,height:Math.max(bh,0),fill:"var("+se.c+")",rx:2});
+        r.appendChild(el("title",{},days[j]+": "+v));
+        s.appendChild(r);
+        if(v===max) s.appendChild(el("text",{x:x+w/2,y:base-bh-4,"text-anchor":"middle","font-size":11,class:"lbl"},v));
+      });
+    });
+    days.forEach(function(d,j){s.appendChild(el("text",{x:L+j*cw+cw/2,y:H-6,"text-anchor":"middle","font-size":11},d));});
+    document.getElementById("activity").appendChild(s);
+  })();
+
+  // proposals timeline
+  (function(){
+    var P=[["001","10-02T06:31","a"],["002","10-02T08:07","a"],["003","10-02T09:12","a"],["004","10-02T11:15","a"],["005","10-02T15:11","a"],["007","10-02T22:08","a"],
+      ["008","10-03T09:31","a"],["009","10-03T10:31","a"],["010","10-03T15:21","a"],["011","10-03T15:23","a"],["013","10-04T02:59","a"],["014","10-04T03:57","a"],["015","10-04T04:05","a"],
+      ["019","10-04T13:09","a"],["020","10-04T13:45","a"],["017","10-04T14:28","a"],["018","10-04T20:12","a"],["022","10-04T21:27","a"],["021","10-04T21:39","s"],
+      ["023","10-05T10:15","a"],["024","10-05T11:42","a"],["026","10-05T21:03","a"],["025","10-05T21:04","a"],["012","10-06T03:21","a"],["027","10-06T04:40","a"],["028","10-06T10:20","c"],
+      ["030","10-06T15:49","s"],["031","10-07T00:09","a"],["032","10-07T04:44","a"],["029","10-07T15:36","r"],["033","10-07T15:36","r"],["034","10-07T18:44","a"],["035","10-07T18:59","a"],
+      ["036","10-08T03:02","a"],["037","10-08T03:02","a"],["038","10-08T03:04","a"],["039","10-08T18:08","a"],["040","10-09T03:40","s"],["041","10-09T07:23","s"]];
+    var t0=Date.parse("2026-10-02T00:00Z"), t1=Date.parse("2026-10-10T00:00Z");
+    var W=900,L=20,R=20,H=150,axis=100;
+    var s=el("svg",{viewBox:"0 0 "+W+" "+H});
+    function X(t){return L+(t-t0)/(t1-t0)*(W-L-R);}
+    s.appendChild(el("line",{x1:L,x2:W-R,y1:axis,y2:axis,stroke:"var(--rule)"}));
+    for(var d=0;d<=8;d++){var t=t0+d*864e5,x=X(t);
+      s.appendChild(el("line",{x1:x,x2:x,y1:axis-4,y2:axis+4,stroke:"var(--muted)"}));
+      if(d<8)s.appendChild(el("text",{x:x+(W-L-R)/16,y:axis+20,"text-anchor":"middle","font-size":11},(d+2)+" Oct"));}
+    var stackY={};
+    P.forEach(function(p){
+      var t=Date.parse("2026-"+p[1]+"Z"), x=X(t), k=Math.round(x/9);
+      var n=stackY[k]=(stackY[k]||0)+1, y=axis-10-(n-1)*13;
+      var col=p[2]==="r"?"var(--bad)":p[2]==="c"?"var(--warn)":"var(--good)";
+      var c=el("circle",{cx:x,cy:y,r:5,fill:col});
+      c.appendChild(el("title",{},"PR-"+p[0]+" "+(p[2]==="r"?"rejected":p[2]==="c"?"changes requested":"accepted")+", "+p[1].replace("T"," ")+" UTC"));
+      s.appendChild(c);
+      if(p[2]==="s"){s.appendChild(el("circle",{cx:x,cy:y,r:9,fill:"none",stroke:"var(--you)","stroke-width":2}));
+        s.appendChild(el("text",{x:x,y:y-14,"text-anchor":"middle","font-size":10,class:"lbl"},"PR-"+p[0]));}
+    });
+    var lg=[["var(--good)","accepted"],["var(--bad)","rejected"],["var(--warn)","changes requested"]];
+    lg.forEach(function(g,i){s.appendChild(el("circle",{cx:L+6+i*150,cy:H-10,r:5,fill:g[0]}));s.appendChild(el("text",{x:L+16+i*150,y:H-6,"font-size":11},g[1]));});
+    s.appendChild(el("circle",{cx:L+6+450,cy:H-10,r:7,fill:"none",stroke:"var(--you)","stroke-width":2}));
+    s.appendChild(el("text",{x:L+18+450,y:H-6,"font-size":11},"your note: ultra smooth"));
+    document.getElementById("proposals").appendChild(s);
+  })();
+
+  // best-build path
+  (function(){
+    var B=[["v0","30 Sep","original page"],["wave 1","1 Oct","8 fixes combined"],["v1–v3","2 Oct","cheaper section switch"],["v4","3 Oct","shimmer on GPU"],["v6","4 Oct","hero fades on GPU"],["v7","4 Oct","countdown on GPU"],
+      ["v8","5 Oct","lighter countdown roll"],["v9-final","5 Oct","menu follows swipe"],["v14","7 Oct","menu layers early"],["g0.0b–c","7 Oct","original end restored"],["g0.0d–f","8 Oct","Join fade, GPU bar"],["g0.0h–i","8 Oct","less graphics memory"],["g0.0j–k","9 Oct","steady glass"],["g0.0l","9 Oct","instant people card"]];
+    var W=980,L=40,R=40,H=170,y=70;
+    var s=el("svg",{viewBox:"0 0 "+W+" "+H});
+    var step=(W-L-R)/(B.length-1);
+    s.appendChild(el("line",{x1:L,x2:W-R,y1:y,y2:y,stroke:"var(--lead)","stroke-width":3}));
+    B.forEach(function(b,i){var x=L+i*step,last=i===B.length-1,up=i%2===0;
+      s.appendChild(el("circle",{cx:x,cy:y,r:last?9:6,fill:last?"var(--lead)":"var(--sheet)",stroke:"var(--lead)","stroke-width":2.5}));
+      s.appendChild(el("text",{x:x,y:up?y-30:y+30,"text-anchor":"middle","font-size":12,class:"lbl","font-weight":last?600:400},b[0]));
+      s.appendChild(el("text",{x:x,y:up?y-16:y+44,"text-anchor":"middle","font-size":10},b[1]));
+      s.appendChild(el("text",{x:x,y:up?y-44:y+58,"text-anchor":"middle","font-size":9.5},b[2]));
+    });
+    document.getElementById("builds").appendChild(s);
+  })();
+
+  // agents by role
+  (function(){
+    var A=[["Toolsmiths",123],["Reviewers",60],["Fix owners",51],["Design engineers",36],["Ops helpers",31],["Architects",30],["Mappers",21],["Management",16],["Article writers",8],["Other named",20],["Unnamed (first days)",35]];
+    var W=480,L=150,R=40,rh=24,H=A.length*rh+10,max=123;
+    var s=el("svg",{viewBox:"0 0 "+W+" "+H,style:"min-width:320px"});
+    A.forEach(function(a,i){var y=6+i*rh,w=a[1]/max*(W-L-R);
+      s.appendChild(el("text",{x:L-8,y:y+14,"text-anchor":"end","font-size":12,class:"lbl"},a[0]));
+      s.appendChild(el("rect",{x:L,y:y+3,width:w,height:rh-9,fill:"var(--agents)",rx:2}));
+      s.appendChild(el("text",{x:L+w+6,y:y+14,"font-size":11},a[1]));});
+    document.getElementById("agents").appendChild(s);
+  })();
+})();
+</script>

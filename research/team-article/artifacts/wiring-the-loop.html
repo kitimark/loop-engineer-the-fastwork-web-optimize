@@ -1,0 +1,846 @@
+<title>Wiring the Loop</title>
+<meta name="description" content="Sixteen Milliseconds, Part 3: the machinery of a human-in-the-loop Claude Code agent system and how one person drives it day to day.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+/* Layout: a field manual for a switchboard. Narrow reading column, a sticky signal rail of contents on wide
+   screens, diagrams and tables allowed to run wider. Amber marks a hold (something owns a device); blue marks a wire
+   (a message or a route). */
+:root {
+  --paper: #f2f4f1;
+  --panel: #e7ebe6;
+  --ink: #1a2026;
+  --muted: #56606a;
+  --rule: #cdd3cd;
+  --wire: #24578a;
+  --hold: #b8630f;
+  --ok: #2c7a4b;
+  --alarm: #b3261e;
+  --wire-soft: color-mix(in srgb, var(--wire) 12%, var(--paper));
+  --hold-soft: color-mix(in srgb, var(--hold) 14%, var(--paper));
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --step--1: 0.84rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.3rem;
+  --step-2: 1.7rem;
+  --step-3: clamp(2.3rem, 6vw, 3.9rem);
+  --measure: 66ch;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #12161a;
+    --panel: #1b2127;
+    --ink: #e4e8e3;
+    --muted: #9aa4ab;
+    --rule: #2e363e;
+    --wire: #82b4e3;
+    --hold: #f0a24f;
+    --ok: #6cc893;
+    --alarm: #f2857c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #12161a;
+  --panel: #1b2127;
+  --ink: #e4e8e3;
+  --muted: #9aa4ab;
+  --rule: #2e363e;
+  --wire: #82b4e3;
+  --hold: #f0a24f;
+  --ok: #6cc893;
+  --alarm: #f2857c;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.62;
+  padding-inline: 20px;
+  padding-block: 0 64px;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--wire); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--hold); outline-offset: 3px; border-radius: 2px; }
+code, kbd, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+code { background: var(--panel); padding: 0.08em 0.32em; border-radius: 3px; overflow-wrap: anywhere; }
+strong { font-weight: 600; }
+
+.page {
+  max-width: 1180px;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 56px;
+}
+@media (min-width: 1100px) {
+  .page { grid-template-columns: 210px minmax(0, 1fr); }
+  .rail { grid-column: 1; grid-row: 2; }
+  .page > main { grid-column: 2; grid-row: 2; }
+  .masthead { grid-column: 1 / -1; }
+}
+
+/* masthead */
+.masthead { padding-block: 40px 8px; display: grid; gap: 18px; }
+.series {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex; flex-wrap: wrap; gap: 6px 18px;
+}
+.series a { color: var(--muted); }
+.series .here { color: var(--hold); font-weight: 600; }
+h1 {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 118;
+  font-weight: 850;
+  font-size: var(--step-3);
+  line-height: 0.98;
+  letter-spacing: -0.015em;
+  margin: 0;
+  text-wrap: balance;
+}
+.dek {
+  max-width: 62ch;
+  font-size: var(--step-1);
+  line-height: 1.45;
+  margin: 0;
+  color: var(--ink);
+}
+.byline { font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); margin: 0; }
+.ledger {
+  display: flex; flex-wrap: wrap; gap: 6px 22px;
+  font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted);
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  padding-block: 10px; margin: 6px 0 0;
+  list-style: none; padding-inline: 0;
+  font-variant-numeric: tabular-nums;
+}
+.ledger b { color: var(--ink); font-weight: 600; }
+
+/* rail */
+.rail { font-family: var(--font-display); font-size: 0.86rem; }
+.rail nav {
+  display: grid; gap: 2px;
+  padding-block: 14px;
+  border-top: 2px solid var(--ink);
+}
+@media (min-width: 1100px) {
+  .rail nav { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 20px); margin-top: 28px; }
+}
+.rail h2 { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; font-weight: 700; }
+.rail ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; counter-reset: s; }
+.rail li { counter-increment: s; }
+.rail a {
+  display: grid; grid-template-columns: 2.1em 1fr; align-items: baseline;
+  color: var(--ink); text-decoration: none; padding: 4px 6px; border-radius: 3px;
+  line-height: 1.3;
+}
+.rail a::before { content: counter(s, decimal-leading-zero); font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+.rail a:hover { background: var(--panel); }
+@media (max-width: 1099px) {
+  .rail ol { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+}
+
+/* article */
+main { min-width: 0; }
+section { padding-top: 40px; scroll-margin-top: 16px; }
+section > *:not(figure):not(.wide):not(.table-wrap):not(pre) { max-width: var(--measure); }
+.eyebrow {
+  font-family: var(--font-mono); font-size: 0.76rem; letter-spacing: 0.04em;
+  color: var(--hold); margin: 0 0 6px;
+  display: flex; flex-wrap: wrap; gap: 4px 12px;
+}
+.eyebrow span { color: var(--muted); }
+h2 {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 112;
+  font-weight: 800;
+  font-size: var(--step-2);
+  line-height: 1.12;
+  margin: 0 0 14px;
+  text-wrap: balance;
+}
+h3 {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 100;
+  font-weight: 700;
+  font-size: var(--step-1);
+  line-height: 1.25;
+  margin: 30px 0 8px;
+  text-wrap: balance;
+}
+p { margin: 0 0 14px; }
+ul, ol { padding-left: 1.25em; margin: 0 0 16px; }
+li { margin-bottom: 6px; }
+li::marker { color: var(--muted); }
+
+.lede-note {
+  border-left: 3px solid var(--wire);
+  padding: 4px 0 4px 16px;
+  color: var(--muted);
+  font-style: italic;
+}
+.rulebox {
+  background: var(--hold-soft);
+  border-radius: 4px;
+  padding: 14px 18px;
+  margin: 18px 0;
+}
+.rulebox p:last-child, .rulebox ul:last-child { margin-bottom: 0; }
+.rulebox .tag {
+  font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--hold); font-weight: 600; display: block; margin-bottom: 4px;
+}
+
+/* tables */
+.table-wrap { overflow-x: auto; margin: 18px 0 22px; max-width: 100%; }
+table { border-collapse: collapse; width: 100%; font-size: 0.93rem; line-height: 1.45; min-width: 560px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--rule); }
+th {
+  font-family: var(--font-display); font-weight: 700; font-size: 0.78rem; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--ink);
+}
+td:first-child { font-weight: 600; }
+td code { white-space: nowrap; }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* code */
+pre {
+  font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.55;
+  background: var(--panel); border-radius: 4px;
+  padding: 14px 16px; margin: 16px 0 20px;
+  overflow-x: auto; max-width: 100%;
+}
+pre code { background: none; padding: 0; font-size: inherit; white-space: pre; }
+pre .c { color: var(--muted); }
+
+/* figures */
+figure { margin: 22px 0 26px; }
+.fig-scroll { overflow-x: auto; max-width: 100%; }
+figure svg { display: block; width: 100%; height: auto; min-width: 640px; max-width: 100%; }
+figure .mermaid { background: var(--panel); border-radius: 4px; padding: 16px; margin: 0; overflow-x: auto; font-family: var(--font-mono); font-size: 0.8rem; white-space: pre; }
+figcaption {
+  font-family: var(--font-display); font-size: 0.86rem; line-height: 1.45; color: var(--muted);
+  margin-top: 10px; max-width: var(--measure);
+}
+figcaption b { color: var(--ink); }
+
+/* svg tokens */
+.s-line { stroke: var(--ink); fill: none; stroke-width: 1.3; }
+.s-faint { stroke: var(--rule); fill: none; stroke-width: 1.2; }
+.s-box { fill: var(--paper); stroke: var(--ink); stroke-width: 1.3; }
+.s-panel { fill: var(--panel); stroke: var(--rule); stroke-width: 1.2; }
+.s-row { fill: var(--paper); stroke: var(--rule); stroke-width: 1; }
+.s-lead { fill: var(--wire-soft); stroke: var(--wire); stroke-width: 2; }
+.s-user { fill: var(--paper); stroke: var(--wire); stroke-width: 2; }
+.s-dev { fill: var(--hold-soft); stroke: var(--hold); stroke-width: 1.6; }
+.s-hold { fill: var(--hold); }
+.s-holdtxt { fill: var(--paper); font-family: var(--font-mono); font-size: 11px; }
+.s-shared { fill: var(--wire-soft); stroke: var(--wire); stroke-width: 1.2; }
+.s-gate { fill: var(--panel); stroke: var(--hold); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.s-ghost { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.s-wire { stroke: var(--wire); fill: none; stroke-width: 1.6; }
+.s-wire-d { stroke: var(--wire); fill: none; stroke-width: 1.3; stroke-dasharray: 4 4; }
+.s-chat { stroke: var(--hold); fill: none; stroke-width: 2; }
+.s-frame { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 7 5; }
+.s-arrow-w { fill: var(--wire); }
+.s-arrow-h { fill: var(--hold); }
+.s-arrow-i { fill: var(--ink); }
+.t { fill: var(--ink); font-family: var(--font-display); font-size: 13px; }
+.t-b { fill: var(--ink); font-family: var(--font-display); font-size: 14px; font-weight: 700; }
+.t-s { fill: var(--muted); font-family: var(--font-mono); font-size: 10.5px; }
+.t-w { fill: var(--wire); font-family: var(--font-mono); font-size: 10.5px; }
+.t-h { fill: var(--hold); font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; }
+.t-m { fill: var(--ink); font-family: var(--font-mono); font-size: 11px; }
+
+/* timeline */
+.timeline { list-style: none; padding: 0; margin: 20px 0 24px; border-left: 2px solid var(--rule); max-width: var(--measure); }
+.timeline li { display: grid; grid-template-columns: 4.6em 1fr; gap: 0 14px; padding: 0 0 14px 16px; position: relative; margin: 0; }
+.timeline li::before {
+  content: ""; position: absolute; left: -6px; top: 0.55em; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--paper); border: 2px solid var(--wire);
+}
+.timeline li.user::before { border-color: var(--hold); background: var(--hold); }
+.timeline time { font-family: var(--font-mono); font-size: 0.82rem; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 0.15em; }
+.timeline .who { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); display: block; }
+.timeline li.user .who { color: var(--hold); font-weight: 600; }
+.timeline p { margin: 0; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--font-mono); font-size: 0.76rem; color: var(--muted); margin: 0 0 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+
+.takeaways { counter-reset: t; list-style: none; padding: 0; display: grid; gap: 12px; }
+.takeaways li { counter-increment: t; display: grid; grid-template-columns: 2.2em 1fr; margin: 0; }
+.takeaways li::before { content: counter(t); font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; color: var(--hold); line-height: 1.3; }
+
+.endnav {
+  margin-top: 56px; padding-top: 18px; border-top: 2px solid var(--ink);
+  display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  font-family: var(--font-display);
+}
+.endnav a { display: block; text-decoration: none; color: var(--ink); padding: 10px 0; }
+.endnav small { display: block; font-family: var(--font-mono); font-size: 0.74rem; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
+.endnav strong { font-size: 1.05rem; }
+.disclaimer { font-family: var(--font-mono); font-size: 0.76rem; color: var(--muted); margin-top: 26px; max-width: 80ch; }
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+</style>
+
+<div class="page">
+
+<header class="masthead">
+  <p class="series"><span>Sixteen Milliseconds</span><a href="https://claude.ai/artifact/<private-artifact>" target="_blank" rel="noopener">Part 1 · Building an AI Loop from Scratch</a><a href="https://claude.ai/artifact/<private-artifact>" target="_blank" rel="noopener">Part 2 · The Casebook</a><span class="here">Part 3 · Wiring the Loop</span></p>
+  <h1>Wiring the Loop</h1>
+  <p class="dek">The machinery behind a human-in-the-loop system of Claude Code agents: who may touch which device, how a measurement earns a verdict, and how one person steers a few hundred agents from a console page and a phone.</p>
+  <p class="byline">Written by the agent team for the study, 2026-10-09. A personal, educational scroll-performance study of a local mirror of a public homepage. Not affiliated with Fastwork.</p>
+  <ul class="ledger" aria-label="Size of the loop on 2026-10-09">
+    <li><b>2,402</b> commits</li>
+    <li><b>260</b> incidents</li>
+    <li><b>371</b> findings</li>
+    <li><b>41</b> proposals</li>
+    <li><b>138</b> user steps</li>
+    <li><b>265</b> threads</li>
+    <li><b>~2,000</b> tool tests</li>
+    <li><b>36</b> memory notes</li>
+  </ul>
+</header>
+
+<aside class="rail" aria-label="Contents">
+  <nav>
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#map">The map</a></li>
+      <li><a href="#roles">Roles and spawning</a></li>
+      <li><a href="#devices">Shared devices</a></li>
+      <li><a href="#protocol">Protocol v2</a></li>
+      <li><a href="#console">The user console</a></li>
+      <li><a href="#boards">Incidents and findings</a></li>
+      <li><a href="#enforce">The enforcement layer</a></li>
+      <li><a href="#privacy">Privacy guards</a></li>
+      <li><a href="#memory">Project memory</a></li>
+      <li><a href="#day">One day: the deck blink</a></li>
+      <li><a href="#wrong">What went wrong</a></li>
+      <li><a href="#build">If you build one</a></li>
+    </ol>
+  </nav>
+</aside>
+
+<main>
+
+<section id="map" aria-labelledby="map-h">
+  <p class="eyebrow">CLAUDE.md <span>the agent guide every agent loads</span></p>
+  <h2 id="map-h">The map</h2>
+  <p>Part 1 tells how this loop grew. Part 2 shows what it found in the page. This part is the wiring diagram: the pieces an engineer would need to build a similar system, each with the incident or user request that made us add it.</p>
+  <p>The setup is small in hardware and large in agents. One Mac runs Chrome and the iOS Simulator. One real iPhone sits on the desk. One person, the user, owns both and makes every decision about how the page should look. Everything else is Claude Code sessions: one lead in the main checkout and many workers, each in its own git worktree.</p>
+
+  <figure>
+    <div class="fig-scroll">
+    <svg viewBox="0 0 960 520" role="img" aria-label="System map: the user talks to a localhost console and, for rule changes, to the lead's Claude Code chat; the lead spawns workers inside an enforcement layer; workers queue for the Chrome lock, the iPhone hold and the Simulator; all of them read and write shared state in the git common directory.">
+      <defs>
+        <marker id="aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="s-arrow-w"/></marker>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="s-arrow-h"/></marker>
+        <marker id="ai" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="s-arrow-i"/></marker>
+      </defs>
+
+      <!-- enforcement frame around lead + workers -->
+      <rect x="392" y="22" width="408" height="372" rx="6" class="s-frame"/>
+      <text x="404" y="40" class="t-s">ENFORCEMENT LAYER: hooks · guards · baseline pin</text>
+
+      <!-- user -->
+      <rect x="20" y="188" width="118" height="78" rx="6" class="s-user"/>
+      <text x="79" y="222" text-anchor="middle" class="t-b">User</text>
+      <text x="79" y="242" text-anchor="middle" class="t-s">Mac + iPhone</text>
+
+      <!-- console -->
+      <rect x="182" y="58" width="170" height="332" rx="6" class="s-panel"/>
+      <text x="267" y="82" text-anchor="middle" class="t-b">Console</text>
+      <text x="267" y="98" text-anchor="middle" class="t-s">localhost page</text>
+      <rect x="196" y="112" width="142" height="38" rx="4" class="s-row"/><text x="267" y="136" text-anchor="middle" class="t">Your steps</text>
+      <rect x="196" y="158" width="142" height="38" rx="4" class="s-row"/><text x="267" y="182" text-anchor="middle" class="t">Threads</text>
+      <rect x="196" y="204" width="142" height="38" rx="4" class="s-row"/><text x="267" y="228" text-anchor="middle" class="t">Proposals + Try-it</text>
+      <rect x="196" y="250" width="142" height="38" rx="4" class="s-row"/><text x="267" y="274" text-anchor="middle" class="t">Status board</text>
+      <rect x="196" y="296" width="142" height="38" rx="4" class="s-row"/><text x="267" y="320" text-anchor="middle" class="t">Best build</text>
+      <text x="267" y="370" text-anchor="middle" class="t-s">answers lint-checked</text>
+
+      <!-- user <-> console -->
+      <line x1="140" y1="214" x2="180" y2="214" class="s-wire" marker-end="url(#aw)"/>
+      <line x1="180" y1="240" x2="140" y2="240" class="s-wire" marker-end="url(#aw)"/>
+      <text x="160" y="206" text-anchor="middle" class="t-w">tap</text>
+      <text x="160" y="256" text-anchor="middle" class="t-w">read</text>
+
+      <!-- lead -->
+      <rect x="410" y="172" width="142" height="104" rx="6" class="s-lead"/>
+      <text x="481" y="204" text-anchor="middle" class="t-b">Lead</text>
+      <text x="481" y="224" text-anchor="middle" class="t-s">main checkout</text>
+      <text x="481" y="240" text-anchor="middle" class="t-s">signs D cards</text>
+      <text x="481" y="256" text-anchor="middle" class="t-s">lands on main</text>
+
+      <!-- console <-> lead -->
+      <line x1="354" y1="214" x2="408" y2="214" class="s-wire" marker-end="url(#aw)"/>
+      <line x1="408" y1="240" x2="354" y2="240" class="s-wire" marker-end="url(#aw)"/>
+      <text x="381" y="206" text-anchor="middle" class="t-w">wake</text>
+      <text x="381" y="256" text-anchor="middle" class="t-w">reply</text>
+
+      <!-- user -> lead via chat (bottom route) -->
+      <polyline points="79,268 79,410 481,410 481,280" class="s-chat" marker-end="url(#ah)"/>
+      <text x="96" y="404" class="t-h">Claude Code chat: rules, guard changes</text>
+
+      <!-- workers -->
+      <rect x="612" y="58" width="172" height="40" rx="5" class="s-box"/><text x="698" y="83" text-anchor="middle" class="t">fix owners</text>
+      <rect x="612" y="108" width="172" height="40" rx="5" class="s-box"/><text x="698" y="133" text-anchor="middle" class="t">toolsmiths</text>
+      <rect x="612" y="158" width="172" height="40" rx="5" class="s-box"/><text x="698" y="183" text-anchor="middle" class="t">mappers · reviewers</text>
+      <rect x="612" y="208" width="172" height="40" rx="5" class="s-box"/><text x="698" y="233" text-anchor="middle" class="t">wave integrator</text>
+      <rect x="612" y="258" width="172" height="40" rx="5" class="s-box"/><text x="698" y="283" text-anchor="middle" class="t">mgmt: ops · devices</text>
+      <text x="698" y="322" text-anchor="middle" class="t-s">one worktree each</text>
+
+      <!-- lead -> worker bus -->
+      <line x1="554" y1="214" x2="592" y2="214" class="s-wire"/>
+      <line x1="592" y1="78" x2="592" y2="278" class="s-wire"/>
+      <line x1="592" y1="78" x2="610" y2="78" class="s-wire" marker-end="url(#aw)"/>
+      <line x1="592" y1="128" x2="610" y2="128" class="s-wire" marker-end="url(#aw)"/>
+      <line x1="592" y1="178" x2="610" y2="178" class="s-wire" marker-end="url(#aw)"/>
+      <line x1="592" y1="228" x2="610" y2="228" class="s-wire" marker-end="url(#aw)"/>
+      <line x1="592" y1="278" x2="610" y2="278" class="s-wire" marker-end="url(#aw)"/>
+      <text x="572" y="306" text-anchor="middle" class="t-w">spawn</text>
+      <text x="572" y="320" text-anchor="middle" class="t-w">message</text>
+
+      <!-- devices -->
+      <rect x="826" y="58" width="122" height="66" rx="6" class="s-dev"/>
+      <text x="887" y="86" text-anchor="middle" class="t-b">Chrome</text>
+      <text x="887" y="104" text-anchor="middle" class="t-s">chrome-measure</text>
+      <rect x="826" y="148" width="122" height="66" rx="6" class="s-dev"/>
+      <text x="887" y="176" text-anchor="middle" class="t-b">iPhone</text>
+      <text x="887" y="194" text-anchor="middle" class="t-s">phone hold</text>
+      <rect x="826" y="238" width="122" height="66" rx="6" class="s-dev"/>
+      <text x="887" y="266" text-anchor="middle" class="t-b">Simulator</text>
+      <text x="887" y="284" text-anchor="middle" class="t-s">shared lane</text>
+      <line x1="786" y1="78" x2="824" y2="91" class="s-line" marker-end="url(#ai)"/>
+      <line x1="786" y1="128" x2="824" y2="178" class="s-line" marker-end="url(#ai)"/>
+      <line x1="786" y1="228" x2="824" y2="268" class="s-line" marker-end="url(#ai)"/>
+      <text x="887" y="322" text-anchor="middle" class="t-s">queue, then hold</text>
+
+      <!-- shared state band -->
+      <rect x="182" y="430" width="766" height="74" rx="6" class="s-panel"/>
+      <text x="198" y="452" class="t-b">Shared state in .git/fastwork-mirror/</text>
+      <text x="198" y="470" class="t-s">every worktree sees a write at once; nothing here is ever committed</text>
+      <text x="198" y="492" class="t-m">locks · incidents · findings · status · console · proposals · usage</text>
+      <line x1="267" y1="392" x2="267" y2="428" class="s-wire-d"/>
+      <line x1="698" y1="326" x2="698" y2="428" class="s-wire-d"/>
+      <line x1="887" y1="330" x2="887" y2="428" class="s-wire-d"/>
+    </svg>
+    </div>
+    <figcaption><b>The loop as wiring.</b> Blue lines carry messages and routes; amber marks what owns a device and the one channel that can change a guard. The user reaches the agents through the console. Only words typed in the lead's Claude Code chat can change a rule or a guard. Everything that has to be seen by many worktrees at once lives in the git common directory, outside any commit.</figcaption>
+  </figure>
+
+  <p>Two design choices hold the rest together.</p>
+  <ul>
+    <li><strong>Shared state lives in the git common directory, not in commits.</strong> A worktree sees a committed file only after the lead lands it and the worktree rebases. A lock, an incident or a user message has to be visible to every agent the moment it is written, so <code>tools/lib/store.mjs</code> keeps them as JSON files under <code>.git/fastwork-mirror/</code>, with writes serialized by the lock library's guard. It is local by construction: nothing in <code>.git/</code> is pushed, and nothing is ever pushed anyway (Hard rule 2).</li>
+    <li><strong>Every rule names what enforces it.</strong> The agent guide lists twelve hard rules. Each carries a <em>Why</em> and an <em>Enforced</em> line that names the hook, deny rule or tool refusal behind it, or says "convention". An agent can tell which rules will stop it and which depend on its own care.</li>
+  </ul>
+</section>
+
+<section id="roles" aria-labelledby="roles-h">
+  <p class="eyebrow">fixes/AGENT_ROLES.md <span>.claude/agents/*.md</span></p>
+  <h2 id="roles-h">Roles and spawning</h2>
+  <p>Each role is a Claude Code agent definition with its own model, effort and tool list. The table is the short form of the roster. The column that matters most is the last one: who may run the devices. Measuring is restricted to a few roles so that a reviewer can never contaminate the numbers it is reviewing.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Role</th><th>Job</th><th>Model / effort</th><th>Writes</th><th>Measures</th></tr></thead>
+      <tbody>
+        <tr><td>lead</td><td>Plans, spawns, triages incidents, signs attribution cards, lands on <code>main</code>, talks to the user</td><td>the session's</td><td><code>main</code> by fast-forward</td><td>noise floor only</td></tr>
+        <tr><td>fix owner</td><td>One topic end to end: evidence, overlay patch, A/B, write-up, proposal</td><td>opus / high</td><td><code>fixes/&lt;topic&gt;/</code></td><td>yes</td></tr>
+        <tr><td>toolsmith</td><td>One incident in <code>tools/</code>: failing test first, fix, one separate commit</td><td>opus / high</td><td><code>tools/</code>, <code>tests/</code></td><td>tests only</td></tr>
+        <tr><td>bundle mapper</td><td>Read-only answers: bundle code, callers, web-platform questions</td><td>sonnet / medium, haiku for mechanical jobs</td><td>nothing</td><td>no</td></tr>
+        <tr><td>fix reviewer</td><td>Adversarial review: parity, noise, cherry-picking, commit hygiene</td><td>opus / high</td><td>nothing</td><td>no</td></tr>
+        <tr><td>verifier</td><td>Tries to break one platform claim against specs and engine source</td><td>sonnet, opus for subtle claims</td><td>a claim card</td><td>no</td></tr>
+        <tr><td>wave integrator</td><td>Combines landed fixes, measures the stack, writes it up</td><td>opus / high</td><td><code>fixes/all-wave&lt;N&gt;/</code></td><td>yes</td></tr>
+        <tr><td>management</td><td>mgmt-ops (cards, tickets, docs landing), mgmt-devices (device steward), desk, clerk</td><td>sonnet for the light ones</td><td>docs, status rows</td><td>no</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Named spawns in their own worktrees</h3>
+  <p>Every spawn gets a name of the form <code>&lt;role&gt;-&lt;topic&gt;</code>: <code>fix-scrollcb-g0</code>, <code>ts-i170</code>, <code>review-blur</code>, <code>map-deck-contain-webkit</code>. The name is the address for <code>SendMessage</code>, the owner field on a lock, the author on a console post and the key on the status board, so one string ties an agent's messages, holds and rows together. A memory note reminds the lead to check the first spawn after each context compaction, because a nameless spawn is unreachable by its peers.</p>
+  <p>A worker runs in <code>.claude/worktrees/&lt;name&gt;/</code> on its own branch. The baseline (a 61 MB frozen copy of the page) is not checked out there: <code>fix.mjs new</code> makes the worktree sparse and the tools read the main checkout's copy through <code>git rev-parse --git-common-dir</code>. A fix changes Fastwork's code only in a gitignored overlay folder, and <code>serve.mjs --overlay</code> serves overlay files first and the frozen baseline for everything else.</p>
+
+  <h3>Peer messages and hand-backs</h3>
+  <ul>
+    <li><strong>Results go to their consumers.</strong> A fix owner sends a result straight to the integrator of the next best build, to mgmt-ops for card reads, and to mgmt-devices when it changes what a device can start next. The lead gets one FYI line. This rule (user request T-160) removed the lead as a relay.</li>
+    <li><strong>A blocked worker ends its run with a report the lead can resume.</strong> The template is three lines: what it is blocked on, what is done and not done, and the exact command to resume with. When the incident is fixed, a <code>SendMessage</code> by name resumes the agent with its history intact.</li>
+    <li><strong>Delegated authority is written down per role.</strong> A fix owner decides its next probe and answers the user in its own threads. mgmt-devices reorders the Mac queue inside the board's priority order and releases an idle phone hold, with every action audited. Only the lead lands fixes, signs the attribution card and changes rules.</li>
+  </ul>
+  <p>The lead coordinates incidents itself, by design. Teammates cannot spawn teammates, landing happens in the main checkout, and every permission prompt surfaces in the lead's session. A separate coordinator agent would add one hop to every decision and remove none.</p>
+</section>
+
+<section id="devices" aria-labelledby="devices-h">
+  <p class="eyebrow">tools/lock.mjs <span>tools/lib/lock.mjs · tools/iphone.mjs · tools/sim.mjs</span></p>
+  <h2 id="devices-h">Shared devices</h2>
+  <p>Frame timing on a laptop is fragile. One <code>npm test</code> beside an A/B run can shift a verdict. So every device sits behind a lock in the shared store, and every lock is a queue with rules about who may run beside whom.</p>
+
+  <h3>The chrome-measure lock</h3>
+  <ul>
+    <li><strong>FIFO with process holders.</strong> <code>verify.mjs</code> and <code>fix.mjs ab</code> take the lock themselves. A holder is a live process (stale when its pid dies) or a lease with a time limit. A waiter not seen for 30 s is skipped at a hand-over but keeps its place.</li>
+    <li><strong>Host gate.</strong> A timing hold starts only on a quiet Mac: CPU at most 25 % over 10 s, load average at most 6, normal memory pressure. After 600 s it starts anyway, and its runs are marked contaminated.</li>
+    <li><strong>Short lane.</strong> A job capped at 300 s (a commit's test run, a counts-only probe) is served before earlier normal waiters at the next hand-over. It never preempts the holder, and <code>run</code> kills its whole process tree at the cap.</li>
+    <li><strong>Shared lane.</strong> Jobs that time nothing run together: weights 1 for a probe, 2 for <code>npm test</code>, 3 for a Simulator session, up to a cap of 3. Anything timed refuses to start inside a shared slot.</li>
+    <li><strong>No-timing holds.</strong> A build or other CPU work takes a normal turn but skips the host gate, and nothing timed may run inside it.</li>
+    <li><strong>One hold, not a lease.</strong> An agent measures the A/B and its probes in one <code>lock.mjs run … -- sh -c '…'</code>. Tools started inside re-enter the hold instead of queueing behind it. That rule came from a deadlock (I-005).</li>
+  </ul>
+
+  <figure>
+    <div class="fig-scroll">
+    <svg viewBox="0 0 960 340" role="img" aria-label="Lock lanes over time: a timing hold waits at the host gate, then runs alone; a short job is served at the hand-over; a shared group of npm test and probes runs together; a phone part's quiet-Mac hold jumps the queue; a Simulator session is deferred while a phone block is marked.">
+      <defs>
+        <marker id="ai2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="s-arrow-i"/></marker>
+      </defs>
+      <!-- row labels -->
+      <text x="0" y="62" class="t-b">Timing</text><text x="0" y="78" class="t-s">exclusive, gated</text>
+      <text x="0" y="114" class="t-b">Short</text><text x="0" y="130" class="t-s">exclusive, ≤ 300 s</text>
+      <text x="0" y="166" class="t-b">No-timing</text><text x="0" y="182" class="t-s">exclusive, no gate</text>
+      <text x="0" y="218" class="t-b">Shared</text><text x="0" y="234" class="t-s">group, cap 3</text>
+      <text x="0" y="300" class="t-b">iPhone</text><text x="0" y="316" class="t-s">separate hold</text>
+      <!-- lane guides -->
+      <line x1="170" y1="92" x2="950" y2="92" class="s-faint"/>
+      <line x1="170" y1="144" x2="950" y2="144" class="s-faint"/>
+      <line x1="170" y1="196" x2="950" y2="196" class="s-faint"/>
+      <line x1="170" y1="276" x2="950" y2="276" class="s-faint"/>
+      <!-- timing -->
+      <rect x="170" y="48" width="64" height="34" rx="3" class="s-gate"/>
+      <text x="202" y="69" text-anchor="middle" class="t-s">gate</text>
+      <rect x="234" y="48" width="226" height="34" rx="3" class="s-hold"/>
+      <text x="347" y="69" text-anchor="middle" class="s-holdtxt">fix.mjs ab · 5 runs per side</text>
+      <rect x="820" y="48" width="130" height="34" rx="3" class="s-hold"/>
+      <text x="885" y="69" text-anchor="middle" class="s-holdtxt">verify.mjs</text>
+      <!-- short -->
+      <rect x="460" y="100" width="90" height="34" rx="3" class="s-hold"/>
+      <text x="505" y="121" text-anchor="middle" class="s-holdtxt">commit test</text>
+      <!-- shared group -->
+      <rect x="550" y="204" width="160" height="26" rx="3" class="s-shared"/>
+      <text x="630" y="221" text-anchor="middle" class="t-m">npm test (w2)</text>
+      <rect x="550" y="234" width="80" height="26" rx="3" class="s-shared"/>
+      <text x="590" y="251" text-anchor="middle" class="t-m">probe (w1)</text>
+      <rect x="634" y="234" width="76" height="26" rx="3" class="s-shared"/>
+      <text x="672" y="251" text-anchor="middle" class="t-m">probe (w1)</text>
+      <!-- no-timing -->
+      <rect x="710" y="152" width="110" height="34" rx="3" class="s-hold"/>
+      <text x="765" y="173" text-anchor="middle" class="s-holdtxt">phone part</text>
+      <text x="765" y="140" text-anchor="middle" class="t-h">jumps the queue</text>
+      <!-- iphone block -->
+      <rect x="380" y="284" width="440" height="34" rx="3" class="s-dev"/>
+      <text x="600" y="305" text-anchor="middle" class="t-m">phone block, marked: lock.mjs run iphone --block P-174</text>
+      <!-- deferred sim -->
+      <rect x="724" y="204" width="200" height="56" rx="3" class="s-ghost"/>
+      <text x="824" y="228" text-anchor="middle" class="t-s">Simulator (w3)</text>
+      <text x="824" y="244" text-anchor="middle" class="t-s">DEFERRED until the block ends</text>
+      <!-- time axis -->
+      <line x1="170" y1="24" x2="944" y2="24" class="s-line" marker-end="url(#ai2)"/>
+      <text x="170" y="16" class="t-s">time</text>
+    </svg>
+    </div>
+    <figcaption><b>The chrome-measure lock is one queue with four kinds of turns.</b> Exclusive turns never overlap anything. A shared group packs light jobs up to its cap. The iPhone is a separate hold. While a phone block is marked, the phone holder's quiet-Mac part goes to the front of the Mac queue, and a Simulator session waits so it cannot load the Mac under the phone's timing (I-160, I-172).</figcaption>
+  </figure>
+
+  <h3>The iPhone hold</h3>
+  <p>The phone is one physical device that shows one page at a time. Agents cannot take a phone lease at all. They run their phone part inside <code>lock.mjs run iphone --owner &lt;me&gt; -- &lt;part&gt;</code>, and the hold lasts exactly as long as the command (I-168). <code>--keep 120</code> lets the next part continue the same hold. <code>--block &lt;ticket&gt; --max-seconds 3600</code> marks a timed block. An agent that is not ready yet queues with <code>--not-ready</code>: it keeps its place and is never served. That rule exists because agents used to take the phone before their pre-data read was done and leave it idle (I-155).</p>
+  <p>Inside a hold, <code>iphone.mjs</code> drives Safari over the WebKit debug proxy and a WebDriverAgent gesture runner. Every run records its own frame stamps on the phone, so a phone run can coexist with light Mac work. Outside its own Mac hold, a phone run refuses (WAIT) beside another agent's normal Mac hold.</p>
+
+  <h3>The Simulator, and when the phone is not needed</h3>
+  <p>A standing user rule: a job that needs an iPhone but no performance number (DOM checks, gesture dry runs, pixel parity) runs on the iOS Simulator in a shared slot of weight 3. The real phone is kept for timing and for the user's own fingers. Simulator timing is never a verdict.</p>
+
+  <h3>Phone blocks</h3>
+  <ul>
+    <li>Only <strong>ticketed</strong> builds go on the phone, served from immutable snapshot copies whose hashes are on the ticket.</li>
+    <li>A block asks <strong>one question</strong> against <strong>one named control</strong> on the same base: one uncounted warm-up per arm's port, then at most 9 counted runs in the order C V V C C V V C.</li>
+    <li><strong>Sentinels</strong> are control runs at the block's start and end that must reach a fixed smoothness. A failing sentinel voids every run since the last passing one, because a hot phone looks like a slow build.</li>
+    <li>Between blocks the phone cools by <strong>battery temperature</strong>, read from the device, at most 10 min. A block runs at a named heat profile. Today's default is a thermal state induced by Xcode, so phone checks start warm the way real phones are used.</li>
+  </ul>
+</section>
+
+<section id="protocol" aria-labelledby="protocol-h">
+  <p class="eyebrow">research/architecture/measurement-protocol-v2.md <span>fixes/LEAD.md "Stages and gates"</span></p>
+  <h2 id="protocol-h">Protocol v2: cards before data</h2>
+  <p>Version 1 let agents measure first and explain afterwards. On one day it produced thirteen distinct mistakes. One model predicted a 30-45 ms gain that measured 6-9 ms. One ablation removed a blur from the wrong element and measured nothing. One logger capped events at 12 per frame and invented a cause. Protocol v2 turned each mistake into a rule, and put a signed card in front of every stage.</p>
+
+  <figure>
+<pre class="mermaid">
+flowchart LR
+  R["R · research&lt;br/&gt;census card"] --> I["I · investigate&lt;br/&gt;event card"]
+  I --> D{"D · distinguish&lt;br/&gt;attribution card"}
+  D -->|LOCATED or UNEXPLAINED| I
+  D -->|NAMED, signed by the lead| F["F · fix&lt;br/&gt;build + prediction card,&lt;br/&gt;slot ticket"]
+  F --> V{"V · review&lt;br/&gt;fix-reviewer"}
+  V -->|NEEDS-WORK| F
+  V -->|ACCEPT| L["L · land&lt;br/&gt;rebase + fast-forward"]
+</pre>
+    <figcaption><b>Six stages, each closed by a card.</b> The lead signs only D, the attribution card. mgmt-ops signs I, F and V cards and validates phone tickets.</figcaption>
+  </figure>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Stage</th><th>Question</th><th>Gate</th></tr></thead>
+      <tbody>
+        <tr><td>R</td><td>Where and how often is it slow?</td><td>At least 3 phone runs of one driver plus Chrome; clusters by "crossing", the nearest code threshold, because Chrome and phone scroll positions differ by about 77 px</td></tr>
+        <tr><td>I</td><td>What changes in that frame?</td><td>Hypotheses as element + selector + property, each proved by computed style in Chrome and in WebKit</td></tr>
+        <tr><td>D</td><td>Which mechanism, on which device?</td><td>A positive ablation, at least one negative sibling, a mechanism check per arm, the axis the frame is locked to, and one run that moves that axis apart. Every platform claim it rests on is CONFIRMED against a reference, never only OBSERVED</td></tr>
+        <tr><td>F</td><td>Does the build do only what we intended?</td><td>Build card, prediction card with an interval, ledger row, slot ticket</td></tr>
+        <tr><td>V</td><td>A win on the target device and no regression elsewhere?</td><td>Review report, idle checks at three positions, every position bin on both devices</td></tr>
+        <tr><td>L</td><td></td><td>Rebase and fast-forward, tool fixes first</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Signed before the data, ruled before the run</h3>
+  <p>A phone check card fixes the primary metric, its limit, the decision for each outcome and the reader script before any run. The kit is frozen by hash. The lead signs it with <strong>rulings</strong>: amendments that settle open questions before anyone can see which way they cut. The card for today's best build, P-174, carried five:</p>
+  <ol>
+    <li>The primary as drafted: frames over 50 ms per run, median difference V minus C at most +2 in both scroll windows, and both twin thresholds must agree, else the verdict is OPEN.</li>
+    <li>A misfire stops the block: any blurred frame on a fast flick that triggered the new code stops the runner before landing.</li>
+    <li>A gate fix for Chrome pixel checks is accepted and its remaining difference disclosed.</li>
+    <li>The page log records how many deck photos are complete at the moment of each flick. This was the only kit change after signing. It was checked on the Simulator first (control 7 of 26, variant 26 of 26) and re-hashed in the signature commit.</li>
+    <li>Safety: cool below 40.0 °C before every hold, stop at 43.0 °C or a Critical thermal state, check the gesture driver first, repair link failures inside the hold.</li>
+  </ol>
+  <p>The <strong>twins</strong> are the same count at ±4 ms around each threshold (46 and 54 ms around 50). A verdict that flips between twins is reported as threshold-sensitive, never as a result. Part 2's casebook shows how to read these numbers; here they matter as machinery: the card names them in advance, the reader computes them, and nobody chooses a threshold after seeing the data.</p>
+
+  <div class="rulebox">
+    <span class="tag">Platform claims</span>
+    <p>Any browser behaviour found by our own probes is OBSERVED, written as "in our setup, cause unknown". Before it can carry an attribution card, a verifier checks it against a spec, official docs, engine source or the bug tracker, and returns CONFIRMED, REFUTED or UNRESOLVED with the decisive local check. The lead does not sign NAMED on an OBSERVED claim, and never passes one to the user as fact.</p>
+  </div>
+</section>
+
+<section id="console" aria-labelledby="console-h">
+  <p class="eyebrow">tools/console.mjs <span>tools/lib/console*.mjs · status.mjs · idle.mjs</span></p>
+  <h2 id="console-h">The user console</h2>
+  <p>The user never reads agent transcripts. Everything the user must do or answer goes through one local page, served on localhost by the lead with <code>nohup</code> so it survives the session's background-job limit. It has five tabs.</p>
+
+  <h3>Your steps: actions with parts</h3>
+  <p>A step is something only the user can do: swipe two pages, answer yes or no, start Xcode. A step has parts, and each part has a small state machine.</p>
+  <ul>
+    <li><strong>Gate.</strong> Start stays grey until the runner acks <code>ready</code>, so the user never swipes a page that has not loaded.</li>
+    <li><strong>Record.</strong> After Start the page says "don't swipe yet" until the runner acks <code>recording</code>; then it says "swipe now". The recorder is pre-armed so this takes seconds.</li>
+    <li><strong>Start over.</strong> Two taps reset every part to a new attempt. The runner's waits exit with code 5 (REDO), and an ack from an old attempt is refused, so late messages from a previous try cannot advance the new one.</li>
+    <li><strong>Runner-ended parts.</strong> A part the runner finishes itself shows "Running, please wait; this ends by itself" and refuses the user's Done.</li>
+    <li><strong>Blind pairs.</strong> A swipe pair hides both URLs; the A/B order lives in private metadata that only the waiting agent reads back.</li>
+  </ul>
+  <p>One phone step at a time: only the holder of the phone may post a phone step, and only while no other phone step is open. This rule came from a morning where four steps from different agents piled onto the phone (I-123, below).</p>
+
+  <h3>Threads: routing, triage, listeners</h3>
+  <p>Threads are where the user asks and agents answer. Before routing existed, the measurement was blunt: in 24 hours, all 88 of 88 user messages woke the lead, and 13 of the 20 messages in threads already assigned to another agent were still answered by the lead. The router now picks the first <em>listening, free</em> owner.</p>
+
+  <figure>
+<pre class="mermaid">
+flowchart TD
+  M["User message in a thread"] --> A{"Assignee listening&lt;br/&gt;and not busy?"}
+  A -->|yes| W["Wake the assignee"]
+  A -->|no| O{"Owner of the item&lt;br/&gt;commented on?"}
+  O -->|listening, free| W2["Wake that owner"]
+  O -->|no| T{"Lead's topic map,&lt;br/&gt;then status-board owner,&lt;br/&gt;then the desk"}
+  T -->|someone listening, free| W3["Wake them"]
+  T -->|nobody| L["Lead's triage wakes at once"]
+  W -.->|no reply in 10 min| L
+</pre>
+    <figcaption><b>Who answers a user message.</b> Listening means a live <code>thread wait</code>, or a read or reply in the last 5 minutes. A busy owner (implementing, testing, measuring, holding a device) gets a non-waking FYI and may answer later.</figcaption>
+  </figure>
+  <p>Three refinements came from misses:</p>
+  <ul>
+    <li><strong>Orphan waits</strong> (I-163). A listener process can outlive the agent that started it. The router walks the wait's parent chain and counts it only if a live Claude Code process is still on it.</li>
+    <li><strong>Deaf owners</strong> (I-169). An agent inside a long foreground command reads no messages until it ends. The router reads the agent's transcript, and an owner inside one foreground call for more than 30 s counts as deaf.</li>
+    <li><strong>One line per wake</strong> (I-147). A listener runs as one persistent Claude Code <code>Monitor</code> on <code>thread wait --monitor</code>, which prints <code>WAKE &lt;kind&gt; &lt;id&gt; &lt;text&gt;</code>. Earlier listeners filtered their own output and dropped a proposal decision for 16 minutes.</li>
+  </ul>
+
+  <h3>The answer-format linter</h3>
+  <p>The user found early answers hard to read: long paragraphs, unexplained ids, the action buried in the middle. The fix became a memory rule (answer first, short bullets, plain words, numbers in small tables, about 10 lines, "What you need to do" last), and then a linter in <code>tools/lib/answer-lint.mjs</code>. The console refuses to post a reply that fails it:</p>
+  <ul>
+    <li>the last line does not start with "What you need to do";</li>
+    <li>more than 18 non-empty lines, or a line over 250 characters (calibrated on the 227 earlier replies: 250 characters still catches the two the user complained about and would have refused 16 % of them);</li>
+    <li>an internal id such as <code>PR-041</code> or a commit hash with no plain words explaining it;</li>
+    <li>a pipe table without its separator row, which the page would print as raw pipes.</li>
+  </ul>
+
+  <h3>Proposals with Try-it pages</h3>
+  <p>Anything that changes what the page looks like, even slightly, is the user's call. An agent posts a proposal: the problem, what stays the same, the risk, and two or three options with measured gains, each tagged OBSERVED, CONFIRMED or UNRESOLVED. Every option carries a <strong>Try-it</strong> panel: A and B served as real pages. <code>proposal phone &lt;id&gt;</code> serves them on the Wi-Fi so the user can fling them on the iPhone. Screenshots alone were refused twice before this became a rule.</p>
+  <p>A decision is the spec. "Changes requested" means revision N+1 of the same proposal with every point of the note answered, and the page shows who is revising and by when. An overdue revision opens an alarm thread for the lead.</p>
+
+  <h3>Status board, idle alarms and the steward</h3>
+  <p>Every workstream has one row with a state (researching, measuring, waiting, ready-to-land, parked and so on), a plain-words note and, when waiting, what it waits on. The board adds what it can see by itself: queue position on each lock, held devices, open user steps, blocking incidents, and readings from transcripts such as "owner ended" or "deaf: in <code>npm test</code> for 4 min".</p>
+  <p>The idle alarm (I-105) fires when the phone has been free for 5 minutes, or the Mac lock for 10, while work waits for it. A phone holder whose only activity for 2 minutes is waiting on another lock is reported as stuck. Alarm threads go to a <strong>steward</strong>, mgmt-devices, and never to the busy workers; the steward reads the holder's processes and sends one exact correction (I-175). On one day the lead had noticed idle phones only after the user did, 18 alarms and 204 idle minutes. The steward has an exit target: two 3-hour windows in a row with at most 2 idle minutes, after which it parks and the tools carry the job.</p>
+
+  <h3>The Best build page</h3>
+  <p>One tab answers the question the user asks most: what is the best build today? It reads <code>fixes/BEST_BUILDS.md</code> and <code>fixes/PROGRESS.json</code>: each version, what it added, how it was checked, and a Try-it link that serves exactly the tested bytes on the phone. The lead updates it at every build change.</p>
+</section>
+
+<section id="boards" aria-labelledby="boards-h">
+  <p class="eyebrow">tools/incident.mjs · tools/finding.mjs <span>fixes/INCIDENTS.md · fixes/FINDINGS.md</span></p>
+  <h2 id="boards-h">Incident and findings boards</h2>
+  <p>Anything that breaks outside an agent's own topic is an incident: a tool crash, odd numbers, a stuck lock, a disconnected phone. One report per problem, one fixer, and everyone affected hears when it is fixed.</p>
+<pre><code><span class="c"># any agent</span>
+node tools/incident.mjs open --by fix-nav-earn --title "fix.mjs ab crashes after run 3" \
+  --error "&lt;first error line, verbatim&gt;" --class tool --blocking yes --workaround "…"
+<span class="c">#  OPENED I-004   new: message the lead
+#  JOINED I-003   already reported: use its workaround, don't fix it in parallel
+#  KNOWN  I-002   fixed on main: git rebase main, retry</span>
+node tools/incident.mjs wait I-004 --timeout 3600   <span class="c"># in the background; exits with the announcement</span></code></pre>
+  <ul>
+    <li>The <strong>dedup key</strong> is the first error line with paths, numbers and hex ids masked, so a second agent hitting the same crash joins the first report.</li>
+    <li>The lead triages in one line (class, priority, owner, workaround) and spawns a <strong>toolsmith per incident</strong> as <code>ts-i&lt;nnn&gt;</code>. It reproduces, writes a failing test, fixes, and delivers one <code>tools:</code> commit.</li>
+    <li>The lead lands it after running the full suite in the main checkout, then <code>resolve</code> prints the announcement: the commit, the rebase check, and "Re-measure" when measurement code changed and older A/B results no longer compare.</li>
+  </ul>
+  <p>The findings board is the same idea for knowledge. Any agent, read-only reviewers included, posts a technique that won, a pitfall, a code coupling or a measurement surprise. A near-duplicate gets <code>SIMILAR F-007</code>. Agents read unread findings at start and acknowledge each one with "applied in &lt;topic&gt;" or "not relevant". Two of today's, from the people-deck work: F-370 (a time-based reveal fade looks like a blink under a fast fling) and F-371 (decoding images ahead moves their paint cost into the reveal frame).</p>
+</section>
+
+<section id="enforce" aria-labelledby="enforce-h">
+  <p class="eyebrow">.githooks/ · .claude/hooks/ <span>tools/scope.mjs · tools/baseline.mjs</span></p>
+  <h2 id="enforce-h">The enforcement layer</h2>
+  <p>Rules in a prompt are suggestions. Each rule that matters has a mechanism below it, and the agent guide forbids working around any of them: if one blocks legitimate work, the agent stops and asks.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Layer</th><th>What it stops</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>git hooks</td><td>Merge commits (even with <code>--no-verify</code>, via <code>reference-transaction</code>), pushes, staged overlays, keys, measurement output, and any snapshot change that is not authorized</td><td>Linear history: each fix is one contiguous series that can be bisected or reverted</td></tr>
+        <tr><td>git-guard</td><td>A Claude Code PreToolUse hook that parses the shell command: splits <code>&amp;&amp;</code>, pipes, <code>sh -c</code>, heredocs, wrappers and git aliases, then denies push, non-fast-forward merges, hook overrides, curl to GitHub, and every camera or frame-viewing route</td><td>A permission rule like <code>Bash(git push *)</code> does not match <code>git -C . push</code>. It fails closed for git merge/push patterns and open for everything else, so a parser bug cannot brick the shell</td></tr>
+        <tr><td>fg-guard</td><td>Long commands in the foreground: the full test suite, lock holds, waits, A/Bs, phone runs</td><td>An agent reads messages only between tool calls; a 5-minute foreground command makes it deaf (I-170). No opt-out</td></tr>
+        <tr><td>scope guard</td><td><code>npm run test:unit</code> fails, naming the files, when a non-tooling branch touched <code>tools/</code>, <code>tests/</code>, hooks or the snapshot</td><td>Only toolsmiths change tooling, in separate commits (I-021)</td></tr>
+        <tr><td>baseline pin</td><td>Tools refuse, exit 3, when the frozen copy of the page differs from the snapshot id pinned in <code>baseline.json</code>; A/B verdicts get a <code>BASELINE-MODIFIED:</code> prefix if it changed mid-run</td><td>Every result names the exact build it measured; a re-mirror shows up as a git diff, never silently</td></tr>
+        <tr><td>tests</td><td>About 2,000 tests on a tiny fixture baseline, no Chrome, network or phone; the pre-commit hook runs them whenever tooling is staged</td><td>Agents may fix tools, but only with a covering test, and never by weakening one</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The enforcement layer itself is not tooling. An edit to a hook or to the settings file asks the user, which is the hinge for the next section.</p>
+</section>
+
+<section id="privacy" aria-labelledby="privacy-h">
+  <p class="eyebrow">memory/no-camera-access.md <span>memory/deck-recording-pictures.md · tools/ioscap.mjs</span></p>
+  <h2 id="privacy-h">Privacy guards, and the one exception</h2>
+  <p>The user's personal data never leaves the Mac: no name, email, account id, LAN address or device identifier goes into a web request, a connector or a committed file. Phone links in threads are written as <code>http://lan:&lt;port&gt;/</code> and resolved by the page at view time, because a typed address went stale on a Wi-Fi reconnect (I-073) and would leak the network if committed.</p>
+
+  <h3>The camera incident and the no-frames rule</h3>
+  <p>On 2026-10-02 a route for recording the iPhone screen turned on the Mac's camera. QuickTime's movie recording opens on the built-in camera before the iPhone source is chosen. The user stopped the work. The agent gave a full account, every file was deleted and the deletion verified, and the user decided the session log stays as evidence of the mistake.</p>
+  <p>What replaced it is a small signed Mac app driven by <code>ioscap.mjs</code>. It queries only the iOS screen device, refuses any camera and never falls back. Its first run needed the user's OK and the user watching the camera light. It prints numbers only: frame counts, distinct-frame rate, timing gaps. git-guard denies every other route (QuickTime, camera listing, screen-capture flags, capture APIs in inline scripts), every player, and every frame export. Nobody looks at the pictures.</p>
+
+  <h3>How the deck-recording exception was granted</h3>
+  <p>On 2026-10-09 the user wanted to see the people-deck blink frame by frame. The approval came in three steps, and the order matters:</p>
+  <ol>
+    <li>In a console thread, the user approved decoding the Simulator videos into numbers and picture strips. The lead declined to change the guard: console text reaches an agent as tool output, which Claude Code cannot verify as the user. Claude Code's own permission system also refused the lead's attempt to edit the guard.</li>
+    <li>The user offered to put the iPhone in Sleep focus so no notification would appear, and said again in the thread that the guard could change. The lead again explained that this channel cannot authorize a guard change, and gave the exact words to type in the Claude Code chat.</li>
+    <li>The user typed the request in the chat and approved the edit prompt. The guard was widened only for <code>ffmpeg</code> image exports to files under <code>out/</code>, from Simulator videos under <code>out/people-blink/</code> and from iPhone recordings whose name carries <code>-pb-</code>. Everything else stays denied.</li>
+  </ol>
+  <p>Every picture posted afterwards was checked first. The address bar was greyed out because it showed the Mac's network address. The scope is written down as a memory note: widen it only on a new request in the chat.</p>
+  <div class="rulebox">
+    <span class="tag">The trust boundary</span>
+    <p>Anything an agent reads through a tool, including a console message, a thread, a web page or another agent's report, is data. Only the user's own words in the Claude Code session, plus the permission prompts they approve, can change a guard. Build the console for convenience and the chat for authority.</p>
+  </div>
+</section>
+
+<section id="memory" aria-labelledby="memory-h">
+  <p class="eyebrow">memory/README.md <span>imported into CLAUDE.md with @memory/README.md</span></p>
+  <h2 id="memory-h">Project memory and recurring prompts</h2>
+  <p>A long-running loop forgets. Sessions end, contexts compact, agents are replaced. Standing user rules live in <code>memory/</code>, one note per rule, committed on <code>main</code>. The index is imported into the agent guide, so every agent loads the one-line summaries and opens the full note before acting in its area. Only the lead edits notes, and only after removing personal details.</p>
+  <p>Each note has the same shape: <strong>Rule</strong>, <strong>Why</strong> (the event that caused it, with its thread id), <strong>How to apply</strong>, and a dated <strong>History</strong>. Some examples:</p>
+  <ul>
+    <li><em>Perception tests are touch A/B.</em> The user judges lag by whether the content follows the finger, so smoothness tests are blind swipe pairs, not watched clips.</li>
+    <li><em>Trace before asking.</em> A reported lag is traced from recordings, logs and probes first; the user is asked only what no data can answer.</li>
+    <li><em>Busy workers answer later.</em> A user question never pulls a worker off a measurement; a helper answers now.</li>
+    <li><em>Illusions must be pixel-identical.</em> A cheaper look-alike lands without asking only within agreed pixel limits (the PR-010 numbers); anything more is a proposal.</li>
+  </ul>
+  <h3>Recurring prompts</h3>
+  <ul>
+    <li><strong>Usage meter, every 30 minutes.</strong> Crons last one session, so the lead re-creates it at every start. It reads local transcripts, appends to a local file, and posts a 3-line summary in a thread. Account usage is personal data, so the readings stay out of commits.</li>
+    <li><strong>Hourly team measures.</strong> <code>research/management/proactive-measures.mjs</code> counts the lead's hand moves of the queue, phone idle alarms, board rows waiting on the lead, and user answer times. It prints no thread text. It is how the user checks that "proactive by default" holds.</li>
+    <li><strong>The lead's check-in.</strong> Each check-in walks the same list in order: rows waiting on the lead, idle devices, unanswered user messages, land requests. Each decision asked of the lead gets an answer or a named delegate in that check-in.</li>
+  </ul>
+</section>
+
+<section id="day" aria-labelledby="day-h">
+  <p class="eyebrow">console thread T-228 <span>fixes/people-blink · fixes/g0-0l · PR-041 · P-174</span></p>
+  <h2 id="day-h">One day: the people-deck blink</h2>
+  <p>Here is how the pieces fit on a real issue, from the user's report to a new best build in about seven hours. The technique itself is in Part 2; this is the interaction. All times are 2026-10-09, UTC. The user's words are paraphrased.</p>
+  <p class="legend"><span><i style="background: var(--hold)"></i>the user</span><span><i style="border: 2px solid var(--wire)"></i>the agents</span></p>
+  <ol class="timeline">
+    <li class="user"><time>03:38Z</time><div><span class="who">User · Best build thread</span><p>Reports that the people section still blinks on the current best build, though less than on the previous one.</p></div></li>
+    <li><time>03:38Z</time><div><span class="who">Lead</span><p>Names the owner, fix-scrollcb-g0, lists the suspects it will test, and asks one question: dragging down, scrolling up, or both?</p></div></li>
+    <li class="user"><time>03:45Z</time><div><span class="who">User</span><p>A fast scroll from the hero into the profile deck. Later: the original site blinks too.</p></div></li>
+    <li><time>04:24Z</time><div><span class="who">Lead</span><p>The guard blocked decoding the Simulator videos. Asks the user to choose: numbers only, numbers plus picture strips, or neither.</p></div></li>
+    <li><time>04:27Z</time><div><span class="who">Lead</span><p>First suspect from the page's own log, with no video read: the card's fade-in starts at 72 % of the hero and lands late on a fast fling.</p></div></li>
+    <li><time>06:26Z</time><div><span class="who">Lead</span><p>The user points out the shots stopped above the deck. A second agent, fix-deck-chrome, is spawned to capture every Chrome frame in parallel. The Simulator waits out the phone block running for the previous build, so the Mac stays quiet.</p></div></li>
+    <li class="user"><time>06:39Z</time><div><span class="who">User</span><p>The phone is free; record its screen; Sleep focus is on. Then types the guard change in the Claude Code chat.</p></div></li>
+    <li><time>06:47Z</time><div><span class="who">fix-scrollcb-g0, Simulator</span><p>Ablations name the cause. Deck layers off: still blinks. Fade-in off: sharp in every shot.</p></div></li>
+    <li><time>06:50Z</time><div><span class="who">Same agent, iPhone</span><p>Robot-finger flings confirm it. The screen held 60 fps throughout: nothing stalled, the card was simply still blurred when it arrived.</p></div></li>
+    <li><time>06:54Z</time><div><span class="who">Lead</span><p>Posts picture strips from the iPhone recordings, address bar masked and every picture checked.</p></div></li>
+    <li><time>07:15Z</time><div><span class="who">Proposal PR-041</span><p>Two options on today's best build: <em>instant</em> (a fast scroll skips the fade) and <em>quick</em> (a 0.15 s fade). Both preload the deck photos. Try-it pages for A and B on the iPhone.</p></div></li>
+    <li class="user"><time>07:23Z</time><div><span class="who">User · Proposals page</span><p>Flings both on the phone and accepts <em>instant</em>.</p></div></li>
+    <li><time>07:24Z</time><div><span class="who">fix-scrollcb-g0</span><p>Builds g0.0l. Pixel gates in Chrome and the Simulator lead to a rev 2: the photo preload now waits for the load event and runs only on touch screens.</p></div></li>
+    <li><time>09:5xZ</time><div><span class="who">Lead</span><p>Signs the phone card P-174 with five rulings, before any data.</p></div></li>
+    <li><time>09:56Z</time><div><span class="who">Phone block</span><p>A first attempt stopped before any hold because the phone had dropped off the Wi-Fi. After a reconnect step, 2 warm-ups, a start sentinel, 8 counted runs and an end sentinel, all passing.</p></div></li>
+    <li><time>10:36Z</time><div><span class="who">Lead · Best build page</span><p>g0.0l is the best build, with a Try-it link and the table below.</p></div></li>
+  </ol>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>iPhone check P-174 (robot finger, 4 runs per arm)</th><th>g0.0k (control)</th><th>g0.0l</th></tr></thead>
+      <tbody>
+        <tr><td>Blurred deck frames per fast flick</td><td class="num">51-52</td><td class="num">0</td></tr>
+        <tr><td>Deck photos ready when the flick starts</td><td class="num">7 of 26</td><td class="num">26 of 26</td></tr>
+        <tr><td>Frames over 50 ms per run, flick window</td><td class="num">0</td><td class="num">0-1 (median +1, limit +2)</td></tr>
+        <tr><td>Frames over 50 ms per run, approach window</td><td class="num">0-1</td><td class="num">1-5 (median +1, limit +2)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The user's time across the whole loop was a few short thread replies, one choice between three privacy options, one sentence in the chat, a Sleep focus toggle, one Try-it session on the phone and one Accept. The cost of the new build was disclosed with the win: the reveal frame now paints all the decoded photos at once (one frame of 44-60 ms), and a follow-up can move that paint earlier.</p>
+</section>
+
+<section id="wrong" aria-labelledby="wrong-h">
+  <p class="eyebrow">node tools/incident.mjs list --all <span>260 incidents, read-only</span></p>
+  <h2 id="wrong-h">What went wrong, and what we changed</h2>
+  <p>Most of the machinery above exists because something failed in front of the user. A few of them:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Incident</th><th>What happened</th><th>What changed</th></tr></thead>
+      <tbody>
+        <tr><td>I-006</td><td>All subagents shared one scratch folder; same-named result files and Chrome profiles overwrote each other</td><td>Scratch files and Chrome profiles go in a per-topic folder</td></tr>
+        <tr><td>I-005</td><td>A lock hold around an A/B deadlocked: the inner tool queued behind its own parent</td><td>Holds are re-entrant across child processes; "measure in one hold, not a lease"</td></tr>
+        <tr><td>I-007, I-020</td><td>A 35-second commit test waited behind 25-40 minute A/Bs, leaving <code>main</code> dirty</td><td>The short lane, then the shared lane with weights and a cap</td></tr>
+        <tr><td>I-123</td><td>The user pressed Start over; the runner missed it for 10 min, its phone lease ran out, and the next holder posted three steps over it. The user skipped all four</td><td>One phone step at a time, posted only from inside a phone hold; REDO wakes; a stuck-step alarm; a refusal to open the phone over another agent's step</td></tr>
+        <tr><td>I-062</td><td>The iPhone recording route turned on the Mac's camera</td><td>A hardened recorder app, numbers only, every other route denied by git-guard</td></tr>
+        <tr><td>I-163, I-169, I-170</td><td>User questions went to owners that had ended or were stuck in long foreground commands; one waited 2.5 minutes, others hit the 10-minute backstop</td><td>Orphan-wait detection, a "deaf" reading from transcripts, and fg-guard</td></tr>
+        <tr><td>I-160</td><td>Simulator sessions started beside a timed phone block and drove the Mac's load to 80-170</td><td>Simulator sessions are deferred while a block is marked</td></tr>
+        <tr><td>I-185</td><td>The lead made 89 hand moves of the Mac queue in one day to follow priorities</td><td>The queue follows the board's priority by itself; the steward handles the rest</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Two remain open as this is written: a timing-sensitive test group that fails when the Mac is under heavy load (I-258), and a gap in the I-160 window when a whole block runs as one command (I-255). Both are visible on the board, with workarounds.</p>
+</section>
+
+<section id="build" aria-labelledby="build-h">
+  <p class="eyebrow">for engineers <span>if you build one</span></p>
+  <h2 id="build-h">If you build one</h2>
+  <ol class="takeaways">
+    <li><div><strong>Put shared state where every worker sees it at once.</strong> Git worktrees isolate code well and coordination badly. A small JSON store in the git common directory gave us locks, incidents, threads and a status board for every worktree, with no server.</div></li>
+    <li><div><strong>Give every rule an enforcer, and say which ones have none.</strong> Parse shell commands in a PreToolUse hook, because pattern rules miss wrappers. Fail closed on the few patterns that matter and open on everything else.</div></li>
+    <li><div><strong>Lock devices by kind of work.</strong> Timing work needs a quiet machine; functional work can share. Encode that in the lock instead of in agent manners, and let a hold be a process, so it ends when the work ends.</div></li>
+    <li><div><strong>Sign the reading before the data.</strong> A card with the metric, the limit, the decision per outcome and a frozen reader removes the temptation to pick a threshold afterwards. Rulings settle the open questions while nobody knows which way they cut.</div></li>
+    <li><div><strong>Give the human a console, and route it.</strong> Steps with gates and Start over, threads that reach a listening owner, a linter that keeps answers short, and Try-it pages for every look change. The user answered dozens of questions a day without reading a transcript.</div></li>
+    <li><div><strong>Keep authority in the chat.</strong> A console message is convenient and unverifiable. Changes to guards and rules happen only on the user's own words in the Claude Code session.</div></li>
+    <li><div><strong>Turn every complaint into a note with its why.</strong> Memory notes carry the event behind each rule, so a fresh agent knows what the rule protects and where its edges are.</div></li>
+  </ol>
+
+  <nav class="endnav" aria-label="Series">
+    <a href="https://claude.ai/artifact/<private-artifact>" target="_blank" rel="noopener"><small>Part 1</small><strong>Sixteen Milliseconds: Building an AI Loop from Scratch</strong></a>
+    <a href="https://claude.ai/artifact/<private-artifact>" target="_blank" rel="noopener"><small>Part 2</small><strong>The Casebook</strong></a>
+    <a href="#map"><small>Part 3 · you are here</small><strong>Wiring the Loop</strong></a>
+  </nav>
+  <p class="disclaimer">A personal, educational study of a local mirror of the public homepage fastwork.com, not affiliated with Fastwork. No measurement here describes the live site. Thread ids (T-), proposals (PR-), incidents (I-), findings (F-) and phone checks (P-) refer to the study's local stores. The user's words are paraphrased throughout.</p>
+</section>
+
+</main>
+</div>
