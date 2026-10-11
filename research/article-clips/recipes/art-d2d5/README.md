@@ -1,7 +1,9 @@
 # art-d2d5: Day 2 and Day 5 comparison clips (owner T-170 #359, gesture decided in #363)
 
-Status 2026-10-11 13:50Z: **kit ready, builds rebuilt and hash-checked, phone block not run** (WDA, the robot finger,
-did not start: "Timed out while enabling automation mode", twice). Nothing recorded yet; no numbers.
+Status 2026-10-11 14:17Z: **recorded and cut.** Block 14:03-14:14Z, 6/6 runs clean; clips
+`out/article-video/day2-laggy-same-60fps-strip.mp4` and `day5-breakthrough-60fps-strip.mp4` (1296x1324, 60 fps, 11.5 s,
+690 frames; gitignored, copied to the main checkout's out/article-video/); article draft out/article/day2-day5-draft.html.
+All numbers OBSERVED, one block, n = 2 per build: an illustration, not a verdict.
 
 ## What the clips show
 
@@ -51,3 +53,44 @@ python3 research/article-clips/recipes/art-d2d5/strips.py out/d2d5/gen/windows.j
   enabling automation mode", build interrupted (out/d2d5/wda-start.log). 13:47Z retry: the same (wda-start2.log). go.sh
   stopped (exit 5), Safari parked, `thermal.mjs clear`: no active condition, servers stopped. Likely the phone is locked
   or UI Automation needs re-enabling (the tool's own hint); per memory phone-problems-fix-first this goes to the lead.
+- 13:57Z: the owner unlocked the phone and checked UI Automation (console step C-152). Inside the phone hold `wda start`
+  came up (WDA READY), and a 3 s `ioscap.mjs record` check showed the rebuilt recorder app has the Camera permission
+  (authorized; no first-run prompt).
+- 13:58-14:14Z `go.sh`: prep (Serious induced by the tool, battery 36.7 C, warm-ups O W S), W1 = O W S (14:03-14:08Z,
+  Serious 36.6 -> 38.2 C), W2 = S W O (14:08-14:14Z, 38.3 -> 39.5 C), no drift, no Critical, every driver and recorder
+  exit 0, recorder 59.5-60 fps delivered, Mac load1 4.9-8.9. Then Safari parked, condition cleared, servers stopped.
+
+## Results (read.mjs: whole replay, mark finger -> mark end, as Fig. 14 / src-24)
+
+| run (out/iphone-screen/, out/wc/runs/) | build | window | frames | > 34 (30/38) | > 50 (46/54) | > 100 | longest |
+|---|---|---|---|---|---|---|---|
+| 20261011T140302Z-ar-herocatch4-orig | original | 34.0 s | 1288 | 272 (311/244) | 153 (177/134) | 26 | 145 ms |
+| 20261011T140443Z-ar-herocatch4-aw1 | aw1-10c | 34.3 s | 1347 | 283 (338/230) | 154 (175/125) | 26 | 168 ms |
+| 20261011T140626Z-ar-herocatch4-v6 | v6 | 32.6 s | 1442 | 217 (264/182) | 110 (134/82) | 4 | 122 ms |
+| 20261011T140843Z-ar-herocatch4-v6 | v6 | 32.5 s | 1422 | 211 (261/180) | 106 (129/85) | 3 | 128 ms |
+| 20261011T141042Z-ar-herocatch4-aw1 | aw1-10c | 34.2 s | 1364 | 275 (330/229) | 136 (162/120) | 25 | 143 ms |
+| 20261011T141226Z-ar-herocatch4-orig | original | 33.2 s | 1323 | 248 (293/202) | 133 (151/109) | 20 | 157 ms |
+
+The original matches 10 and 11 Oct on the same program (265, 254 and 263, 265 over 34 ms). aw1-10c against the original:
+no difference at any threshold (the owner's "laggy the same" of 1 Oct). v6 against the original: lower at every
+threshold, both twins, ranges apart; over 100 ms 26, 20 -> 4, 3.
+
+Where (bands.mjs, src-12's code-geometry split, whole replay, over 34 ms per run): hero cards only (y < 600, moving):
+original 49, 42; aw1-10c 51, 48; v6 42, 38 (about level on this fast swipe). People card over the hero (y 600-855):
+113, 90; 107, 101; 58, 70. Title "o": 87, 79; 87, 88; 104, 90. Rest: 23, 37; 38, 38; 13, 13.
+
+## Clips (gen.mjs + strips.py + out/d2d5/gen/cmds.json; encoded inside a --no-timing chrome-measure hold)
+
+Both clips use the same original run, 140302Z (ss 40.41), the first of the block. Day 2 against aw1-10c 140443Z (ss 22.903),
+Day 5 against v6 140626Z (ss 23.818); ss from align.py. pairs.json: labels "before (original site)" and
+"after (Day 2 build, 1 Oct)" / "after (Day 5 build v6, 4 Oct)". Clip windows (strips.py, page frames ending in the 11.5 s):
+
+| clip | side | frames | > 34 | > 50 | > 100 | longest |
+|---|---|---|---|---|---|---|
+| day2-laggy-same | original | 405 | 113 | 55 | 6 | 139 ms |
+| day2-laggy-same | aw1-10c | 424 | 107 | 54 | 7 | 168 ms |
+| day5-breakthrough | original | 405 | 113 | 55 | 6 | 139 ms |
+| day5-breakthrough | v6 | 479 | 91 | 45 | 1 | 111 ms |
+
+Robot stroke starts in the clip (s after the first scroll move): original 4.07, 5.76, 8.24; aw1-10c 3.88, 5.68, 8.10;
+v6 3.73, 5.32, 7.89 (the original up to 0.44 s behind v6; cause not checked, as clip 1).
