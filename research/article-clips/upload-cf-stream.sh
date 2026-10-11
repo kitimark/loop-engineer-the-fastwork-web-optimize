@@ -10,14 +10,15 @@
 #        sh research/article-clips/upload-cf-stream.sh day8-menu-60fps-strip     # one test clip first
 #        sh research/article-clips/upload-cf-stream.sh                           # all 19, in page order
 #        sh research/article-clips/upload-cf-stream.sh --delete <uid>            # remove one upload
-#   4. Paste each "medium" link from out/article-video/cf-stream-links.tsv on its own line in Medium.
+#   4. Paste each "medium" link from research/article-clips/cf-stream-links.tsv on its own line in Medium;
+#      commit that file after each upload run (it holds only public ids and links, never the token).
 #
 # API (Cloudflare Stream docs, uploading-videos/upload-video-file): POST form file=@clip to
 # /client/v4/accounts/{account_id}/stream (basic upload, files under 200 MB). The clips have no audio track.
 # Already-uploaded clips (a row in the .tsv) are skipped, so a rerun resumes.
 set -eu
 DIR=out/article-video
-OUT=$DIR/cf-stream-links.tsv
+OUT=research/article-clips/cf-stream-links.tsv   # committed (owner T-170 #268): clip, video id, Medium link, ready; no secrets
 ALL="hero-gesture-long-60fps-strip hero-gesture-stop-1x-strip opening-carousel-1x-strip end-openclose-take-60fps-strip day3-carousel-60fps-strip end-openclose-take-2x-strip hero-gesture-stop-2x-strip hero-gesture-stop-full-60fps-strip day8-navrise-closeup-2x day8-menu-60fps-strip day8-menu-2x-strip day9-join-closeup-2x-hq day9-logo-closeup-2x-hq day10-people-60fps-strip day10-people-wc-60fps-strip day11-reveal-60fps-strip day11-reveal-2x-strip hero-cards-return-60fps-strip middle-60fps-strip"
 PARAMS="loop=true&autoplay=true&muted=true"
 
