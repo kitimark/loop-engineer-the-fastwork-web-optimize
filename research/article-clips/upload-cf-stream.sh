@@ -13,6 +13,7 @@
 #        sh research/article-clips/upload-cf-stream.sh                           # all 19, in page order
 #        sh research/article-clips/upload-cf-stream.sh --delete <uid>            # remove one upload
 #        sh research/article-clips/upload-cf-stream.sh --tag                     # name the clips already in the .tsv
+#        sh research/article-clips/upload-cf-stream.sh --check                   # compare Stream's names and state with the .tsv
 #   4. Paste each "medium" link from research/article-clips/cf-stream-links.tsv on its own line in Medium;
 #      commit that file after each upload run (it holds only public ids and links, never the token).
 #
@@ -29,9 +30,10 @@ ALL="hero-gesture-long-60fps-strip hero-gesture-stop-1x-strip opening-carousel-1
 PARAMS="loop=true&autoplay=true&muted=true"
 PREFIX=${CF_STREAM_PREFIX:-fastwork-web-optimize}
 
-DRY=0; DEL=""; TAG=0
+DRY=0; DEL=""; TAG=0; CHECK=0
 case "${1:-}" in
   --tag) TAG=1; shift ;;
+  --check) CHECK=1; shift ;;
   --dry-run) DRY=1; shift ;;
   --delete) DEL="${2:?--delete needs a video uid}"; shift 2 ;;
 esac
@@ -63,6 +65,26 @@ field() { node -e '
 # Name one upload "$PREFIX/<clip>.mp4" and set its creator to $PREFIX.
 tag() { curl -sS -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   --data "{\"meta\":{\"name\":\"$PREFIX/$2.mp4\"},\"creator\":\"$PREFIX\"}" "$API/$1" | field meta.name; }
+
+# For every row of the .tsv: Stream's name, creator and state for that video id, then OK or the mismatch.
+if [ "$CHECK" = 1 ]; then
+  [ -f "$OUT" ] || { echo "no $OUT yet: nothing to check"; exit 1; }
+  bad=0; n=0
+  while IFS="$(printf '\t')" read -r c uid link ready; do
+    [ "$c" = clip ] && continue
+    n=$((n + 1))
+    got=$(curl -sS -H "Authorization: Bearer $TOKEN" "$API/$uid" | node -e '
+      let s = ""; process.stdin.on("data", d => s += d).on("end", () => {
+        let j; try { j = JSON.parse(s) } catch { console.log("not-JSON"); return }
+        if (!j.success) { console.log("error " + JSON.stringify(j.errors).slice(0, 120)); return }
+        const r = j.result; console.log([r.meta && r.meta.name, r.creator, r.status && r.status.state, r.readyToStream].join(" | "));
+      })')
+    want="$PREFIX/$c.mp4 | $PREFIX | ready | true"
+    if [ "$got" = "$want" ]; then echo "OK   $c"; else echo "DIFF $c: got [$got] want [$want]"; bad=$((bad + 1)); fi
+  done < "$OUT"
+  echo "checked $n, mismatches $bad"
+  [ "$bad" = 0 ]; exit $?
+fi
 
 if [ "$TAG" = 1 ]; then
   [ -f "$OUT" ] || { echo "no $OUT yet: nothing to name"; exit 1; }
