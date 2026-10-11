@@ -123,9 +123,10 @@ ${clips.map((c) => `<tr><td>${c.n}</td><td><code>${h(c.url)}</code></td><td>${c.
   for (const b of blocks) {
     if (b.t === 'h3') heading = b.text;
     if (b.t === 'picture') picRows.push(`| ${b.n} | ${b.file} | ${heading.replace(/\|/g, '/')} |`);
-    if (b.t === 'clip') picRows.push(`| clip ${b.n} | (Stream link) | ${heading.replace(/\|/g, '/')} |`);
+    if (b.t === 'clip') picRows.push(`| clip ${b.n} | (Stream link${b.clip ? ': ' + b.clip : ''}) | ${heading.replace(/\|/g, '/')} |`);
   }
   const notes = [];
+  const drawnClips = clips.filter((c) => c.kind === 'cap');
   for (const f of [...new Set((kit.overflow || []).map((x) => x.fig))]) {
     const p = pics.find((x) => x.id === f);
     const lines = [...new Set((kit.overflow || []).filter((x) => x.fig === f).map((x) => `"...${x.text.slice(-30)}", ${x.over} px`))];
@@ -143,8 +144,6 @@ ${clips.map((c) => `<tr><td>${c.n}</td><td><code>${h(c.url)}</code></td><td>${c.
     ...parts.flatMap((x) => String(x.text || '').split(/\s+/).filter((w) => /\d-\d/.test(w) && /\//.test(w)).map((w) => w.replace(/[,.;:)]+$/, ''))),
   ])];
   if (codeDash.length) notes.push(`- **Paths and code with a hyphen between digits** (Medium's automatic punctuation turns that hyphen into an en dash, see above; check them after the paste; whether a hyphen typed by hand stays is untested): ${codeDash.map((c) => '`' + c + '`').join(', ')}.`);
-  const fig2 = pics.find((x) => x.id === 'fig-2');
-  if (fig2) notes.push(`- ${fig2.n} (Fig. 2) is an animation on the page; the picture is one frame with the dots spread apart.`);
   if ((kit.warn || []).length) notes.push(`- Walker warnings: ${kit.warn.join('; ')}`);
 
   writeFileSync(join(KIT, 'CHECKLIST.md'), `# Medium kit: checklist
@@ -175,7 +174,8 @@ ${disc.map((d) => `  - ${d}`).join('\n')}
 - Clips: **${clips.length}** Cloudflare Stream links (\`[CLIP 01]\` to \`[CLIP ${clips.length ? clips.at(-1).n : '00'}]\` in the story).
 - story.md: about ${words.toLocaleString('en')} words (markers and captions included).
 
-Medium has no tables and no SVG, so every figure (charts, diagrams, the team maps, the tables) is a picture.
+Medium has no tables and no SVG, so every figure (charts, diagrams, the team maps, the tables) is a picture${drawnClips.length ? `,
+except ${drawnClips.map((c) => '#' + c.id + ' (clip ' + c.n + ')').join(', ')}: Medium shows ${drawnClips.length === 1 ? 'that drawing' : 'those drawings'} as a Stream clip, a recording of the drawing` : ''}.
 The figure pictures are 2,400 px wide (1,200 CSS px at 2x), light colours. The alt text for every picture is in
 \`alt.txt\` (one line per picture: number, file, alt text).
 

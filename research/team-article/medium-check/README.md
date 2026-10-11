@@ -128,6 +128,14 @@ Checked on 2026-10-11 against the existing kit (built from the same article text
 `alt.txt` byte-identical; 40 of 43 pictures byte-identical; `02-fig-2.png` differs (an animation frame, expected),
 `12-team-4.png` and `19-team-7.png` differ in bytes at the same size (not inspected further).
 
+Drawn figures as clips (article v109): a `figure.cap` directly followed by a `p.mlink` (Medium embed line) is a
+**clip**, not a picture, in both walkers (`lib/article.mjs` and the in-page walker of `kit/build.mjs`): caption from
+its figcaption, description (`aria`) from the drawing's own aria-label (the canvas), clip name from
+`research/article-clips/cf-stream-links.tsv` by the embed line's Stream uid (no name hard-coded; an unknown uid is a
+warning). A `figure.cap` without an embed line stays a picture. Fig. 2 (the dots canvas) is the first: since v109 it
+is clip 01 (`fig2-frame-rhythms-60fps`), so clips are numbered 01-20 and pictures 01-42; the builder no longer
+freezes and captures the canvas (the 2x canvas and frame-freeze code is gone).
+
 ## Tests
 
 ```sh
@@ -135,7 +143,8 @@ node --test research/team-article/medium-check/test/              # all files (t
 node --test 'research/team-article/medium-check/test/*.test.mjs'    # the same, file by file
 ```
 
-Text-only fixtures (`test/fixtures/article-mini.html`, a 2-clip table): no Fastwork pictures or recordings. A fake
+Text-only fixtures (`test/fixtures/article-mini.html`, a 2-clip table; `article-capclip.html` with
+`clips-capclip.tsv`, a drawn figure + embed line that becomes a clip, `test/capclip.test.mjs`): no Fastwork pictures or recordings. A fake
 Medium page is rendered from the article model in two flavours (editor and published markup,
 `test/helpers/fake-medium.mjs`), run through the real `medium-dump.js` and reader, and compared. A clean page passes;
 seeded faults each fire their check: missing picture, changed word, wrong clip uid, missing autoplay, leftover marker

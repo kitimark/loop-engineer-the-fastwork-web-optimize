@@ -5,7 +5,9 @@
 // [CLIP NN · ...] marker lines and "Caption: ..." lines), NN-<id>.png pictures (each figure's .cap-area at a
 // 1400 px wide viewport, DPR 2, so 2,400 px wide for the 1,200 px figures), the copied pictures (figure.gif <img>),
 // alt.txt (NN <tab> file <tab> alt), kit.json (every block, as the in-page walker read it), CHECKLIST.md and
-// contact-sheet.html. The walker runs in the page because the alt rule needs layout (see altOf below). The alt text
+// contact-sheet.html. A figure.cap followed by a p.mlink (Medium embed line) is a clip, not a picture: on Medium the
+// drawing is shown as its Stream recording (named from research/article-clips/cf-stream-links.tsv by its uid).
+// The walker runs in the page because the alt rule needs layout (see altOf below). The alt text
 // for Medium is the page's, except where kit/alt-medium.json has a short one (lib/alt.mjs; the page's stays in
 // altPage); the build never cuts an alt and refuses (exit 1, nothing written) when one is over 500 characters.
 //
@@ -25,9 +27,10 @@
 import { writeFileSync, readFileSync, mkdirSync, copyFileSync, existsSync } from 'node:fs';
 import { join, dirname, relative, resolve, basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { parseArgs, helpIfAsked, UsageError, REPO, DEFAULT_ARTICLE, mainCheckout } from '../lib/cli.mjs';
+import { parseArgs, helpIfAsked, UsageError, REPO, DEFAULT_ARTICLE, DEFAULT_CLIPS, mainCheckout } from '../lib/cli.mjs';
 import { render } from './render.mjs';
 import { applyAltMedium, altProblems } from '../lib/alt.mjs';
+import { loadClipTable, clipRowByUid } from '../lib/article.mjs';
 
 const argv = process.argv.slice(2);
 helpIfAsked(import.meta.url, argv);
@@ -120,7 +123,16 @@ const WALKER = String.raw`(() => {
         for (const c of el.children) { if (c.tagName === 'P') paras.push(both(c)); else if (c.tagName === 'UL' || c.tagName === 'OL') items.push(...list(c)); else warn.push('teambox child ' + c.tagName); }
         blocks.push({ t: 'teambox', paras, items });
       } else if (tag === 'footer') walk(el);
-      else if (el.matches('figure.cap')) {
+      else if (el.matches('figure.cap') && el.nextElementSibling && el.nextElementSibling.matches('p.mlink')) {
+        // a drawn figure with a Medium embed line after it is a clip on Medium (a recording of the drawing), not a
+        // picture; the clip's name comes from the clip table by its Stream uid (in Node, below)
+        const nx = el.nextElementSibling, fc = el.querySelector('figcaption'), area = el.querySelector('.cap-area');
+        consumed.add(nx);
+        if (!fc) warn.push('no caption for clip figure ' + el.id);
+        const d = area ? [...area.querySelectorAll('[aria-label]')].find((e) => !e.closest('[aria-hidden="true"]')) : null;
+        blocks.push({ t: 'clip', kind: 'cap', id: el.id, url: (nx.querySelector('code') || nx).textContent.trim(), cap: fc ? both(fc) : null,
+          aria: d ? ws(d.getAttribute('aria-label')) : altOf(el).alt });
+      } else if (el.matches('figure.cap')) {
         const fc = el.querySelector('figcaption');
         let cap = fc ? both(fc) : null, capFrom = 'figcaption';
         const nx = el.nextElementSibling;
@@ -146,54 +158,6 @@ const WALKER = String.raw`(() => {
   return { blocks, warn };
 })()`;
 
-// Fig. 2 is a canvas animation: draw it at 2x, and hold the page's rAF callbacks while window.__fwFreeze is set
-const HIDPI = String.raw`(() => {
-  const proto = HTMLCanvasElement.prototype, orig = proto.getContext;
-  const wd = Object.getOwnPropertyDescriptor(proto, 'width'), hd = Object.getOwnPropertyDescriptor(proto, 'height');
-  proto.getContext = function (type, ...rest) {
-    if (this.id === 'cap-pace' && type === '2d' && !this.__fwHi) {
-      const w = wd.get.call(this), h = hd.get.call(this);
-      wd.set.call(this, w * 2); hd.set.call(this, h * 2);
-      Object.defineProperty(this, 'width', { get: () => w, configurable: true });
-      Object.defineProperty(this, 'height', { get: () => h, configurable: true });
-      this.__fwHi = true;
-      const ctx = orig.call(this, type, ...rest); ctx.scale(2, 2); window.__fwHiDone = true; return ctx;
-    }
-    return orig.call(this, type, ...rest);
-  };
-  const raf = window.requestAnimationFrame.bind(window);
-  window.__fwRaf = raf;
-  window.requestAnimationFrame = (cb) => raf((t) => { if (window.__fwFreeze) window.__fwHeld = cb; else cb(t); });
-})()`;
-
-// pick a Fig. 2 frame: measure the dots' spread over 4 s, then freeze at the first frame near the maximum
-const FREEZE = String.raw`(async () => {
-  const cv = document.getElementById('cap-pace');
-  const ctx = cv.getContext('2d');
-  const BW = ctx.canvas.width;
-  const rows = [130, 245, 360].map((y) => y * 2);
-  function dots() {
-    return rows.map((y) => {
-      const d = ctx.getImageData(0, y, BW, 1).data; let sx = 0, n = 0;
-      for (let x = 0; x < BW; x++) { const r = d[4*x], g = d[4*x+1], b = d[4*x+2];
-        if ((r > 150 && g < 120 && b < 100) || (b > 150 && r < 100 && g < 120)) { sx += x; n++; } }
-      return n ? (sx / n - 160) / (BW - 320) : NaN;
-    });
-  }
-  const frame = () => new Promise((r) => window.__fwRaf(() => r()));
-  let best = 0; const t0 = performance.now();
-  while (performance.now() - t0 < 4000) { await frame(); const p = dots(); if (p.some(isNaN)) continue;
-    const s = Math.max(...p) - Math.min(...p); if (s > best) best = s; }
-  const t1 = performance.now();
-  while (performance.now() - t1 < 8000) { await frame(); const p = dots(); if (p.some(isNaN)) continue;
-    const s = Math.max(...p) - Math.min(...p);
-    if (s >= 0.6 * best && p.every((v) => v > 0.1 && v < 0.9)) { window.__fwFreeze = true; await frame(); await frame(); return { frozen: true, best, spread: s, pos: dots() }; } }
-  const t2 = performance.now();
-  while (performance.now() - t2 < 8000) { await frame(); const p = dots(); if (p.some(isNaN)) continue;
-    if (p.every((v) => v > 0.25 && v < 0.75)) { window.__fwFreeze = true; await frame(); await frame(); return { frozen: 'fallback', best, pos: dots() }; } }
-  return { frozen: false, best };
-})()`;
-
 // SVG text that runs past its SVG's viewBox (cut off in the picture), per figure.cap
 const OVERFLOW = String.raw`(() => { const r = [];
   for (const fig of document.querySelectorAll('figure.cap')) for (const svg of fig.querySelectorAll('.cap-area svg')) {
@@ -213,14 +177,13 @@ try {
   await page.send('Emulation.setDeviceMetricsOverride', { width: VW, height: VH, deviceScaleFactor: 2, mobile: false });
   await page.send('Emulation.setScrollbarsHidden', { hidden: true });
   await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
-  await page.send('Page.addScriptToEvaluateOnNewDocument', { source: HIDPI });
   const loaded = page.waitFor((m) => m.method === 'Page.loadEventFired', 60000).catch(() => null);
   await page.send('Page.navigate', { url: pathToFileURL(PAGE).href });
   await loaded;
   await page.eval('document.fonts.ready.then(() => true)');
   await sleep(1500);
   const env = await page.eval(`({ fonts: ['700 20px "Bricolage Grotesque"', '400 20px Literata', '400 20px "JetBrains Mono"'].map((f) => [f, document.fonts.check(f)]),
-    dark: matchMedia('(prefers-color-scheme: dark)').matches, hi: !!window.__fwHiDone,
+    dark: matchMedia('(prefers-color-scheme: dark)').matches,
     capW: (document.querySelector('.cap') || document.body).getBoundingClientRect().width })`);
   console.log('ENV', JSON.stringify(env));
   const { blocks, warn } = await page.eval(WALKER);
@@ -228,11 +191,20 @@ try {
   const overflow = await page.eval(OVERFLOW);
   if (overflow.length) console.log('OVERFLOW', JSON.stringify(overflow));
   let pn = 0, cn = 0;
+  const clipTable = loadClipTable(DEFAULT_CLIPS);
   for (const b of blocks) {
     if (b.t === 'picture') {
       b.n = String(++pn).padStart(2, '0');
       b.file = b.kind === 'cap' ? `${b.n}-${b.id}.png` : `${b.n}-${basename(b.src)}`;
-    } else if (b.t === 'clip') b.n = String(++cn).padStart(2, '0');
+    } else if (b.t === 'clip') {
+      b.n = String(++cn).padStart(2, '0');
+      // the clip's name: a <video> clip is its file name, a drawn figure's clip is the clip-table row with its uid
+      if (b.kind === 'cap') {
+        const row = clipRowByUid(clipTable, b.url);
+        b.clip = row ? row.clip : null;
+        if (!row) { const w = `clip ${b.n} (#${b.id}): its Stream link is not in ${relative(REPO, DEFAULT_CLIPS)}`; warn.push(w); console.log('WARN', w); }
+      } else if (b.src) b.clip = basename(b.src).replace(/\.[a-z0-9]+$/i, '');
+    }
   }
   kit = { schema: 'fw-medium-kit/1', page: relative(REPO, PAGE), builtAt: new Date().toISOString(), env, warn, overflow, blocks };
   const want = (b) => !ONLY || ONLY.has(b.n) || ONLY.has(b.id) || ONLY.has(b.file);
@@ -262,9 +234,8 @@ try {
         console.log('COPY', b.file);
         continue;
       }
-      if (b.id === 'fig-2') { await page.eval(`document.getElementById('fig-2').scrollIntoView()`); b.freeze = await page.eval(FREEZE); console.log('FREEZE', JSON.stringify(b.freeze)); }
       const sel = JSON.stringify('#' + b.id + ' .cap-area');
-      await page.eval(`(() => { const a = document.querySelector(${sel}); a.scrollIntoView({ block: 'start' }); window.scrollBy(0, -20); const raf = window.__fwRaf || requestAnimationFrame; return new Promise((r) => raf(() => raf(() => r(true)))); })()`);
+      await page.eval(`(() => { const a = document.querySelector(${sel}); a.scrollIntoView({ block: 'start' }); window.scrollBy(0, -20); return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(true)))); })()`);
       const box = `(() => { const a = document.querySelector(${sel}).getBoundingClientRect(); return { x: a.left + scrollX, y: a.top + scrollY, w: a.width, h: a.height }; })()`;
       const r = await page.eval(box);
       const tall = r.h + 40 > VH;
@@ -278,7 +249,6 @@ try {
       b.css = { w: r2.w, h: r2.h };
       b.px = { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
       writeFileSync(join(KIT, b.file), buf);
-      if (b.id === 'fig-2') await page.eval('window.__fwFreeze = false, true');
       console.log('SHOT', b.file, JSON.stringify(b.px));
     }
   }

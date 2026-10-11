@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Mini article with a drawn clip (test fixture)</title>
+</head>
+<body>
+<!-- A text-only stand-in: a figure.cap followed by a Medium embed line (p.mlink) is a clip on Medium, not a picture;
+     a figure.cap without one stays a picture. No pictures, no recordings. -->
+<main>
+<h1>Drawn Clips: A Test Story</h1>
+<p class="subtitle">A drawn figure that Medium shows as a recording.</p>
+<p class="byline">Part one &middot; A fixture for the tests</p>
+<p><em>Times are UTC.</em></p>
+
+<h3>Before the start</h3>
+<figure class="cap" data-capture="ready" id="fig-1">
+  <div class="cap-area">
+    <svg viewBox="0 0 100 20" role="img" aria-label="A scale from 0 to 60 ms."><rect x="0" y="0" width="50" height="10"/></svg>
+  </div>
+  <figcaption class="note">The frame ruler (Fig. 1; <a href="#src-1">source</a>)</figcaption>
+</figure>
+<p>This is what those numbers feel like:</p>
+<figure class="cap" data-capture="ready" id="fig-2">
+  <div class="cap-bar"><span class="ready">capture-ready &middot; Fig. 2</span></div>
+  <div class="cap-area">
+    <canvas id="cap-pace" width="600" height="200" role="img" aria-label="Illustration. Three dots follow the same motion; the top one stalls, the bottom one glides."></canvas>
+  </div>
+  <figcaption class="note">Illustration: the same motion with three frame rhythms (Fig. 2; <a href="#src-2">source</a>)</figcaption>
+</figure>
+<p class="mlink"><span>Medium embed</span> <code>https://iframe.videodelivery.net/abcdef0123456789abcdef0123456789?loop=true&amp;autoplay=true&amp;muted=true</code></p>
+<p>Under each clip: one bar per frame.</p>
+<figure class="gif"><video src="videos/mini-clip-two.mp4" width="640" height="640" autoplay loop muted playsinline aria-label="A short clip"></video><figcaption>1 of 1. The end of the page.</figcaption></figure>
+<p class="mlink"><span>Medium embed</span> <code>https://iframe.videodelivery.net/fedcba9876543210fedcba9876543210?loop=true&amp;autoplay=true&amp;muted=true</code></p>
+<figure class="cap" data-capture="ready" id="fig-3">
+  <div class="cap-area">
+    <p class="cap-title">Slow frames per day</p>
+  </div>
+</figure>
+<p class="note">Fig. 3: slow frames per day.</p>
+<p>The end.</p>
+</main>
+</body></html>

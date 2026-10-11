@@ -7,8 +7,10 @@
 //   h4 -> small heading (level 2), ul/ol -> one li block per item, blockquote -> one quote block per paragraph
 //   (pull: true for blockquote.pull), hr -> separator, aside.teambox -> quote blocks (paragraphs, then items
 //   prefixed with a bullet, as the kit pastes them), footer -> walked like main, figure.cap -> picture (the
-//   .cap-area is the picture, figcaption or the p.note right after it is the caption), figure.gif with <img> ->
-//   picture, figure.gif with <video> + the following p.mlink -> clip (Cloudflare Stream link).
+//   .cap-area is the picture, figcaption or the p.note right after it is the caption), figure.cap + the following
+//   p.mlink -> clip (a drawn figure, e.g. the Fig. 2 canvas, that Medium shows as a recording: caption from its
+//   figcaption, description from the drawing's aria-label, clip name from the clip table by Stream uid),
+//   figure.gif with <img> -> picture, figure.gif with <video> + the following p.mlink -> clip (Cloudflare Stream link).
 // Pictures are numbered 01.. and clips 01.. in page order, like the kit; picture files are NN-<figure id>.png
 // (captured) or NN-<img file name> (copied).
 //
@@ -57,6 +59,18 @@ export function parseStreamUrl(u) {
   const params = {};
   for (const k of ['loop', 'autoplay', 'muted', 'controls', 'preload', 'poster']) if (url.searchParams.has(k)) params[k] = url.searchParams.get(k);
   return { uid: m[1].toLowerCase(), host: url.host, params };
+}
+
+// ---- Medium embed lines (p.mlink: "Medium embed <code>stream link</code>") ------------------------------------------
+const isMlink = (e) => !!e && e.localName === 'p' && hasClass(e, 'mlink');
+const mlinkUrl = (p) => ws((find(p, isTag('code')) || p).textContent).trim();
+
+// a figure.cap shown as a clip: its description is the drawing's own label (the canvas or svg aria-label), else the
+// static alt rule
+function capDescription(fig) {
+  const area = find(fig, (e) => hasClass(e, 'cap-area'));
+  const d = area && find(area, (x) => x.hasAttribute('aria-label') && !closest(x, (y) => y.getAttribute('aria-hidden') === 'true'));
+  return d ? norm(d.getAttribute('aria-label')) : altStatic(fig).alt;
 }
 
 // ---- alt text, static form of the kit's rule -----------------------------------------------------------------------
@@ -128,6 +142,19 @@ export function extractArticle(html, opts = {}) {
         continue;
       }
       if (tag === 'footer' || tag === 'section' || tag === 'div' && !el.getAttribute('class')) { walk(el); continue; }
+      if (tag === 'figure' && hasClass(el, 'cap') && isMlink(el.nextElementSibling)) {
+        // a drawn figure with a Medium embed line after it: on Medium it is that clip (a recording of the drawing),
+        // not a picture; the clip's name comes from the clip table by its Stream uid (applyClipTable)
+        const nx = el.nextElementSibling;
+        consumed.add(nx);
+        const fc = find(el, isTag('figcaption'));
+        const cap = fc ? inline(fc) : { text: '', links: [] };
+        if (!fc) model.warnings.push('no caption for clip figure ' + el.getAttribute('id'));
+        const n = pad(++cn), url = mlinkUrl(nx), s = parseStreamUrl(url);
+        push({ kind: 'clip', n, from: 'figure.cap', id: el.getAttribute('id') || null, clip: null, video: null, url, uid: s ? s.uid : null,
+          params: s ? s.params : {}, caption: cap.text, links: cap.links, aria: capDescription(el) });
+        continue;
+      }
       if (tag === 'figure' && hasClass(el, 'cap')) {
         const fc = find(el, isTag('figcaption'));
         let cap = fc ? inline(fc) : null, capFrom = 'figcaption';
@@ -151,11 +178,11 @@ export function extractArticle(html, opts = {}) {
         } else if (vid) {
           const n = pad(++cn), nx = el.nextElementSibling;
           let url = null;
-          if (nx && nx.localName === 'p' && hasClass(nx, 'mlink')) { url = ws((find(nx, isTag('code')) || nx).textContent).trim(); consumed.add(nx); }
+          if (isMlink(nx)) { url = mlinkUrl(nx); consumed.add(nx); }
           else model.warnings.push(`clip ${n} has no Medium embed line (p.mlink) after it`);
           const s = parseStreamUrl(url);
           const src = vid.getAttribute('src') || '';
-          push({ kind: 'clip', n, video: basename(src), url, uid: s ? s.uid : null, params: s ? s.params : {}, caption: cap.text, links: cap.links,
+          push({ kind: 'clip', n, from: 'figure.gif', clip: basename(src).replace(/\.[a-z0-9]+$/i, ''), video: basename(src), url, uid: s ? s.uid : null, params: s ? s.params : {}, caption: cap.text, links: cap.links,
             aria: norm(vid.getAttribute('aria-label') || '') });
         } else model.warnings.push('figure.gif without img or video');
         continue;
@@ -268,12 +295,29 @@ export function applyClipTable(model, table) {
   if (!t) return model;
   const byClip = new Map(t.map((r) => [r.clip, r]));
   for (const c of model.blocks.filter((b) => b.kind === 'clip')) {
+    if (c.from === 'figure.cap') {
+      // no video file on the page: the clip is the table row with the embed line's Stream uid
+      const row = clipRowByUid(t, c.uid);
+      if (!row) { model.warnings.push(`clip ${c.n} (#${c.id}): Stream uid ${c.uid} is not in the clip table`); continue; }
+      c.clip = row.clip;
+      if (row.ready && row.ready !== 'true') model.warnings.push(`clip ${c.n} (${c.clip}): the clip table says ready=${row.ready}`);
+      continue;
+    }
     const row = byClip.get(String(c.video).replace(/\.[a-z0-9]+$/i, ''));
     if (!row) { model.warnings.push(`clip ${c.n} (${c.video}) is not in the clip table`); continue; }
     if (row.uid !== c.uid) model.warnings.push(`clip ${c.n} (${c.video}): the article links uid ${c.uid}, the clip table has ${row.uid}`);
     if (row.ready && row.ready !== 'true') model.warnings.push(`clip ${c.n} (${c.video}): the clip table says ready=${row.ready}`);
   }
   return model;
+}
+
+// the clip table row for a Stream uid (or a Stream link); null when none or more than one row has it
+export function clipRowByUid(table, uidOrUrl) {
+  const t = typeof table === 'string' ? loadClipTable(table) : table;
+  if (!t || !uidOrUrl) return null;
+  const uid = /^[0-9a-f]{32}$/i.test(uidOrUrl) ? uidOrUrl.toLowerCase() : parseStreamUrl(uidOrUrl)?.uid;
+  const rows = t.filter((r) => String(r.uid || '').toLowerCase() === uid);
+  return rows.length === 1 ? rows[0] : null;
 }
 
 export function extractArticleFile(file, opts = {}) {
@@ -284,7 +328,7 @@ export function extractArticleFile(file, opts = {}) {
 export function label(b) {
   if (!b) return '(none)';
   if (b.kind === 'picture') return `Picture ${b.n} (${b.file})`;
-  if (b.kind === 'clip') return `Clip ${b.n}${b.video ? ' (' + b.video + ')' : ''}`;
+  if (b.kind === 'clip') { const name = b.video || b.clip || (b.id ? '#' + b.id : ''); return `Clip ${b.n}${name ? ' (' + name + ')' : ''}`; }
   if (b.kind === 'heading') return `${b.level === 1 ? 'Heading' : 'Subheading'} "${b.text.slice(0, 50)}"`;
   const k = b.kind === 'li' ? 'list item' : b.kind === 'p' ? 'paragraph' : b.kind === 'quote' ? (b.pull ? 'pull quote' : 'quote') : b.kind === 'hr' ? 'separator' : b.kind;
   return `${b.section && b.section !== '(top)' ? b.section.replace(/:.*$/, '') + ', ' : ''}${k}${b.nth ? ' ' + b.nth : ''}`;
