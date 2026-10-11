@@ -1,0 +1,665 @@
+{
+ "name": "ms-fastshort-fixed-v1",
+ "version": 1,
+ "screen": [
+  430,
+  932
+ ],
+ "about": "P-137o (cap-end-orig, 2026-10-11): g-fastshort-v1 with fixed counts instead of atEnd waits, so the original page (pinned at the end) gets the same input as C and V: approach 11 drags, 1 re-approach drag after each close push, none after an open push, 1.5 s pause plus a y>=3000 guard where fs-v1 waited for atEnd; pushes, order, sizes, speeds and the optional settled waits as fs-v1. Built by fixes/end-bg/phone/mk-fsfixed.mjs.",
+ "params": {
+  "x": 215
+ },
+ "steps": [
+  {
+   "type": "reload",
+   "scrollAfterMs": 0
+  },
+  {
+   "type": "pause",
+   "ms": 4000
+  },
+  {
+   "type": "mark",
+   "name": "approach"
+  },
+  {
+   "type": "repeat",
+   "times": 11,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E20-close-fast-60px-50ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 1,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E21-open-fast-60px-50ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E22-close-fast-120px-60ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 1,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E23-open-fast-120px-60ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E24-close-fast-200px-90ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 1,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E25-open-fast-200px-90ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E26-close-fast-60px-50ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 1,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E27-open-fast-60px-50ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 60,
+   "ms": 50,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E28-close-fast-120px-60ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 1,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E29-open-fast-120px-60ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 120,
+   "ms": 60,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E30-close-fast-200px-90ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "repeat",
+   "times": 1,
+   "steps": [
+    {
+     "type": "stroke",
+     "dir": "up",
+     "px": 520,
+     "ms": 1200,
+     "profile": "drag"
+    },
+    {
+     "type": "pause",
+     "ms": 300
+    }
+   ]
+  },
+  {
+   "type": "pause",
+   "ms": 1500
+  },
+  {
+   "type": "until",
+   "cond": "y>=3000",
+   "timeoutMs": 4000
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "stroke",
+   "dir": "down",
+   "px": 450,
+   "ms": 2000,
+   "profile": "drag",
+   "holdMs": 300
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1200
+  },
+  {
+   "type": "mark",
+   "name": "E31-open-fast-200px-90ms"
+  },
+  {
+   "type": "stroke",
+   "dir": "up",
+   "px": 200,
+   "ms": 90,
+   "profile": "fling"
+  },
+  {
+   "type": "until",
+   "cond": "settled",
+   "timeoutMs": 8000,
+   "optional": true
+  },
+  {
+   "type": "pause",
+   "ms": 1000
+  },
+  {
+   "type": "mark",
+   "name": "done"
+  }
+ ]
+}
