@@ -15,11 +15,13 @@
 // Alt text: the kit builder decides it in Chrome (a rule that needs layout, see kit/build.mjs altOf). This file
 // applies the same rule without layout ("static"); the one branch that needs layout (only small inline labels ->
 // visible text) falls back to the area's text. Pass the kit (kit.json or alt.txt) to use the kit's alt text, which
-// is what the owner pastes into Medium.
+// is what the owner pastes into Medium. A picture listed in kit/alt-medium.json (lib/alt.mjs) takes that short alt,
+// with or without a kit, like the kit itself; a kit whose alt for it differs is stale.
 import { readFileSync, existsSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { parseHTML, find, findAll, hasClass, closest, isTag } from './html.mjs';
 import { norm } from './text.mjs';
+import { applyAltMedium, ALT_FILE } from './alt.mjs';
 
 export const SCHEMA = 'fw-article-model/1';
 const ws = (s) => String(s ?? '').replace(/\s+/g, ' ');
@@ -181,6 +183,9 @@ export function extractArticle(html, opts = {}) {
   }
   B.forEach((b, i) => { b.i = i; });
   addSections(model);
+  // Medium's short alt (kit/alt-medium.json) replaces a too-long page alt, as in the kit; altMedium: false turns it off
+  applyAltMedium(B.filter((b) => b.kind === 'picture'), opts.altMedium === undefined ? ALT_FILE : opts.altMedium);
+  for (const p of B.filter((b) => b.kind === 'picture' && b.altFrom === 'kit/alt-medium.json')) p.alt = norm(p.alt);
   if (opts.kit) applyKit(model, opts.kit);
   if (opts.clips) applyClipTable(model, opts.clips);
   return model;
@@ -230,6 +235,11 @@ export function applyKit(model, kit) {
     if (!kp) { stale.push(`picture ${p.n} (${p.file}) is not in the kit`); continue; }
     if (kp.file !== p.file) { stale.push(`picture ${p.n}: the kit has ${kp.file}, the article ${p.file}`); continue; }
     if (kp.caption !== undefined && kp.caption !== '' && norm(kp.caption) !== p.caption) stale.push(`picture ${p.n} (${p.file}): the kit's caption differs from the article's`);
+    if (p.altFrom === 'kit/alt-medium.json') {
+      // the short Medium alt is the reference; a kit that still has another alt was built before it changed
+      if (norm(kp.alt) !== p.alt) stale.push(`picture ${p.n} (${p.file}): the kit's alt text is not the one in kit/alt-medium.json`);
+      continue;
+    }
     p.altStatic = p.alt;
     p.alt = norm(kp.alt);
     p.altFrom = 'kit ' + k.from;

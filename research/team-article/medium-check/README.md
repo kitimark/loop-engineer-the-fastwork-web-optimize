@@ -22,6 +22,17 @@ except `check.mjs --url` (one public page, when the owner asks for it) and the k
 
 Normalization (`lib/text.mjs`): curly/straight quotes, dash kinds, `...`/`…`, non-breaking, thin and zero-width
 spaces and runs of whitespace count as equal, so Medium's smart punctuation never flags. Everything else counts.
+What Medium's automatic punctuation did to a pasted draft (OBSERVED in the Medium editor, 11 Oct): straight quotes
+to curly, a hyphen between digits to an en dash (also in file paths: `fixes/g0-0m/README.md` became
+`fixes/g0–0m/README.md`), a spaced en dash to an em dash; each has a test (`test/alt.test.mjs`). Not covered: an
+en dash that Medium turns into an em dash without the spaces around it ("a – b" read back as "a—b" would differ).
+
+Alt text (`lib/alt.mjs`, `kit/alt-medium.json`): the page keeps its long aria-labels; for Medium, a picture whose
+page alt is too long gets a short one (at most 480 characters, written from the figure's own content) from
+`kit/alt-medium.json`, keyed by figure id. The kit (`alt.txt`, `kit.json`; the page's alt stays in `altPage`) and
+the check read that same file, so a kit built before an edit of it shows up as `KIT` stale. Nothing cuts an alt any
+more: the kit build refuses (exit 1, nothing written) an alt over 500 characters or one ending in a cut mark, and
+`kit/render.mjs` alone re-applies the file to an existing `kit.json` (no Chrome) after it changed.
 
 ## After an article update: the owner's commands
 

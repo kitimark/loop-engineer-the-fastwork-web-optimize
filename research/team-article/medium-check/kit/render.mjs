@@ -1,17 +1,32 @@
 #!/usr/bin/env node
 // kit/render.mjs: write the kit's text files from kit.json (no Chrome): story.md, story.html, alt.txt,
-// contact-sheet.html and CHECKLIST.md. kit/build.mjs calls it at the end; run it alone after changing only this file:
+// contact-sheet.html and CHECKLIST.md. kit/build.mjs calls it at the end; run it alone after changing only this file
+// or kit/alt-medium.json (it puts that file's alt text into kit.json too):
 //   node research/team-article/medium-check/kit/render.mjs [--out <kit dir>]    (default out/article/medium-kit)
+// Exit 1 and nothing written when an alt is over 500 characters or ends in a cut mark (lib/alt.mjs).
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { applyAltMedium, altProblems, ALT_FILE, ALT_LIMIT } from '../lib/alt.mjs';
+
+export class AltError extends Error {
+  constructor(problems) { super('alt text Medium cannot take (nothing written):\n  ' + problems.join('\n  ')); this.problems = problems; }
+}
 
 const h = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-export function render(KIT) {
-  const kit = JSON.parse(readFileSync(join(KIT, 'kit.json'), 'utf8'));
+export function render(KIT, { altMedium = ALT_FILE } = {}) {
+  const raw = readFileSync(join(KIT, 'kit.json'), 'utf8');
+  const kit = JSON.parse(raw);
   const { blocks } = kit;
   const pics = blocks.filter((b) => b.t === 'picture');
   const clips = blocks.filter((b) => b.t === 'clip');
+  // Medium's alt text (lib/alt.mjs): kit/alt-medium.json may have changed since the build, so apply it again; refuse
+  // (nothing written) an alt Medium cannot take, and keep kit.json in step with alt.txt
+  const altm = applyAltMedium(pics, altMedium);
+  const altBad = altProblems(pics);
+  if (altBad.length) throw new AltError(altBad);
+  const fresh = JSON.stringify(kit, null, 1);
+  if (fresh !== raw) writeFileSync(join(KIT, 'kit.json'), fresh);
 
   // ---------- story.md ----------
   const md = [];
@@ -118,8 +133,16 @@ ${clips.map((c) => `<tr><td>${c.n}</td><td><code>${h(c.url)}</code></td><td>${c.
   }
   for (const p of pics.filter((x) => /p\.note/.test(x.capFrom || ''))) notes.push(`- **${p.n} (\`${p.file}\`)** has no caption line on the page; its caption here is the note paragraph under it.`);
   for (const p of pics.filter((x) => x.missing)) notes.push(`- **${p.n} (\`${p.file}\`) is missing:** the picture file was not found (pass --gifs to kit/build.mjs).`);
-  const longAlt = pics.filter((x) => (x.alt || '').length > 500);
-  if (longAlt.length) notes.push(`- **${longAlt.length} alt texts are over 500 characters** (${longAlt.map((p) => `${p.n}: ${p.alt.length}`).join(', ')}); Medium may keep only the first 500 (UNVERIFIED limit; check.mjs notes a cut alt as ALT-CUT).`);
+  const shortAlt = pics.filter((x) => x.altFrom === 'kit/alt-medium.json');
+  if (shortAlt.length) notes.push(`- **${shortAlt.length} alt texts are Medium's short versions** from \`kit/alt-medium.json\` (${shortAlt.map((p) => p.n).join(', ')}): the page's description is too long for Medium (over ${ALT_LIMIT} characters; the exact limit is UNRESOLVED). Every alt here is at most ${Math.max(0, ...pics.map((p) => (p.alt || '').length))} characters and none is cut.`);
+  if (altm.unused.length) notes.push(`- \`kit/alt-medium.json\` has alt text for pictures that are not in the article (${altm.unused.join(', ')}): remove them or check the figure ids.`);
+  // file paths and code with a hyphen between digits: Medium's automatic punctuation makes it an en dash
+  const parts = blocks.flatMap((b) => [b, ...(b.items || []), ...(b.paras || []), ...(b.cap ? [b.cap] : [])]);
+  const codeDash = [...new Set([
+    ...parts.flatMap((x) => [...String(x.html || '').matchAll(/<code>([^<]*\d-\d[^<]*)<\/code>/g)].map((m) => m[1])),
+    ...parts.flatMap((x) => String(x.text || '').split(/\s+/).filter((w) => /\d-\d/.test(w) && /\//.test(w)).map((w) => w.replace(/[,.;:)]+$/, ''))),
+  ])];
+  if (codeDash.length) notes.push(`- **Paths and code with a hyphen between digits** (Medium's automatic punctuation turns that hyphen into an en dash, see above; check them after the paste; whether a hyphen typed by hand stays is untested): ${codeDash.map((c) => '`' + c + '`').join(', ')}.`);
   const fig2 = pics.find((x) => x.id === 'fig-2');
   if (fig2) notes.push(`- ${fig2.n} (Fig. 2) is an animation on the page; the picture is one frame with the dots spread apart.`);
   if ((kit.warn || []).length) notes.push(`- Walker warnings: ${kit.warn.join('; ')}`);
@@ -136,7 +159,7 @@ Everything here is local. Nothing has been uploaded, published or logged in to. 
 - **Disclaimer lines** (the first italic paragraphs; keep them italic, right under the byline):
 ${disc.map((d) => `  - ${d}`).join('\n')}
 
-## Suggested tags (Medium allows 5)
+## Tags (set in the publish dialog; 5 tags, OBSERVED in the Medium editor, 11 Oct)
 
 1. Web Performance
 2. AI Agents
@@ -158,19 +181,30 @@ The figure pictures are 2,400 px wide (1,200 CSS px at 2x), light colours. The a
 
 ## Paste steps
 
-1. **Text.** Open \`story.html\` in a browser, select all, copy, paste into a new Medium draft. Medium keeps headings,
-   bold, italic, links, lists and quotes from rich text. (\`story.md\` is the same text as Markdown; Medium does not
-   turn pasted Markdown into formatting, so use it as the readable source, not for pasting.) After the paste:
-   make the first line the title and the second line the subtitle (Medium's "T" / small "T"), and check that
-   "## " sections became big headings and "### " small ones.
-2. **Pictures, in order.** Every \`[PICTURE NN · file]\` line marks a picture. Click on the empty line, press the
-   "+" and upload the file of that name from this folder (or drag it in). Then delete the marker line.
+"OBSERVED" marks what a paste of this kit into a real Medium draft showed (11 Oct); the rest is not confirmed yet.
+
+1. **Text.** Open \`story.html\` in a browser, select all, copy, paste into a new Medium draft. Medium keeps bold,
+   italic, links, lists and quotes from rich text. (\`story.md\` is the same text as Markdown; Medium does not turn
+   pasted Markdown into formatting, so use it as the readable source, not for pasting.) After the paste (OBSERVED):
+   - the first line (the h1) becomes the story title by itself;
+   - the subtitle pastes as a normal paragraph: put the cursor in it and make it a small heading (⌘⌥2), which turns
+     it into the subtitle;
+   - the section headings come from the h3 (big) and h4 (small) headings in \`story.html\`, not from the "## " and
+     "### " of \`story.md\`.
+2. **Pictures, in order.** Every \`[PICTURE NN · file]\` line marks a picture. Copy the picture file of that name
+   from this folder (Finder: select it, ⌘C), delete the marker text so the line is empty, click on the empty line and
+   paste (⌘V). The picture goes in ABOVE the line, so delete the empty line after it (OBSERVED). (Medium's "+" button
+   or dragging the file in may work too; not tried.)
 3. **Clips.** Every \`[CLIP NN · …]\` line is followed by its Stream link alone on a line. Delete the marker line,
    put the cursor at the end of the link and press Enter: Medium turns the link into an embedded player.
 4. **Captions.** Each picture and clip has a \`Caption: …\` line under it. Cut the text after "Caption: ", click the
    picture or player, click its caption line ("Type caption for image") and paste. Delete the leftover line.
-5. **Alt text.** Click each picture, choose "Alt text" in its toolbar and paste the matching line from \`alt.txt\`.
-6. **Pull quotes.** These ${pulls.length} quotes are pull quotes on the page (Medium: press the quote button twice):
+   A clip's caption can only be edited after clicking the player to select it (OBSERVED).
+5. **Alt text.** Click each picture and wait for its alt-text button to appear, click it and paste the matching line
+   from \`alt.txt\` (OBSERVED). Careful: a Backspace while a picture is selected deletes the picture (OBSERVED).
+6. **Pull quotes.** These ${pulls.length} quotes are pull quotes on the page. They paste as normal block quotes; select
+   each and press the quote button once more (or ⌘⌥5) to make it a pull quote. A further press turns it back into
+   plain text (OBSERVED).
 ${pulls.map((p) => `   - "${p}"`).join('\n')}
 7. **Links inside the page** (to a day or a source, e.g. "Day 8", "source") can't work on Medium: the words stay,
    the link is gone. The numbered Sources list at the end stays as it is.
@@ -178,8 +212,17 @@ ${pulls.map((p) => `   - "${p}"`).join('\n')}
    \`node research/team-article/medium-check/check.mjs --dump <file>\` (README in that folder). Done means
    \`CHECK CLEAN\`. \`contact-sheet.html\` shows every picture in order with its caption, for the look.
 
-The Medium editor behaviour in these steps (rich-text paste, Enter on a link to embed, quote button twice, the
-alt-text button) is from general knowledge of Medium, not tried in a draft yet: check it on the first picture and clip.
+## Medium's automatic punctuation (OBSERVED in the Medium editor, 11 Oct)
+
+Medium changes text as it is pasted:
+- straight quotes become curly quotes;
+- a hyphen between digits becomes an en dash ("1,000-1,700" becomes "1,000–1,700"), also inside file paths
+  (\`fixes/g0-0m/README.md\` becomes \`fixes/g0–0m/README.md\`);
+- a spaced en dash may become an em dash.
+
+Whether \`<code>\` spans are spared is untested. \`check.mjs\` treats every quote kind and every dash kind as the same,
+so these changes are not counted as differences; a path with such a dash still reads wrong, so the paths and code
+at risk are listed under "Things to know before pasting".
 
 ## Things to know before pasting
 
@@ -201,5 +244,6 @@ if (process.argv[1] && process.argv[1].endsWith('/render.mjs')) {
   const KIT = i > 0 ? process.argv[i + 1] : join(REPO, 'out', 'article', 'medium-kit');
   if (process.argv.includes('--help') || process.argv.includes('-h')) { console.log(readFileSync(new URL(import.meta.url), 'utf8').split('\n').filter((l) => l.startsWith('//')).map((l) => l.replace(/^\/\/ ?/, '')).join('\n')); process.exit(0); }
   if (!existsSync(join(KIT, 'kit.json'))) { console.error(`usage: no kit.json in ${KIT} (run kit/build.mjs first)`); process.exit(2); }
-  console.log(JSON.stringify(render(KIT)));
+  try { console.log(JSON.stringify(render(KIT))); }
+  catch (e) { if (!(e instanceof AltError)) throw e; console.error('refused: ' + e.message); process.exit(1); }
 }

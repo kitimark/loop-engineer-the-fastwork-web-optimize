@@ -5,7 +5,9 @@
 // [CLIP NN · ...] marker lines and "Caption: ..." lines), NN-<id>.png pictures (each figure's .cap-area at a
 // 1400 px wide viewport, DPR 2, so 2,400 px wide for the 1,200 px figures), the copied pictures (figure.gif <img>),
 // alt.txt (NN <tab> file <tab> alt), kit.json (every block, as the in-page walker read it), CHECKLIST.md and
-// contact-sheet.html. The walker runs in the page because the alt rule needs layout (see altOf below).
+// contact-sheet.html. The walker runs in the page because the alt rule needs layout (see altOf below). The alt text
+// for Medium is the page's, except where kit/alt-medium.json has a short one (lib/alt.mjs; the page's stays in
+// altPage); the build never cuts an alt and refuses (exit 1, nothing written) when one is over 500 characters.
 //
 // Run it only inside a chrome-measure hold that times nothing (CLAUDE.md, Hard rule 7), in the background:
 //   node tools/lock.mjs run chrome-measure --owner <you> --no-timing --max-seconds 600 -- \
@@ -25,6 +27,7 @@ import { join, dirname, relative, resolve, basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs, helpIfAsked, UsageError, REPO, DEFAULT_ARTICLE, mainCheckout } from '../lib/cli.mjs';
 import { render } from './render.mjs';
+import { applyAltMedium, altProblems } from '../lib/alt.mjs';
 
 const argv = process.argv.slice(2);
 helpIfAsked(import.meta.url, argv);
@@ -84,7 +87,7 @@ const WALKER = String.raw`(() => {
     const aw = area ? area.getBoundingClientRect().width : 0;
     const small = area ? [...area.querySelectorAll('[aria-label]')].some((e) => !e.closest('[aria-hidden="true"]') && e.getBoundingClientRect().width < 0.5 * aw) : false;
     if (labels.length && !small) return { alt: labels.map(ws).join(' / '), altFrom: 'aria-label' + (labels.length > 1 ? ' x' + labels.length : '') };
-    if (small) { let t = ws(area.innerText).trim(); if (t.length > 900) t = t.slice(0, t.lastIndexOf(' ', 900)) + ' …'; return { alt: t, altFrom: 'visible text (only small inline labels)' }; }
+    if (small) return { alt: ws(area.innerText).trim(), altFrom: 'visible text (only small inline labels)' };
     const nx = fig.nextElementSibling;
     if (nx && nx.matches('p.note')) return { alt: ws(nx.textContent).trim(), altFrom: 'p.note after figure' };
     const t = area && area.querySelector('.cap-title'), s = area && area.querySelector('.cap-sub');
@@ -202,7 +205,7 @@ const OVERFLOW = String.raw`(() => { const r = [];
   return r; })()`;
 
 const chrome = await launchChrome({ headless: true, port: 0, profileDir: join(WORK, 'profile'), windowSize: '1400,1000' });
-let cdp, page, kit;
+let cdp, page, kit, refused = null;
 try {
   cdp = await CDP.connect(chrome.wsUrl);
   page = await cdp.newIsolatedPage();
@@ -237,8 +240,19 @@ try {
   const prev = existsSync(join(KIT, 'kit.json')) ? JSON.parse(readFileSync(join(KIT, 'kit.json'), 'utf8')) : null;
   const prevBy = new Map((prev?.blocks || []).filter((x) => x.t === 'picture').map((x) => [x.file, x]));
   for (const b of blocks) if (b.t === 'picture' && !want(b) && prevBy.has(b.file)) { b.px = prevBy.get(b.file).px; b.css = prevBy.get(b.file).css; }
+  // no earlier kit.json: read the size from the PNG already in the kit folder (the header's width and height)
+  for (const b of blocks) if (b.t === 'picture' && b.kind === 'cap' && !b.px && (o['text-only'] || !want(b)) && existsSync(join(KIT, b.file))) {
+    const head = readFileSync(join(KIT, b.file)).subarray(0, 24);
+    if (head.length === 24 && head.readUInt32BE(12) === 0x49484452) b.px = { w: head.readUInt32BE(16), h: head.readUInt32BE(20) };
+  }
+  // Medium's alt text: the short one from kit/alt-medium.json where the page's is too long; never cut (lib/alt.mjs)
+  const pics = blocks.filter((x) => x.t === 'picture');
+  const altm = applyAltMedium(pics);
+  const altBad = altProblems(pics);
+  if (altm.unused.length) console.log('WARN alt-medium.json keys that match no picture:', altm.unused.join(', '));
+  if (altBad.length) refused = altBad;
 
-  if (!o['text-only']) {
+  if (!o['text-only'] && !refused) {
     for (const b of blocks.filter((x) => x.t === 'picture' && want(x))) {
       if (b.kind === 'img') {
         const cands = [resolve(dirname(PAGE), b.src), ...GIF_DIRS.map((d) => join(d, basename(b.src)))];
@@ -272,6 +286,10 @@ try {
   try { await page?.close(); } catch { /* closed */ }
   cdp?.close();
   await chrome.close();
+}
+if (refused) {
+  console.error('refused: alt text Medium cannot take (nothing written):\n  ' + refused.join('\n  '));
+  process.exit(1);
 }
 writeFileSync(join(KIT, 'kit.json'), JSON.stringify(kit, null, 1));
 const summary = render(KIT);
