@@ -64,7 +64,8 @@ function windows(cs, seg) {
     case 'endoc': return { take: byT(seg, mark(seg, 'O1-open-fast-60px-50ms'), mark(seg, 'after-1s') ?? end),
       cyc1: byT(seg, mark(seg, 'O1-open-fast-60px-50ms'), mark(seg, 'O2-open-fast-60px-50ms')),
       cyc2: byT(seg, mark(seg, 'O2-open-fast-60px-50ms'), mark(seg, 'after-1s') ?? end) };
-    case 'herofinger': case 'herocatch': return { finger: byT(seg, mark(seg, 'finger'), mark(seg, 'end') ?? end) };
+    case 'herofinger': case 'herocatch': case 'herocatch3': // herocatch3: the same replay on 3 arms (2026-10-11)
+    return { finger: byT(seg, mark(seg, 'finger'), mark(seg, 'end') ?? end) };
     case 'herouser': {
       const ts = (seg.touches || []).map((t) => t[0]);
       return ts.length ? { finger: byT(seg, Math.min(...ts) - 0.001, Math.max(...ts) + 3000) } : {};
@@ -74,8 +75,8 @@ function windows(cs, seg) {
 }
 
 const rows = [];
-for (const f of fs.readdirSync(dir).filter((x) => /-(wc|ar)-[a-z]+-(orig|g0l|v14|g0m)\.json$/.test(x)).sort()) {
-  const m = f.match(/^(.*)-(?:wc|ar)-([a-z]+)-(orig|g0l|v14|g0m)\.json$/);
+for (const f of fs.readdirSync(dir).filter((x) => /-(wc|ar)-[a-z0-9]+-(orig|g0l|v14|g0m)\.json$/.test(x)).sort()) {
+  const m = f.match(/^(.*)-(?:wc|ar)-([a-z0-9]+)-(orig|g0l|v14|g0m)\.json$/);
   const rec = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   const segs = rec.run?.segments || (rec.frames ? [{ frames: rec.frames, marks: [], touches: rec.touches }] : []); // a plain record (herouser)
   const seg = segs.find((s) => (s.marks || []).length) || segs[0];
