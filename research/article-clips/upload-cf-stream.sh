@@ -2,9 +2,11 @@
 # Upload the article clips (page order) to Cloudflare Stream and list the Medium links (loop, autoplay, muted).
 # Owner's account and token; run from the repo root. Upload = publishing: run only with the owner's OK.
 #
-#   1. In the Cloudflare dashboard: turn on Stream; make an API token with "Stream: Edit".
-#   2. Save the token in out/cf-stream-token.txt and the account id in out/cf-account-id.txt (out/ is gitignored).
-#      Never paste either into a thread, a commit or a chat.
+#   1. In the Cloudflare dashboard: turn on Stream; make an API token with "Stream: Edit" (My Profile > API Tokens >
+#      Create Token > Custom: Account / Stream / Edit); copy your account id (Account home, right column).
+#   2. Put both in environment variables of the shell you run this from (never in a thread, a commit or a chat):
+#        export CF_ACCOUNT_ID=<account id>
+#        export CF_STREAM_TOKEN=$(pbpaste)      # copy the token first; this keeps it out of the shell history
 #   3. Run:
 #        sh research/article-clips/upload-cf-stream.sh --dry-run                 # list what would be uploaded
 #        sh research/article-clips/upload-cf-stream.sh day8-menu-60fps-strip     # one test clip first
@@ -37,10 +39,10 @@ if [ "$DRY" = 1 ]; then
   exit 0
 fi
 
-[ -s out/cf-stream-token.txt ] || { echo "save the API token in out/cf-stream-token.txt first (see the top of this file)"; exit 1; }
-[ -s out/cf-account-id.txt ] || { echo "save the account id in out/cf-account-id.txt first (see the top of this file)"; exit 1; }
-TOKEN=$(tr -d ' \n\r' < out/cf-stream-token.txt)
-ACCT=$(tr -d ' \n\r' < out/cf-account-id.txt)
+: "${CF_STREAM_TOKEN:?set CF_STREAM_TOKEN first (see the top of this file)}"
+: "${CF_ACCOUNT_ID:?set CF_ACCOUNT_ID first (see the top of this file)}"
+TOKEN=$CF_STREAM_TOKEN
+ACCT=$CF_ACCOUNT_ID
 API="https://api.cloudflare.com/client/v4/accounts/$ACCT/stream"
 
 # Read one field from the API's JSON reply; exit 1 with Cloudflare's error text when success is false.
