@@ -1,0 +1,337 @@
+#!/usr/bin/env node
+// User console (ts-user-console, user request 2026-10-01): a local page where the user sees what the agents
+// need from them (finger tests, blind swipe A/B, yes/no questions), oldest first, and clicks Start when ready.
+// Agents post steps and wait on the user's clicks, so a recorder starts on Start, before the user swipes.
+// Store: <git-common-dir>/fastwork-mirror/console/ (every worktree sees it; $FW_STATE_DIR in tests).
+// Library: tools/lib/console.mjs (state machine), tools/lib/console-server.mjs (HTTP), tools/lib/console-page.html.
+//
+// The page (lead or user, once; run it in the background; localhost only, never 5173):
+//   node tools/console.mjs serve [--port auto|N] [--open] [--notify] [--remind <min>]   # prints CONSOLE_URL=http://localhost:<port>/
+//        # already running: prints the running one's CONSOLE_URL and exits 0 (its flags stay as they were)
+//        # Both pages ("/" steps, "/progress") share a top bar: "Your steps" with a live badge (open steps), "Progress",
+//        # and Alerts (sound on/muted, desktop notifications after a click, remind-after minutes, test, theme). A new
+//        # step shows a banner with Open, chimes (Web Audio), puts "(n) " in the tab title and, once allowed, raises a
+//        # desktop notification; a step left on the user's turn for --remind minutes (default 3, 0 = never; the page
+//        # can override it) is announced once more, quietly. Notifications carry only the step id and a sanitized title.
+//        # --notify (off by default, macOS, local only): the server also raises a macOS notification per new step and
+//        # one reminder (osascript via execFile with an argv array, no shell; tools/lib/console-notify.mjs).
+//   node tools/console.mjs url                              # CONSOLE_URL of the running page (exit 3: none)
+//
+// Agents:
+//   node tools/console.mjs post --by <agent> --kind question|choice|action|swipe-pair --title "<one line>"
+//        [--instructions "<1-2 plain sentences>"] [--url <url>] [--url2 <url>] [--options a,b,c | --yesno | --text]
+//        [--record] [--gate] [--no-record] [--no-gate] [--show-url | --hide-url] [--parts '<json array>'] [--meta '<json>']
+//        [--scale 1-5 [--scale-label "How different did they feel?"]]   # an optional rating next to the pick
+//        [--runner-ends N[,M]|all]   # I-059: parts YOU end (ack --part N --state done), not the user; also per part
+//        #   "ends":"runner" in --parts. The page shows no Done there, only "Running, please wait; this ends by itself"
+//        #   with your latest --message, and refuses a user Done (403). E.g. a phone run that cycles versions by itself.
+//        # prints POSTED C-007. Kinds: question (yes/no unless --options/--text), choice (--options),
+//        # action (one part: Start, then Done; --record/--gate as below), swipe-pair (Page 1 = --url, Page 2 = --url2,
+//        # both gated and recorded, answer 1 / 2 / same, URLs hidden from the page: blind).
+//        # gate: Start stays disabled until you ack ready; record: after Start the page says "don't swipe yet"
+//        # until you ack recording, then "recording… swipe now". --meta: private to agents (e.g. the blind key and
+//        # the A/B order), never shown on the page, returned by wait --until answered. Forced choice: --options 1,2.
+//        # A session that runs on the phone page itself: --kind action --hide-url --options "done,stopped early".
+//   node tools/console.mjs wait <id> [--until started|recording|done|answered|redo] [--part N] [--timeout 3600] [--json] [--quiet]
+//        # exit 0 MET (prints MET … : <json>; --json: the JSON alone), 3 TIMEOUT, 4 NEVER (skipped/cancelled), 1 usage,
+//        # 5 REDO (I-059): the step was reset while you waited (the user's "Start over" on the page, or a `redo`):
+//        # prints REDO … : {action: restart|redo, by, part, attempts: [per part], epoch}; reset the phone and wait for the
+//        # new Start. --until redo: MET on the next reset (run it in the background during a long runner-ended part).
+//        # in a sequence pass --part N (1-based). answered prints {value, notes, meta}; part waits add {attempt, epoch}:
+//        # label your files with the attempt (e.g. iphone.mjs record --label C-21-p2-a2).
+//   node tools/console.mjs ack <id> --by <agent> [--state loading|ready|recording|done] [--part N] [--message "<short line>"] [--attempt N]
+//        # --attempt N: refused (exit 1, "stale") when the part is at another attempt: a late ack from an earlier try
+//   node tools/console.mjs redo <id> --by <agent> [--part N] [--message "why"]   # ask part N again (e.g. the swipe was missed);
+//        # parts N.. get a new attempt; the user's "Start over" on the page is the same reset from part 1
+//        # Later, if friction (T-019, deferred): a per-part "redo this part" for the user; an undo window for a Done.
+//   node tools/console.mjs reopen <id> --by <agent>      # queue a skipped (or any) step again, from the start
+//   node tools/console.mjs cancel <id> --by <agent> [--note "..."]   # withdraw it (no longer needed)
+//
+// Swipe pair, runner side:  post … → ack C-7 --part 1 --state loading → (page ready) ack --part 1 --state ready
+//   → wait C-7 --until started --part 1 → start the recorder → ack --part 1 --state recording
+//   → wait --until done --part 1 → stop the recorder → the same for part 2 → wait --until answered
+// Runner-ended part (I-059), e.g. the phone cycles versions by itself: post … --runner-ends 2 → wait --until started
+//   --part 2 → run it, ack --part 2 --message "version 2 of 4" as it goes → ack --part 2 --state done when finished.
+//
+// Lead:
+//   node tools/console.mjs list [--pending] [--all] [--json]    # open and finished steps with their answers
+//   node tools/console.mjs show <id> [--json]
+//   node tools/console.mjs answer <id> --by <who> --value <v> [--scale N] [--notes "..."]   # the user answered in chat instead
+//
+// Fix progress for the user (read-only; the same content as the page's Progress tab, /progress):
+//   node tools/console.mjs progress [--details] [--json]   # curated fixes/PROGRESS.json + live phone/Chrome/incidents/steps
+//   node tools/console.mjs progress --check [--file <path>] # validate a PROGRESS.json (schema + no personal data); exit 1 on errors
+//        # mgmt-ops keeps fixes/PROGRESS.json current (schema: header of tools/lib/progress.mjs)
+//
+// Status board (read-only; the same content as the page's Status tab, /status; agents report with tools/status.mjs):
+//   node tools/console.mjs status [--all] [--json]          # every workstream: priority, state, waits, owner, note
+// Threads (ts-console-threads, user request 2026-10-02): the user asks one topic per thread on the page (/threads);
+// the lead, or an agent the lead assigned, replies here. The user's text is printed as typed (their own message to us:
+// never copy it into committed files without scrubbing it); agent text is scrubbed before it is stored (Hard rule 12).
+//   node tools/console.mjs thread wait --as <agent> [--thread T-3] [--timeout 3600] [--json] [--quiet]
+//        # background: exit 0 printing NEW <thread> #<n> by user … for EVERY unread user message in the threads you
+//        # follow (the lead: all; others: the ones assigned to them), then marks them read for you only; 3 TIMEOUT;
+//        # 4 NEVER (--thread closed). Re-arm it after each wake. An assignment wakes the assignee on the backlog.
+//        # Without --thread it also wakes on proposal decision events (I-045): a decision, an undo, a changed decision,
+//        # on every proposal for the lead and on its own for an agent, each printed once as `PROPOSAL PR-001 decided
+//        # changes-requested (was rejected) by user at …: <notes>` (--json: items with kind: "proposal"). Its read mark
+//        # starts when it is first armed (<console>/proposal-reads.json): older decisions are not news. On a proposal
+//        # with options (I-053) the line and the JSON name the picked one: `decided accepted, option: tiles`, option.
+//   node tools/console.mjs thread list [--unread --as <agent>] [--all] [--json]   # open threads (--all: closed too)
+//   node tools/console.mjs thread show <id> [--as <agent>] [--json]               # --as: marks it read for <agent>
+//   node tools/console.mjs thread reply <id> --by <agent> --text "…" | --file <f> | --file - [--ask]
+//        # the lead always; others only when assigned ("ask the lead to assign you"). --ask: you need an answer from
+//        # the user (the thread shows "waiting on you"). Prints REPLIED T-003 #4 and anything that was scrubbed.
+//   node tools/console.mjs thread new --by lead --title "…" --text "…"|--file <f> [--topic <status id>] [--to <agent>] [--ask]
+//   node tools/console.mjs thread assign <id> --to <agent>[,<agent>] --by lead [--remove]
+//   node tools/console.mjs thread close <id> --by <agent> [--note "…"]   |   thread reopen <id> --by <agent>
+//
+// Proposals (ts-proposals): a design engineer's PoC for the user to compare and accept, reject or send back:
+//   node tools/console.mjs proposal post|list|show|revise|live|publish|withdraw|decide|wait …   (header of tools/lib/proposal-cli.mjs)
+//
+// Exit codes: 0 ok / MET, 1 usage or refused (the reason on stderr), 3 TIMEOUT (wait) / no server (url), 4 NEVER (wait).
+import { spawn } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { post, list, get, ack, redo, reopen, cancel, answer, waitCondition, line, parseId, consoleDir, attemptOf, EXIT_REDO } from './lib/console.mjs';
+import { runningServer, startServer } from './lib/console-server.mjs';
+import { DEFAULT_REMIND_MIN } from './lib/console-notify.mjs';
+import { pollUntil, parseSec, EXIT, httpGet } from './lib/wait.mjs';
+import { autoPortBase } from './lib/paths.mjs';
+import { currentView, renderText, readProgress } from './lib/progress.mjs';
+import { currentStatusView, renderText as statusText } from './lib/status.mjs';
+import * as TH from './lib/console-threads.mjs';
+import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
+
+const argv = process.argv.slice(2);
+const VALUED = ['--remind', '--by', '--kind', '--title', '--instructions', '--url', '--url2', '--options', '--parts', '--meta', '--until', '--part', '--timeout', '--state', '--message', '--note', '--notes', '--value', '--port', '--scale', '--scale-label', '--file', '--as', '--text', '--to', '--topic', '--thread', '--runner-ends', '--attempt'];
+const opt = (n, d) => { const i = argv.findIndex((a) => a === `--${n}` || a.startsWith(`--${n}=`)); if (i < 0) return d; const a = argv[i]; return a.includes('=') ? a.split('=').slice(1).join('=') : argv[i + 1]; };
+const flag = (n) => argv.includes(`--${n}`);
+const [cmd, arg] = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
+const by = () => opt('by', process.env.FW_AGENT || process.env.FW_LOCK_OWNER);
+const tri = (yes, no) => (flag(yes) ? true : flag(no) ? false : undefined);
+
+async function serverUrl() {
+  const s = runningServer();
+  if (!s) return null;
+  const r = await httpGet(new URL('api/health', s.url).href, 2000);
+  return r.status === 200 ? s.url : null;
+}
+
+function show(s) {
+  const L = [line(s)];
+  if (s.instructions) L.push(`  instructions: ${s.instructions}`);
+  if (s.url) L.push(`  url: ${s.url}${s.showUrl === false ? ' (hidden on the page)' : ''}`);
+  s.parts.forEach((p, i) => L.push(`  part ${i + 1} ${p.label}: ${p.state}${p.gate ? ' gated' : ''}${p.record ? ' recorded' : ''}${p.ends === 'runner' ? ' runner-ends' : ''}${attemptOf(p) > 1 ? ` attempt ${attemptOf(p)}` : ''}${p.url ? ` ${p.url}` : ''}${p.message ? ` — "${p.message}"` : ''}`));
+  L.push(`  answer: ${s.answer.mode === 'buttons' ? s.answer.options.join(' / ') : s.answer.mode}${s.result ? ` -> ${JSON.stringify(s.result)}` : ''}`);
+  if (s.meta) L.push(`  meta: ${JSON.stringify(s.meta)}`);
+  L.push('  history:');
+  for (const h of s.history) L.push(`    ${h.at} ${h.who} ${h.action}${h.part ? ` part ${h.part}` : ''}${h.attempt > 1 ? ` attempt ${h.attempt}` : ''}${h.state ? ` ${h.state}` : ''}${h.epoch ? ` (epoch ${h.epoch})` : ''}${h.note ? `: ${h.note}` : ''}${h.value !== undefined ? ` ${JSON.stringify(h.value)}` : ''}`);
+  return L.join('\n');
+}
+
+async function serve() {
+  const existing = await serverUrl();
+  if (existing) {
+    console.log(`CONSOLE_URL=${existing}`); console.log(`already running (pid ${runningServer().pid}); store ${consoleDir()}`);
+    if (flag('notify') || opt('remind') !== undefined) console.log('note: --notify/--remind apply when a server starts; stop the running one first to change them');
+    return 0;
+  }
+  const p = String(opt('port', 'auto'));
+  let candidates;
+  if (p === 'auto') { const b = autoPortBase(); candidates = Array.from({ length: 60 }, (_, i) => 5200 + ((b - 5200 + 400 + i) % 800)); } // the half of the range away from this checkout's mirror port
+  else if (/^\d+$/.test(p) && Number(p) !== 5173) candidates = [Number(p)];
+  else throw new Error(`--port must be auto, 0 or a port number other than 5173 (got ${p})`);
+  const remindRaw = opt('remind', String(DEFAULT_REMIND_MIN));
+  const remindMin = Number(remindRaw);
+  if (!/^\d+(\.\d+)?$/.test(String(remindRaw)) || !(remindMin >= 0 && remindMin <= 1440)) throw new Error(`--remind must be minutes, 0-1440 (0 = never), got ${remindRaw}`);
+  const notify = flag('notify');
+  const srv = await startServer(candidates, { notify, remindMin, onNotifyError: (e) => console.error(`notify: osascript failed: ${e.message}`) });
+  console.log(`CONSOLE_URL=${srv.url}`);
+  console.log(`store ${consoleDir()}; open the URL in a desktop browser; Ctrl-C to stop`);
+  if (notify) console.log(process.platform === 'darwin' || process.env.FW_CONSOLE_NOTIFY_LOG ? `macOS notifications on (new steps; reminder after ${remindMin || 'never'}${remindMin ? ' min' : ''})` : 'notify: macOS notifications need macOS; ignored here');
+  if (flag('open') && process.platform === 'darwin') spawn('open', [srv.url], { stdio: 'ignore', detached: true }).unref();
+  const stop = () => { srv.close().then(() => process.exit(0)); setTimeout(() => process.exit(0), 2000).unref(); };
+  process.on('SIGINT', stop); process.on('SIGTERM', stop); process.on('SIGHUP', stop);
+  return new Promise(() => {}); // until a signal
+}
+
+/** `console.mjs thread <sub> [<id>] …` (see the header). */
+async function thread() {
+  const pos = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && VALUED.includes(argv[i - 1])));
+  const [, sub, idArg] = pos;
+  const as = () => opt('as', process.env.FW_AGENT);
+  const textArg = () => {
+    const f = opt('file');
+    if (f !== undefined && opt('text') !== undefined) throw new Error('give --text or --file, not both');
+    if (f === '-') return readFileSync(0, 'utf8');
+    if (f !== undefined) return readFileSync(f, 'utf8');
+    return opt('text');
+  };
+  const scrubNote = (sc) => (sc && sc.length ? `\nscrubbed before storing (Hard rule 12): ${sc.join(', ')}` : '');
+  if (!sub || sub === 'help') { console.log('see the header of tools/console.mjs (Threads)'); return sub ? 0 : EXIT.usage; }
+  if (sub === 'list') {
+    if (flag('unread') && !as()) throw new Error('--unread needs --as <agent>');
+    let items = TH.listThreads();
+    if (!flag('all')) items = items.filter((t) => t.status !== 'closed');
+    if (flag('unread')) items = items.filter((t) => TH.unreadFor(t, as()).length);
+    if (flag('json')) { console.log(JSON.stringify(items.map((t) => ({ ...TH.summary(t), ...(as() && { unreadFor: TH.unreadFor(t, as()).length }) })), null, 1)); return 0; }
+    if (!items.length) console.log(flag('unread') ? `no threads with unread user messages for ${as()}` : 'no threads');
+    for (const t of items) console.log(TH.threadLine(t, as()));
+    return 0;
+  }
+  if (sub === 'new') {
+    const r = await TH.createThread({ by: by(), title: opt('title'), text: textArg(), topic: opt('topic'), to: opt('to'), ask: flag('ask') });
+    console.log(`STARTED ${r.thread.id}: ${r.thread.title}${r.thread.assignees.length ? ` (assigned: ${r.thread.assignees.join(', ')})` : ''}${scrubNote(r.scrubbed)}`);
+    return 0;
+  }
+  if (sub === 'wait') {
+    const w = TH.threadWaitCondition({ as: as(), thread: opt('thread') });
+    const timeoutSec = opt('timeout') !== undefined ? parseSec(opt('timeout')) : 3600;
+    if (!(timeoutSec >= 0)) throw new Error(`--timeout must be a number of seconds (or 10m, 2h), got ${opt('timeout')}`);
+    // I-045: without --thread the wait also wakes on proposal decision events (a decision, an undo, a changed decision):
+    // the lead on every proposal, an agent on its own; each event once per reader (read marks, proposal.mjs).
+    const withProposals = opt('thread') === undefined;
+    const PR = await import('./lib/proposal.mjs');
+    if (withProposals) await PR.initProposalMark(w.reader);
+    const proposalNews = () => (withProposals ? PR.proposalNews(w.reader, { all: w.reader === TH.LEAD }) : []);
+    const check = () => {
+      const t = w.check();
+      const ev = proposalNews();
+      if (!ev.length) return t;
+      const news = t.met ? JSON.parse(t.detail) : [];
+      return { met: true, state: `${news.length} thread(s), ${ev.length} proposal decision event(s)`, detail: JSON.stringify({ news, ev }) };
+    };
+    const split = (c) => (c.met ? (c.detail.startsWith('[') ? { news: JSON.parse(c.detail), ev: [] } : JSON.parse(c.detail)) : null);
+    const onChange = flag('quiet') ? undefined : (state, sec) => console.error(`[thread wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
+    startWait({ tool: 'console.mjs thread wait', owner: w.reader, what: `a user reply ${opt('thread') ? `in ${opt('thread')}` : 'in a console thread'}${withProposals ? ' or a proposal decision' : ''}`, timeoutSec });
+    const r = await pollUntil(check, { timeoutSec, onChange, minMs: 500, maxMs: 2000, factor: 1.3 });
+    if (r.result === 'never') { console.log(`NEVER ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return EXIT.never; }
+    if (r.result !== 'met') { console.log(`TIMEOUT ${w.what} after ${r.waitedSec} s: ${r.state}`); return EXIT.timeout; }
+    // a burst (the user sends two or three lines in a row): settle a moment, then print everything unread at once
+    await new Promise((res) => setTimeout(res, 1000));
+    const again = check();
+    const { news, ev } = split(again.met ? again : r);
+    await TH.commitWait(w.reader, news);
+    await PR.commitProposalNews(w.reader, ev);
+    if (flag('json')) console.log(JSON.stringify([...news, ...ev.map((e) => ({ kind: 'proposal', ...e }))], null, 1));
+    else {
+      for (const t of news) console.log(TH.newsText(t, w.reader));
+      for (const e of ev) console.log(PR.proposalNewsText(e));
+      const parts = [];
+      if (news.length) parts.push(`${news.reduce((n, t) => n + t.messages.length, 0)} new message(s) in ${news.map((t) => t.id).join(', ')}`);
+      if (ev.length) parts.push(`${ev.length} proposal decision event(s) in ${[...new Set(ev.map((e) => e.id))].join(', ')}`);
+      console.log(`MET ${w.what}: ${parts.join('; ')} (after ${r.waitedSec} s); marked read for ${w.reader}. Re-arm: node tools/console.mjs thread wait --as ${w.reader}`);
+    }
+    return EXIT.met;
+  }
+  if (!idArg) throw new Error(`usage: node tools/console.mjs thread ${sub} <id> … (see the header of tools/console.mjs)`);
+  const id = TH.parseThreadId(idArg);
+  if (sub === 'show') {
+    let t = TH.getThread(id);
+    if (as() && as() !== TH.USER) { await TH.markRead(id, as()); t = TH.getThread(id); }
+    if (flag('json')) { console.log(JSON.stringify(t, null, 1)); return 0; }
+    console.log(TH.threadLine(t, as()));
+    for (const m of t.messages) {
+      console.log(`  #${m.n} ${m.by}${m.ask ? ' (asks the user)' : ''} at ${m.at}:`);
+      for (const l of String(m.text).split('\n')) console.log(`    ${l}`);
+    }
+    for (const h of t.history) console.log(`  ${h.at} ${h.who} ${h.action}${h.note ? `: ${h.note}` : ''}`);
+    return 0;
+  }
+  if (sub === 'reply') {
+    const r = await TH.replyAgent(id, { by: by(), text: textArg(), ask: flag('ask') });
+    console.log(`REPLIED ${id} #${r.n}${flag('ask') ? ' (waiting on the user)' : ''}${scrubNote(r.scrubbed)}`);
+    return 0;
+  }
+  if (sub === 'assign') {
+    const r = await TH.assign(id, { by: by(), to: opt('to'), remove: flag('remove') });
+    console.log(`${flag('remove') ? 'UNASSIGNED' : 'ASSIGNED'} ${id}: ${r.thread.assignees.join(', ') || '(nobody: only the lead)'}`);
+    return 0;
+  }
+  if (sub === 'close' || sub === 'reopen') {
+    await TH.setStatus(id, { status: sub === 'close' ? 'closed' : 'open', by: by(), note: opt('note') });
+    console.log(`${sub === 'close' ? 'CLOSED' : 'REOPENED'} ${id}`);
+    return 0;
+  }
+  throw new Error(`unknown thread command "${sub}" (see the header of tools/console.mjs)`);
+}
+
+async function main() {
+  if (argv[0] === 'proposal') return (await import('./lib/proposal-cli.mjs')).run(argv.slice(1));
+  if (!cmd || cmd === 'help' || flag('help')) { console.log('see the header of tools/console.mjs'); return cmd ? 0 : EXIT.usage; }
+  if (cmd === 'serve') return serve();
+  if (cmd === 'thread') return thread();
+  if (cmd === 'url') { const u = await serverUrl(); if (!u) { console.log('NO SERVER: node tools/console.mjs serve (run it in the background)'); return 3; } console.log(`CONSOLE_URL=${u}`); return 0; }
+  if (cmd === 'post') {
+    let parts = opt('parts');
+    if (parts !== undefined) { const raw = parts.startsWith('@') ? readFileSync(parts.slice(1), 'utf8') : parts; try { parts = JSON.parse(raw); } catch (e) { throw new Error(`--parts is not JSON: ${e.message}`); } }
+    const s = await post({
+      by: by(), kind: opt('kind'), title: opt('title'), instructions: opt('instructions'), url: opt('url'), url2: opt('url2'),
+      options: opt('options'), yesno: flag('yesno'), text: flag('text'), record: tri('record', 'no-record'), gate: tri('gate', 'no-gate'),
+      showUrl: tri('show-url', 'hide-url'), parts, meta: opt('meta'), scale: opt('scale'), scaleLabel: opt('scale-label'),
+      runnerEnds: opt('runner-ends'),
+    });
+    console.log(`POSTED ${s.id}: ${s.title}`);
+    const u = await serverUrl();
+    console.log(u ? `on the user console ${u} (the user sees it within a second)` : 'the console page is not running: ask the lead to start `node tools/console.mjs serve`');
+    return 0;
+  }
+  if (cmd === 'list') {
+    const items = list({ all: flag('all'), pending: flag('pending') });
+    if (flag('json')) console.log(JSON.stringify(items, null, 1));
+    else if (!items.length) console.log(flag('pending') ? 'no open console steps' : 'no console steps');
+    else for (const s of items) console.log(line(s));
+    return 0;
+  }
+  if (cmd === 'progress') {
+    if (opt('file')) process.env.FW_PROGRESS_FILE = opt('file');
+    if (flag('check')) {
+      const { errors, file } = readProgress();
+      if (errors.length) { console.log(`PROGRESS INVALID ${file}:`); for (const e of errors) console.log(`  ${e}`); return 1; }
+      console.log(`PROGRESS OK ${file}`);
+      return 0;
+    }
+    const v = await currentView();
+    console.log(flag('json') ? JSON.stringify(v, null, 1) : renderText(v, { details: flag('details') }));
+    return 0;
+  }
+  if (cmd === 'status') {
+    const v = await currentStatusView();
+    console.log(flag('json') ? JSON.stringify(v, null, 1) : statusText(v, { all: flag('all') }));
+    return 0;
+  }
+  if (!arg) throw new Error(`usage: node tools/console.mjs ${cmd} <id> … (see the header of tools/console.mjs)`);
+  const id = parseId(arg);
+  if (cmd === 'show') { const s = get(id); console.log(flag('json') ? JSON.stringify(s, null, 1) : show(s)); return 0; }
+  if (cmd === 'ack') { const s = await ack(id, { by: by(), state: opt('state'), part: opt('part'), message: opt('message'), attempt: opt('attempt') }); console.log(`ACKED ${line(s)}`); return 0; }
+  if (cmd === 'redo') { const s = await redo(id, { by: by(), part: opt('part'), message: opt('message') }); console.log(`REDO ${line(s)}`); return 0; }
+  if (cmd === 'reopen') { if (!by()) throw new Error('--by <your agent name> is required'); const s = await reopen(id, { who: by(), agent: true }); console.log(`REOPENED ${line(s)}`); return 0; }
+  if (cmd === 'cancel') { const s = await cancel(id, { by: by(), note: opt('note') }); console.log(`CANCELLED ${line(s)}`); return 0; }
+  if (cmd === 'answer') {
+    if (!by()) throw new Error('--by <who> is required (the user answered in chat: --by lead)');
+    const s = await answer(id, { value: opt('value'), notes: opt('notes'), scale: opt('scale'), who: by() });
+    console.log(`ANSWERED ${line(s)}`);
+    return 0;
+  }
+  if (cmd === 'wait') {
+    const w = waitCondition(id, { until: opt('until', 'answered'), part: opt('part') });
+    const timeoutSec = opt('timeout') !== undefined ? parseSec(opt('timeout')) : 3600;
+    if (!(timeoutSec >= 0)) throw new Error(`--timeout must be a number of seconds (or 10m, 2h), got ${opt('timeout')}`);
+    const onChange = flag('quiet') ? undefined : (state, sec) => console.error(`[wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
+    // a local file read: poll fast, the user is waiting for "recording" after Start
+    let poster; try { poster = get(id).by; } catch {}
+    startWait({ tool: 'console.mjs wait', owner: opt('as') ?? by() ?? poster, what: w.what, timeoutSec });
+    const r = await pollUntil(w.check, { timeoutSec, onChange, minMs: 200, maxMs: 500, factor: 1.2 });
+    if (r.result === 'met') { console.log(flag('json') ? r.detail : `MET ${w.what}: ${r.detail} (after ${r.waitedSec} s)`); return EXIT.met; }
+    if (r.result === 'never' && w.redo) { // I-059: reset (start over / redo) while waiting: reset the phone, then wait again
+      console.log(flag('json') ? JSON.stringify(w.redo) : `REDO ${w.what}: ${JSON.stringify(w.redo)} (after ${r.waitedSec} s)`);
+      return EXIT_REDO;
+    }
+    if (r.result === 'never') { console.log(`NEVER ${w.what}: ${r.never} (after ${r.waitedSec} s)`); return EXIT.never; }
+    console.log(`TIMEOUT ${w.what} after ${r.waitedSec} s: ${r.state}`);
+    return EXIT.timeout;
+  }
+  throw new Error(`unknown command "${cmd}" (see the header of tools/console.mjs)`);
+}
+
+main().then((c) => { if (c !== undefined) process.exit(c); }, (e) => { console.error(e.message || e); process.exit(1); });

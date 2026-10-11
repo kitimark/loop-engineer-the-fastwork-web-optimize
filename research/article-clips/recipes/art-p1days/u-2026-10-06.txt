@@ -1,0 +1,79 @@
+03:17:13 USER step-answered | C-071 answer: {"mode":"none","options":[]}
+03:21:22 USER proposal-decision | PR-012 {"value":"accepted","notes":"Mark as highest priority.","at":"2026-10-06T03:21:22.445Z","who":"user","rev":3,"option":"b"}
+03:22:09 USER step-answered | C-072 answer: {"mode":"none","options":[]}
+03:25:01 USER thread | T-204 #8 [DIRECTION: Optimize the end of page scroll performance] It's SOOOO ULTRA SMOOTHHHH, we did it. mark it as highest priority.
+03:34:21 USER thread | T-204 #10 [DIRECTION: Optimize the end of page scroll performance] I'd like to ask you investigate the "Join waitlist" button of the top right at navbar. So, at the end of page appear this button will disappear. during disappear it a bit move to top. i think kind of bug. it's should not move a bit to top. is should consistency likes another "Join waitlist" animation likes another. let's investigate.
+03:41:16 USER thread | T-207 #8 [I'd like to disconnect the phone] I was reconnect the iphone. fyi
+03:46:38 USER step-answered | C-073 answer: {"mode":"none","options":[]}
+03:50:21 USER thread | T-204 #13 [DIRECTION: Optimize the end of page scroll performance] I mean it's bug from the original, let's research and do proposal for ask me to review
+03:53:53 USER step-answered | C-074 answer: {"mode":"none","options":[]}
+04:16:52 USER thread | T-211 #1 [Clips from the real iPhone screen for the article] I'd like to ask about the Clips from the real iPhone screen for the article. So, we the new best build v10, i think we achieve all our goal. I'm like to do the Clips from the real iPhone screen. That i'll scroll on the the real phone with original version for getting where is laggy in my visual then you capture my gesture and reproduce the both of original and the v10 best build. Here's topic that i know Highlight. - Cards of hero sect…
+04:17:34 USER thread | T-211 #2 [Clips from the real iPhone screen for the article] Plan to do it after, we success the v10 best build.
+04:38:36 USER step-answered | C-075 answer: {"mode":"none","options":[]}
+04:40:43 USER proposal-decision | PR-027 {"value":"accepted","at":"2026-10-06T04:40:43.095Z","who":"user","rev":5,"option":"nolift"}
+04:47:17 USER step-cancelled | C-076 answer: {"mode":"none","options":[]}
+04:48:48 USER step-answered | C-077 answer: {"mode":"none","options":[]}
+04:53:46 USER step-answered | C-078 answer: {"mode":"none","options":[]}
+05:11:40 USER thread | T-211 #6 [Clips from the real iPhone screen for the article] "hero carousel", i miss typing, i mean "user carousel"
+06:49:59 USER thread | T-212 #1 [Private webs for fastwork.com] I have an idea, we'll writing article and put the images of result. that i'll not break the law right ? so, i'd like to send the email to fastwork.com for ask permission for publish the website and source code for educational. and i'll put the link that deploy on vercel and lock with single password hash that contain in the vercel server no need database. and add this website to attachment. i'd like to ask you for research can we to the website likes this…
+07:01:12 USER thread | T-212 #4 [Private webs for fastwork.com] I'd like to do the private website with single password hash first. i'll add in the email attachment for they can review the real result. (the optimize website could remove the script that contain the tracking and any observation)
+07:06:58 USER step-answered | C-079 answer: {"mode":"none","options":[]}
+07:36:29 USER thread | T-212 #7 [Private webs for fastwork.com] Can you start the local server and ask me for testing.
+07:38:27 USER step-answered | C-080 answer: {"mode":"none","options":[]}
+07:39:33 USER thread | T-212 #10 [Private webs for fastwork.com] What's the next step for deploy on vercel ?
+07:43:05 USER thread | T-212 #12 [Private webs for fastwork.com] no, need to prepare the source at this time. i'd like waiting the v10 done. i just would like to know how to deploy for information
+07:44:16 USER thread | T-212 #14 [Private webs for fastwork.com] Can we do the vercel config on this project ? i'd not create new project.
+07:45:47 USER thread | T-212 #16 [Private webs for fastwork.com] b
+08:06:18 USER step-answered | C-081 answer: {"mode":"none","options":[]}
+08:25:29 USER step-answered | C-082 answer: {"mode":"none","options":[]}
+08:43:53 USER thread | T-214 #1 [I'd like to use iphone a bit, can you rush for me ?] I'd like to use iphone a bit, can you rush for me ?
+08:51:18 USER thread | T-214 #4 [I'd like to use iphone a bit, can you rush for me ?] done, thanks
+09:20:06 USER thread | T-204 #20 [DIRECTION: Optimize the end of page scroll performance] I'd like to ask you investigate the end of page morph, i see the height is overflow from the screen. it may they doesn't use the dynamic viewport height for adjusting the height.
+09:22:41 USER thread | T-204 #22 [DIRECTION: Optimize the end of page scroll performance] I'd like to ask you to fix this and land them into v10 build as well.
+09:24:52 USER thread | T-204 #24 [DIRECTION: Optimize the end of page scroll performance] Did you research it from Webkit source code before ?
+09:28:03 USER thread | T-204 #27 [DIRECTION: Optimize the end of page scroll performance] Yeah, i think you could find the way how to improve the end of page rendering more smooth. I'm not sure can we move all elements rendering of the end of page into gpu ? can we improve them like parallel rendering (parallel rendering i'm not sure is it possible or not in the real world, can you confirm from doc or any source code like WebKit ?)
+09:30:10 USER thread | T-204 #29 [DIRECTION: Optimize the end of page scroll performance] these optimisation will give some difference pixel rendering on the baseline. it'd be ok. you can do the proposal for ask me to review and compare with the real user visual.
+09:39:41 USER thread | T-204 #32 [DIRECTION: Optimize the end of page scroll performance] My instinct, we may to optimize the background that related during end of page morph is appear and disappear. the background will be fade in/out. they may cause of rendering performance during them rendering both.
+09:51:41 USER step-answered | C-083 answer: {"mode":"none","options":[]}
+10:02:17 USER thread | T-204 #35 [DIRECTION: Optimize the end of page scroll performance] Ok, i'd like to change the testing policy. if iphone device is free. you can use iphone device for do prove or any testing. currently we are focusing on this optimization only. few agents using the iphone device.
+10:02:36 USER step-answered | C-084 answer: {"mode":"none","options":[]}
+10:04:39 USER step-answered | C-085 answer: {"mode":"none","options":[]}
+10:09:55 USER step-answered | C-086 answer: {"mode":"none","options":[]}
+10:11:17 USER thread | T-214 #7 [I'd like to use iphone a bit, can you rush for me ?] try to check again
+10:12:03 USER thread | T-214 #8 [I'd like to use iphone a bit, can you rush for me ?] try to check again, i plug in the same type-c input
+10:12:18 USER thread | T-214 #9 [I'd like to use iphone a bit, can you rush for me ?] i was change the type-c input during i re-plug
+10:20:34 USER proposal-decision | PR-028 {"value":"changes-requested","notes":"waiting for end of page morph optimisation done, we'll try to applied after it land for see the performance impact.","at":"2026-10-06T10:20:34.973Z","who":"user","rev":2}
+10:27:37 USER thread | T-215 #1 [Comment on T-204 #34 "DIRECTION: Optimize the end of page sc…] I think we could apply the stop animation when user didn't see it like count down clock. is it help ? and elements are background during we swipe the end of page appear they could stop at this step.
+10:51:30 USER thread | T-204 #37 [DIRECTION: Optimize the end of page scroll performance] mark the arch-compositor-morph as higher priority than another agents
+10:53:28 USER thread | T-204 #39 [DIRECTION: Optimize the end of page scroll performance] Lead, you could priority by benefit we will got.
+10:58:49 USER thread | T-204 #41 [DIRECTION: Optimize the end of page scroll performance] I'd like to know the findings of arch-compositor-morph got.
+11:21:26 USER thread | T-204 #43 [DIRECTION: Optimize the end of page scroll performance] Currently, how much of pixel diff we're acceptable ?
+11:25:08 USER thread | T-204 #45 [DIRECTION: Optimize the end of page scroll performance] we accept looser limit. let's do proposal for ask me to review.
+11:32:35 USER thread | T-216 #1 [Check disk, there're 12GB left] Check disk, there're 12GB left
+11:34:44 USER thread | T-217 #2 [iPhone free for 10 min while 2 jobs wait] Is arch-compositor-morph ready for using iphone ?
+11:36:43 USER thread | T-216 #3 [Check disk, there're 12GB left] yes, keep evidence for writing the article. we'll have the new article for explain how we optimize and how it improve.
+11:37:31 USER thread | T-218 #1 [Comment on PR-029 "End of the page: freeze the fading sectio…] Queue me, the iphone
+11:46:42 USER thread | T-218 #3 [Comment on PR-029 "End of the page: freeze the fading sectio…] done
+11:48:27 USER thread | T-218 #5 [Comment on PR-029 "End of the page: freeze the fading sectio…] done, you can the iphone
+11:51:47 USER thread | T-218 #7 [Comment on PR-029 "End of the page: freeze the fading sectio…] done, did you release the iphone yet ?
+11:54:14 USER thread | T-216 #4 [Check disk, there're 12GB left] You are bottleneck, now. delegate
+13:03:01 USER thread | T-219 #1 [Comment on PR-029 "End of the page: freeze the fading sectio…] Queue, me iphone
+13:05:15 USER thread | T-219 #4 [Comment on PR-029 "End of the page: freeze the fading sectio…] done
+13:37:00 USER step-answered | C-087 answer: {"mode":"none","options":[]}
+14:33:13 USER thread | T-221 #1 [Chrome understanding] I saw you search Chrome bugs. why you don't try to direct to read the source code of Chrome engine. how it work ?
+14:34:29 USER thread | T-221 #3 [Chrome understanding] Put the policy. if something that you'd know. you could read from source. if it's open source.
+14:49:56 USER thread | T-222 #1 [Why P-156 take too long ?] Why P-156 take too long ?
+14:52:17 USER thread | T-222 #3 [Why P-156 take too long ?] Try to investigate from tracing. is it tools bug ? or how we can improve this ?
+14:55:01 USER thread | T-222 #5 [Why P-156 take too long ?] I just wonder, to day i was re-plug the phone many time. and another one i found is, i was un-plug and plug in the another bus. your tools return no device. i think the tools is overfit check in only one bus.
+14:56:17 USER thread | T-222 #7 [Why P-156 take too long ?] And sometime the thermal state is not rolling back to Serious profile even iphone is cool
+15:42:16 USER thread | T-223 #1 [Comment on PR-030 "End of the page: the menu card opens on t…] queue me, iphone
+15:47:04 USER thread | T-223 #3 [Comment on PR-030 "End of the page: the menu card opens on t…] done,
+15:49:09 USER proposal-decision | PR-030 {"value":"accepted","notes":"It's SOOOO ULTRA SMOOTH, we did it.\nI think we can land this into v10 best build.","at":"2026-10-06T15:49:09.506Z","who":"user","rev":2}
+15:52:49 USER thread | T-204 #53 [DIRECTION: Optimize the end of page scroll performance] Can you distill this lesson learn how to adopt the gpu optimization into our practices for optimization. i think we can improve another element more smooth and faster investigation
+15:57:18 USER thread | T-224 #1 [Research the People still need people section] I saw this section still a bit lag. especially, the People still need people title Research after arch-gpu-playbook land the best practices. i think we could use gpu optimization for improve this.
+16:04:21 USER thread | T-224 #3 [Research the People still need people section] I'd like to set the policy, if we found the new breakthrough. we could document them about the practices for another agent catch up and try to optimize their own responsibility
+16:09:32 USER thread | T-225 #3 [iPhone free for 10 min while 1 job waits] Ok, i'd like to use my phone.
+16:40:58 USER thread | T-225 #7 [iPhone free for 10 min while 1 job waits] connected
+16:44:22 USER step-answered | C-088 answer: {"mode":"none","options":[]}
+16:44:46 USER thread | T-226 #1 [Comment on C-088 "Unlock the iPhone and allow UI Automation"…] I didn't open the safari before.
+16:45:02 USER step-answered | C-089 answer: {"mode":"none","options":[]}

@@ -1,0 +1,172 @@
+tools/baseline.mjs | 10-01 07:57 01db2994 tools: the baseline snapshot is committed: hook guard, pin format, .gitignore (user decision 2026-10-01)
+tools/bench.mjs | 09-30 23:27 f707631f tools: bench.mjs lint and the fixes/<topic>/bench.json schema (data only; experiments[]), in npm test
+tools/check.mjs | 10-01 20:04 14806cb4 tools: headless functional check (check.mjs, fix.mjs check); timing tools refuse headless (ts-headless)
+tools/console.mjs | 10-01 15:12 46982189 tools: user console: a local page for the user's steps, Start/Done/answers that agents wait on (ts-user-console)
+tools/costcard.mjs | 10-03 09:40 f574713b tools: rendering cost card tools/costcard.mjs (incident I-083)
+tools/finding.mjs | 09-30 22:56 c2c660c5 tools: live findings board, finding.mjs, shared store helpers (incident I-013)
+tools/fix.mjs | 09-30 20:00 a17b6bfb Add parallel fix workflow: overlays, per-worktree ports, locks, agent teams
+tools/frames.mjs | 10-01 05:58 15da2147 tools: per-phase CDP work counters, opt-in per-frame trace attribution and frame log in verify.mjs / fix.mjs ab (incident I-018, 
+tools/gesture-from-record.mjs | 10-06 04:47 6179d922 tools: no tool captured a finger gesture or turned it into a WDA script (incident I-218)
+tools/idle.mjs | 10-04 04:02 71190916 tools: no tool noticed an idle iPhone lease or chrome-measure lock while work waited (incident I-105)
+tools/incident.mjs | 09-30 21:02 eb4ccbb0 tools: incident.mjs, a shared log for unexpected problems (open/list/show/update/resolve/announce/wait)
+tools/ioscap.mjs | 10-02 10:39 39786a2c tools: ioscap, a hardened iPhone screen recorder that can only open the iOS screen device (incident I-062)
+tools/iphone.mjs | 09-30 20:00 a17b6bfb Add parallel fix workflow: overlays, per-worktree ports, locks, agent teams
+tools/lan.mjs | 10-02 22:04 9975a9ae tools: the Mac's LAN address was typed by hand into phone URLs; resolve a lan placeholder at run time (incident I-073)
+tools/lock.mjs | 09-30 20:00 a17b6bfb Add parallel fix workflow: overlays, per-worktree ports, locks, agent teams
+tools/mirror.mjs | 09-30 19:19 4df6461e Add local fastwork.com mirror tooling for scroll-perf experiments
+tools/prettify.mjs | 09-30 19:19 4df6461e Add local fastwork.com mirror tooling for scroll-perf experiments
+tools/scope.mjs | 10-01 02:31 0f29e7bc tools: scope guard + unit-only test run for roles that never change tooling (incident I-021)
+tools/serve.mjs | 09-30 19:19 4df6461e Add local fastwork.com mirror tooling for scroll-perf experiments
+tools/sim.mjs | 10-01 15:31 3c28521d tools: sim.mjs drives the iOS Simulator like iphone.mjs drives the phone (research/simulator/README.md §7) [NEW MEASUREMENT CODE]
+tools/space.mjs | 10-03 16:31 5862e640 tools: throwaway Chrome profiles were never removed on a stopped run; add a read-only space report (incident I-095)
+tools/stats.mjs | 10-01 10:47 488b9dff tools: protocol v2 analysis library and CLI (T3)
+tools/status.mjs | 10-01 19:11 12770f79 tools: status board, one live status per workstream (status.mjs, console /status) (ts-status-board)
+tools/thermal.mjs | 10-05 05:32 386580b3 tools: no tool sets the iPhone thermal condition; add thermal.mjs (incident I-199)
+tools/tryit.mjs | 10-04 13:47 b4a1b828 tools: Try-it pages served by one on-demand host (user T-106)
+tools/usblink.mjs | 10-07 05:57 d0439a26 tools: a lost iPhone USB link read as a cooling failure, no link watchdog (incident I-222)
+tools/verify.mjs | 09-30 19:19 4df6461e Add local fastwork.com mirror tooling for scroll-perf experiments
+tools/wait.mjs | 10-01 14:13 c4a1ee28 tools: blocking waits that exit by themselves: wait.mjs (file/serve/url/pid/git/time) and lock.mjs wait (ts-wait)
+tools/lib/ab-stats.mjs | 10-01 07:25 86604fcb tools: I-018 review fixes: CDP metrics opt-in (default run = main's CDP sequence, golden test), paired stats, complete + windowed
+tools/lib/agent-view.mjs | 10-04 06:40 77849780 tools: an agent's work was spread over five stores with no page per agent (incident I-118)
+tools/lib/answer-lint.mjs | 10-04 14:15 9d9544d5 tools: thread replies, steps and proposals were not checked against the answer-format rule (incident I-146)
+tools/lib/artifact-link.mjs | 10-05 00:05 ccd86faf tools: console texts scrubbed claude.ai artifact links to <link> (incident I-191)
+tools/lib/awake.mjs | 10-01 02:54 93b4af2e tools: keep the Mac awake while chrome-measure is held (incident I-026)
+tools/lib/baseline.mjs | 10-01 07:57 01db2994 tools: the baseline snapshot is committed: hook guard, pin format, .gitignore (user decision 2026-10-01)
+tools/lib/bench-gain.mjs | 10-01 02:38 ef48839a tools: bench.mjs gain/calibrate/reconfirm (Tier B, design steps 3+4); Tier A quiescence and probe fixes
+tools/lib/bench-overlay.mjs | 09-30 23:28 0d40eb06 tools: bench.mjs mech (Tier A): exact in-page counters and parity over an unthrottled stepped scroll
+tools/lib/bench-probes.mjs | 09-30 23:28 0d40eb06 tools: bench.mjs mech (Tier A): exact in-page counters and parity over an unthrottled stepped scroll
+tools/lib/bench-scenario.mjs | 09-30 23:28 0d40eb06 tools: bench.mjs mech (Tier A): exact in-page counters and parity over an unthrottled stepped scroll
+tools/lib/bench-spec.mjs | 09-30 23:27 f707631f tools: bench.mjs lint and the fixes/<topic>/bench.json schema (data only; experiments[]), in npm test
+tools/lib/bench-stats.mjs | 10-01 02:38 ef48839a tools: bench.mjs gain/calibrate/reconfirm (Tier B, design steps 3+4); Tier A quiescence and probe fixes
+tools/lib/bench-verdict.mjs | 09-30 23:28 0d40eb06 tools: bench.mjs mech (Tier A): exact in-page counters and parity over an unthrottled stepped scroll
+tools/lib/bplist.mjs | 10-05 05:32 386580b3 tools: no tool sets the iPhone thermal condition; add thermal.mjs (incident I-199)
+tools/lib/cache-control.mjs | 10-04 11:06 291ee671 tools: serve.mjs replayed production's immutable/max-age headers, so browsers kept another build's files on a reused port (incide
+tools/lib/cdp.mjs | 09-30 19:19 4df6461e Add local fastwork.com mirror tooling for scroll-perf experiments
+tools/lib/condition-inducer.mjs | 10-05 05:32 386580b3 tools: no tool sets the iPhone thermal condition; add thermal.mjs (incident I-199)
+tools/lib/console-comments.mjs | 10-03 12:12 28da5bc2 tools: comments on console items, like artifact comments (incident I-090, user T-043)
+tools/lib/console-notify.mjs | 10-01 17:56 6d1b7ade tools(console): one top bar on both pages (Your steps + live badge, Progress) and new-step notifications (ts-console-nav)
+tools/lib/console-server.mjs | 10-01 15:12 46982189 tools: user console: a local page for the user's steps, Start/Done/answers that agents wait on (ts-user-console)
+tools/lib/console-threads.mjs | 10-01 19:23 545cf850 tools: console threads, one conversation per topic for the user (ts-console-threads, user request 2026-10-02)
+tools/lib/console.mjs | 10-01 15:12 46982189 tools: user console: a local page for the user's steps, Start/Done/answers that agents wait on (ts-user-console)
+tools/lib/costcard.mjs | 10-03 09:40 f574713b tools: rendering cost card tools/costcard.mjs (incident I-083)
+tools/lib/disk.mjs | 10-04 07:29 62d1f2f8 tools: disk filled with no guard; auto-clean, disk alarm and DISK-LOW timing floor (incident I-124)
+tools/lib/dtx.mjs | 10-05 05:32 386580b3 tools: no tool sets the iPhone thermal condition; add thermal.mjs (incident I-199)
+tools/lib/exit.mjs | 10-04 06:40 a458c9fd tools: incident, finding, wait and lock cut piped output at 64 KB (incident I-117)
+tools/lib/finding.mjs | 09-30 22:56 c2c660c5 tools: live findings board, finding.mjs, shared store helpers (incident I-013)
+tools/lib/frame-tags.mjs | 10-01 14:52 fe7db9f8 tools: render-side trace signals and paint rects, opt-in (incident I-032)
+tools/lib/frames.mjs | 10-01 05:58 15da2147 tools: per-phase CDP work counters, opt-in per-frame trace attribution and frame log in verify.mjs / fix.mjs ab (incident I-018, 
+tools/lib/framing.mjs | 10-02 22:41 47b38a05 tools(I-074): "Try it" in console proposals: scroll the original and the PoC page side by side
+tools/lib/gesture-from-record.mjs | 10-06 04:47 6179d922 tools: no tool captured a finger gesture or turned it into a WDA script (incident I-218)
+tools/lib/gesture-rec.mjs | 10-01 09:12 90616e43 tools: gesture scripts -> W3C touch actions + dependency-free WDA client (finger simulation, NEW MEASUREMENT CODE, 1/2)
+tools/lib/gesture-run.mjs | 10-01 09:30 fbbda44a tools: iphone.mjs gesture + wda build|start|stop|status (finger simulation, NEW MEASUREMENT CODE, 2/2)
+tools/lib/gesture.mjs | 10-01 09:12 90616e43 tools: gesture scripts -> W3C touch actions + dependency-free WDA client (finger simulation, NEW MEASUREMENT CODE, 1/2)
+tools/lib/help.mjs | 10-04 17:55 9c747530 tools: --help had side effects on most tools (serve.mjs --help started a server); now it only prints usage (incident I-152, PR-02
+tools/lib/hold-job.mjs | 10-02 10:20 8fd53a19 tools: the progress page says what each device and agent is doing (incident I-060)
+tools/lib/host.mjs | 09-30 23:14 84ebdac4 tools: shared host-state library for the measurement gate and run validity (incidents I-016, I-017)
+tools/lib/http-range.mjs | 10-02 06:59 67847b44 tools: serve.mjs answers HTTP Range requests (206/416, Accept-Ranges) (incident I-054)
+tools/lib/idle.mjs | 10-04 04:02 71190916 tools: no tool noticed an idle iPhone lease or chrome-measure lock while work waited (incident I-105)
+tools/lib/incident.mjs | 09-30 21:02 eb4ccbb0 tools: incident.mjs, a shared log for unexpected problems (open/list/show/update/resolve/announce/wait)
+tools/lib/ioscap.mjs | 10-02 10:39 39786a2c tools: ioscap, a hardened iPhone screen recorder that can only open the iOS screen device (incident I-062)
+tools/lib/iphone-battery.mjs | 10-02 23:02 aac5b4aa tools(I-075): skip the served re-fetch for non-local pages, battery power keys, iphone.mjs battery logger
+tools/lib/iphone-preflight.mjs | 10-06 18:44 9b6d7c0d tools: a re-plugged iPhone's traps surfaced only mid-block; iphone.mjs preflight names them up front (incident I-227)
+tools/lib/iphone-probe.mjs | 10-01 11:09 2695f7f8 tools: iphone.mjs run --driver scroll|window|morph --probe std (protocol v2 T1a, NEW device measurement code)
+tools/lib/iphone-record.mjs | 10-04 13:49 808e2b67 tools: iphone.mjs record lost a whole finger recording when its one final read timed out (incident I-141)
+tools/lib/iphone-run.mjs | 10-01 11:09 2695f7f8 tools: iphone.mjs run --driver scroll|window|morph --probe std (protocol v2 T1a, NEW device measurement code)
+tools/lib/iphone-url.mjs | 09-30 22:31 e20a981f tools: iPhone checks on self-signed --https mirrors stop at Safari's certificate warning (incident I-003)
+tools/lib/json-edit.mjs | 10-04 11:24 81fa2878 tools: progress --check ties build.since to the best version; progress set and progress best edit PROGRESS.json (T-103, T-104)
+tools/lib/lan.mjs | 10-02 22:04 9975a9ae tools: the Mac's LAN address was typed by hand into phone URLs; resolve a lan placeholder at run time (incident I-073)
+tools/lib/live-phone.mjs | 10-04 07:58 9602401b tools: Proposals page showed lan placeholders as text and Try-it pages were Mac-only; phone links + proposal phone (incident I-12
+tools/lib/live.mjs | 10-02 22:41 47b38a05 tools(I-074): "Try it" in console proposals: scroll the original and the PoC page side by side
+tools/lib/lock-repair.mjs | 09-30 22:37 ba10fd0d tools: lock.mjs doctor / repair, an audited way to fix lock state (incident I-012)
+tools/lib/lock.mjs | 09-30 20:00 a17b6bfb Add parallel fix workflow: overlays, per-worktree ports, locks, agent teams
+tools/lib/mirror-handler.mjs | 10-04 13:47 b4a1b828 tools: Try-it pages served by one on-demand host (user T-106)
+tools/lib/nskeyed.mjs | 10-05 05:32 386580b3 tools: no tool sets the iPhone thermal condition; add thermal.mjs (incident I-199)
+tools/lib/paint-rects.mjs | 10-01 14:52 fe7db9f8 tools: render-side trace signals and paint rects, opt-in (incident I-032)
+tools/lib/paths.mjs | 09-30 20:00 a17b6bfb Add parallel fix workflow: overlays, per-worktree ports, locks, agent teams
+tools/lib/perf-page.mjs | 09-30 22:35 4bbd2496 tools: verify.mjs phases leaked LoAF entries and a frame across back-to-back boundaries; idle default 6 s, idle scrollY (incident
+tools/lib/phone-ledger.mjs | 10-05 00:37 7386f197 tools: an iphone hold left no record of where its time went, so idle minutes had no cause (incident I-167)
+tools/lib/phone-step.mjs | 10-04 07:23 9c101666 tools: a user step outlived its runner's iPhone lease and nobody saw it stuck (incident I-123, I-125)
+tools/lib/port-probe.mjs | 10-04 13:47 b4a1b828 tools: Try-it pages served by one on-demand host (user T-106)
+tools/lib/proc-tree.mjs | 10-03 18:31 97cc63ab tools: a bounded run waits until its killed tree is gone before it releases; deadline test read pid 0 (incident I-099)
+tools/lib/proctree.mjs | 10-04 18:48 3e7efb06 threads: an orphaned wait does not listen (process tree); busy owners get user questions as a non-waking FYI (incidents I-163, I-
+tools/lib/progress-edit.mjs | 10-04 11:24 81fa2878 tools: progress --check ties build.since to the best version; progress set and progress best edit PROGRESS.json (T-103, T-104)
+tools/lib/progress.mjs | 10-01 17:16 7614401b tools: fix-progress page in the user console (/progress, console.mjs progress)
+tools/lib/proposal-cli.mjs | 10-01 20:42 7a4ffeea tools: console proposals page and CLI (ts-proposals, user request 2026-10-02)
+tools/lib/proposal-overdue.mjs | 10-04 21:56 96cd87bb tools: proposal revising mark and overdue alarm after changes-requested (incident I-177)
+tools/lib/proposal-talk.mjs | 10-03 18:00 54661948 tools: talk under each proposal, routed to its author (user T-048)
+tools/lib/proposal.mjs | 10-01 20:42 7a4ffeea tools: console proposals page and CLI (ts-proposals, user request 2026-10-02)
+tools/lib/redact.mjs | 10-01 10:05 d1be4adf tools: scrub account/device ids from everything wda and gesture print or save (review-gesture 2)
+tools/lib/rsd.mjs | 10-05 05:32 386580b3 tools: no tool sets the iPhone thermal condition; add thermal.mjs (incident I-199)
+tools/lib/safari-restart.mjs | 10-01 21:40 f16c65bd tools: I-042: compiler v2, sim gesture, safari-restart
+tools/lib/scope.mjs | 10-01 02:31 0f29e7bc tools: scope guard + unit-only test run for roles that never change tooling (incident I-021)
+tools/lib/served-get.mjs | 10-01 16:24 bc1203d0 tools: fix.mjs ab served-file check retries a transport failure on a fresh connection and names how far it got (ts-lock-bundle, 7
+tools/lib/servers.mjs | 10-04 13:58 820a2543 tools: every mirror server records its owner, purpose and last use (user T-106 #11)
+tools/lib/sim-background.mjs | 10-03 07:17 7e28dce5 tools: Sim sessions ran their commands in the Simulator's own background CPU storm, unrecorded (incident I-082)
+tools/lib/sim-motion.mjs | 10-03 19:41 0b082d16 tools: sim.mjs had no way to set Reduce Motion on the Simulator (incident I-100)
+tools/lib/sim-orient.mjs | 10-03 11:33 fe992241 tools: sim.mjs drove only fw-sim: no iPad device and no rotation (incident I-087)
+tools/lib/sim-scroll.mjs | 10-01 15:31 3c28521d tools: sim.mjs drives the iOS Simulator like iphone.mjs drives the phone (research/simulator/README.md §7) [NEW MEASUREMENT CODE]
+tools/lib/sim-warm.mjs | 10-02 12:46 859776b7 tools: sim sessions reuse a booted Simulator; a keeper shuts it down when idle or for timing (incident I-063)
+tools/lib/sim.mjs | 10-01 15:31 3c28521d tools: sim.mjs drives the iOS Simulator like iphone.mjs drives the phone (research/simulator/README.md §7) [NEW MEASUREMENT CODE]
+tools/lib/space-prune.mjs | 10-04 07:29 62d1f2f8 tools: disk filled with no guard; auto-clean, disk alarm and DISK-LOW timing floor (incident I-124)
+tools/lib/space-watch.mjs | 10-04 07:29 62d1f2f8 tools: disk filled with no guard; auto-clean, disk alarm and DISK-LOW timing floor (incident I-124)
+tools/lib/space.mjs | 10-03 16:31 5862e640 tools: throwaway Chrome profiles were never removed on a stopped run; add a read-only space report (incident I-095)
+tools/lib/stats.mjs | 10-01 10:47 488b9dff tools: protocol v2 analysis library and CLI (T3)
+tools/lib/status.mjs | 10-01 19:11 12770f79 tools: status board, one live status per workstream (status.mjs, console /status) (ts-status-board)
+tools/lib/step-alarm.mjs | 10-04 07:23 9c101666 tools: a user step outlived its runner's iPhone lease and nobody saw it stuck (incident I-123, I-125)
+tools/lib/store.mjs | 09-30 22:56 c2c660c5 tools: live findings board, finding.mjs, shared store helpers (incident I-013)
+tools/lib/thermal-holder.mjs | 10-07 03:58 4fca1de7 tools: rearm took Xcode's Serious as NOT-NEEDED in tool mode, thermal.mjs clear said NONE beside it, and the words always said Xc
+tools/lib/thermal-profile.mjs | 10-04 23:09 df275acc tools: phone runs had no thermal profile gate (serious default, fair option) at hold start/end (incident I-186)
+tools/lib/thermal-rearm.mjs | 10-07 01:43 9c644179 tools: a phone above the Serious condition got a blind stop+start user step; iphone.mjs rearm re-arms it with thermal.mjs, probed
+tools/lib/thread-routing.mjs | 10-03 18:21 3dfc627e tools: thread routing to a listening owner, the lead's triage wait (user T-050, T-051)
+tools/lib/trace-frames.mjs | 10-01 05:58 15da2147 tools: per-phase CDP work counters, opt-in per-frame trace attribution and frame log in verify.mjs / fix.mjs ab (incident I-018, 
+tools/lib/transcripts.mjs | 10-04 16:26 c98262d1 tools: board rows did not show landed or owner-ended by themselves; the lead wrote them by hand (incident I-152, PR-020 N9)
+tools/lib/tryit.mjs | 10-04 13:47 b4a1b828 tools: Try-it pages served by one on-demand host (user T-106)
+tools/lib/usblink.mjs | 10-07 05:57 d0439a26 tools: a lost iPhone USB link read as a cooling failure, no link watchdog (incident I-222)
+tools/lib/usbmux.mjs | 10-06 18:44 9b6d7c0d tools: a re-plugged iPhone's traps surfaced only mid-block; iphone.mjs preflight names them up front (incident I-227)
+tools/lib/wait.mjs | 10-01 14:13 c4a1ee28 tools: blocking waits that exit by themselves: wait.mjs (file/serve/url/pid/git/time) and lock.mjs wait (ts-wait)
+tools/lib/waits.mjs | 10-02 08:41 29e0cca0 tools: waits show on the status board by themselves; wait.mjs time needs --reason (incident I-058)
+tools/lib/wda-runner.mjs | 10-01 09:30 fbbda44a tools: iphone.mjs gesture + wda build|start|stop|status (finger simulation, NEW MEASUREMENT CODE, 2/2)
+tools/lib/wda.mjs | 10-01 09:12 90616e43 tools: gesture scripts -> W3C touch actions + dependency-free WDA client (finger simulation, NEW MEASUREMENT CODE, 1/2)
+tools/lib/wip.mjs | 09-30 19:08 4764e8d0 Add fastwork.com scroll-jank research and CPU-throttle calibration
+.githooks/commit-msg | 09-30 20:33 23885963 Hard rules: consolidate in CLAUDE.md, enforce rebase-only merges and no-push
+.githooks/lib | 09-30 20:33 23885963 Hard rules: consolidate in CLAUDE.md, enforce rebase-only merges and no-push
+.githooks/pre-commit | 09-30 20:28 971e3437 githooks: versioned pre-commit hook (block Fastwork assets, run npm test on tooling changes)
+.githooks/pre-merge-commit | 09-30 20:33 23885963 Hard rules: consolidate in CLAUDE.md, enforce rebase-only merges and no-push
+.githooks/pre-push | 09-30 20:33 23885963 Hard rules: consolidate in CLAUDE.md, enforce rebase-only merges and no-push
+.githooks/reference-transaction | 09-30 20:33 23885963 Hard rules: consolidate in CLAUDE.md, enforce rebase-only merges and no-push
+.claude/hooks/fg-guard.mjs | 10-04 20:02 29d6f2cd hooks: fg-guard refuses known long commands in the Bash foreground (incident I-170, user T-152)
+.claude/hooks/git-guard.mjs | 09-30 20:33 23885963 Hard rules: consolidate in CLAUDE.md, enforce rebase-only merges and no-push
+.claude/agents/bundle-mapper.md | 09-30 20:20 99f8a2f4 Add agent definitions, roles/delegation guide and lead playbook
+.claude/agents/fix-owner.md | 09-30 20:20 99f8a2f4 Add agent definitions, roles/delegation guide and lead playbook
+.claude/agents/fix-reviewer.md | 09-30 20:20 99f8a2f4 Add agent definitions, roles/delegation guide and lead playbook
+.claude/agents/toolsmith.md | 09-30 21:10 54a8298c team: toolsmith and wave-integrator roles, incident loop, project loop
+.claude/agents/wave-integrator.md | 09-30 21:10 54a8298c team: toolsmith and wave-integrator roles, incident loop, project loop
+.claude/settings.json | 09-30 20:00 a17b6bfb Add parallel fix workflow: overlays, per-worktree ports, locks, agent teams
+fixes/AGENT_PROMPT.md | 09-30 20:00 a17b6bfb Add parallel fix workflow: overlays, per-worktree ports, locks, agent teams
+fixes/AGENT_ROLES.md | 09-30 20:20 99f8a2f4 Add agent definitions, roles/delegation guide and lead playbook
+fixes/ARCH_TEAM.md | 09-30 22:28 87b849ff fixes/ARCH_TEAM.md: architecture team charter, rules and scorecard
+fixes/BEST_BUILDS.md | 10-07 00:17 91c49d1f best builds: one list, newest first (fixes/BEST_BUILDS.md), kept current by the lead (user T-228 #3)
+fixes/DIRECTION.md | 09-30 23:02 6407cbae fixes/DIRECTION.md: lead's roadmap to the goal (frame classes, principles, slot priority); TOPICS N11 vendor-scrollend
+fixes/EXPERIMENTS.md | 09-30 22:54 bba2d7d7 fixes/EXPERIMENTS.md: ledger of every experiment incl. failed ones; README item 7a (user request)
+fixes/FINDINGS.md | 09-30 22:24 31354c5d fixes/FINDINGS.md: team playbook (9 techniques, 7 pitfalls, measurement lessons); read it before editing; reviewers check hunk sc
+fixes/FINGER_TESTS.md | 09-30 22:10 c15f65e9 fixes: FINGER_TESTS.md, the user's iPhone finger-test steps and queue (agents don't wait for them)
+fixes/INCIDENTS.md | 09-30 21:10 54a8298c team: toolsmith and wave-integrator roles, incident loop, project loop
+fixes/LEAD.md | 09-30 20:20 99f8a2f4 Add agent definitions, roles/delegation guide and lead playbook
+fixes/PR_BY_VERSION.md | 10-08 17:17 06d59f47 fixes: PR_BY_VERSION.md, accepted proposals by first build and whether g0.0f keeps them (user T-252 #1)
+fixes/PREDICTIONS.md | 10-01 10:47 39dee45c fixes/PREDICTIONS.md (protocol v2 §4 ledger, P-001..P-010); DIRECTION + handover: v2 approved, F-047, ghbn render-bound, v2 queue
+fixes/README.md | 09-30 20:00 a17b6bfb Add parallel fix workflow: overlays, per-worktree ports, locks, agent teams
+fixes/TOPICS.md | 09-30 20:00 a17b6bfb Add parallel fix workflow: overlays, per-worktree ports, locks, agent teams
+research/management/iphone-runner-handover.md | 10-05 12:51 db7bb9f2 iphone-runner: handover for the model cut-over (P-130 tail kit, WDA, keep/chain, pitfalls)
+research/management/lead-retrospective-24h.md | 10-01 19:03 c220e829 research/management: lead retrospective of the first 24 h of loop engineering (user request)
+research/management/ops-handover.md | 10-01 01:17 41303258 mgmt-ops handover note: wave-1 state, I-023 blocker, who waits on what, queue rules
+research/management/p116-v8-gh-attribution.md | 10-04 19:22 40757dfe ops: P-105 second read AGREE (v7 vs v6 WORSE on GH only, threshold-sensitive); P-116 registered, v8 GH attribution ticket drafted
+research/management/p117-combined-phone-no-worse.md | 10-04 20:20 58b8f722 ops: P-108 second read AGREE PASS; P-117 combined phone no-worse card (v8 vs v8 + nav-hit-cache + scroll-cb), registered for the 
+research/management/p118-double-drive-phone-no-worse.md | 10-04 21:18 405d8b1c ops: P-118 registered (double-drive phone no-worse, v8 vs v8 + double-drive); card with pins checked on disk and the pre-read gap
+research/management/p120-v9-step4-phone-no-worse.md | 10-04 23:23 b709ac54 P-120: lead signature before data (S1 runner rebase + TICKET pins, S2 start gate, S3 arms-superseded, S4 rest-end census not evid
+research/management/README.md | 09-30 23:14 490c2d17 research/management: decision log, execution principles, KPI baseline + kpi.mjs, improvement plan, loop (mgmt-lead iteration 1)
+research/management/roles-v3-proactive.md | 10-04 21:25 2c689554 roles v3: proactive by default (user T-160 #7): rules R1-R8, evidence, memory note
+research/management/proactive-measures.mjs | 10-04 21:57 2f3ec0ea management: proactive-measures.mjs, team measures for roles v3 (user T-163 #1)
+memory/README.md | 10-03 00:18 630c700d memory/: project memory moved into the repo (index + 15 scrubbed notes), imported by CLAUDE.md; Serena rules/project_overview bec
+CLAUDE.md | 09-30 20:00 a17b6bfb Add parallel fix workflow: overlays, per-worktree ports, locks, agent teams
+README.md | 09-30 19:19 4df6461e Add local fastwork.com mirror tooling for scroll-perf experiments
+baseline.json | 10-01 08:46 4edb872e baseline: snapshot b1789284481295-4ad4a84a

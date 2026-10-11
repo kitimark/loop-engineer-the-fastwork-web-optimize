@@ -1,0 +1,72 @@
+03:02:03 USER proposal-decision | PR-036 {"value":"accepted","at":"2026-10-08T03:02:03.871Z","who":"user","rev":1}
+03:02:30 USER proposal-decision | PR-037 {"value":"accepted","at":"2026-10-08T03:02:30.972Z","who":"user","rev":1}
+03:04:11 USER proposal-decision | PR-038 {"value":"accepted","at":"2026-10-08T03:04:11.063Z","who":"user","rev":2}
+03:36:12 USER step-cancelled | C-113 answer: {"mode":"none","options":[]}
+06:28:59 USER step-answered | C-114 answer: {"mode":"none","options":[]}
+06:31:21 USER step-answered | C-115 answer: {"mode":"none","options":[]}
+06:39:08 USER thread | T-247 #1 [Make iphone hit real heat.] Make iphone hit real heat. Why you don't open the original of fastwork. it raise a lot of heat each per run.
+06:56:25 USER thread | T-247 #3 [Make iphone hit real heat.] I think you could focus on do hard & fast scroll, especially, the end-of-page that take a lot of performance. delegate to new agents for helpping them.
+06:58:32 USER thread | T-247 #5 [Make iphone hit real heat.] i was do fast scroll on end-of-page. open/close multiple time. it raise the heat so fast.
+07:00:26 USER thread | T-247 #7 [Make iphone hit real heat.] actually. i was found the heat raise from original page that we was capture. we may no need to direct to fastwork.com. you can do some experimental for prove this. and you can tracing back your logs that you capture. this is reason why you need to implement the heat probe. cause you was facing this issue before.
+07:17:32 USER thread | T-247 #10 [Make iphone hit real heat.] Note this probe, we will use them for reproduce for writing blog posts
+08:22:56 USER thread | T-248 #1 [i'd like to use iphone a bit.] i'd like to use iphone a bit.
+08:23:37 USER thread | T-248 #3 [i'd like to use iphone a bit.] Now, can you interrupt a bit ?
+08:25:34 USER thread | T-248 #5 [i'd like to use iphone a bit.] done, thanks.
+08:25:38 USER step-answered | C-116 answer: {"mode":"none","options":[]}
+09:33:03 USER step-answered | C-117 answer: {"mode":"none","options":[]}
+09:41:56 USER thread | T-228 #79 [Comment on the Best build page "Today’s best build": Did you…] Can you tracing back, which element raise the frame drop on 2 spots ?
+10:20:04 USER step-answered | C-118 answer: {"mode":"none","options":[]}
+10:41:12 USER step-answered | C-119 answer: {"mode":"none","options":[]}
+10:41:20 USER step-answered | C-120 answer: {"mode":"none","options":[]}
+10:42:14 USER thread | T-247 #12 [Make iphone hit real heat.] I'd like to ask the thermal state can not reproduce this issue ? why we don't set the theral state to serious or critical to test them ?
+11:39:26 USER step-answered | C-121 answer: {"mode":"none","options":[]}
+11:42:25 USER step-answered | C-122 answer: {"mode":"none","options":[]}
+11:44:10 USER thread | T-249 #1 [Critical memory usage (2.6GB)] claude code terminal display this, what's the problem ? ``` Critical memory usage (2.6GB) — restart and resume with claude --continue ```
+11:45:51 USER thread | T-249 #3 [Critical memory usage (2.6GB)] if i turn on `claude agents`. is it help ?
+11:48:30 USER step-answered | C-123 answer: {"mode":"none","options":[]}
+11:49:43 USER thread | T-249 #6 [Critical memory usage (2.6GB)] No need to start them. continue your work. they're not our issue at this time.
+11:52:18 USER step-answered | C-124 answer: {"mode":"buttons","options":["yes","no"]}
+11:53:38 USER thread | T-250 #1 [Comment on C-124 "May I restart Xcode's device service on th…] What's the problem ?
+11:54:41 USER thread | T-250 #3 [Comment on C-124 "May I restart Xcode's device service on th…] Ok, let's note it as incident and workaround.
+12:55:27 USER step-answered | C-125 answer: {"mode":"buttons","options":["yes","no"]}
+13:39:01 USER thread | T-228 #83 [Comment on the Best build page "Today’s best build": Did you…] can you plot histogram of render time during scroll each version ? we already have the measurement stats. i'd like to about about what's your considering.
+13:43:39 USER thread | T-228 #85 [Comment on the Best build page "Today’s best build": Did you…] what's about g0.0f and another version ?
+13:47:20 USER thread | T-228 #87 [Comment on the Best build page "Today’s best build": Did you…] did you try to probe each elements rendering ? i suspect about some element may rendering outside user visual. can we ?
+13:47:55 USER thread | T-228 #89 [Comment on the Best build page "Today’s best build": Did you…] Let's delegate to another agents for doing this in the parallel.
+15:27:10 USER step-answered | C-126 answer: {"mode":"buttons","options":["yes","no"]}
+16:22:49 USER thread | T-251 #1 [i'd like to use iphone] i'd like to use iphone
+16:44:10 USER step-cancelled | C-127 answer: {"mode":"none","options":[]}
+16:47:39 USER step-cancelled | C-128 answer: {"mode":"none","options":[]}
+16:50:48 USER thread | T-251 #4 [i'd like to use iphone] done, let's use iphone
+16:56:20 USER thread | T-228 #96 [Comment on the Best build page "Today’s best build": Did you…] Do we have the proposal that optimize the end-of-page more smooth ?
+17:00:21 USER step-answered | C-129 answer: {"mode":"buttons","options":["done","could not"]}
+17:00:48 USER thread | T-228 #98 [Comment on the Best build page "Today’s best build": Did you…] I'd like to focus the optimization that make the end-of-page more smooth as highest priority.
+17:01:41 USER step-answered | C-130 answer: {"mode":"buttons","options":["yes","later"]}
+17:04:09 USER thread | T-228 #101 [Comment on the Best build page "Today’s best build": Did you…] dragging down toward the end is highest, and menu open/close at the end is second priority. I was remember. after we rollback the end-of-page to follow the functionality of original website. some of version are smooth now. can you list the version that we was optimize after we rollback the functionality of end-of-page.
+17:07:27 USER thread | T-228 #103 [Comment on the Best build page "Today’s best build": Did you…] Do you have any prototype that we was did but reject from you ?
+17:12:01 USER thread | T-252 #1 [Comment on T-228 #102 "Comment on the Best build page "Today…] Can you list each PR was applied on each version ?
+17:13:11 USER thread | T-228 #106 [Comment on the Best build page "Today’s best build": Did you…] The old scroll-handler prototype was bug a lot. you do know what's the bug of this ?
+17:19:20 USER thread | T-228 #108 [Comment on the Best build page "Today’s best build": Did you…] i'd like the --morph variable, how it related to calculation.
+17:27:03 USER thread | T-228 #110 [Comment on the Best build page "Today’s best build": Did you…] i was suspect the css that was calculate to --morph variables might be the issues for rendering. can we check the compositing border of WebKit. i was found the a lot of these number of nav bar and the end of page.
+17:32:02 USER thread | T-253 #1 [Comment on T-228 #111 "Comment on the Best build page "Today…] Catch up the compositing border count in this thread
+17:39:58 USER thread | T-253 #3 [Comment on T-228 #111 "Comment on the Best build page "Today…] I suspect the boundary of compositing layer; - why countdown clock impact compositing layer of start-selling-morph-center ? - why start-selling-top-nav took a lot of number ? can we reduce ?
+17:41:10 USER thread | T-253 #5 [Comment on T-228 #111 "Comment on the Best build page "Today…] can you split agents for helpping research and work together ?
+17:59:20 USER thread | T-254 #1 [i'd like to use my phone] i'd like to use my phone
+18:02:14 USER thread | T-253 #8 [Comment on T-228 #111 "Comment on the Best build page "Today…] Any findings ?
+18:04:25 USER thread | T-253 #10 [Comment on T-228 #111 "Comment on the Best build page "Today…] Can we optimize them ? illusion optical is acceptable.
+18:08:51 USER proposal-decision | PR-039 {"value":"accepted","at":"2026-10-08T18:08:51.692Z","who":"user","rev":1,"option":"keep-phase"}
+18:09:39 USER thread | T-253 #13 [Comment on T-228 #111 "Comment on the Best build page "Today…] I was accept PR-039 with correct option ?
+18:26:12 USER-CHAT chat | continue
+18:29:38 USER thread | T-254 #3 [i'd like to use my phone] done
+18:33:04 USER thread | T-253 #15 [Comment on T-228 #111 "Comment on the Best build page "Today…] What's about PR-030 ? i was try to play the end-of-page. it's SOOO ULTRA SMOOOTH
+18:33:59 USER thread | T-253 #16 [Comment on T-228 #111 "Comment on the Best build page "Today…] i got the is end of page background are blink
+18:37:05 USER thread | T-253 #18 [Comment on T-228 #111 "Comment on the Best build page "Today…] blink that i mention is glass flicker. can we fix this ? then try to propose me
+18:37:52 USER thread | T-253 #19 [Comment on T-228 #111 "Comment on the Best build page "Today…] it should including icon and buttons of top nav fix.
+18:43:59 USER thread | T-253 #21 [Comment on T-228 #111 "Comment on the Best build page "Today…] the PR-30 was have less compositing-layer, it just has only glass flicker.
+18:46:40 USER thread | T-253 #22 [Comment on T-228 #111 "Comment on the Best build page "Today…] the issue when i hold the end-of-page at the early middle a second. the glass will be blur as the same of the nav bar when it don't expand yet. it just should check if it on-hold of the end-of-page it should hold the blur of glass.
+18:47:40 USER thread | T-254 #5 [i'd like to use my phone] done, release it.
+18:53:22 USER thread | T-253 #24 [Comment on T-228 #111 "Comment on the Best build page "Today…] mark the fix-cm-return as highest priority.
+18:54:12 USER thread | T-253 #25 [Comment on T-228 #111 "Comment on the Best build page "Today…] mark the fix-cm-return as highest priority.
+19:08:56 USER step-answered | C-131 answer: {"mode":"none","options":[]}
+19:16:14 USER thread | T-253 #27 [Comment on T-228 #111 "Comment on the Best build page "Today…] I was do manual check on original fastwork. the end-of-page during expand the nav bar doesn't start from transparent. the opacity of background of the nav bar still the same and fade the color to background of the end-of-page. I think we could fix like this, it may easier and better rendering performance.
+19:44:22 USER thread | T-256 #1 [RESPONSIBILITY: If phone was disconnect without any my reque…] If phone was disconnect without any my request, you could investigate to fix first

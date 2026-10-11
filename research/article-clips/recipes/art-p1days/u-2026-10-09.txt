@@ -1,0 +1,41 @@
+03:19:34 USER thread | T-228 #121 [Comment on the Best build page "Today’s best build": Did you…] swipe test yes
+03:25:24 USER step-cancelled | C-133 answer: {"mode":"none","options":[]}
+03:26:50 USER step-cancelled | C-134 answer: {"mode":"none","options":[]}
+03:28:47 USER step-cancelled | C-135 answer: {"mode":"none","options":[]}
+03:31:06 USER step-answered | C-132 answer: {"mode":"buttons","options":["1","2","same"]}
+03:33:33 USER step-answered | C-136 answer: {"mode":"buttons","options":["1","2","same"]}
+03:38:10 USER thread | T-228 #124 [Comment on the Best build page "Today’s best build": Did you…] yes, people section blink on g0.0j too. but less g0.0i
+03:40:01 USER proposal-decision | PR-040 {"value":"accepted","notes":"It's SOOOO ULTRAA SMOOTHHH HHHHHHHH","at":"2026-10-09T03:40:01.923Z","who":"user","rev":1}
+03:45:05 USER thread | T-228 #126 [Comment on the Best build page "Today’s best build": Did you…] I do fast scroll down from hero section to people section. i was see the blink in the start-selling-profile-deck. Anyway i think fix it later in the next version cause g0.0j now is the our best build.
+03:45:22 USER thread | T-228 #127 [Comment on the Best build page "Today’s best build": Did you…] Correct my answer: yes, people section blink on g0.0j too. but less than g0.0i
+03:47:37 USER thread | T-228 #129 [Comment on the Best build page "Today’s best build": Did you…] let's push the best build to best build page as well.
+04:15:24 USER thread | T-228 #132 [Comment on the Best build page "Today’s best build": Did you…] Do you find any clue in people section ?
+04:22:04 USER thread | T-228 #134 [Comment on the Best build page "Today’s best build": Did you…] Fyi: the original fastwork web also have this issue as well.
+04:35:55 USER thread | T-228 #138 [Comment on the Best build page "Today’s best build": Did you…] you can do (a) anb (b). approve
+06:17:28 USER thread | T-228 #141 [Comment on the Best build page "Today’s best build": Did you…] Can you post the screenshot in this thread ?
+06:25:23 USER thread | T-228 #143 [Comment on the Best build page "Today’s best build": Did you…] Can you try to do fast scroll and go to the start-selling-profile-deck card. this is issue that i mention. you can delegate to new agents for doing it in the parallel.
+06:27:03 USER thread | T-228 #145 [Comment on the Best build page "Today’s best build": Did you…] It happen on iphone device. can you try it on simulator for parallel ? cause the real device are using
+06:38:21 USER thread | T-228 #149 [Comment on the Best build page "Today’s best build": Did you…] iphone is free, you can run it on iphone can capture.
+06:39:54 USER thread | T-228 #151 [Comment on the Best build page "Today’s best build": Did you…] you can record my screen, i was open the sleep mode.
+06:42:02 USER thread | T-228 #153 [Comment on the Best build page "Today’s best build": Did you…] it's ok to change the guard, when you would like to do screen capture. you could turn on do not disturb or sleep mode.
+06:43:46 USER-CHAT chat | change the guard to allow iPhone screen pictures for the deck recordings with open the do not distrub or sleep mode.
+06:44:13 USER thread | T-228 #155 [Comment on the Best build page "Today’s best build": Did you…] done
+06:50:27 USER thread | T-228 #158 [Comment on the Best build page "Today’s best build": Did you…] can you show me the screenshot ?
+07:01:19 USER thread | T-228 #161 [Comment on the Best build page "Today’s best build": Did you…] Can you summarize what the problem is ?
+07:23:45 USER proposal-decision | PR-041 {"value":"accepted","notes":"It's SOOO ULTRA SMOOTHHHHH","at":"2026-10-09T07:23:45.928Z","who":"user","rev":2,"option":"instant"}
+07:28:42 USER thread | T-261 #1 [image lost on start-selling-platform-agents-ask-list section] On the start-selling-platform-agents-ask-list section. i'd like to pull all of image that related on display. the original snapshot might not pull all image that need to display. fyi: the real fastwork.com already update bit. just focus to reconcile the image of this section.
+07:41:14 USER thread | T-261 #4 [image lost on start-selling-platform-agents-ask-list section] yes
+07:41:44 USER thread | T-262 #1 [i'd like to use iphone.] i'd like to use iphone.
+08:48:33 USER step-cancelled | C-137 answer: {"mode":"none","options":[]}
+08:48:37 USER thread | T-262 #3 [i'd like to use iphone.] done
+09:53:50 USER step-answered | C-138 answer: {"mode":"none","options":[]}
+10:56:06 USER thread | T-264 #1 [SOOO ULTRA SMOOTHHHHHHH] we are all done the rendering optimization on iphone. you did the good job congratulation.
+10:57:31 USER thread | T-265 #1 [Comment on T-264 #2 "SOOO ULTRA SMOOTHHHHHHH #2": What the p…] What the problem is, can we improve this ?
+11:16:53 USER thread | T-170 #110 [Medium article] I'd like to wrap up the the latest best build g0.0l . about the article. About the new findings, the example optimize cases, and re-vise the blogs post. (claude artifacts) My idea, i'd like to writing 3 blog posts; - Present how do we build the loop ai from scratch (same topic as above) - Technical that we use to optimize the website for iPhone 15 Pro Max - Deep dive to technical of loop that we build, how i interact them
+11:20:38 USER thread | T-265 #3 [Comment on T-264 #2 "SOOO ULTRA SMOOTHHHHHHH #2": What the p…] i'm not sure the original website, they already use the scroll snap css family or not ? https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Scroll_snap Let's investigate about this. they might have improve the rendering performance at native.
+11:26:21 USER thread | T-265 #6 [Comment on T-264 #2 "SOOO ULTRA SMOOTHHHHHHH #2": What the p…] I was inspect the rendering, i saw some image of people section was re-painting but it's static image. why it re paint ?
+11:31:14 USER thread | T-170 #112 [Medium article] One more thing, the medium blog article has limited tools feature. i'd like to ask you plan article that we will writing it should use which tools. Let's investigate and you can ask the e978e7c9-16c6-408f-8939-43eac6d3be6d session for probe the medium article tools
+12:52:05 USER step-answered | C-139 answer: {"mode":"none","options":[]}
+12:54:54 USER thread | T-267 #1 [Summarize chat] Summarize my conversation, action, decision and your (lead) conversation, action, decision including your subagents You have to read the message conversation, timing and another related.
+12:55:13 USER thread | T-267 #2 [Summarize chat] Then create claude artifact for explain and visualize this.
+12:56:57 USER thread | T-267 #3 [Summarize chat] Let's delegate to agent for investigating this.

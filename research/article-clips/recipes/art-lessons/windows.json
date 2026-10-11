@@ -1,0 +1,122 @@
+[
+ {
+  "phase": "A start -> first finger test (Chrome-led wave 1)",
+  "from": "2026-09-30T17:05:00Z",
+  "to": "2026-10-01T07:57:00Z",
+  "wallH": 14.9,
+  "agentH": 86,
+  "usd": 1035,
+  "commits": 247,
+  "cat": {
+   "research": 37,
+   "tools": 47,
+   "ops/docs": 75,
+   "fix: not in g0.0m": 2,
+   "fix/other: in lineage or unclassified": 86
+  }
+ },
+ {
+  "phase": "B finger test -> GPU hint (hint 5)",
+  "from": "2026-10-01T07:57:00Z",
+  "to": "2026-10-02T23:00:00Z",
+  "wallH": 39.1,
+  "agentH": 237,
+  "usd": 2400,
+  "commits": 629,
+  "cat": {
+   "fix/other: in lineage or unclassified": 74,
+   "tools": 106,
+   "ops/docs": 251,
+   "fix: not in g0.0m": 93,
+   "research": 104,
+   "fix: not in g0.0m (GPU-type)": 1
+  }
+ },
+ {
+  "phase": "C GPU hint -> v6 breakthrough lands",
+  "from": "2026-10-02T23:00:00Z",
+  "to": "2026-10-04T07:33:00Z",
+  "wallH": 32.6,
+  "agentH": 195,
+  "usd": 2021,
+  "commits": 422,
+  "cat": {
+   "fix: in g0.0m lineage (GPU-type)": 70,
+   "tools": 51,
+   "ops/docs": 173,
+   "fix: not in g0.0m (GPU-type)": 12,
+   "fix/other: in lineage or unclassified": 86,
+   "research": 22,
+   "fix: not in g0.0m": 8
+  }
+ },
+ {
+  "phase": "D v6 -> end-of-page focus (5 Oct 22:40)",
+  "from": "2026-10-04T07:33:00Z",
+  "to": "2026-10-05T22:40:00Z",
+  "wallH": 39.1,
+  "agentH": 260,
+  "usd": 2822,
+  "commits": 711,
+  "cat": {
+   "fix: not in g0.0m": 195,
+   "ops/docs": 295,
+   "fix: in g0.0m lineage (GPU-type)": 38,
+   "fix/other: in lineage or unclassified": 101,
+   "tools": 57,
+   "research": 11,
+   "fix: not in g0.0m (GPU-type)": 14
+  }
+ },
+ {
+  "phase": "E end-of-page focus -> faithful turn (7 Oct 15:38)",
+  "from": "2026-10-05T22:40:00Z",
+  "to": "2026-10-07T15:38:00Z",
+  "wallH": 41,
+  "agentH": 112,
+  "usd": 1300,
+  "commits": 254,
+  "cat": {
+   "research": 13,
+   "ops/docs": 69,
+   "fix: not in g0.0m (GPU-type)": 25,
+   "tools": 20,
+   "fix: not in g0.0m": 115,
+   "fix/other: in lineage or unclassified": 11,
+   "fix: in g0.0m lineage (GPU-type)": 1
+  }
+ },
+ {
+  "phase": "F faithful g0 line -> done (9 Oct 10:56)",
+  "from": "2026-10-07T15:38:00Z",
+  "to": "2026-10-09T10:56:00Z",
+  "wallH": 43.3,
+  "agentH": 81,
+  "usd": 920,
+  "commits": 139,
+  "cat": {
+   "fix/other: in lineage or unclassified": 119,
+   "ops/docs": 10,
+   "tools": 8,
+   "research": 2
+  }
+ },
+ {
+  "phase": "G epilogue (article, captures)",
+  "from": "2026-10-09T10:56:00Z",
+  "to": "2026-10-11T06:00:00Z",
+  "wallH": 43.1,
+  "agentH": 38,
+  "usd": 427,
+  "commits": 40,
+  "cat": {
+   "fix: in g0.0m lineage (GPU-type)": 2,
+   "fix: not in g0.0m": 4,
+   "fix: not in g0.0m (GPU-type)": 1,
+   "fix/other: in lineage or unclassified": 17,
+   "ops/docs": 14,
+   "tools": 1,
+   "research": 1
+  }
+ }
+]

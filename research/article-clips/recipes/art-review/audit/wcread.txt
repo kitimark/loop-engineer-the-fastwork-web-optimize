@@ -1,0 +1,112 @@
+20261009T132512Z-wc-hero-orig  thermal Serious 34.39 -> Serious 36.5  load1 10.5/9.57  errors 0
+  rest   frames  716  >34 9 (12/7)  >50 3 (3/3)  max 60 ms at y 0
+  fade   frames  653  >34 46 (73/25)  >50 6 (15/4)  max 98 ms at y 747
+20261009T132633Z-wc-hero-g0l  thermal Serious 34.39 -> Serious 36.5  load1 4.14/3.46  errors 0
+  rest   frames  719  >34 1 (1/0)  >50 0 (0/0)  max 36 ms at y 0
+  fade   frames  751  >34 4 (8/4)  >50 3 (4/3)  max 69 ms at y 1078
+20261009T133819Z-wc-hero-g0l  thermal Serious 36.09 -> Serious 37.19  load1 4.26/4.08  errors 0
+  rest   frames  720  >34 0 (1/0)  >50 0 (0/0)  max 32 ms at y 0
+  fade   frames  743  >34 6 (6/4)  >50 1 (2/1)  max 80 ms at y 603
+20261009T134136Z-wc-hero-orig  thermal Serious 36.09 -> Serious 37.19  load1 13.51/9.98  errors 0
+  rest   frames  717  >34 8 (11/5)  >50 4 (4/2)  max 61 ms at y 0
+  fade   frames  581  >34 88 (105/80)  >50 36 (39/34)  max 153 ms at y 638
+20261009T134759Z-wc-people-orig  thermal Serious 36.39 -> Serious 37.89  load1 12.51/10.2  errors 0
+  flick  frames  364  >34 19 (32/14)  >50 5 (7/3)  max 105 ms at y 846
+20261009T134853Z-wc-people-g0l  thermal Serious 36.39 -> Serious 37.89  load1 8.39/8.61  errors 0
+  flick  frames  409  >34 4 (5/4)  >50 2 (3/2)  max 64 ms at y 697
+20261009T135001Z-wc-people-g0l  thermal Serious 36.39 -> Serious 37.89  load1 5.79/6.38  errors 0
+  flick  frames  416  >34 3 (4/3)  >50 2 (2/1)  max 68 ms at y 1351
+20261009T135711Z-wc-middle-orig  thermal Serious 38 -> Serious 38.79  load1 6.84/7.74  errors 0
+  deck   frames  227  >34 32 (49/19)  >50 13 (15/8)  max 109 ms at y 1622
+  dark   frames   72  >34 32 (32/29)  >50 22 (25/18)  max 361 ms at y 1953
+  switch frames  116  >34 4 (4/2)  >50 1 (1/1)  max 58 ms at y 2518
+  all    frames  911  >34 93 (121/69)  >50 43 (52/34)  max 361 ms at y 1953
+20261009T135904Z-wc-middle-g0l  thermal Serious 38 -> Serious 38.79  load1 7.56/8.3  errors 0
+  deck   frames  282  >34 0 (2/0)  >50 0 (0/0)  max 31 ms at y 1005
+  dark   frames  127  >34 0 (0/0)  >50 0 (0/0)  max 30 ms at y 2005
+  switch frames  123  >34 1 (1/0)  >50 0 (0/0)  max 37 ms at y 2506
+  all    frames 1092  >34 5 (8/4)  >50 1 (2/1)  max 64 ms at y 618
+20261009T135954Z-wc-middle-g0l  thermal Serious 38 -> Serious 38.79  load1 4.45/5.18  errors 0
+  deck   frames  272  >34 0 (1/0)  >50 0 (0/0)  max 32 ms at y 1001
+  dark   frames  128  >34 0 (2/0)  >50 0 (0/0)  max 32 ms at y 2005
+  switch frames  124  >34 0 (2/0)  >50 0 (0/0)  max 32 ms at y 2510
+  all    frames 1086  >34 4 (10/4)  >50 1 (2/1)  max 62 ms at y 627
+20261009T140304Z-wc-middle-orig  thermal Serious 38 -> Serious 38.79  load1 5.52/6.49  errors 0
+  deck   frames  214  >34 53 (58/46)  >50 30 (31/26)  max 157 ms at y 1004
+  dark   frames   96  >34 22 (31/14)  >50 9 (12/7)  max 101 ms at y 1981
+  switch frames  114  >34 4 (4/2)  >50 1 (1/0)  max 54 ms at y 2510
+  all    frames  911  >34 104 (130/80)  >50 51 (57/41)  max 172 ms at y 1836
+20261009T140920Z-wc-end-orig  thermal Serious 38.39 -> Serious 41  load1 19.1/3.98  errors 0 ABORTED
+  end    frames 8020  >34 1292 (1589/1054)  >50 600 (706/524)  max 349 ms at y 5213
+  push   frames 7600  >34 1204 (1460/984)  >50 576 (678/501)  max 349 ms at y 5213
+  push6  frames 2799  >34 875 (1072/718)  >50 429 (498/375)  max 349 ms at y 5213
+20261009T141903Z-wc-end-g0l  thermal Serious 39.89 -> Critical 43.19 DRIFT  load1 12.36/5.88  errors 0
+  end    frames 5410  >34 182 (272/135)  >50 47 (67/35)  max 125 ms at y 5443
+  push   frames 5126  >34 181 (271/135)  >50 47 (67/35)  max 125 ms at y 5443
+  push6  frames 2558  >34 67 (115/43)  >50 10 (16/5)  max 69 ms at y 5689
+20261009T142230Z-wc-end-orig  thermal Serious 39.89 -> Critical 43.19 DRIFT  load1 5.17/25.54  errors 0 ABORTED
+  end    frames 8487  >34 630 (1110/512)  >50 252 (312/220)  max 496 ms at y 5214
+  push   frames 8088  >34 534 (976/432)  >50 224 (274/195)  max 496 ms at y 5214
+  push6  frames 3870  >34 474 (873/380)  >50 197 (242/174)  max 496 ms at y 5214
+20261009T144444Z-wc-people-orig  thermal Serious 38.79 -> Critical 42.29 DRIFT  load1 25.29/18.47  errors 0
+  flick  frames  372  >34 19 (25/14)  >50 7 (7/6)  max 86 ms at y 813
+20261009T144540Z-wc-end-orig  thermal Serious 38.79 -> Critical 42.29 DRIFT  load1 7.16/6.11  errors 0
+  end    frames 7467  >34 1000 (1535/832)  >50 450 (534/400)  max 494 ms at y 5213
+  push   frames 7067  >34 918 (1415/769)  >50 418 (501/371)  max 494 ms at y 5213
+  push6  frames 3522  >34 562 (804/466)  >50 259 (309/230)  max 494 ms at y 5213
+20261010T040615Z-ar-menu-orig  thermal Serious 38.09 -> Critical 42.09 DRIFT  load1 5.2/4.22  errors 0
+  pushes frames 1147  >34 174 (253/133)  >50 64 (75/54)  max 725 ms at y 5213
+20261010T040835Z-ar-menu-v14  thermal Serious 38.09 -> Critical 42.09 DRIFT  load1 4.93/5.01  errors 0
+  pushes frames 1692  >34 28 (56/18)  >50 5 (11/4)  max 106 ms at y 5915
+20261010T041016Z-ar-menu-v14  thermal Serious 38.09 -> Critical 42.09 DRIFT  load1 6.34/5.24  errors 0
+  pushes frames 1713  >34 15 (31/12)  >50 6 (7/5)  max 87 ms at y 5495
+20261010T041207Z-ar-menu-orig  thermal Serious 38.09 -> Critical 42.09 DRIFT  load1 5.72/5.31  errors 0
+  pushes frames 1299  >34 139 (241/98)  >50 38 (51/32)  max 647 ms at y 5215
+20261010T042754Z-ar-carousel-orig  thermal Serious 38.09 -> Serious 39.39  load1 8.64/6.36  errors 0
+  rest   frames  674  >34 17 (26/7)  >50 3 (5/3)  max 79 ms at y 1711
+20261010T042903Z-ar-carousel-g0m  thermal Serious 38.09 -> Serious 39.39  load1 6.2/5.98  errors 0
+  rest   frames  720  >34 0 (0/0)  >50 0 (0/0)  max 21 ms at y 1713
+20261010T042952Z-ar-carousel-g0m  thermal Serious 38.09 -> Serious 39.39  load1 7.63/7.64  errors 0
+  rest   frames  721  >34 0 (0/0)  >50 0 (0/0)  max 21 ms at y 1711
+20261010T043046Z-ar-carousel-orig  thermal Serious 38.09 -> Serious 39.39  load1 7.86/6.75  errors 0
+  rest   frames  671  >34 20 (29/14)  >50 1 (3/1)  max 59 ms at y 1708
+20261010T043157Z-ar-ptitle-orig  thermal Serious 39.5 -> Serious 40.29  load1 5.32/5.85  errors 0
+  title  frames  577  >34 3 (11/2)  >50 1 (2/1)  max 58 ms at y 520
+20261010T043251Z-ar-ptitle-g0m  thermal Serious 39.5 -> Serious 40.29  load1 5.38/5.24  errors 0
+  title  frames  590  >34 2 (2/0)  >50 0 (0/0)  max 37 ms at y 516
+20261010T043332Z-ar-ptitle-g0m  thermal Serious 39.5 -> Serious 40.29  load1 7.54/6.41  errors 0
+  title  frames  587  >34 2 (2/0)  >50 0 (0/0)  max 38 ms at y 407
+20261010T043411Z-ar-ptitle-orig  thermal Serious 39.5 -> Serious 40.29  load1 7.82/7.31  errors 0
+  title  frames  584  >34 7 (9/6)  >50 1 (1/1)  max 56 ms at y 520
+20261010T071555Z-ar-ptitle-orig  thermal Serious 39.09 -> Serious 40.69  load1 4.7/4.37  errors 0
+  back   frames  545  >34 53 (63/36)  >50 13 (14/8)  max 101 ms at y 1072
+20261010T071706Z-ar-ptitle-g0m  thermal Serious 39.09 -> Serious 40.69  load1 6.12/5.98  errors 0
+  back   frames  628  >34 3 (5/2)  >50 1 (1/0)  max 51 ms at y 841
+20261010T071753Z-ar-ptitle-g0m  thermal Serious 39.09 -> Serious 40.69  load1 6.6/7.14  errors 0
+  back   frames  622  >34 3 (3/2)  >50 1 (1/1)  max 66 ms at y 833
+20261010T071845Z-ar-ptitle-orig  thermal Serious 39.09 -> Serious 40.69  load1 8.19/7.06  errors 0
+  back   frames  541  >34 52 (63/43)  >50 15 (19/9)  max 76 ms at y 1106
+20261010T104514Z-ar-herouser-orig  thermal null -> null  load1 /  errors 0
+  finger frames  598  >34 88 (138/66)  >50 33 (44/20)  max 103 ms at y 197
+20261010T104634Z-ar-herouser-g0m  thermal null -> null  load1 /  errors 0
+  finger frames 1131  >34 4 (8/3)  >50 0 (0/0)  max 44 ms at y 234
+20261010T105127Z-ar-herofinger-orig  thermal Serious 37.39 -> Serious 38.89  load1 16.93/12.62  errors 0
+  finger frames 1264  >34 204 (262/163)  >50 101 (119/83)  max 146 ms at y 825
+20261010T105336Z-ar-herofinger-g0m  thermal Serious 37.39 -> Serious 38.89  load1 7.58/8.64  errors 0
+  finger frames 1676  >34 18 (21/12)  >50 3 (5/3)  max 75 ms at y 215
+20261010T105519Z-ar-herofinger-g0m  thermal Serious 37.39 -> Serious 38.89  load1 6.5/6.02  errors 0
+  finger frames 1686  >34 16 (20/11)  >50 4 (4/3)  max 74 ms at y 186
+20261010T105719Z-ar-herofinger-orig  thermal Serious 37.39 -> Serious 38.89  load1 4.12/4.05  errors 0
+  finger frames 1357  >34 168 (202/132)  >50 83 (97/66)  max 154 ms at y 999
+20261010T110844Z-ar-herocatch-orig  thermal Serious 36.59 -> Serious 38.59  load1 4.59/8.28  errors 0
+  finger frames 1303  >34 265 (301/221)  >50 127 (164/108)  max 150 ms at y 822
+20261010T111040Z-ar-herocatch-g0m  thermal Serious 36.59 -> Serious 38.59  load1 5.43/5.18  errors 0
+  finger frames 1808  >34 40 (58/29)  >50 6 (9/3)  max 89 ms at y 782
+20261010T111222Z-ar-herocatch-g0m  thermal Serious 36.59 -> Serious 38.59  load1 5.47/6.2  errors 0
+  finger frames 1781  >34 21 (36/14)  >50 2 (4/0)  max 54 ms at y 656
+20261010T111421Z-ar-herocatch-orig  thermal Serious 36.59 -> Serious 38.59  load1 4.87/4.72  errors 0
+  finger frames 1285  >34 254 (310/221)  >50 134 (158/108)  max 154 ms at y 605
+20261010T125906Z-ar-endoc-orig  thermal Serious 32.09 -> Serious 33.09  load1 8.71/8.77  errors 0
+20261010T130126Z-ar-endoc-g0m  thermal Serious 33.5 -> Serious 34.29  load1 8.76/9.84  errors 0
+20261010T130321Z-ar-endoc-g0m  thermal Serious 34.5 -> Serious 35.29  load1 8.31/7.41  errors 0
+20261010T130503Z-ar-endoc-orig  thermal Serious 35.59 -> Serious 36.39  load1 8.31/8.01  errors 0

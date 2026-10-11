@@ -1,0 +1,75 @@
+00:09:06 USER step-answered | C-090 answer: {"mode":"none","options":[]}
+00:09:16 USER step-answered | C-091 answer: {"mode":"none","options":[]}
+00:09:44 USER proposal-decision | PR-031 {"value":"accepted","at":"2026-10-07T00:09:44.817Z","who":"user","rev":2}
+00:13:51 USER thread | T-228 #1 [Comment on the Best build page "Today’s best build": Did you…] Did you update the best build ?
+00:14:47 USER thread | T-228 #3 [Comment on the Best build page "Today’s best build": Did you…] i'd like keep it update, including best build Versions, newest first.
+00:20:39 USER step-answered | C-092 answer: {"mode":"buttons","options":["1","2"],"scale":{"min":1,"max":5,"label":"How different did they feel?"}}
+00:26:18 USER step-answered | C-093 answer: {"mode":"buttons","options":["1","2"],"scale":{"min":1,"max":5,"label":"How different did they feel?"}}
+00:31:58 USER step-answered | C-094 answer: {"mode":"buttons","options":["1","2"],"scale":{"min":1,"max":5,"label":"How different did they feel?"}}
+00:33:14 USER thread | T-228 #7 [Comment on the Best build page "Today’s best build": Did you…] Catch up my comments of yours step.
+00:56:55 USER thread | T-228 #11 [Comment on the Best build page "Today’s best build": Did you…] Fyi: for v11 with gpu end-of-page optimize, i was try to really hard scroll for stress testing. The data of my gesture between them might difference.
+00:57:29 USER step-answered | C-095 answer: {"mode":"none","options":[]}
+01:06:30 USER step-answered | C-096 answer: {"mode":"none","options":[]}
+01:18:50 USER step-answered | C-097 answer: {"mode":"none","options":[]}
+01:29:24 USER step-answered | C-098 answer: {"mode":"none","options":[]}
+01:30:01 USER step-answered | C-099 answer: {"mode":"none","options":[]}
+01:31:17 USER thread | T-228 #15 [Comment on the Best build page "Today’s best build": Did you…] It's xcode bug ? how can you automate them ? no need ask me to do manual, can we ?
+02:15:15 USER thread | T-229 #1 [Comment on T-228 #16 "Comment on the Best build page "Today’…] Catch up this, do you still try it yet on the test lane ?
+02:16:45 USER thread | T-230 #1 [Comment on T-229 #2 "Comment on T-228 #16 "Comment on the Be…] I saw you many time. why you print table like this ? we already adopt to use table markdown format, doesn't it ?
+04:00:17 USER thread | T-229 #5 [Comment on T-228 #16 "Comment on the Best build page "Today’…] is arch-compositor-morph will help to improve ?
+04:06:28 USER step-answered | C-100 answer: {"mode":"none","options":[]}
+04:12:54 USER step-answered | C-101 answer: {"mode":"buttons","options":["yes","no"]}
+04:41:42 USER thread | T-232 #1 [Comment on PR-032 "End of the page: the Join button leaves o…] queue me, iphone
+04:44:09 USER proposal-decision | PR-032 {"value":"accepted","at":"2026-10-07T04:44:09.178Z","who":"user","rev":3}
+04:44:39 USER thread | T-232 #3 [Comment on PR-032 "End of the page: the Join button leaves o…] done, release iphone
+04:49:05 USER step-answered | C-102 answer: {"mode":"none","options":[]}
+04:51:23 USER thread | T-233 #1 [Comment on the Progress page "Fix progress": i already done …] i already done my job, and ask you already why status, won't change ?
+05:52:21 USER thread | T-229 #10 [Comment on T-228 #16 "Comment on the Best build page "Today’…] can you start C server for me to do manual testing ?
+05:53:18 USER thread | T-229 #12 [Comment on T-228 #16 "Comment on the Best build page "Today’…] queue me, iphone
+05:56:13 USER thread | T-229 #16 [Comment on T-228 #16 "Comment on the Best build page "Today’…] Can you list the probe that you found more detail.
+05:59:23 USER thread | T-229 #18 [Comment on T-228 #16 "Comment on the Best build page "Today’…] my feeling the v12 is smoother but it has a some blinking. can you ask me do the my gesture testing and ask me on your steps for probe ?
+06:01:19 USER thread | T-229 #20 [Comment on T-228 #16 "Comment on the Best build page "Today’…] i'll produce for you, ask me on the your steps page. now.
+06:05:34 USER step-answered | C-103 answer: {"mode":"none","options":[]}
+06:11:13 USER step-cancelled | C-104 answer: {"mode":"none","options":[]}
+06:12:23 USER thread | T-229 #22 [Comment on T-228 #16 "Comment on the Best build page "Today’…] my instinct, you may to optimize the javascript code, html and css with nearly the same visual. i think this part may contain the legacy un-optimize code.
+08:17:53 USER thread | T-234 #1 [queue me, the iphone] queue me, the iphone
+08:28:28 USER step-answered | C-105 answer: {"mode":"none","options":[]}
+08:28:35 USER thread | T-234 #3 [queue me, the iphone] done
+10:31:29 USER step-answered | C-106 answer: {"mode":"none","options":[]}
+10:42:32 USER thread | T-228 #24 [Comment on the Best build page "Today’s best build": Did you…] What's the issue that we facing ?
+10:44:04 USER thread | T-228 #26 [Comment on the Best build page "Today’s best build": Did you…] can you explain me the layer that we optimize them ?
+10:49:40 USER thread | T-228 #28 [Comment on the Best build page "Today’s best build": Did you…] I think we overall frame is ok, it's just spike at to 34ms an 50ms with a few frame is acceptable. i was inspect the today best build the icon of fastwork, lang button and join waiting list. is move up a bit during we scroll down for open the end-of-page. i think we could fix this for consistency the original with join waiting list button move fix. (we can use illusion optical for fixed them the height positioning.) and ch…
+10:51:39 USER thread | T-228 #30 [Comment on the Best build page "Today’s best build": Did you…] yes, and about the conner of end-of-page quite move a bit.
+11:08:01 USER thread | T-228 #33 [Comment on the Best build page "Today’s best build": Did you…] Can we research this bug independently ? maybe another agents for read the our mistake of the end-of-page and do the new way propose for optimize them from zero.
+11:09:00 USER thread | T-228 #35 [Comment on the Best build page "Today’s best build": Did you…] I think we may clone the related source code link chrome engine and safari webkit for reading easier.
+11:09:53 USER thread | T-228 #36 [Comment on the Best build page "Today’s best build": Did you…] And setup the serena for easier to tracing code.
+11:33:08 USER thread | T-228 #40 [Comment on the Best build page "Today’s best build": Did you…] can you tell me the idea of arch-end-fresh will do ?
+11:56:32 USER thread | T-228 #44 [Comment on the Best build page "Today’s best build": Did you…] which agent did v14 ?
+11:56:57 USER thread | T-228 #46 [Comment on the Best build page "Today’s best build": Did you…] queue me, the phone
+11:58:36 USER step-cancelled | C-107 answer: {"mode":"none","options":[]}
+11:59:36 USER thread | T-228 #48 [Comment on the Best build page "Today’s best build": Did you…] done, no need to queue for me. the bug of icon, lang button and join waitlist button on top of nav bar still happen. let's investigate. in parallel of iphone test.
+15:05:32 USER step-cancelled | C-108 answer: {"mode":"none","options":[]}
+15:36:51 USER proposal-decision | PR-033 {"value":"rejected","at":"2026-10-07T15:36:51.032Z","who":"user","rev":1}
+15:36:57 USER proposal-decision | PR-029 {"value":"rejected","at":"2026-10-07T15:36:57.284Z","who":"user","rev":4}
+15:38:50 USER thread | T-228 #60 [Comment on the Best build page "Today’s best build": Did you…] I'd like to rollback the scroll functionality to original of fastwork. but optimize to use gpu rendering. can we ?
+15:44:06 USER step-cancelled | C-109 answer: {"mode":"none","options":[]}
+15:47:52 USER step-cancelled | C-110 answer: {"mode":"none","options":[]}
+15:51:10 USER thread | T-228 #62 [Comment on the Best build page "Today’s best build": Did you…] just rollback the scroll functionality the end-of-page. and optimize with gpu rendering.
+16:10:02 USER thread | T-238 #1 [I'd like to use my phone] I'd like to use my phone
+16:10:10 USER thread | T-238 #2 [I'd like to use my phone] Re-plan your works
+16:10:22 USER step-cancelled | C-111 answer: {"mode":"none","options":[]}
+16:39:00 USER thread | T-238 #5 [I'd like to use my phone] connected. continue
+17:38:59 USER thread | T-239 #1 [Comment on PR-034 "End of the page: back to the original fas…] queue me, iphone
+18:02:49 USER thread | T-239 #3 [Comment on PR-034 "End of the page: back to the original fas…] done, release
+18:04:10 USER step-answered | C-112 answer: {"mode":"none","options":[]}
+18:08:53 USER thread | T-240 #1 [The start-selling-platform-visual section] The start-selling-platform-visual section, i was see the rounded edge of this section is not transparent if we compare with another section that related. let's investigate and fix.
+18:18:40 USER thread | T-240 #3 [The start-selling-platform-visual section] Fyi: this issue is came from the original fastwork likes "join waitlist" button. not our bugs.
+18:43:04 USER thread | T-239 #5 [Comment on PR-034 "End of the page: back to the original fas…] queue me, iphone
+18:44:16 USER thread | T-239 #8 [Comment on PR-034 "End of the page: back to the original fas…] done, release
+18:44:34 USER proposal-decision | PR-034 {"value":"accepted","at":"2026-10-07T18:44:34.394Z","who":"user","rev":2,"option":"g0"}
+18:52:23 USER thread | T-228 #68 [Comment on the Best build page "Today’s best build": Did you…] Do we have any update for fix-g0-box agent ?
+18:59:58 USER proposal-decision | PR-035 {"value":"accepted","at":"2026-10-07T18:59:58.373Z","who":"user","rev":1}
+19:03:43 USER thread | T-242 #1 [The "join waitlist" button] I found the "join waitlist" rounded edge is not transparent and the gap of lang button and this button is lost, during it fade-out when the end of page is appear. this is bug from original fastwork and it inherit to the latest version. let's investigate
+19:25:46 USER thread | T-243 #1 [check iphone still connect ?] check iphone still connect ?
+19:46:08 USER thread | T-244 #1 [i'd like to disconnect my iphone] i'd like to disconnect my iphone, do you have any plan to use them ?
+19:50:36 USER thread | T-245 #1 [Check fastwork icon during end-of-page disappear] I found the fastwork icon during move to left side when end-of-page disappear. the animation doesn't move to start on the left side, it move and then it have a bit wrap to start on the left side.

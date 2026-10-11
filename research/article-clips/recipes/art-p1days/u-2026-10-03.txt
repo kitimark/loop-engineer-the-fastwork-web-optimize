@@ -1,0 +1,85 @@
+00:01:41 USER thread | T-032 #1 [Check agents] Check agents, why i saw the "general-purpose" ? You could name them following our convention.
+00:02:55 USER thread | T-032 #3 [Check agents] FYI: Move all memory into our project. if they doesn't have where to store. let's investigate and re-structure our project for support them memory.
+00:07:18 USER thread | T-030 #6 [Research the GPU-Accelerated Properties CSS] List all de-gpu findings
+00:09:07 USER thread | T-030 #8 [Research the GPU-Accelerated Properties CSS] List all fixes of de-gpu findings
+00:10:54 USER thread | T-030 #10 [Research the GPU-Accelerated Properties CSS] Let's do cd-roll-ca as highest priority as well.
+00:13:55 USER thread | T-032 #6 [Check agents] OK
+00:14:04 USER thread | T-032 #7 [Check agents] OK both
+06:35:46 USER thread | T-030 #13 [Research the GPU-Accelerated Properties CSS] What's about the fix progresses ?
+06:45:12 USER thread | T-030 #15 [Research the GPU-Accelerated Properties CSS] Explain "glint-ca, sweep-exact (battery/heat only)" detail ? why it cause battery heat but it not impact the animation performance, doesn't it ?
+07:01:00 USER thread | T-033 #1 [I'd like to disconnect the iPhone, now] I'd like to disconnect the iPhone, now
+07:09:30 USER thread | T-033 #4 [I'd like to disconnect the iPhone, now] iphone is connected, continue the work
+07:13:56 USER thread | T-030 #19 [Research the GPU-Accelerated Properties CSS] Can you improve the tools can handle the scenarios more proper ? ``` Please don't decide on PR-008 (cd-strip) yet: it is being withdrawn. The second review found the card compared against the wrong control (in the same sessions the difference shows 3 of 26 times with the strip vs 1 of 26 without, not 12 % vs 6 %) and a layer difference the card missed (the strip keeps the clock's GPU layers in one scroll band where today's page drops them).…
+07:18:29 USER thread | T-029 #13 [iphone was heat cause fastwork website ?] What's about this progress ?
+07:20:22 USER thread | T-029 #15 [iphone was heat cause fastwork website ?] Do you have any propose to improve this better ?
+07:20:45 USER thread | T-029 #16 [iphone was heat cause fastwork website ?] Maybe measurement protocol ?
+07:26:36 USER thread | T-029 #18 [iphone was heat cause fastwork website ?] I wonder when we test on iphone device and simulator with full page render. they will raise up the battery heat and hard to measure about each fix propose. i think we could revise the measurement plan or not ? My idea, measure with specific element that each fixed focus. maybe sometime including related elements for focus only animation performance. i'd expect this specific test will not get the noise from iphone battery heat. Ask team to rese…
+07:29:38 USER thread | T-034 #1 [ASK: these optimization consider test on another breakpoint …] ASK: these optimization consider test on another breakpoint ? I'd expect our optimization could apply properly on any breakpoint
+07:32:26 USER thread | T-035 #1 [Any fixes done more after i was test the latest best build ?] Any fixes done more after i was test the latest best build ?
+07:34:01 USER thread | T-035 #3 [Any fixes done more after i was test the latest best build ?] Is the 1-3 are highest priority ?
+07:34:42 USER thread | T-035 #5 [Any fixes done more after i was test the latest best build ?] What the 1-3 could improve ?
+07:44:05 USER thread | T-029 #20 [iphone was heat cause fastwork website ?] Which agents doing this plan ?
+07:59:05 USER thread | T-029 #23 [iphone was heat cause fastwork website ?] My propose is if we try to focus on how to optimize at the best each elements, they'll not facing about phone heat and waiting for cooling. So, the animation performance optimization measurement. they could not just test on full-page. they could measure from the real complexity rendering analysis It doesn't means we will not test on full-page. full-page still need to test but less. Let's investigate, our measurement can do better than this ?
+08:02:54 USER thread | T-029 #25 [iphone was heat cause fastwork website ?] Maybe we might use Safari Webkit on macbook pro for doing measurement of "real rendering complexity" on the safari desktop engine. it may give some hint.
+08:09:08 USER thread | T-036 #1 [Which fixes are on review ?] Which fixes are on review ?
+08:40:57 USER thread | T-035 #8 [Any fixes done more after i was test the latest best build ?] The fix 3, do you measure about the rendering ? that the "real rendering complexity" i was asked to research. can you try to use this on fix 3 ?
+08:50:49 USER thread | T-029 #28 [iphone was heat cause fastwork website ?] Can you recap 5 short questions and what's the recommend ?
+08:52:48 USER thread | T-029 #30 [iphone was heat cause fastwork website ?] Ok. go with your recommendation.
+08:58:18 USER thread | T-037 #1 [ASK: What's our measurement rules ?] What's our measurement rules ? I'd like to know the rules we measures and which phase ?
+08:59:49 USER thread | T-037 #3 [ASK: What's our measurement rules ?] What's the new measurement that we researching ?
+09:06:12 USER step-answered | C-028 answer: {"mode":"buttons","options":["started","could not"]}
+09:09:00 USER thread | T-038 #1 [IDEA: all answer panel could show this answer will sent to w…] IDEA: all answer panel could show this answer will sent to who My pain point is when i have to answer. i didn't know which agents will get direct receive this message. It's kind of hard to tracing back for me. can you improve this ?
+09:09:57 USER step-answered | C-029 answer: {"mode":"buttons","options":["stopped (panel shows Start)","could not stop"]}
+09:16:21 USER step-answered | C-030 answer: {"mode":"buttons","options":["got it"]}
+09:19:56 USER step-answered | C-031 answer: {"mode":"buttons","options":["got it"]}
+09:24:49 USER thread | T-039 #3 [Phone heat test: Xcode 'Serious' setting, and can a command …] Did you read this yet ? https://developer.apple.com/documentation/foundation/processinfo/thermalstate-swift.enum/serious
+09:29:15 USER thread | T-039 #7 [Phone heat test: Xcode 'Serious' setting, and can a command …] My idea, it'd be ok to optimize website on serious profile. it'll throttle the resource by default. reduce the noise between warm and cool. And if we can optimize until they running smooth on serious profile. it means they can run in the fair profile (cool temp)
+09:31:49 USER proposal-decision | PR-008 {"value":"accepted","at":"2026-10-03T09:31:49.142Z","who":"user","rev":2,"option":"land-strip-tc"}
+09:33:11 USER thread | T-039 #10 [Phone heat test: Xcode 'Serious' setting, and can a command …] Yes
+09:34:39 USER thread | T-039 #12 [Phone heat test: Xcode 'Serious' setting, and can a command …] Can i try to measurement on Serious profile ? it might be the next milestone after we can make the optimized website smooth on Fair profile.
+09:35:53 USER thread | T-039 #14 [Phone heat test: Xcode 'Serious' setting, and can a command …] Ok, let's document them for the next milestone
+09:36:39 USER thread | T-030 #22 [Research the GPU-Accelerated Properties CSS] Any catch up ?
+09:58:43 USER thread | T-040 #1 [WebKit check at 980 px wide (Simulator).] From WebKit check at 980 px wide (Simulator), hero-exit vs control, pixels only, at most 3 min left Why you don't test it on the real ipad simulator that related or maybe Safari on desktop ?
+10:01:43 USER step-answered | C-032 answer: {"mode":"buttons","options":["It was running","now stopped","It was already off","Not sure"]}
+10:06:34 USER thread | T-039 #19 [Phone heat test: Xcode 'Serious' setting, and can a command …] Can we do B ? do we have any trade-off when we test on serious profile ?
+10:08:42 USER thread | T-039 #21 [Phone heat test: Xcode 'Serious' setting, and can a command …] Let's try to do experiment on B, if you found any blocker. you can report me on this thread. and rollback to A.
+10:09:23 USER thread | T-038 #5 [IDEA: all answer panel could show this answer will sent to w…] Good, thanks
+10:12:14 USER thread | T-039 #23 [Phone heat test: Xcode 'Serious' setting, and can a command …] Or maybe, you can set the serious profile with cli ? i'd like to know you can control them.
+10:16:27 USER thread | T-039 #24 [Phone heat test: Xcode 'Serious' setting, and can a command …] For workaround, if you would like set the Serious profile. i can set it for you.
+10:21:36 USER thread | T-041 #1 [Catch up I-088] Catch up I-088, what's the problem ?
+10:31:04 USER proposal-decision | PR-009 {"value":"accepted","notes":"It's interesting proposal, for the visual it looks like as the same. i'd like to ask you investigate more about the measurement of pixel-identical. how you measure them? and how much of diff % of both compare. \n\nI think we can us…
+10:37:15 USER thread | T-043 #1 [TOOLS: comments feature.] I'd like to add comments feature likes claude artifacts feature. It can put the comments for ask in everywhere in the claude artifacts. if i have any about each elements. My idea: i'd like to put this comments feature into this console that we can ask everywhere i have a questions.
+10:42:20 USER thread | T-044 #1 ["stopped until something else happens" What it means ?] "stopped until something else happens" What it means ?
+10:45:24 USER thread | T-042 #3 [Pixel-identical: how we measure, PR-009 diffs, and a toleran…] Ok, if it's proposed to the team, catch up me.
+10:46:30 USER thread | T-044 #3 ["stopped until something else happens" What it means ?] Good, can we do workaround before waiting tools fix is done ?
+10:54:06 USER thread | T-045 #1 [I'll disconnected iphone] I'll disconnected iphone, re-plan the team. when iphone is back. we can try to measure them the fixed done. we can test them all in iphone device
+10:55:56 USER thread | T-045 #3 [I'll disconnected iphone] I changed my mind. i will not disconnect continue your plan. sorry
+14:30:47 USER-CHAT chat | i can't click any in threads page. it show "Open in a new tab" and it block thread for click, investigate and fix as highest priority
+14:50:18 USER step-skipped | C-033 answer: {"mode":"buttons","options":["1","2","same"]}
+14:50:58 USER thread | T-046 #1 [Plan to do A/B with best build version.] Plan to do A/B with best build version.
+14:51:38 USER thread | T-042 #10 [Pixel-identical: how we measure, PR-009 diffs, and a toleran…] Is it bug ?
+14:55:21 USER thread | T-046 #3 [Plan to do A/B with best build version.] Do you already resolve the hero section of card move and morph of the end of page yet with gpu yet ?
+14:57:01 USER thread | T-046 #5 [Plan to do A/B with best build version.] Let's do both as highest priority
+15:00:40 USER thread | T-047 #1 [I'd like to disconnect the iphone device] I'd like to disconnect the iphone device
+15:10:49 USER thread | T-042 #13 [Pixel-identical: how we measure, PR-009 diffs, and a toleran…] For you information I think this bug might was happen in the proposal page "Try it: scroll the real pages" section. I'm not sure, i was try to see in my iphone. the user carousel work proper in the optimize version.
+15:12:51 USER thread | T-042 #14 [Pixel-identical: how we measure, PR-009 diffs, and a toleran…] and try to open with the new tabs. the user carousel animation work properly. Do you reproduce this bug already ?
+15:21:07 USER proposal-decision | PR-010 {"value":"accepted","notes":"I think the user carousel, we can investigate in the parallel. there might be console issue.","at":"2026-10-03T15:21:07.501Z","who":"user","rev":3,"option":"wide"}
+15:23:14 USER proposal-decision | PR-011 {"value":"accepted","notes":"Same as PR-10, I think the user carousel, we can investigate in the parallel. there might be console issue.","at":"2026-10-03T15:23:14.221Z","who":"user","rev":1,"option":"accept-both"}
+15:24:33 USER thread | T-042 #17 [Pixel-identical: how we measure, PR-009 diffs, and a toleran…] I'd like to know if we adjust image that help the browser engine render smoother ? why ?
+15:27:40 USER thread | T-048 #1 [TOOLS: talk in proposal.] I'd like to ask you add the feature for allow us to talk in proposal for clarify my question. and understand more about each proposal. Let's investigate, design, plan and implement
+15:28:05 USER thread | T-043 #4 [TOOLS: comments feature.] Can i do comments in anywhere of console yet ?
+15:30:56 USER thread | T-042 #20 [Pixel-identical: how we measure, PR-009 diffs, and a toleran…] Yes, i do, let's measure point 3.
+15:32:43 USER thread | T-043 #6 [TOOLS: comments feature.] Why i cannot comments on status and any page ? i was see i can comment only threads inside.
+15:34:29 USER thread | T-048 #4 [TOOLS: talk in proposal.] My idea; just talk likes this threads. so, if your propose is not take a lot of time to implement. it'd be ok.
+15:36:13 USER thread | T-049 #1 [Clean temp file] How much of our temp files can delete without any impact of file that use in this console ?
+15:40:40 USER thread | T-049 #3 [Clean temp file] Delete 1 and 2, let's investigate how can remove some temp file during work. if it's not use. Fyi: this experiment, we'd summarize and writing the article how we can improve following my assumption with loop engineer. we might have to keep the some evidence for reference.
+15:43:24 USER-CHAT chat | Permission granted for: Write a cleanup script for the user to run. You may now retry this command if you would like.
+15:43:52 USER thread | T-049 #5 [Clean temp file] Approved, then investigate how to improve our tools can remove un-used files that is not impact our experiment evidence.
+15:45:53 USER thread | T-047 #3 [I'd like to disconnect the iphone device] iPhone is back, continue the work.
+15:49:39 USER step-answered | C-034 answer: {"mode":"none","options":[]}
+15:52:42 USER thread | T-043 #8 [TOOLS: comments feature.] Fyi: Everywhere means any element we should allow to comment like this session ``` Waiting on you Countdown: 3 faces per digit, no hidden animation (T-024): you: C-033 swipe A/B (cd-strip lands first) Countdown roll as one GPU animation per digit (user-approved, near-identical): you: "C-033 swipe A/B (cd-strip lands first)" Countdown digits as sliding strips (GPU, identical): you: "iPhone back on USB, then C-033 swipe A/B" Steps are on Your steps; anything els…
+15:54:50 USER thread | T-043 #9 [TOOLS: comments feature.] I was see i can comments in some where of each pages like proposal section, list of task status. i didn't check where it already to put comment. As the same expect. it could comment everywhere in the html page.
+15:55:44 USER thread | T-039 #28 [Phone heat test: Xcode 'Serious' setting, and can a command …] Catch up this progress.
+15:59:55 USER thread | T-050 #1 [How do you manage the threads] I wonder all of reply of threads will direct to lead for delegate and answer. I think sometime, i'll send a lot of reply. the bottleneck will go to main session. i'd like to ask you to investigate and delegate how we can manage the reply more effectively.
+16:07:09 USER thread | T-050 #4 [How do you manage the threads] OK, let's try
+16:09:10 USER thread | T-051 #1 [Comment on T-050 #3 "How do you manage the threads #3": I th…] I think it could direct to agent or management agent who work on each topics. lead could to assign each topic who should working on. So, about your proposal. i think we can try. and improvement this later.

@@ -1,0 +1,134 @@
+hero-rest            orig  20261009T132512Z clean n 716 >34 9 >50 3 worst 60 @y 0 690/17/6/3/0/0
+hero-rest            orig  20261009T134136Z clean n 717 >34 8 >50 4 worst 61 @y 0 693/16/4/4/0/0
+hero-rest            g0l   20261009T132633Z clean n 719 >34 1 >50 0 worst 36 @y 0 713/5/1/0/0/0
+hero-rest            g0l   20261009T133819Z clean n 720 >34 0 >50 0 worst 32 @y 0 717/3/0/0/0/0
+hero-fade            orig  20261009T132512Z clean n 653 >34 46 >50 6 worst 98 @y 747 495/112/40/6/0/0
+hero-fade            orig  20261009T134136Z clean n 581 >34 88 >50 36 worst 153 @y 638 417/76/52/28/8/0
+hero-fade            g0l   20261009T132633Z clean n 751 >34 4 >50 3 worst 69 @y 1078 707/40/1/3/0/0
+hero-fade            g0l   20261009T133819Z clean n 743 >34 6 >50 1 worst 80 @y 603 715/22/5/1/0/0
+people-flick         orig  20261009T134759Z clean n 364 >34 19 >50 5 worst 105 @y 846 307/38/14/4/1/0
+people-flick         orig  20261009T144444Z DRIFT n 372 >34 19 >50 7 worst 86 @y 813 318/35/12/7/0/0
+people-flick         g0l   20261009T134853Z clean n 409 >34 4 >50 2 worst 64 @y 697 397/8/2/2/0/0
+people-flick         g0l   20261009T135001Z clean n 416 >34 3 >50 2 worst 68 @y 1351 406/7/1/2/0/0
+people-deck          orig  20261009T135711Z clean n 227 >34 32 >50 13 worst 109 @y 1622 130/65/19/12/1/0
+people-deck          orig  20261009T140304Z clean n 214 >34 53 >50 30 worst 157 @y 1004 133/28/23/26/4/0
+people-deck          g0l   20261009T135904Z clean n 282 >34 0 >50 0 worst 31 @y 1005 257/25/0/0/0/0
+people-deck          g0l   20261009T135954Z clean n 272 >34 0 >50 0 worst 32 @y 1001 256/16/0/0/0/0
+dark-section         orig  20261009T135711Z clean n 72 >34 32 >50 22 worst 361 @y 1953 31/9/10/19/2/1
+dark-section         orig  20261009T140304Z clean n 96 >34 22 >50 9 worst 101 @y 1981 50/24/13/8/1/0
+dark-section         g0l   20261009T135904Z clean n 127 >34 0 >50 0 worst 30 @y 2005 114/13/0/0/0/0
+dark-section         g0l   20261009T135954Z clean n 128 >34 0 >50 0 worst 32 @y 2005 115/13/0/0/0/0
+platform-switch      orig  20261009T135711Z clean n 116 >34 4 >50 1 worst 58 @y 2518 98/14/3/1/0/0
+platform-switch      orig  20261009T140304Z clean n 114 >34 4 >50 1 worst 54 @y 2510 95/15/3/1/0/0
+platform-switch      g0l   20261009T135904Z clean n 123 >34 1 >50 0 worst 37 @y 2506 111/11/1/0/0/0
+platform-switch      g0l   20261009T135954Z clean n 124 >34 0 >50 0 worst 32 @y 2510 113/11/0/0/0/0
+slow-approach        orig  20261009T135711Z clean n 911 >34 93 >50 43 worst 361 @y 1953 670/148/50/38/4/1
+slow-approach        orig  20261009T140304Z clean n 911 >34 104 >50 51 worst 172 @y 1836 687/120/53/44/7/0
+slow-approach        g0l   20261009T135904Z clean n 1092 >34 5 >50 1 worst 64 @y 618 1010/77/4/1/0/0
+slow-approach        g0l   20261009T135954Z clean n 1086 >34 4 >50 1 worst 62 @y 627 1019/63/3/1/0/0
+end-push6            orig  20261009T140920Z clean n 2799 >34 875 >50 429 worst 349 @y 5213 1006/918/446/355/60/14
+end-push6            orig  20261009T142230Z DRIFT n 3870 >34 474 >50 197 worst 496 @y 5214 1687/1709/277/159/33/5
+end-push6            orig  20261009T144540Z DRIFT n 3522 >34 562 >50 259 worst 494 @y 5213 1866/1094/303/210/42/7
+end-push6            g0l   20261009T141903Z DRIFT n 2558 >34 67 >50 10 worst 69 @y 5689 2202/289/57/10/0/0
+ar-menu-pushes       orig  20261010T040615Z DRIFT n 1147 >34 174 >50 64 worst 725 @y 5213 575/398/110/52/8/4
+ar-menu-pushes       orig  20261010T041207Z DRIFT n 1299 >34 139 >50 38 worst 647 @y 5215 673/487/101/31/5/2
+ar-menu-pushes       v14   20261010T040835Z DRIFT n 1692 >34 28 >50 5 worst 106 @y 5915 1516/148/23/4/1/0
+ar-menu-pushes       v14   20261010T041016Z DRIFT n 1713 >34 15 >50 6 worst 87 @y 5495 1549/149/9/6/0/0
+ar-carousel-rest     orig  20261010T042754Z clean n 674 >34 17 >50 3 worst 79 @y 1711 581/76/14/3/0/0
+ar-carousel-rest     orig  20261010T043046Z clean n 671 >34 20 >50 1 worst 59 @y 1708 576/75/19/1/0/0
+ar-carousel-rest     g0m   20261010T042903Z clean n 720 >34 0 >50 0 worst 21 @y 1713 717/3/0/0/0/0
+ar-carousel-rest     g0m   20261010T042952Z clean n 721 >34 0 >50 0 worst 21 @y 1711 718/3/0/0/0/0
+ar-ptitle-v1-title   orig  20261010T043157Z clean n 577 >34 3 >50 1 worst 58 @y 520 534/40/2/1/0/0
+ar-ptitle-v1-title   orig  20261010T043411Z clean n 584 >34 7 >50 1 worst 56 @y 520 546/31/6/1/0/0
+ar-ptitle-v1-title   g0m   20261010T043251Z clean n 590 >34 2 >50 0 worst 37 @y 516 576/12/2/0/0/0
+ar-ptitle-v1-title   g0m   20261010T043332Z clean n 587 >34 2 >50 0 worst 38 @y 407 575/10/2/0/0/0
+ar-ptitle-v2-back    orig  20261010T071555Z clean n 545 >34 53 >50 13 worst 101 @y 1072 431/61/40/12/1/0
+ar-ptitle-v2-back    orig  20261010T071845Z clean n 541 >34 52 >50 15 worst 76 @y 1106 430/59/37/15/0/0
+ar-ptitle-v2-back    g0m   20261010T071706Z clean n 628 >34 3 >50 1 worst 51 @y 841 592/33/2/1/0/0
+ar-ptitle-v2-back    g0m   20261010T071753Z clean n 622 >34 3 >50 1 worst 66 @y 833 596/23/2/1/0/0
+{
+ "orig": {
+  "runs": [
+   "20261009T135711Z-wc-middle-orig",
+   "20261009T140304Z-wc-middle-orig"
+  ],
+  "n": 1822,
+  "gt34": 197,
+  "gt50": 94,
+  "worst": 361,
+  "bins": [
+   {
+    "bin": "0-20",
+    "count": 1357,
+    "share": 0.7448
+   },
+   {
+    "bin": "20-34",
+    "count": 268,
+    "share": 0.1471
+   },
+   {
+    "bin": "34-50",
+    "count": 103,
+    "share": 0.0565
+   },
+   {
+    "bin": "50-100",
+    "count": 82,
+    "share": 0.045
+   },
+   {
+    "bin": "100-200",
+    "count": 11,
+    "share": 0.006
+   },
+   {
+    "bin": ">200",
+    "count": 1,
+    "share": 0.0005
+   }
+  ]
+ },
+ "g0l": {
+  "runs": [
+   "20261009T135904Z-wc-middle-g0l",
+   "20261009T135954Z-wc-middle-g0l"
+  ],
+  "n": 2178,
+  "gt34": 9,
+  "gt50": 2,
+  "worst": 64,
+  "bins": [
+   {
+    "bin": "0-20",
+    "count": 2029,
+    "share": 0.9316
+   },
+   {
+    "bin": "20-34",
+    "count": 140,
+    "share": 0.0643
+   },
+   {
+    "bin": "34-50",
+    "count": 7,
+    "share": 0.0032
+   },
+   {
+    "bin": "50-100",
+    "count": 2,
+    "share": 0.0009
+   },
+   {
+    "bin": "100-200",
+    "count": 0,
+    "share": 0
+   },
+   {
+    "bin": ">200",
+    "count": 0,
+    "share": 0
+   }
+  ]
+ }
+}

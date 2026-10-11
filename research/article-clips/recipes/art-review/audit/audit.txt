@@ -1,0 +1,134 @@
+== A. user-swipe runs, wc-read windows (finger -> end; herouser first touch -> last + 3 s), band split
+20261010T110844Z-ar-herocatch-orig  window 32.5 s  thermal Serious 36.59 -> Serious 38.59
+   heroOnly  n   175 >34   42 >50   27 max 138  bins 108/25/15/21/6/0  (4.9 s)
+   overlap   n   461 >34   88 >50   38 max 150  bins 303/70/50/34/4/0  (11.0 s)
+   o         n   118 >34   99 >50   49 max 144  bins 0/19/50/46/3/0  (6.3 s)
+   rest      n   549 >34   36 >50   13 max 118  bins 429/84/23/12/1/0  (10.3 s)
+   all       n  1303 >34  265 >50  127 max 150  bins 840/198/138/113/14/0  (32.5 s)
+20261010T111421Z-ar-herocatch-orig  window 32.7 s  thermal Serious 36.59 -> Serious 38.59
+   heroOnly  n   156 >34   42 >50   30 max 146  bins 90/24/12/24/6/0  (4.8 s)
+   overlap   n   446 >34   79 >50   44 max 154  bins 300/67/35/41/3/0  (10.7 s)
+   o         n   124 >34   97 >50   43 max 144  bins 0/27/54/37/6/0  (6.4 s)
+   rest      n   559 >34   36 >50   17 max 138  bins 434/89/19/15/2/0  (10.8 s)
+   all       n  1285 >34  254 >50  134 max 154  bins 824/207/120/117/17/0  (32.6 s)
+  POOLED herocatch orig:
+   heroOnly  n   331 >34   84 >50   57 max 146  bins 198/49/27/45/12/0  (9.7 s)
+   overlap   n   907 >34  167 >50   82 max 154  bins 603/137/85/75/7/0  (21.7 s)
+   o         n   242 >34  196 >50   92 max 144  bins 0/46/104/83/9/0  (12.7 s)
+   rest      n  1108 >34   72 >50   30 max 138  bins 863/173/42/27/3/0  (21.1 s)
+   all       n  2588 >34  519 >50  261 max 154  bins 1664/405/258/230/31/0  (65.2 s)
+20261010T111040Z-ar-herocatch-g0m  window 31.0 s  thermal Serious 36.59 -> Serious 38.59
+   heroOnly  n   261 >34    9 >50    2 max 53  bins 242/10/7/2/0/0  (4.6 s)
+   overlap   n   612 >34   25 >50    3 max 89  bins 513/74/22/3/0/0  (10.7 s)
+   o         n   381 >34    4 >50    0 max 46  bins 366/11/4/0/0/0  (6.4 s)
+   rest      n   554 >34    2 >50    1 max 52  bins 499/53/1/1/0/0  (9.3 s)
+   all       n  1808 >34   40 >50    6 max 89  bins 1620/148/34/6/0/0  (31.0 s)
+20261010T111222Z-ar-herocatch-g0m  window 30.1 s  thermal Serious 36.59 -> Serious 38.59
+   heroOnly  n   265 >34    9 >50    1 max 52  bins 239/17/8/1/0/0  (4.6 s)
+   overlap   n   577 >34    8 >50    1 max 54  bins 492/77/7/1/0/0  (9.8 s)
+   o         n   382 >34    2 >50    0 max 41  bins 365/15/2/0/0/0  (6.4 s)
+   rest      n   557 >34    2 >50    0 max 42  bins 518/37/2/0/0/0  (9.3 s)
+   all       n  1781 >34   21 >50    2 max 54  bins 1614/146/19/2/0/0  (30.1 s)
+  POOLED herocatch g0m:
+   heroOnly  n   526 >34   18 >50    3 max 53  bins 481/27/15/3/0/0  (9.2 s)
+   overlap   n  1189 >34   33 >50    4 max 89  bins 1005/151/29/4/0/0  (20.5 s)
+   o         n   763 >34    6 >50    0 max 46  bins 731/26/6/0/0/0  (12.8 s)
+   rest      n  1111 >34    4 >50    1 max 52  bins 1017/90/3/1/0/0  (18.6 s)
+   all       n  3589 >34   61 >50    8 max 89  bins 3234/294/53/8/0/0  (61.1 s)
+20261010T104514Z-ar-herouser-orig  window 15.1 s  thermal None None -> None None
+   heroOnly  n    52 >34   26 >50   14 max 103  bins 16/10/12/13/1/0  (2.0 s)
+   overlap   n   256 >34   33 >50   11 max 96  bins 177/46/22/11/0/0  (5.6 s)
+   o         n   219 >34   29 >50    8 max 89  bins 12/178/21/8/0/0  (6.4 s)
+   rest      n    71 >34    0 >50    0 max 31  bins 66/5/0/0/0/0  (1.2 s)
+   all       n   598 >34   88 >50   33 max 103  bins 271/239/55/32/1/0  (15.1 s)
+20261010T104634Z-ar-herouser-g0m  window 21.9 s  thermal None None -> None None
+   heroOnly  n   190 >34    1 >50    0 max 41  bins 179/10/1/0/0/0  (3.2 s)
+   overlap   n   349 >34    0 >50    0 max 32  bins 335/14/0/0/0/0  (5.8 s)
+   o         n   529 >34    2 >50    0 max 44  bins 501/26/2/0/0/0  (8.9 s)
+   rest      n    63 >34    1 >50    0 max 39  bins 59/3/1/0/0/0  (1.1 s)
+   all       n  1131 >34    4 >50    0 max 44  bins 1074/53/4/0/0/0  (18.9 s)
+20261010T105127Z-ar-herofinger-orig  window 30.3 s  thermal Serious 37.39 -> Serious 38.89
+   heroOnly  n   476 >34   82 >50   36 max 124  bins 315/79/46/32/4/0  (11.3 s)
+   overlap   n    41 >34   33 >50   25 max 146  bins 3/5/8/20/5/0  (2.5 s)
+   o         n   131 >34   29 >50   10 max 126  bins 82/20/19/4/6/0  (3.6 s)
+   rest      n   616 >34   60 >50   30 max 107  bins 474/82/30/26/4/0  (12.9 s)
+   all       n  1264 >34  204 >50  101 max 146  bins 874/186/103/82/19/0  (30.3 s)
+20261010T105719Z-ar-herofinger-orig  window 29.6 s  thermal Serious 37.39 -> Serious 38.89
+   heroOnly  n   529 >34   59 >50   25 max 100  bins 400/70/34/25/0/0  (11.0 s)
+   overlap   n    51 >34   31 >50   16 max 137  bins 10/10/15/13/3/0  (2.2 s)
+   o         n    93 >34   11 >50    8 max 133  bins 75/7/3/7/1/0  (2.2 s)
+   rest      n   684 >34   67 >50   34 max 154  bins 537/80/33/32/2/0  (14.2 s)
+   all       n  1357 >34  168 >50   83 max 154  bins 1022/167/85/77/6/0  (29.6 s)
+  POOLED herofinger orig:
+   heroOnly  n  1005 >34  141 >50   61 max 124  bins 715/149/80/57/4/0  (22.4 s)
+   overlap   n    92 >34   64 >50   41 max 146  bins 13/15/23/33/8/0  (4.7 s)
+   o         n   224 >34   40 >50   18 max 133  bins 157/27/22/11/7/0  (5.8 s)
+   rest      n  1300 >34  127 >50   64 max 154  bins 1011/162/63/58/6/0  (27.0 s)
+   all       n  2621 >34  372 >50  184 max 154  bins 1896/353/188/159/25/0  (59.9 s)
+20261010T105336Z-ar-herofinger-g0m  window 28.3 s  thermal Serious 37.39 -> Serious 38.89
+   heroOnly  n   577 >34    5 >50    3 max 75  bins 545/27/2/3/0/0  (9.8 s)
+   overlap   n   149 >34    3 >50    0 max 37  bins 140/6/3/0/0/0  (2.5 s)
+   o         n   203 >34    1 >50    0 max 45  bins 199/3/1/0/0/0  (3.4 s)
+   rest      n   747 >34    9 >50    0 max 49  bins 703/35/9/0/0/0  (12.6 s)
+   all       n  1676 >34   18 >50    3 max 75  bins 1587/71/15/3/0/0  (28.3 s)
+20261010T105519Z-ar-herofinger-g0m  window 28.4 s  thermal Serious 37.39 -> Serious 38.89
+   heroOnly  n   422 >34    4 >50    2 max 74  bins 394/24/2/2/0/0  (7.2 s)
+   overlap   n   137 >34    2 >50    0 max 45  bins 128/7/2/0/0/0  (2.3 s)
+   o         n   243 >34    1 >50    1 max 74  bins 240/2/0/1/0/0  (4.1 s)
+   rest      n   884 >34    9 >50    1 max 52  bins 838/37/8/1/0/0  (14.9 s)
+   all       n  1686 >34   16 >50    4 max 74  bins 1600/70/12/4/0/0  (28.5 s)
+  POOLED herofinger g0m:
+   heroOnly  n   999 >34    9 >50    5 max 75  bins 939/51/4/5/0/0  (16.9 s)
+   overlap   n   286 >34    5 >50    0 max 45  bins 268/13/5/0/0/0  (4.8 s)
+   o         n   446 >34    2 >50    1 max 74  bins 439/5/1/1/0/0  (7.5 s)
+   rest      n  1631 >34   18 >50    1 max 52  bins 1541/72/17/1/0/0  (27.4 s)
+   all       n  3362 >34   34 >50    7 max 75  bins 3187/141/27/7/0/0  (56.7 s)
+
+== B. clip windows (movie s, strips.py stats), band split
+clip1 hero-gesture-long          20261010T110844Z orig n   448 >34  104 >50   47 max 134  bins 270/74/57/44/3/0  >80ms [134, 108, 107, 98, 97, 96, 93, 88, 83, 82]
+      heroOnly 19/11 (n 107)  overlap 35/10 (n 202)  o 44/22 (n 52)  rest 6/4 (n 87)
+clip1 hero-gesture-long          20261010T111222Z g0m  n   680 >34    9 >50    2 max 54  bins 619/52/7/2/0/0  >80ms []
+      heroOnly 4/1 (n 143)  overlap 5/1 (n 296)  o 0/0 (n 165)  rest 0/0 (n 76)
+hero-cards-return (v63 Day 5)    20261010T110844Z orig n   157 >34   46 >50   25 max 134  bins 84/27/21/23/2/0  >80ms [134, 107, 98]
+      heroOnly 14/11 (n 36)  overlap 9/4 (n 30)  o 17/6 (n 19)  rest 6/4 (n 72)
+hero-cards-return (v63 Day 5)    20261010T111222Z g0m  n   258 >34    4 >50    0 max 43  bins 236/18/4/0/0/0  >80ms []
+      heroOnly 3/0 (n 66)  overlap 1/0 (n 74)  o 0/0 (n 58)  rest 0/0 (n 60)
+clip2 stop-1x                    20261010T110844Z orig n    76 >34   24 >50    6 max 73  bins 30/22/18/6/0/0  >80ms []
+      heroOnly 1/0 (n 16)  overlap 8/1 (n 39)  o 15/5 (n 21)  rest 0/0 (n 0)
+clip2 stop-1x                    20261010T111222Z g0m  n   128 >34    2 >50    2 max 54  bins 120/6/0/2/0/0  >80ms []
+      heroOnly 1/1 (n 15)  overlap 1/1 (n 57)  o 0/0 (n 56)  rest 0/0 (n 0)
+Day8 stop-2x                     20261010T110844Z orig n    47 >34   21 >50    5 max 68  bins 10/16/16/5/0/0  >80ms []
+      heroOnly 0/0 (n 0)  overlap 6/0 (n 26)  o 15/5 (n 21)  rest 0/0 (n 0)
+Day8 stop-2x                     20261010T111222Z g0m  n    95 >34    1 >50    1 max 54  bins 91/3/0/1/0/0  >80ms []
+      heroOnly 0/0 (n 0)  overlap 1/1 (n 39)  o 0/0 (n 56)  rest 0/0 (n 0)
+Day8 stop-full                   20261010T110844Z orig n   171 >34   31 >50    6 max 73  bins 106/34/25/6/0/0  >80ms []
+      heroOnly 5/0 (n 71)  overlap 11/1 (n 76)  o 15/5 (n 21)  rest 0/0 (n 3)
+Day8 stop-full                   20261010T111222Z g0m  n   236 >34    2 >50    2 max 54  bins 222/12/0/2/0/0  >80ms []
+      heroOnly 1/1 (n 77)  overlap 1/1 (n 99)  o 0/0 (n 56)  rest 0/0 (n 4)
+old day5-hero (v62)              20261009T132512Z orig n   371 >34   26 >50    4 max 98  bins 287/58/22/4/0/0  >80ms [98, 85]
+      heroOnly 11/1 (n 205)  overlap 15/3 (n 85)  o 0/0 (n 53)  rest 0/0 (n 28)
+old day5-hero (v62)              20261009T132633Z g0l  n   429 >34    1 >50    1 max 60  bins 404/24/0/1/0/0  >80ms []
+      heroOnly 0/0 (n 223)  overlap 1/1 (n 117)  o 0/0 (n 54)  rest 0/0 (n 35)
+middle clip                      20261009T135711Z orig n    34 >34   23 >50   19 max 361  bins 10/1/4/14/4/1  >80ms [361, 137, 128, 109, 107, 92, 89]
+      heroOnly 0/0 (n 0)  overlap 0/0 (n 0)  o 0/0 (n 0)  rest 23/19 (n 34)
+middle clip                      20261009T135904Z g0l  n   132 >34    0 >50    0 max 30  bins 123/9/0/0/0/0  >80ms []
+      heroOnly 0/0 (n 0)  overlap 0/0 (n 0)  o 0/0 (n 0)  rest 0/0 (n 132)
+
+== C. Fig 13/14 slow approach (approach -> approach-end)
+20261009T135711Z-wc-middle-orig  19.37 s  fps 47.0  y 0-3522  n   911 >34   93 >50   43 max 361  bins 670/148/50/38/4/1
+20261009T140304Z-wc-middle-orig  19.76 s  fps 46.1  y 0-3514  n   911 >34  104 >50   51 max 172  bins 687/120/53/44/7/0
+  POOLED orig: n  1822 >34  197 >50   94 max 361  bins 1357/268/103/82/11/1  fps 46.6  shares 74.48% 14.71% 5.65% 4.50% 0.60% 0.05%
+20261009T135904Z-wc-middle-g0l  18.31 s  fps 59.6  y 0-3514  n  1092 >34    5 >50    1 max 64  bins 1010/77/4/1/0/0
+20261009T135954Z-wc-middle-g0l  18.21 s  fps 59.6  y 0-3518  n  1086 >34    4 >50    1 max 62  bins 1019/63/3/1/0/0
+  POOLED g0l: n  2178 >34    9 >50    2 max 64  bins 2029/140/7/2/0/0  fps 59.6  shares 93.16% 6.43% 0.32% 0.09% 0.00% 0.00%
+
+== D. per-stop "o" windows (bands.mjs o class, contiguous runs), mean dt
+20261010T104514Z-ar-herouser-orig: open@y638 36fr 0.94s mean 26.2 | close@y133 32fr 0.88s mean 27.4 | open@y741 35fr 0.93s mean 26.5 | close@y105 31fr 0.90s mean 29.2 | open@y741 24fr 0.91s mean 37.8 | close@y179 32fr 0.88s mean 27.6 | open@y779 29fr 0.93s mean 31.9
+20261010T104634Z-ar-herouser-g0m: open@y781 55fr 0.92s mean 16.7 | close@y203 55fr 0.92s mean 16.7 | open@y788 55fr 0.92s mean 16.7 | close@y221 55fr 0.92s mean 16.7 | open@y765 55fr 0.92s mean 16.7 | close@y215 55fr 0.92s mean 16.7 | open@y726 55fr 0.92s mean 16.7 | close@y201 53fr 0.92s mean 17.3 | open@y781 55fr 0.92s mean 16.7 | close@y193 36fr 0.62s mean 17.1
+20261010T110844Z-ar-herocatch-orig: open@y635 21fr 0.91s mean 43.2 | close@y76 19fr 0.91s mean 47.9 | open@y702 12fr 0.91s mean 75.8 | close@y39 20fr 0.89s mean 44.2 | open@y696 13fr 0.92s mean 71.1 | close@y167 22fr 0.89s mean 40.5 | open@y839 11fr 0.86s mean 78.2
+20261010T111421Z-ar-herocatch-orig: open@y617 21fr 0.93s mean 44.5 | close@y143 22fr 0.89s mean 40.4 | open@y733 14fr 0.95s mean 68.2 | close@y66 20fr 0.90s mean 44.8 | open@y714 13fr 0.90s mean 69.3 | close@y193 22fr 0.91s mean 41.1 | open@y877 12fr 0.89s mean 74.3
+20261010T111040Z-ar-herocatch-g0m: open@y633 56fr 0.93s mean 16.5 | close@y213 54fr 0.91s mean 16.8 | open@y728 56fr 0.93s mean 16.5 | close@y220 54fr 0.91s mean 16.8 | open@y727 56fr 0.92s mean 16.5 | close@y217 51fr 0.91s mean 17.8 | open@y850 54fr 0.92s mean 17.0
+20261010T111222Z-ar-herocatch-g0m: open@y637 56fr 0.93s mean 16.5 | close@y214 54fr 0.91s mean 16.8 | open@y730 55fr 0.91s mean 16.5 | close@y233 54fr 0.91s mean 16.8 | open@y692 56fr 0.93s mean 16.5 | close@y215 53fr 0.91s mean 17.1 | open@y834 54fr 0.92s mean 17.0
+
+== E. Fig 3 worst array: 128 frames, 3601 ms, >34 32, >50 17
+   found in 134136Z frames at t 19665-23242, y 418-780
