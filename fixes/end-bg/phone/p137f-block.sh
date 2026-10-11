@@ -19,6 +19,10 @@ if [ "$P137F_DRY" != 1 ]; then
   node tools/iphone.mjs preflight --owner "$R" > $LG/preflight-$(date +%s).log 2>&1; pe=$?
   [ $pe -eq 0 ] || { echo "BLOCK STOP preflight exit $pe (see $LG/preflight-*.log)"; exit 9; }
   echo "PREFLIGHT ok $(date -u +%TZ)"
+  # after another block's heat test the phone starts hot: cool below 38.5 C first (at most 25 min) so the rearm's
+  # plain read can reach Fair within its own 10 min (2026-10-11, try 2)
+  node tools/wait.mjs phone-temp --below 38.5 --timeout 1500 --owner "$R" --reason "P-137o block 2: cool before the thermal re-arm" > $LG/precool-$(date +%s).log 2>&1
+  echo "PRECOOL exit $? $(date -u +%TZ)"
   RL=$LG/rearm-$(date +%s).log
   node tools/iphone.mjs rearm --owner "$R" --settle 120 > $RL 2>&1; re=$?
   echo "REARM exit $re: $(grep -E '^REARM' $RL | tail -1 | cut -c1-160)"
