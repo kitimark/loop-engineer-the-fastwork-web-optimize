@@ -505,3 +505,37 @@ placeholder, and no apple.com run records.
 - `floor/heat-floor.html`: the floor page. sha256/12 `30098372d8c1`.
 - `heat.check.mjs`: checks of the scorer on synthetic samples (held, exclusion over 0-360 s, end-of-session re-run, fallback restart with an aborted attempt, sessions in different charge states, fallback gate timeout before and after attempt 2 wrote a segment, system power kept and reported without changing a verdict): `node --test research/phone-heat/heat.check.mjs`, 9 pass. The two fallback-restart checks fail on the 08b7978 scorer, and the marker check fails on the 98da974 scorer.
 - Results (after data): `results.json` and `samples.jsonl` (derived, LAN-scrubbed), plus a result section here.
+
+## P-068b: the later builds, 2026-10-11
+
+Runner: cap-heat-builds (user request: add the later versions to the article's heat figure, Fig. 6 = P-068). Same
+routine, same per-segment scorer, same start window and charging rule as P-068 above; only the arms and the dates
+differ. **Real heat from a cool start, as P-068: no tool-held Serious** (no Xcode or `thermal.mjs` condition; the
+runs carry the I-186 profile `fair` = Nominal or Fair, not induced, checked at each segment hold's start and end).
+All numbers in this section are OBSERVED (one phone, our setup).
+
+### Plan (written before data, 00:02Z; the block was queued behind cap-end-orig at 00:01Z)
+
+| arm | page | served from (plain http, fixed fresh ports 6391-6394, `--vendors=local --latency 150`) | identity (sha256/12) |
+|---|---|---|---|
+| **F** floor | `http://lan:6391/heat-floor.html` | `--root site-pretty --overlay research/phone-heat/floor` | `30098372d8c1` (as P-068) |
+| **B** original | `http://lan:6392/` | `--root site-pretty` | snapshot `b1789284481295-a455e793`: JS `4606120cf392`, CSS `27776f3d4138` |
+| **V** = v6 (B-R2, 10-04) | `http://lan:6393/` | `--overlay out/p068b/snap/V6` (read-only copy of the immutable snapshot `best-BR2-8018ce062d30`) | JS `8018ce062d30`, CSS `71b65c667720` |
+| **M** = g0.0m (best since 10-10) | `http://lan:6394/` | `--overlay out/p068b/snap/M` (read-only copy of `fix.mjs apply g0-0m --reset` at e4512256) | JS `37af49aef32b`, CSS `7a8ecdd8f8e4` |
+
+- Sessions: **H1 F, B, V, M** and **H2 M, V, B, F** (ABCD DCBA), back to back, one uncounted W warm-up per arm's port
+  before H1 (A3). Every segment: `heat.mjs charge-wait --want held`, then cool to < 37.0 °C with `wait.mjs phone-temp`
+  (or pre-warm on B below 36.0), then the served JS/CSS hash check, then one `chrome-measure --no-timing` hold with
+  `iphone.mjs profile --profile fair` (the hold's start read) and `heat.mjs segment ... --profile fair`.
+  Runner: `research/phone-heat/p068b.sh` (`serve`, `hcheck`, `all`); score: `research/phone-heat/p068b-score.mjs`.
+- **Scorer:** P-068's `scoreSegments` unchanged (60-360 s OLS, corrected to 37.0 °C, k 0.045). `heat.mjs` changed in
+  two places only, for this block: the segment accepts the arms V and M, and passes `--profile` to its `iphone.mjs run`
+  cycles (I-186 made a thermal profile mandatory after P-068, default Xcode-induced Serious). sha256/12 `b0bf129980e2`
+  (was `1ca63e2b4d11`); `heat.check.mjs` 9/9 pass.
+- **Comparisons** (descriptive, P-068's "fixes vs baseline" rule, read per pair): B − V, B − M and V − M; "cooler"
+  when the delta is ≥ +0.05 °C/min in both sessions, "no detectable change" when |delta| < 0.05 in both, else
+  inconclusive; a raw-slope sign disagreement is labelled start-sensitive. Plus the floor check and each arm's excess
+  over F.
+- **Prediction (pre-data), corrected slope °C/min:** F −0.10 [−0.20, +0.05]; B 0.45 [0.30, 0.65] (as 3 Oct);
+  V 0.20 [0.05, 0.35] (v6 = v3 + the GPU shimmer and the GPU hero-card fades; the countdown moved to the GPU only in v7, fixes/BEST_BUILDS.md); M 0.05 [−0.10, +0.20] (countdown on
+  the GPU since v7, less work at rest). B − M ≥ 0.05 in both sessions ("M cooler than B") ~85 %; V − M "M cooler" ~55 %.

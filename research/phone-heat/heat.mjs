@@ -5,7 +5,8 @@
 //
 //   node research/phone-heat/heat.mjs keys                      # AppleSmartBattery key NAMES (no values), depth <= 2
 //   node research/phone-heat/heat.mjs once [--label l]          # one battery sample to stdout (whitelisted keys)
-//   node research/phone-heat/heat.mjs segment --session H1|H2 --seg <n> --arm F|A|B|X --url <u> --owner <o>
+//   node research/phone-heat/heat.mjs segment --session H1|H2 --seg <n> --arm F|A|B|X|V|M --url <u> --owner <o>
+//        [--profile fair|serious|real-serious] (P-068b: passed to every iphone.mjs run; the arms V and M are P-068b's)
 //        [--charge-mode held|charging] [--attempt 1] [--seconds 360] [--every 30] [--out out/phone-heat/samples.jsonl] [--dry-run]
 //        # open <u>; battery every --every s from t=0 to t=--seconds; back-to-back `iphone.mjs run` W cycles
 //        # (the ticket's routine) until t=--seconds; then park. Appends samples + one segment line to --out.
@@ -113,7 +114,10 @@ const flag = (n) => argv.includes(`--${n}`);
 
 async function segment() {
   const session = opt('session'), seg = opt('seg'), arm = opt('arm'), url = opt('url'), owner = opt('owner');
-  if (!/^H[12]$/.test(session || '') || !/^\d+$/.test(seg || '') || !/^[FABX]$/.test(arm || '') || !url || !owner) throw new Error('segment needs --session H1|H2 --seg <n> --arm F|A|B|X --url <u> --owner <o>');
+  if (!/^H[12]$/.test(session || '') || !/^\d+$/.test(seg || '') || !/^[FABXVM]$/.test(arm || '') || !url || !owner) throw new Error('segment needs --session H1|H2 --seg <n> --arm F|A|B|X|V|M --url <u> --owner <o>');
+  // P-068b (10-11): since I-186 every iphone.mjs run has a thermal profile (default serious = Xcode-induced); a real-heat
+  // segment from a cool start passes --profile fair. Without --profile the cycles run exactly as in P-068.
+  const profile = opt('profile');
   const chargeMode = opt('charge-mode', 'held'), attempt = Number(opt('attempt', 1));
   if (!Number.isInteger(attempt) || attempt < 1) throw new Error('--attempt is a whole number >= 1');
   if (!['held', 'charging'].includes(chargeMode)) throw new Error('--charge-mode is held or charging');
@@ -151,7 +155,7 @@ async function segment() {
     const start = sOf();
     const r = await sh(['run', '--driver', 'window', '--probe', 'std', '--from', '0', '--to', '5000', '--idle', '20', '--hold', '3', '--sentinel', '0',
       '--settle', '8', '--no-park', '--low-power', 'off', '--arm', arm, '--block', `heat-${session}`, '--run', `${id}-c${n}`, '--label', `heat-${id}-c${n}`,
-      '--owner', owner, '--doing', `phone heat ${id} cycle ${n}`]);
+      '--owner', owner, '--doing', `phone heat ${id} cycle ${n}`, ...(profile ? ['--profile', profile] : [])]);
     cycles.push({ n, start, end: sOf(), exit: r.code });
     fails = r.code === 0 ? 0 : fails + 1;
     if (dry) await new Promise((res) => setTimeout(res, 50));
@@ -160,7 +164,7 @@ async function segment() {
   if (voided) timers.forEach(clearTimeout);
   while (pending || (!voided && Date.now() - t0 < seconds * 1000 + 500)) await new Promise((res) => setTimeout(res, 250));
   await sh(['park', '--owner', owner]);
-  write({ kind: 'segment', id, session, attempt, seg: Number(seg), arm, chargeMode, url: lanSafeUrl(url), t0: new Date(t0).toISOString(), seconds, every, idlePhase, cycles, void: voided });
+  write({ kind: 'segment', id, session, attempt, seg: Number(seg), arm, chargeMode, ...(profile ? { profile } : {}), url: lanSafeUrl(url), t0: new Date(t0).toISOString(), seconds, every, idlePhase, cycles, void: voided });
   console.log(`SEGMENT ${id} ${voided ? 'VOID (' + voided + ')' : 'DONE'}: ${cycles.length} cycles; ${out}`);
 }
 
