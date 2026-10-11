@@ -12,20 +12,26 @@
 #        sh research/article-clips/upload-cf-stream.sh day8-menu-60fps-strip     # one test clip first
 #        sh research/article-clips/upload-cf-stream.sh                           # all 19, in page order
 #        sh research/article-clips/upload-cf-stream.sh --delete <uid>            # remove one upload
+#        sh research/article-clips/upload-cf-stream.sh --tag                     # name the clips already in the .tsv
 #   4. Paste each "medium" link from research/article-clips/cf-stream-links.tsv on its own line in Medium;
 #      commit that file after each upload run (it holds only public ids and links, never the token).
 #
 # API (Cloudflare Stream docs, uploading-videos/upload-video-file): POST form file=@clip to
 # /client/v4/accounts/{account_id}/stream (basic upload, files under 200 MB). The clips have no audio track.
 # Already-uploaded clips (a row in the .tsv) are skipped, so a rerun resumes.
+# Every upload is named "$PREFIX/<clip>.mp4" and its creator set to $PREFIX, so the dashboard search and the list API
+# (?search=, ?creator=) find this study's clips apart from anything else (owner T-170 #285). Basic uploads take these
+# only afterwards: POST /stream/{uid} with {"meta":{"name":..},"creator":..} (docs: manage-video-library/creator-id).
 set -eu
 DIR=out/article-video
 OUT=research/article-clips/cf-stream-links.tsv   # committed (owner T-170 #268): clip, video id, Medium link, ready; no secrets
 ALL="hero-gesture-long-60fps-strip hero-gesture-stop-1x-strip opening-carousel-1x-strip end-openclose-take-60fps-strip day3-carousel-60fps-strip end-openclose-take-2x-strip hero-gesture-stop-2x-strip hero-gesture-stop-full-60fps-strip day8-navrise-closeup-2x day8-menu-60fps-strip day8-menu-2x-strip day9-join-closeup-2x-hq day9-logo-closeup-2x-hq day10-people-60fps-strip day10-people-wc-60fps-strip day11-reveal-60fps-strip day11-reveal-2x-strip hero-cards-return-60fps-strip middle-60fps-strip"
 PARAMS="loop=true&autoplay=true&muted=true"
+PREFIX=${CF_STREAM_PREFIX:-fastwork-web-optimize}
 
-DRY=0; DEL=""
+DRY=0; DEL=""; TAG=0
 case "${1:-}" in
+  --tag) TAG=1; shift ;;
   --dry-run) DRY=1; shift ;;
   --delete) DEL="${2:?--delete needs a video uid}"; shift 2 ;;
 esac
@@ -54,6 +60,18 @@ field() { node -e '
     console.log(v == null ? "" : String(v));
   })' "$1"; }
 
+# Name one upload "$PREFIX/<clip>.mp4" and set its creator to $PREFIX.
+tag() { curl -sS -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  --data "{\"meta\":{\"name\":\"$PREFIX/$2.mp4\"},\"creator\":\"$PREFIX\"}" "$API/$1" | field meta.name; }
+
+if [ "$TAG" = 1 ]; then
+  [ -f "$OUT" ] || { echo "no $OUT yet: nothing to name"; exit 1; }
+  tail -n +2 "$OUT" | while IFS="$(printf '\t')" read -r c uid link ready; do
+    echo "named $uid: $(tag "$uid" "$c")"
+  done
+  exit 0
+fi
+
 if [ -n "$DEL" ]; then
   curl -sS -X DELETE -H "Authorization: Bearer $TOKEN" "$API/$DEL" -o /dev/null -w "delete $DEL: HTTP %{http_code}\n"
   exit 0
@@ -65,6 +83,7 @@ for c in $CLIPS; do
   echo "upload $c ..."
   resp=$(curl -sS -X POST -H "Authorization: Bearer $TOKEN" --form "file=@$DIR/$c.mp4" "$API")
   uid=$(printf '%s' "$resp" | field uid)
+  echo "named: $(tag "$uid" "$c")"
   ready=false; i=0
   while [ "$ready" != true ] && [ $i -lt 60 ]; do      # wait up to ~2 min for encoding
     sleep 2; i=$((i + 1))
