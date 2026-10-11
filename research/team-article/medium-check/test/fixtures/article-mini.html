@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Mini article (test fixture)</title>
+<style>.cap-area { padding: 8px; } .note { color: grey; }</style>
+</head>
+<body>
+<!-- A text-only stand-in for the article page: the same element kinds, no pictures, no recordings. -->
+<main>
+<p class="preview"><strong>Medium layout preview:</strong> editor-only line.</p>
+
+<h1>Twelve Milliseconds: A Test Story</h1>
+<p class="subtitle">A tiny article with every block kind the Medium checker knows &mdash; and nothing else.</p>
+<p class="byline">Part one &middot; A fixture for the tests</p>
+<p><em>A personal test page. Not affiliated with anyone.</em></p>
+<p><em>Times are UTC.</em></p>
+
+<h3>Before the start</h3>
+<p>It started with a <strong>headline</strong> on a quiet evening, and the page &ldquo;felt&rdquo; slow.</p>
+<p>The reference is on <a href="https://example.org/frames">a public page</a>, and the day log is in <a href="#d1">Day 1</a>.</p>
+<h4 id="measure">How I count</h4>
+<ul>
+  <li>A <strong>slow frame</strong> took over 34 ms.</li>
+  <li>A very slow frame took over 50 ms.</li>
+</ul>
+<figure class="cap" data-capture="ready" id="fig-1">
+  <div class="cap-bar"><span class="ready">capture-ready · Fig. 1</span></div>
+  <div class="cap-area">
+    <p class="cap-title">What smooth means</p>
+    <svg viewBox="0 0 100 20" role="img" aria-label="A scale from 0 to 60 ms: grey up to 34, amber over 34, red over 50."><rect x="0" y="0" width="50" height="10"/><text x="2" y="18">0 ms</text></svg>
+  </div>
+  <figcaption class="note">The frame ruler (Fig. 1; <a href="#src-1">source</a>)</figcaption>
+</figure>
+<p>This is the console:</p>
+<figure class="gif"><img src="gifs/console-mini.png" width="640" height="320" alt="The console with one step card and a Start button"><figcaption>The first console, one step card</figcaption></figure>
+<figure class="gif"><video src="videos/mini-clip-strip.mp4" width="640" height="640" autoplay loop muted playsinline aria-label="A short clip"></video><figcaption>1 of 2. A swipe, original on the left, the build on the right.</figcaption></figure>
+<p class="mlink"><span>Medium embed</span> <code>https://iframe.videodelivery.net/0123456789abcdef0123456789abcdef?loop=true&amp;autoplay=true&amp;muted=true</code></p>
+<blockquote class="pull">Laggy the same.</blockquote>
+
+<hr class="sep">
+
+<h3 id="d1">Day 1 · Wed 30 Sep: One goal</h3>
+<p>At 17:05 I asked how to connect the phone. By 17:53 I had scrolled the page.</p>
+<blockquote><p>First quoted paragraph.</p><p>Second quoted paragraph.</p></blockquote>
+<figure class="gif"><video src="videos/mini-clip-two.mp4" width="640" height="640" autoplay loop muted playsinline></video><figcaption>2 of 2. The end of the page.</figcaption></figure>
+<p class="mlink"><span>Medium embed</span> <code>https://iframe.videodelivery.net/fedcba9876543210fedcba9876543210?loop=true&amp;autoplay=true&amp;muted=true</code></p>
+<aside class="teambox" id="team-how">
+  <p><strong>How I ran the team</strong></p>
+  <ul>
+    <li><strong>Day 1.</strong> One agent per problem.</li>
+    <li><strong>Day 2.</strong> I left the chat.</li>
+  </ul>
+</aside>
+<figure class="cap" data-capture="ready" id="fig-2">
+  <div class="cap-area">
+    <p class="cap-title">Slow frames per day</p>
+    <p class="cap-sub">Counted on the phone.</p>
+    <table><tr><td>Day 1</td><td>27</td></tr></table>
+  </div>
+</figure>
+<p class="note">Fig. 2: slow frames per day, from the phone's own log.</p>
+<p>The end.</p>
+
+<hr class="sep">
+
+<footer>
+  <h4>Sources</h4>
+  <p>Each figure links to its own entry here.</p>
+  <ol class="figsrc">
+    <li id="src-1" value="1">Fig. 1: thresholds from the guide.</li>
+    <li id="src-2" value="2">Fig. 2: the phone log of 30 Sep.</li>
+  </ol>
+</footer>
+</main>
+<script>/* fixture */</script>
+</body></html>
