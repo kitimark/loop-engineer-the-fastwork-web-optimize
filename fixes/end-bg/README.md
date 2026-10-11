@@ -751,3 +751,97 @@ This addendum is README-only: no script changes and no re-pin. Where it differs 
 - How the hero-card fixes worked (re-keep-op: the revealed people card kept in its own layer at rest, so the end-of-reveal
   re-layouts went away; hero-exit-threaded: the hero exit moved to a scroll-driven animation off the main thread): both are
   layer/compositor changes; whether one fits the last screen depends on what P-137 and the census show.
+
+## 10. P-137o: the original on the same script, 2026-10-11 (for the article's Fig. 8; all numbers OBSERVED)
+
+Runner cap-end-orig (lead's request: the user wants the original next to C and V in Fig. 8). iPhone 15 Pro Max, driver G,
+plain http, `--vendors=local --latency 150`, one phone hold per try, 600 s `--no-timing` Mac holds, every counted run
+with Timeline. Arms: **O** = the original (baseline b1789284481295-a455e793, no overlay, JS 4606120cf392 / CSS
+27776f3d4138), **C** = P-137's C (pictures on, JS 1b2eecc66011 / CSS e1359ab9994a), **V** = P-137's V (pictures off, CSS
+38679ce9de15); C and V from fix-end-bg's immutable snapshots, served JS/CSS of every arm hashed before every item.
+Kits (committed before data): part 1 `phone/p137o-*` (5fc9cc9a), block 2 `phone/p137f-*`, `mk-fsfixed.mjs`,
+`g-fastshort-fixed-v1.json` (3d930a38), heat step `phone/heat-step.sh` (5746e088, b4349e70). Read:
+`node fixes/end-bg/phone/p137f-read.mjs <runner>/out/p137f/runs --bridge <runner>/out/p137o/runs`.
+
+**Why not "the same way".** P-137's script (fs-v1) waits for the page end 11 times (`until atEnd`, not optional). The
+original holds the page at y ~5213 at the end and opens and closes the menu with its own touch handlers, so it never
+reaches atEnd (worst-cases README "End of the page", 10 Oct). Part 1's O warm-up and EO1 aborted on exactly that
+("until atEnd not reached in 4000 ms (scrollY 5212)"). P-137's metric also counts only frames whose scrollY moves, which
+cannot see the original's menu motion (O's runs give 4-5 such frames). Lead decision (00:2xZ): option A with V as a
+third arm, one block, one reading.
+
+**Deviations from the P-137 card** (all written before the block-2 data):
+1. Script fs-fixed (`g-fastshort-fixed-v1.json`, compiled 194dab83774c, budget 307 s): fs-v1's pushes, order, sizes and
+   speeds, the reload and the 4 s before the first touch, but fixed counts in place of atEnd waits: 11 approach drags
+   (C and V took 11 in every run, 5 Oct and today), 1 re-approach drag after each close push and none after an open
+   push (what C/V took), and a 1.5 s pause plus a `y>=3000` guard where fs-v1 waited for atEnd. The optional settled
+   waits stay. Same input on every arm.
+2. Primary reading (2), the lead's: every recorded frame from mark E20 to mark done whose last touch event is a touchend
+   (finger up), moving or not; dt > 30/34/38 and > 46/50/54 per run. P-137's own metric is reading (1), for C and V only,
+   as the bridge to 5 Oct.
+3. Three arms, rotated Latin square O C V | C V O | V O C (9 counted runs), warm-ups WO WC WV, sentinels S0/S1 on C
+   (P-129's rule, fs-fixed hash in place of G6: `p137f-gates.mjs`).
+4. Heat: profile xcode-serious, with the Serious condition held by the thermal tool (`iphone.mjs rearm`; Xcode no longer
+   holds one), not by Xcode as on 5 Oct. Today the battery rose ~0.4-0.5 °C per minute of runs (5 Oct: 36.8 -> 39.3 °C
+   over the whole block). So a heat step runs before each Mac hold (`heat-step.sh`): a misfit read (Critical) re-arms the
+   condition, then `wait.mjs phone-temp --below 39` (at most 10 min). The P-137 gate (thermal-gate.mjs `--accept-induced`)
+   stays at the phone hold's edges.
+5. Baseline: 5 Oct ran on snapshot b1789284481295-4ad4a84a; today's pin is -a455e793 (+6 AVIF thumbnails of the
+   #platform agents-ask list, 3607d3b3; no code change). C's and V's snapshots are overlays (2 files), so today's C and V
+   are served over the new snapshot: on 5 Oct those 6 thumbnails were missing (404), today they load.
+
+**Tries.** Part 1 (23:50-00:16Z, fs-v1, O vs C): H1 and H2 VALID, S0 PASS (55.7 fps, slow 0.029), EO1 aborted (above);
+H3 (EC1, EC2) VOID: its end gate read Critical at 41.5 °C. Block 2 try 1 (00:20-00:34Z) stopped at H2: the first heat
+step sat inside the Mac hold and used 240 s of it, so iphone.mjs refused S0's gesture for time (I-112) and the empty
+record failed the sentinel; no counted run. **Block 2 try 2 (02:19-03:47Z): 8/8 holds VALID, no re-runs, S0 PASS (56.3
+fps, slow 0.024), S1 PASS (56.2, 0.028), start gate Serious induced 34.9 °C, end gate Serious induced 39.3 -> 39.5 °C,**
+no Mac sleep. The heat step cooled 0-6 min before each hold; H4's start read was Critical (after H3) and re-armed
+(37.9 °C). Mac load1 4.6-8.4 at run starts.
+
+**Reading (2): finger-up frames from E20 to done** (~103-109 s per run; heat = the hold's start read -> the run's end read, °C)
+
+| run | arm | frames | > 30 | **> 34** | > 38 | > 46 | **> 50** | > 54 | heat |
+|---|---|---|---|---|---|---|---|---|---|
+| EO1 | O | 4534 | 182 | **148** | 118 | 78 | **57** | 39 | 38.8 -> Critical 41.2 |
+| EC1 | C | 4742 | 59 | **30** | 15 | 6 | **2** | 2 | 38.8 -> Critical 41.2 |
+| EV1 | V | 4745 | 42 | **21** | 11 | 1 | **0** | 0 | 37.8 -> 40.8 |
+| EC2 | C | 4735 | 64 | **30** | 11 | 4 | **3** | 3 | 37.8 -> 40.8 |
+| EV2 | V | 4752 | 46 | **22** | 16 | 1 | **1** | 1 | 38.9 -> 40.9 |
+| EO2 | O | 4556 | 189 | **136** | 109 | 75 | **55** | 40 | 38.9 -> 40.9 |
+| EV3 | V | 4770 | 39 | **21** | 11 | 0 | **0** | 0 | 38.5 -> 40.4 |
+| EO3 | O | 4469 | 300 | **214** | 173 | 113 | **77** | 65 | 38.5 -> 40.4 |
+| EC3 | C | 4728 | 63 | **28** | 11 | 3 | **2** | 2 | 38.6 -> 39.5 |
+
+| | O (original) | C (pictures on) | V (pictures off) |
+|---|---|---|---|
+| > 34 per run (median) | 148, 136, 214 (**148**) | 30, 30, 28 (**30**) | 21, 22, 21 (**21**) |
+| > 50 per run (median) | 57, 55, 77 (**57**) | 2, 3, 2 (**2**) | 0, 1, 0 (**0**) |
+| worst-to-best ratio at > 34 | 1 | about 1/5 of O | about 1/7 of O |
+
+- **C vs O and V vs O: BETTER, median at most half of O's**, at > 34 and both twins (> 30, > 38), and at > 50 with its
+  twins: no range touches.
+- **V vs C: BETTER at > 34 (21-22 vs 28-30), threshold-sensitive**: the > 30 twin agrees, the > 38 twin overlaps (11-16 vs
+  11-15). At > 50: V 0-1 vs C 2-3, BETTER, median <= half. So without the pictures the end gets a little better again,
+  but in this reading (all finger-up frames) the gap C -> V is small next to O -> C.
+- H3's two runs (EO1, EC1) ended with the phone Critical. Without them: O 136, 214; C 30, 28; V 21, 22, 21: the same order
+  with the same gaps.
+- The original's frames: about 4,500 in each window against ~4,740 on C/V, its windows 1.3-6.5 s longer (104-109 s vs
+  103 s; the optional settled waits take longer on it), so its counts cover slightly more time; per second it is still
+  ~4.5-7x C's > 34 rate.
+
+**Reading (1), P-137's metric (moving last-screen frames after a touchend, > 34), the bridge to 5 Oct**
+
+| | 5 Oct (P-137, fs-v1) | today, fs-v1 (part 1, flagged) | today, fs-fixed (block 2) |
+|---|---|---|---|
+| C | 30, 17, 14, 15 (median 16) | 19, 21 (hold ended Critical) | 13, 15, 12 (median 13) |
+| V | 2, 3, 3, 5 (median 3) | - | 5, 7, 5 (median 5) |
+| O | - | aborts (never reaches the end) | 1, 1, 2 (meaningless: the original's page does not move there) |
+
+- **Today's C matches 5 Oct's C** within run-to-run spread on both scripts (ranges overlap), and so does V. The 5 Oct
+  ablation repeats today: C 12-15 vs V 5-7 on this metric (separated, V at most half).
+- This metric is why the original needs reading (2): it sees 1-2 moving frames per run on O.
+
+**For Fig. 8.** Show the three arms from this one block with reading (2): slow frames over 34 ms per run, original
+136-214 (median 148), pictures on 28-30 (30), pictures off 21-22 (21); and over 50 ms 55-77 / 2-3 / 0-1. Keep 5 Oct's
+P-137 numbers (30/17/14/15 vs 2/3/3/5) as their own panel or a footnote: they are a different reading (moving frames
+only) and do not mix with these.
