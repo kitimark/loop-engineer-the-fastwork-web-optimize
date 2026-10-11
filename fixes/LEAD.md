@@ -35,6 +35,11 @@ rule, or a role change, with its owner and id). Explaining the current state is 
 area that keeps producing issues gets an owner agent (memory `lead-delegates-areas-measures`); the lead still answers
 with the four parts and names that owner.
 
+**Research goes to helpers** (user T-170 #343, 2026-10-11, memory `lead-delegates-research`): the lead does not
+research inline. Docs, source, code searches, data reads and platform questions go to a named helper
+(`bundle-mapper`, or `general-purpose` for docs and products) in the background; the lead answers the user at once
+("an agent checks X"), then posts the cited result, after a one-line check of the citation.
+
 ## The loop
 
 ```mermaid
