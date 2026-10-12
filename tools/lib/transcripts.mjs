@@ -13,9 +13,11 @@
 // I-169: also the foreground tool call an agent is still inside (pendingCall, deafNow): the thread router counts such
 // an owner as deaf (not listening, busy) and the board names the call. Only names, times and the first CMD_MAX
 // characters of the call's command leave this module (callers sanitize them for display): no paths of transcripts,
-// no other transcript text. Anything unparsable counts as nothing (the rules before). Tests: $FW_STATE_DIR (a temp state dir)
-// means no transcripts at all unless $FW_TRANSCRIPTS_DIR names a directory ("off": none), like I-157's lesson: a test
-// never reads the machine's live state.
+// no other transcript text. I-265: also who runs now with no other trace (sessionsNow: working, idle teammate, deaf),
+// from transcript write times and Claude Code's team configs; names, times and plain reasons only (no prompts, no
+// paths). Anything unparsable counts as nothing (the rules before). Tests: $FW_STATE_DIR (a temp state dir)
+// means no transcripts at all unless $FW_TRANSCRIPTS_DIR names a directory ("off": none), and no teams unless
+// $FW_TEAMS_DIR does, like I-157's lesson: a test never reads the machine's live state.
 import { readdirSync, statSync, readFileSync, openSync, readSync, closeSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
@@ -148,14 +150,84 @@ export function agentStates({ dir = null, now = Date.now(), maxAgeMs = MAX_AGE_M
       let st;
       try { st = statSync(jf); } catch { continue; }
       if (now - st.mtimeMs > maxAgeMs) continue;
-      let name = null;
-      try { const m = JSON.parse(readFileSync(join(sub, f), 'utf8')); if (typeof m?.name === 'string' && m.name) name = m.name; } catch {}
+      let name = null, teammate = false, team = null;
+      try {
+        const m = JSON.parse(readFileSync(join(sub, f), 'utf8'));
+        if (typeof m?.name === 'string' && m.name) name = m.name;
+        teammate = m?.taskKind === TEAMMATE;
+        if (typeof m?.teamName === 'string' && m.teamName) team = m.teamName;
+      } catch {}
       if (!name) continue;
       const cur = newest.get(name);
-      if (!cur || st.mtimeMs > cur.st.mtimeMs) newest.set(name, { file: jf, st });
+      if (!cur || st.mtimeMs > cur.st.mtimeMs) newest.set(name, { file: jf, st, session: s, teammate, team });
     }
   }
-  for (const [name, { file, st }] of newest) { try { out.set(name, fileState(file, st)); } catch {} }
+  for (const [name, { file, st, session, teammate, team }] of newest) {
+    try { out.set(name, { ...fileState(file, st), lastMs: st.mtimeMs, session, teammate, team }); } catch {}
+  }
+  return out;
+}
+
+// I-265 (user T-276 #3): agents that run with no lock, wait or status row (read-only helpers, agent-team teammates)
+// read running from their transcripts. Agent teams (OBSERVED, Claude Code 2.1.x, 2026-10-12): a teammate's meta has
+// taskKind "in_process_teammate" and teamName; it lives in the lead session's subagents dir; ~/.claude/teams/<team>/
+// config.json is {name, leadSessionId, members: [{name, ...}]}. A teammate ends each turn with plain text (no hand-back)
+// and sleeps until a message wakes it, so a quiet transcript is no end: it is "idle" (alive, counted as running) while
+// its team is live: the config lists it, its meta is in the team's lead session, and that lead session's transcript
+// (<projects dir>/<leadSessionId>.jsonl) was written within TEAM_LIVE_MS. No shutdown record was seen in a transcript,
+// so a teammate shut down by the lead reads idle until its team is over (a member dropped from the config is not).
+export const TEAMMATE = 'in_process_teammate';
+export const ACTIVE_MS = 10 * 60e3; // written this recently, not ended: working
+export const TEAM_LIVE_MS = 6 * 3600e3; // a team whose lead session wrote this recently is live
+export const CALL_RUNNING_MS = 2 * 3600e3; // a foreground call older than this (a crashed session) counts for nothing here
+
+/** ~/.claude/teams, or null: $FW_TEAMS_DIR ("off": none); with $FW_STATE_DIR or $FW_TRANSCRIPTS_DIR (tests) only that. */
+export function teamsDir({ env = process.env } = {}) {
+  if (env.FW_TEAMS_DIR) return env.FW_TEAMS_DIR === 'off' ? null : env.FW_TEAMS_DIR;
+  if (env.FW_STATE_DIR || env.FW_TRANSCRIPTS_DIR) return null;
+  return join(homedir(), '.claude', 'teams');
+}
+
+/** Map team name -> {session, members: Set} for every live team (see above); unreadable configs count as nothing. */
+export function liveTeams({ dir = null, transcripts = null, now = Date.now(), liveMs = TEAM_LIVE_MS } = {}) {
+  const out = new Map();
+  if (!dir || !transcripts) return out;
+  for (const t of list(dir)) {
+    try {
+      const c = JSON.parse(readFileSync(join(dir, t, 'config.json'), 'utf8'));
+      const session = typeof c?.leadSessionId === 'string' && /^[A-Za-z0-9-]{1,80}$/.test(c.leadSessionId) ? c.leadSessionId : null;
+      if (!session || !Array.isArray(c.members)) continue;
+      if (!(now - statSync(join(transcripts, `${session}.jsonl`)).mtimeMs <= liveMs)) continue;
+      const members = new Set(c.members.map((m) => m?.name).filter((n) => typeof n === 'string' && n));
+      out.set(typeof c.name === 'string' && c.name ? c.name : t, { session, members });
+    } catch {}
+  }
+  return out;
+}
+
+const minText = (min) => (min >= 1 ? `${min} min` : 'under 1 min');
+/**
+ * Map name -> {state: working|idle|deaf, at (last write), min, text} from agentStates and liveTeams (pure): deaf = in a
+ * foreground call for more than DEAF_AFTER_MS (min: in the call); working = written within ACTIVE_MS; idle = a quiet
+ * teammate of a live team. A run ended with a hand-back is none of them.
+ */
+export function sessionsOf(states, teams, now = Date.now()) {
+  const out = new Map();
+  for (const [name, st] of states) {
+    if (st.ended || !Number.isFinite(st.lastMs)) continue;
+    const at = new Date(st.lastMs).toISOString();
+    const quiet = Math.max(0, Math.floor((now - st.lastMs) / 60000));
+    const c = st.call, t = c && Date.parse(c.since);
+    if (c && Number.isFinite(t) && now - t > DEAF_AFTER_MS && now - t <= CALL_RUNNING_MS) {
+      const min = Math.floor((now - t) / 60000);
+      out.set(name, { state: 'deaf', at, min, text: deafText({ cmd: c.cmd, min }) });
+    } else if (now - st.lastMs <= ACTIVE_MS) {
+      out.set(name, { state: 'working', at, min: quiet, text: `working (last step ${minText(quiet)} ago)` });
+    } else if (st.teammate && st.team) {
+      const tm = teams.get(st.team);
+      if (tm && tm.session === st.session && tm.members.has(name)) out.set(name, { state: 'idle', at, min: quiet, text: `idle between steps, waiting for messages (last step ${minText(quiet)} ago)` });
+    }
+  }
   return out;
 }
 
@@ -171,11 +243,18 @@ export const clearCache = () => { cache = null; memo.clear(); };
 function statesNow(now, mainCheckout) {
   const env = process.env;
   const dir = transcriptsDir({ mainCheckout: mainCheckout ?? (env.FW_TRANSCRIPTS_DIR || env.FW_STATE_DIR ? null : mainCheckoutPath()) });
-  if (cache && cache.dir === dir && Math.abs(now - cache.at) < CACHE_MS) return cache.value;
-  let value;
+  const tdir = teamsDir({ env });
+  if (cache && cache.dir === dir && cache.tdir === tdir && Math.abs(now - cache.at) < CACHE_MS) return cache.value;
+  let value, teams;
   try { value = agentStates({ dir, now }); } catch { value = new Map(); }
-  cache = { dir, at: now, value };
+  try { teams = liveTeams({ dir: tdir, transcripts: dir, now }); } catch { teams = new Map(); }
+  cache = { dir, tdir, at: now, value, teams };
   return value;
+}
+/** I-265: sessionsOf for this repo's transcripts and teams, cached CACHE_MS like the rest. */
+export function sessionsNow({ now = Date.now(), mainCheckout = null } = {}) {
+  const states = statesNow(now, mainCheckout);
+  return sessionsOf(states, cache?.teams || new Map(), now);
 }
 /** endedOwners for this repo's transcripts, cached CACHE_MS (the board and the router ask often). */
 export function endedNow({ now = Date.now(), mainCheckout = null } = {}) {

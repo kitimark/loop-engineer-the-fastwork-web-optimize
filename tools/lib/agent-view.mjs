@@ -5,6 +5,9 @@
 // fixes/*/README.md files that name it, incidents, findings and proposals. This module reads them all, read-only, and
 // builds (1) one agent's view: "running now" or "finished", what it holds, waits for and works on now, and every trace
 // newest first with a merged timeline; (2) the list of every agent seen anywhere, running first, with its last activity.
+// I-265: an agent with none of these (a read-only helper, an agent-team teammate) still reads running from its Claude
+// Code session (transcripts.mjs sessionsNow: "working (last step N min ago)", "idle between steps, waiting for
+// messages", "deaf: in <cmd> for N min").
 // Served by the console as /agent/<name> + /api/agent/<name> and /agents + /api/agents (console-server.mjs, the page is
 // agents-page.html); on the command line `node tools/status.mjs agent <name>` / `agents`.
 //
@@ -65,6 +68,8 @@ export function secText(sec) {
 const rowGroup = (state) => (ROW_STATES[state] || { group: 'working' }).group;
 const rowFinished = (state) => rowGroup(state) === 'finished';
 const rowLive = (state) => ['working', 'waiting'].includes(rowGroup(state));
+/** I-265: last activity of an agent seen only in its Claude Code session (no other dated trace). */
+const SESSION_WHAT = 'a step in its Claude Code session';
 
 // ---- bounded readers ---------------------------------------------------------------------------------
 
@@ -134,7 +139,7 @@ export function readWriteups(root = writeupRoot()) {
  * writeups (null unless asked: only one agent's view needs them), errors}. Never throws.
  */
 export async function gatherAgentSources({ writeups = false, root = writeupRoot(), gitCwd = root } = {}) {
-  const src = { status: [], locks: {}, holds: [], waits: [], steps: [], threads: [], proposals: [], incidents: [], findings: [], commits: [], writeups: null, errors: [] };
+  const src = { status: [], locks: {}, holds: [], waits: [], sessions: [], steps: [], threads: [], proposals: [], incidents: [], findings: [], commits: [], writeups: null, errors: [] };
   const tryIt = async (what, fn) => { try { await fn(); } catch (e) { src.errors.push(`${what}: ${s(e.message, 160)}`); } };
   await tryIt('status', async () => { src.status = (await import('./status.mjs')).list(); });
   await tryIt('locks', async () => {
@@ -147,6 +152,8 @@ export async function gatherAgentSources({ writeups = false, root = writeupRoot(
     src.holds = readHoldsTail(L.holdsLogFile());
   });
   await tryIt('waits', async () => { src.waits = (await import('./waits.mjs')).listWaits(); });
+  // I-265: agents with no lock, wait or row (read-only helpers, team teammates) from Claude Code's own transcripts
+  await tryIt('sessions', async () => { src.sessions = [...(await import('./transcripts.mjs')).sessionsNow()].map(([name, x]) => ({ name, ...x })); });
   await tryIt('console steps', async () => { src.steps = (await import('./console.mjs')).list({ all: true }); });
   await tryIt('threads', async () => { src.threads = (await import('./console-threads.mjs')).listThreads(); });
   await tryIt('proposals', async () => { src.proposals = (await import('./proposal.mjs')).listProposals({ all: true }); });
@@ -184,7 +191,7 @@ function aliasOwners(rows) {
  */
 function liveOf(src, who, { now, staleAfterMin }) {
   const m = new Map();
-  const of = (a) => { if (!m.has(a)) m.set(a, { holds: [], queue: [], waits: [], rows: [] }); return m.get(a); };
+  const of = (a) => { if (!m.has(a)) m.set(a, { holds: [], queue: [], waits: [], rows: [], sessions: [] }); return m.get(a); };
   for (const [r, label] of RESOURCES) {
     const st = src.locks?.[r];
     if (!st) continue;
@@ -218,9 +225,13 @@ function liveOf(src, who, { now, staleAfterMin }) {
     const plain = `row ${r.id} is ${r.state}: ${s(r.title, 90)}`;
     for (const a of new Set([who(r.owner, false), who(r.updatedBy, false)].filter(Boolean))) of(a).rows.push({ id: r.id, state: r.state, plain });
   }
+  for (const x of src.sessions || []) {
+    const a = who(x.name, false);
+    if (a && isoOk(x.at)) of(a).sessions.push({ state: s(x.state, 20), at: x.at, plain: s(x.text, 160) });
+  }
   return m;
 }
-const reasons = (l) => (l ? [...l.holds, ...l.queue, ...l.waits, ...l.rows].map((x) => x.plain) : []);
+const reasons = (l) => (l ? [...l.holds, ...l.queue, ...l.waits, ...l.rows, ...l.sessions].map((x) => x.plain) : []);
 
 // ---- events: the merged timeline -----------------------------------------------------------------------
 
@@ -285,7 +296,7 @@ export function buildAgentView(name, src, { now = Date.now(), staleAfterMin = st
   const aka = [...aliasOwner.entries()].filter(([, o]) => o === name).map(([k]) => k).sort();
   const akaSet = new Set(aka);
   const who = (n, viaAlias) => (n === name || (viaAlias && akaSet.has(n)) ? name : null);
-  const live = liveOf(src, who, { now, staleAfterMin }).get(name) || { holds: [], queue: [], waits: [], rows: [] };
+  const live = liveOf(src, who, { now, staleAfterMin }).get(name) || { holds: [], queue: [], waits: [], rows: [], sessions: [] };
   const runningWhy = reasons(live);
 
   const myRows = rows.map((r) => {
@@ -349,8 +360,8 @@ export function buildAgentView(name, src, { now = Date.now(), staleAfterMin = st
     // a topic id the locks and commits use for an agent (a row id or alias, "cd-roll-ca"): the agent it stands for
     aliasOf: aliasOwner.get(name) || null,
     running: runningWhy.length > 0, runningWhy,
-    lastAt: all[0]?.at ?? null, lastWhat: all[0]?.text ?? null,
-    live: { holds: live.holds, queue: live.queue, waits: live.waits },
+    lastAt: all[0]?.at ?? live.sessions[0]?.at ?? null, lastWhat: all[0]?.text ?? (live.sessions[0] ? SESSION_WHAT : null),
+    live: { holds: live.holds, queue: live.queue, waits: live.waits, sessions: live.sessions },
     rows: myRows, holds, steps, threads, commits, writeups, incidents, findings, proposals,
     timeline: all.slice(0, LIMITS.timeline),
     errors: (src.errors || []).map((e) => s(e, 200)),
@@ -384,8 +395,8 @@ export function buildAgentsList(src, { now = Date.now(), staleAfterMin = staleMi
   const names = new Set([...seen.keys(), ...known]);
   const agents = [...names].map((n) => {
     const why = reasons(live.get(n));
-    const e = seen.get(n);
-    return { name: n, running: why.length > 0, now: why[0] || '', lastAt: e?.at ?? null, lastWhat: e?.text ?? null, href: `/agent/${n}` };
+    const e = seen.get(n), sess = live.get(n)?.sessions[0];
+    return { name: n, running: why.length > 0, now: why[0] || '', lastAt: e?.at ?? sess?.at ?? null, lastWhat: e?.text ?? (sess ? SESSION_WHAT : null), href: `/agent/${n}` };
   });
   agents.sort((a, b) => (a.running !== b.running ? (a.running ? -1 : 1) : (a.lastAt || '') < (b.lastAt || '') ? 1 : (a.lastAt || '') > (b.lastAt || '') ? -1 : a.name < b.name ? -1 : 1));
   return { schema: 'fw-agents/1', now: new Date(now).toISOString(), agents, errors: (src.errors || []).map((e) => s(e, 200)) };
