@@ -1,0 +1,111 @@
+<title>Why a Beautiful Page Stutters</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a long field report. Wide screens: a sticky contents rail beside one reading column; phones: one column with a folded contents list. The hero shows 100 frames per build, to scale, as the page's one picture. */
+:root {
+  color-scheme: light;
+  --paper: #f4f5f2; --sheet: #ffffff; --ink: #15191c; --muted: #58626a; --rule: #d8dcdb;
+  --frame: #cfd8dd; --slow: #d9480f; --vslow: #a3123a; --link: #1f4fbf;
+  --ok: #2e7d4f; --warn: #a86400; --bad: #b4232c; --chip: #eef1ef;
+  --display: "Schibsted Grotesk", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --mono: "IBM Plex Mono", "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  color-scheme: dark; --paper: #101416; --sheet: #161c1f; --ink: #e3e8e9; --muted: #9aa6ad; --rule: #263036;
+  --frame: #2f3b42; --slow: #ff7a3d; --vslow: #ff5c7f; --link: #8fb0ff; --ok: #6cc893; --warn: #e3b04f; --bad: #ff7b82; --chip: #1d2529; } }
+:root[data-theme="dark"] {
+  color-scheme: dark; --paper: #101416; --sheet: #161c1f; --ink: #e3e8e9; --muted: #9aa6ad; --rule: #263036;
+  --frame: #2f3b42; --slow: #ff7a3d; --vslow: #ff5c7f; --link: #8fb0ff; --ok: #6cc893; --warn: #e3b04f; --bad: #ff7b82; --chip: #1d2529; }
+* { box-sizing: border-box; }
+html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 1rem); }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1.06rem/1.62 var(--body); padding-inline: max(16px, 3vw); padding-block: 2.5rem 5rem; }
+a { color: var(--link); text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; border-radius: 2px; }
+code { font: 0.84em/1.4 var(--mono); background: var(--chip); padding: 0.08em 0.3em; border-radius: 3px; overflow-wrap: anywhere; }
+h1, h2, h3, h4 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0; }
+.wrap { max-width: 74rem; margin: 0 auto; display: grid; gap: 2.5rem; }
+header.hero { display: grid; gap: 1.1rem; max-width: 48rem; }
+.eyebrow { font: 600 0.74rem/1.3 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(2.1rem, 5.4vw, 3.6rem); font-weight: 800; letter-spacing: -0.025em; }
+.hero p { margin: 0; color: var(--muted); max-width: 44rem; }
+.frames { display: grid; gap: 0.9rem; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; padding: 1rem 1.1rem 1.1rem; max-width: 48rem; }
+.frames .row { display: grid; gap: 0.35rem; }
+.frames .lab { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2rem 1rem; font: 0.8rem/1.4 var(--mono); color: var(--muted); }
+.frames .lab b { color: var(--ink); font-weight: 600; }
+.strip { display: grid; grid-template-columns: repeat(50, 1fr); gap: 2px; }
+.strip i { display: block; aspect-ratio: 1 / 1.6; max-width: 100%; background: var(--frame); border-radius: 1px; }
+.strip i.s { background: var(--slow); }
+.strip i.v { background: var(--vslow); }
+.legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; font: 0.76rem/1.4 var(--mono); color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 0.7rem; height: 0.7rem; margin-right: 0.35rem; vertical-align: -0.08rem; border-radius: 1px; background: var(--frame); }
+.legend .s::before { background: var(--slow); } .legend .v::before { background: var(--vslow); }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2rem; }
+@media (min-width: 64rem) { .layout { grid-template-columns: 15.5rem minmax(0, 1fr); gap: 3rem; } }
+nav.toc { font: 0.86rem/1.45 var(--display); }
+@media (min-width: 64rem) { nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 1rem); align-self: start; max-height: calc(100vh - 2rem); overflow-y: auto; padding-right: 0.5rem; } }
+nav.toc details { border-top: 1px solid var(--rule); padding-block: 0.6rem; }
+nav.toc summary { cursor: pointer; font: 600 0.74rem/1.3 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+nav.toc ul { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; gap: 0.3rem; }
+nav.toc ul ul { margin: 0.25rem 0 0.2rem 0.8rem; gap: 0.15rem; font-size: 0.8rem; }
+nav.toc a { color: var(--ink); text-decoration: none; }
+nav.toc a:hover { color: var(--link); text-decoration: underline; }
+nav.toc .ln { font: 600 0.72rem var(--mono); color: var(--slow); margin-right: 0.45rem; font-variant-numeric: tabular-nums; }
+main { min-width: 0; max-width: 46rem; display: grid; gap: 0.2rem; }
+main section { display: grid; gap: 0.85rem; padding-block: 1.6rem; border-top: 1px solid var(--rule); }
+main section:first-child { border-top: 0; padding-top: 0; }
+main h2 { font-size: clamp(1.45rem, 3vw, 1.85rem); font-weight: 800; letter-spacing: -0.01em; }
+main h3 { font-size: 1.18rem; font-weight: 700; margin-top: 1.2rem; color: var(--ink); }
+h4.lesson { display: flex; gap: 0.7rem; align-items: baseline; font-size: 1.06rem; font-weight: 700; margin-top: 1.1rem; padding-top: 0.9rem; border-top: 1px dashed var(--rule); }
+h4.lesson .ln { font: 600 0.82rem var(--mono); color: var(--slow); font-variant-numeric: tabular-nums; flex: none; }
+main p { margin: 0; }
+main ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.35rem; }
+main ul ul { margin-top: 0.35rem; }
+main li::marker { color: var(--muted); }
+main em { color: var(--muted); font-style: italic; }
+main li > em:first-child { font-style: normal; font: 600 0.74rem var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-right: 0.15rem; }
+.lref { white-space: nowrap; }
+.tbl { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet); }
+table { width: 100%; border-collapse: collapse; font: 0.88rem/1.45 var(--body); }
+th, td { text-align: left; vertical-align: top; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--rule); }
+tr:last-child td { border-bottom: 0; }
+th { font: 600 0.7rem/1.3 var(--mono); letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); background: var(--chip); }
+td { font-variant-numeric: tabular-nums; }
+.st { font: 600 0.7rem/1 var(--mono); letter-spacing: 0.04em; padding: 0.12rem 0.32rem; border-radius: 3px; border: 1px solid currentColor; white-space: nowrap; }
+.st-confirmed { color: var(--ok); } .st-observed, .st-unresolved, .st-unproven { color: var(--warn); } .st-refuted, .st-weakened { color: var(--bad); }
+footer { max-width: 46rem; font-size: 0.86rem; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 1rem; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <p class="eyebrow">Field report · fastwork.com scroll study · 12 October 2026</p>
+    <h1>Why a beautiful page stutters</h1>
+    {{INTRO}}
+  </header>
+
+  <figure class="frames" aria-label="100 frames per build on the iPhone, to scale">
+    <div class="row">
+      <div class="lab"><b>Original page</b><span>20.1 % slow · 10.1 % very slow</span></div>
+      <div class="strip" aria-hidden="true">{{STRIP_A}}</div>
+    </div>
+    <div class="row">
+      <div class="lab"><b>Final build g0.0m</b><span>1.7 % slow · 0.22 % very slow</span></div>
+      <div class="strip" aria-hidden="true">{{STRIP_B}}</div>
+    </div>
+    <div class="legend"><span>on time</span><span class="s">slow, over 34 ms</span><span class="v">very slow, over 50 ms</span><span>100 frames each, rounded; iPhone 15 Pro Max, robot replay of the user's swipe through the top of the page (section 2)</span></div>
+  </figure>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <details open><summary>Contents</summary><ul>{{TOC}}</ul></details>
+      <details><summary>All 30 lessons</summary><ul>{{LESSONS}}</ul></details>
+    </nav>
+    <main>{{BODY}}</main>
+  </div>
+
+  <footer>Source: <code>research/knowledge-distillation/README.md</code> in the study repo (committed on main). Written by an agent team (four readers, a claim checker, a writer, a reviewer) from the study's own fix write-ups and research notes; platform claims checked against WebKit and Chromium source and official docs. A personal, educational study on a local copy; not affiliated with Fastwork.</footer>
+</div>
