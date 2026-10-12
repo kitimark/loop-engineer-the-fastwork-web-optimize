@@ -1,5 +1,24 @@
 // Markdown (the subset research/knowledge-distillation/README.md uses) -> one artifact page.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+// Math blocks: figures/*.mjs (not _*.mjs) each export default {key, html} or a list of them. Keys:
+//   intro          the "How to read the math" note in the hero
+//   head-<slug>    right after the ## / ### heading with that slug
+//   before-<slug>  right before that heading (after the previous block's text)
+//   lesson-<n>     at the end of lesson n (before the next lesson or heading)
+//   sec-<slug>     at the end of the ## section with that slug
+//   after:<text>   after the first table, list or paragraph whose Markdown contains <text>
+const figDir = new URL('./figures/', import.meta.url);
+const figs = new Map();
+const parts = [];
+for (const f of readdirSync(figDir).filter((f) => f.endsWith('.mjs') && !f.startsWith('_')).sort()) {
+  for (const { key, html, order = 50 } of [].concat((await import(new URL(f, figDir))).default)) parts.push({ key, html, order, i: parts.length });
+}
+// several blocks on one anchor: by `order`, then file order
+for (const { key, html } of parts.sort((a, b) => a.order - b.order || a.i - b.i)) figs.set(key, (figs.get(key) || '') + html);
+const used = new Set();
+const afters = [...figs.keys()].filter((k) => k.startsWith('after:'));
+const afterBlock = (raw) => { let h = ''; for (const k of afters) if (!used.has(k) && raw.includes(k.slice(6))) h += fig(k); return h; };
+const fig = (key) => { if (!figs.has(key)) return ''; used.add(key); return figs.get(key); };
 const [src, out] = process.argv.slice(2);
 const md = readFileSync(src, 'utf8').replace(/\r/g, '');
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -42,7 +61,8 @@ function list(start) {
   while (stack.length) { h += '</li></ul>'; stack.pop(); }
   return [h, j];
 }
-let sec = null;
+let sec = null, curLesson = null;
+const endLesson = () => { if (curLesson) html += fig(`lesson-${curLesson}`); curLesson = null; };
 while (i < lines.length) {
   const l = lines[i];
   if (!l.trim()) { i++; continue; }
@@ -50,9 +70,11 @@ while (i < lines.length) {
   if ((m = /^# (.*)$/.exec(l))) { title = m[1]; i++; continue; }
   if ((m = /^(##|###) (.*)$/.exec(l))) {
     const lvl = m[1].length, text = m[2], id = slug(text);
-    if (lvl === 2) { if (sec) html += '</section>'; html += `<section id="${id}">`; sec = id; toc.push({ text, id, sub: [] }); }
+    endLesson();
+    html += fig(`before-${id}`);
+    if (lvl === 2) { if (sec) html += fig(`sec-${sec}`) + '</section>'; html += `<section id="${id}">`; sec = id; toc.push({ text, id, sub: [] }); }
     else toc[toc.length - 1]?.sub.push({ text, id });
-    html += `<h${lvl} id="${id}">${inline(text)}</h${lvl}>`;
+    html += `<h${lvl}${lvl === 2 ? '' : ` id="${id}"`}>${inline(text)}</h${lvl}>` + fig(`head-${id}`);
     i++; continue;
   }
   if (/^\|/.test(l)) {
@@ -62,31 +84,37 @@ while (i < lines.length) {
     const head = cells(rows[0]);
     const body = rows.slice(2).map(cells);
     html += `<div class="tbl"><table><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${body.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    html += afterBlock(rows.join('\n'));
     continue;
   }
-  if (/^\s*- /.test(l)) { const [h, j] = list(i); html += h; i = j; continue; }
+  if (/^\s*- /.test(l)) { const [h, j] = list(i); html += h + afterBlock(lines.slice(i, j).join('\n')); i = j; continue; }
   // paragraph
   let p = l.trim(); i++;
   while (i < lines.length && lines[i].trim() && !/^(#|\||\s*- )/.test(lines[i])) { p += ' ' + lines[i].trim(); i++; }
   const lm = /^\*\*Lesson (\d+)\. (.*?)\*\*\s*(.*)$/.exec(p);
   if (lm) {
+    endLesson(); curLesson = lm[1];
     lessons.push({ n: lm[1], t: lm[2], sec: toc[toc.length - 1]?.sub.at(-1)?.text || '' });
     html += `<h4 class="lesson" id="lesson-${lm[1]}"><span class="ln">${lm[1].padStart(2, '0')}</span><span>${inline(lm[2])}</span></h4>`;
     if (lm[3]) html += `<p>${inline(lm[3])}</p>`;
     continue;
   }
   if (!sec) { intro.push(inline(p)); continue; }
-  html += `<p>${inline(p)}</p>`;
+  html += `<p>${inline(p)}</p>` + afterBlock(p);
 }
-if (sec) html += '</section>';
+endLesson();
+if (sec) html += fig(`sec-${sec}`) + '</section>';
 const tocHtml = toc.map((s) => `<li><a href="#${s.id}">${esc(s.text)}</a>${s.sub.length && s.id.startsWith('3') ? `<ul>${s.sub.map((x) => `<li><a href="#${x.id}">${esc(x.text)}</a></li>`).join('')}</ul>` : ''}</li>`).join('');
-const lessonIdx = lessons.map((x) => `<li><a href="#lesson-${x.n}"><span class="ln">${x.n.padStart(2, '0')}</span>${inline(x.t)}</a></li>`).join('');
+const lessonIdx = lessons.map((x) => `<li><a href="#lesson-${x.n}"><span class="ln">${x.n.padStart(2, '0')}</span>${inline(x.t)}${figs.has(`lesson-${x.n}`) ? '<span class="has-mx" title="has a math block">∑</span>' : ''}</a></li>`).join('');
 // frame strip: 100 cells each, slow share from section 1 (20.1 % vs 1.7 %), very slow (10.1 % vs 0.22 %)
 const strip = (slow, vslow) => Array.from({ length: 100 }, (_, k) => `<i class="${k < Math.round(vslow) ? 'v' : k < Math.round(slow) ? 's' : ''}"></i>`).join('');
 const tpl = readFileSync(new URL('./page.html', import.meta.url), 'utf8');
 writeFileSync(out, tpl
   .replace('{{TITLE}}', inline(title))
+  .replace('{{HOWTO}}', fig('intro'))
   .replace('{{INTRO}}', intro.map((p) => `<p>${p}</p>`).join(''))
   .replace('{{STRIP_A}}', strip(20.1, 10.1)).replace('{{STRIP_B}}', strip(1.7, 0.22))
   .replace('{{TOC}}', tocHtml).replace('{{LESSONS}}', lessonIdx).replace('{{BODY}}', html));
-console.log(`ok ${out}: ${lessons.length} lessons, ${toc.length} sections, ${html.length} chars`);
+const unused = [...figs.keys()].filter((k) => k !== 'intro' && !used.has(k));
+if (unused.length) { console.error(`figure keys with no anchor: ${unused.join(', ')}`); process.exitCode = 1; }
+console.log(`ok ${out}: ${lessons.length} lessons, ${toc.length} sections, ${figs.size} figure keys (${(html.match(/class="mx"/g) || []).length} math blocks), ${html.length} chars`);
