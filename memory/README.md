@@ -36,7 +36,7 @@ Every agent:
 
 Lead:
 - [Agent spawn names](agent-spawn-names.md): every spawn gets `name: <role>-<topic>`; check the first spawn after each compaction
-- [Start the console fully](console-server-detached.md): "start the console" = `console.mjs serve` with nohup + the lead's thread listener (Monitor, re-arm every 30 min) + answer open threads; check `console.mjs url` each check-in
+- [Start the console fully](console-server-detached.md): "start the console" = `console.mjs serve` with nohup + the lead's thread listener (Monitor, re-arm every 30 min) + answer open threads + `idle.mjs watch`; check `console.mjs url` each check-in
 - [Usage meter every 30 min](usage-meter-every-30-min.md): re-create the 30-min cron each session; data stays local
 - [Idle alarms are a pattern](idle-alarms-are-a-pattern.md): phone held and unused 2 min, read the holder's processes; from the 3rd idle alarm a day, review them together
 - [Best builds list](best-builds-list.md): `fixes/BEST_BUILDS.md` lists best-build versions newest first; update it and post in T-228 at every build change (user T-228 #3)
