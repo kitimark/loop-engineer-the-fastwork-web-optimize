@@ -8,6 +8,10 @@ the release repo and uploads its files; agents never push, add a remote, run `gh
 - the packer (I-270): writes `release-assets.json`, read by `init.mjs`.
 - `outgoing.mjs`: the scrub check `.githooks/pre-push` runs on every push of this repo (only the user pushes, user
   2026-10-13); by hand `node tools/release/outgoing.mjs [--remote origin] [<range>]` lists and checks unpushed commits.
+  It refuses tags (and deletes, non-fast-forwards, merge commits): make release tags on GitHub, not by pushing them.
+  What it cannot stop: `git push --no-verify` (or `-c core.hooksPath=…`), a known values file pointed elsewhere
+  (`FW_RELEASE_KNOWN`, `--known`), and a clone where `core.hooksPath` is not set to `.githooks` (`npm run setup`):
+  those push unchecked, so the check is a guard for the user's own pushes, not a lock.
 
 ## Getting started (text for the release README; the lead merges it)
 

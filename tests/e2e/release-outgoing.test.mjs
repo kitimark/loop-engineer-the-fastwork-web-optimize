@@ -3,7 +3,7 @@
 // remote-tracking ref stands in for the public history; a temp known values file with made-up values. Nothing pushes.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tempDir, run, node, REPO } from '../helpers.mjs';
 
@@ -23,7 +23,7 @@ function repo({ name = 't', email = 't@example.invalid' } = {}) {
   commit('a.txt', 'a\n', 'a');
   git('update-ref', 'refs/remotes/origin/main', 'HEAD'); // what the remote has (as after a fetch)
   const out = (args = [], extra = {}) => node(TOOL, args, { cwd, env: { ...env, ...extra } });
-  return { cwd, git, commit, out, known };
+  return { cwd, git, commit, out, known, env };
 }
 
 test('outgoing.mjs by hand: default range (HEAD not on the remote), a range argument, exit 0 / 1 / 2, never a value', () => {
@@ -85,4 +85,34 @@ test('outgoing.mjs: an author/committer line naming a public identity is not sca
   assert.match(r.stdout, /^HIT lit\d+-\S+ commit@[0-9a-f]{10}:3$/m);
   assert.doesNotMatch(r.stdout, /^HIT \S+ commit@[0-9a-f]{10}:4$/m, 'the committer line (public identity) is not scanned');
   assert.doesNotMatch(r.out, /zorblax/i);
+});
+
+test('outgoing.mjs --pre-push (direct): an annotated tag to a branch, local changes to the hook files, an ls-remote failure', () => {
+  const g = repo();
+  const zero = '0'.repeat(40);
+  const remote = join(g.cwd, '..', 'remote.git');
+  g.git('init', '-q', '--bare', remote);
+  const pre = (lines, where = remote) => node(TOOL, ['--pre-push', 'origin', where], { cwd: g.cwd, env: { ...g.env }, input: lines.join('\n') + '\n' });
+  const head = g.commit('b.txt', 'b\n', 'add b');
+  // the clean case against a reachable (empty) remote: nothing is public there, so the identity is unknown
+  let r = pre([`refs/heads/main ${head} refs/heads/main ${zero}`]);
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stdout, /^HIT identity-unknown commit@/m);
+  // an annotated tag object pushed to a branch: not a commit
+  g.git('tag', '-a', 't1', '-m', 'tag');
+  const tag = g.git('rev-parse', 't1');
+  r = pre([`refs/tags/t1 ${tag} refs/heads/x ${zero}`]);
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stdout, /^REFUSED refs\/tags\/t1 -> refs\/heads\/x: [0-9a-f]{10} is a tag, not a commit$/m);
+  // the hook runs the working-tree copies of tools/release/ and .githooks/: a local change there refuses
+  mkdirSync(join(g.cwd, 'tools', 'release'), { recursive: true });
+  writeFileSync(join(g.cwd, 'tools', 'release', 'outgoing.mjs'), '// edited\n');
+  r = pre([`refs/heads/main ${head} refs/heads/main ${zero}`]);
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stdout, /^REFUSED 1 local change\(s\) in tools\/release\/ or \.githooks\/ \(the hook runs the working-tree copies\)/m);
+  rmSync(join(g.cwd, 'tools'), { recursive: true, force: true });
+  // the remote cannot be asked: refused (exit 2), never checked against local guesses
+  r = pre([`refs/heads/main ${head} refs/heads/main ${zero}`], join(g.cwd, '..', 'no-such-remote.git'));
+  assert.equal(r.code, 2, r.out);
+  assert.match(r.stderr, /^OUTGOING failed \(refusing\): /m);
 });

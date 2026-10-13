@@ -6,7 +6,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync, existsSync, cpSync, chmodSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, existsSync, cpSync, chmodSync, mkdirSync } from 'node:fs';
+import { deflateSync } from 'node:zlib';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -199,22 +200,26 @@ test('hooks apply in linked worktrees (MERGE_HEAD is per worktree)', (t) => {
 // on git's ref lines and refuses unless it exits 0. Real pushes into a temp bare remote, with a temp known values file
 // (made-up values only).
 const PLANT = { name: 'Quentin Zorblax', user: 'qzuser' };
-function pushRepo(t, { knownFile } = {}) {
+function pushRepo(t, { knownFile, allow = [], hooks = HOOKS } = {}) {
   const g = makeRepo(t);
   const remote = join(g.dir, 'remote.git');
   assert.equal(spawnSync('git', ['init', '-q', '--bare', remote], { env: gitEnv(g.dir) }).status, 0);
   g.noHooks('remote', 'add', 'origin', remote);
   g.noHooks('push', '-q', 'origin', 'main'); // the public history: pushed before the hook existed
   const known = join(g.dir, 'known.json');
-  writeFileSync(known, JSON.stringify({ literals: [{ value: PLANT.name, token: '<name>' }, { value: PLANT.user, token: '<user>' }], lanPrefixes: ['10.77.31'] }), { mode: 0o600 });
+  writeFileSync(known, JSON.stringify({ literals: [{ value: PLANT.name, token: '<name>' }, { value: PLANT.user, token: '<user>' }], lanPrefixes: ['10.77.31'], allow }), { mode: 0o600 });
   const env = { ...gitEnv(g.dir), FW_RELEASE_KNOWN: knownFile ?? known };
   const push = (...args) => {
-    const r = spawnSync('git', ['-c', `core.hooksPath=${HOOKS}`, 'push', ...args], { cwd: g.repo, env, encoding: 'utf8' });
+    const r = spawnSync('git', ['-c', `core.hooksPath=${hooks}`, 'push', ...args], { cwd: g.repo, env, encoding: 'utf8' });
     return { ...r, out: `${r.stdout}${r.stderr}` };
   };
   const remoteHead = (ref = 'main') => spawnSync('git', ['--git-dir', remote, 'rev-parse', '-q', '--verify', ref], { encoding: 'utf8' }).stdout.trim();
-  return { ...g, remote, push, remoteHead };
+  // a commit made with the hooks off (pre-commit itself refuses some of the paths the push must refuse too)
+  const rawCommit = (file, content, msg = file) => { mkdirSync(dirname(join(g.repo, file)), { recursive: true }); writeFileSync(join(g.repo, file), content); g.noHooks('add', '-f', file); g.noHooks('commit', '-q', '-m', msg); };
+  return { ...g, remote, push, remoteHead, rawCommit };
 }
+/** A PNG with the given ancillary chunks (pngChunk from the release fixtures). */
+const pngWith = (pngChunk, extra = []) => Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), pngChunk('IHDR', Buffer.from([0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, 0])), ...extra, pngChunk('IDAT', deflateSync(Buffer.from([0, 0]))), pngChunk('IEND', Buffer.alloc(0))]);
 const pushRefused = (r, re) => {
   assert.notEqual(r.status, 0, `expected the push to be refused:\n${r.out}`);
   assert.match(r.out, /rebase-only: push refused/);
@@ -238,11 +243,37 @@ test('pre-push: a clean fast-forward push passes the scrub check and lands', (t)
   const n = g.push('origin', 'topic');
   assert.equal(n.status, 0, n.out);
   assert.match(n.out, /^OUTGOING 1 commit\(s\) to origin: clean$/m);
+  // what the remote has comes from the remote (ls-remote), not from remote-tracking refs: none left here
+  for (const r of g.ok('for-each-ref', '--format=%(refname)', 'refs/remotes').split('\n').filter(Boolean)) g.ok('update-ref', '-d', r);
+  g.ok('switch', '-q', '-c', 'topic2');
+  g.commit('f.txt', 'f\n', 'add f');
+  const n2 = g.push('origin', 'topic2');
+  assert.equal(n2.status, 0, n2.out);
+  assert.match(n2.out, /^OUTGOING 1 commit\(s\) to origin: clean$/m);
+});
+
+test('pre-push: a clean picture and an allow-listed binary pass; the remote-tracking refs do not hide a commit the remote lacks', async (t) => {
+  const { pngChunk } = await import('../fixtures/release/stage.mjs');
+  const g = pushRepo(t, { allow: [{ path: 'fixtures/*.bin', pattern: 'x', reason: 'test binary' }] });
+  g.commit('pic.png', pngWith(pngChunk), 'a picture');
+  mkdirSync(join(g.repo, 'fixtures'), { recursive: true });
+  g.commit('fixtures/data.bin', Buffer.from([0, 1, 2, 3, 0, 255]), 'a binary the known file allows');
+  const r = g.push('origin', 'main');
+  assert.equal(r.status, 0, r.out);
+  assert.match(r.out, /^OUTGOING 2 commit\(s\) to origin: clean$/m);
+  // a planted commit that only a local remote-tracking ref points at (the remote never had it)
+  g.ok('switch', '-q', '-c', 'x');
+  g.commit('p.txt', `by ${PLANT.name}\n`, 'planted');
+  g.ok('update-ref', 'refs/remotes/origin/x', 'HEAD');
+  g.commit('q.txt', 'q\n', 'on top');
+  const before = g.remoteHead('x');
+  pushRefused(g.push('origin', 'x'), /^HIT lit\d+-\S+ p\.txt@[0-9a-f]{10}:1$/m);
+  assert.equal(g.remoteHead('x'), before);
 });
 
 test('pre-push: a planted personal value, secret shape or unknown identity refuses; the value is never printed', async (t) => {
   const { FAKE_KEY } = await import('../fixtures/release/stage.mjs');
-  for (const [what, plant, re] of [
+  for (const [what, plant, re, args] of [
     ['file content', (g) => g.commit('d.txt', `by ${PLANT.name}\n`, 'add d'), /^HIT lit\d+-\S+ d\.txt@[0-9a-f]{10}:1$/m],
     ['letter case', (g) => g.commit('d.txt', `by ${PLANT.name.toUpperCase()}\n`, 'add d'), /^HIT lit\d+-\S+ d\.txt@/m],
     ['commit message', (g) => g.commit('d.txt', 'd\n', `thanks ${PLANT.name}`), /^HIT lit\d+-\S+ commit@[0-9a-f]{10}:\d+$/m],
@@ -251,12 +282,28 @@ test('pre-push: a planted personal value, secret shape or unknown identity refus
     ['secret shape', (g) => g.commit('d.js', `const apiKey = "${FAKE_KEY}";\n`, 'add d'), /^HIT secret-kv d\.js@/m],
     ['unknown identity', (g) => { writeFileSync(join(g.repo, 'd.txt'), 'd\n'); g.ok('add', 'd.txt'); g.ok('commit', '-q', '--author', 'Someone Else <else@example.invalid>', '-m', 'add d'); }, /^HIT identity-unknown commit@[0-9a-f]{10}:\d+$/m],
     ['an earlier commit of the range', (g) => { g.commit('d.txt', `by ${PLANT.name}\n`, 'add d'); g.commit('d.txt', 'd\n', 'clean again'); }, /^HIT lit\d+-\S+ d\.txt@/m],
+    ['a replace ref hiding the planted blob (pack-objects sends the original)', (g) => {
+      g.commit('d.txt', `by ${PLANT.name}\n`, 'add d');
+      writeFileSync(join(g.dir, 'clean.txt'), 'd\n');
+      g.ok('replace', g.ok('rev-parse', 'HEAD:d.txt'), g.ok('hash-object', '-w', join(g.dir, 'clean.txt')));
+    }, /^HIT lit\d+-\S+ d\.txt@[0-9a-f]{10}:1$/m],
+    ['UTF-16 text', (g) => g.commit('d.txt', Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(`by ${PLANT.name}\n`, 'utf16le')]), 'add d'), /^HIT lit\d+-\S+ d\.txt@[0-9a-f]{10}:1$/m],
+    ['UTF-16 text without a BOM', (g) => g.commit('d.txt', Buffer.from(`notes by ${PLANT.name}\n`, 'utf16le'), 'add d'), /^HIT lit\d+-\S+ d\.txt@[0-9a-f]{10}:1$/m],
+    ['the snapshot', (g) => g.rawCommit('site/index.html', '<p>x</p>\n', 'snapshot'), /^HIT path-forbidden path@[0-9a-f]{10}\/site\/index\.html:0$/m],
+    ['measurement output', (g) => g.rawCommit('out/ab/verify.json', '{}\n', 'out'), /^HIT path-forbidden path@[0-9a-f]{10}\/out\/ab\/verify\.json:0$/m],
+    ['an overlay', (g) => g.rawCommit('fixes/x/overlay/a.js', 'x\n', 'overlay'), /^HIT path-forbidden path@[0-9a-f]{10}\/fixes\/x\/overlay\/a\.js:0$/m],
+    ['a key file', (g) => g.rawCommit('certs/lan.PEM', 'x\n', 'pem'), /^HIT path-forbidden /m],
+    ['a Python cache', (g) => g.rawCommit('research/x/__pycache__/a.pyc', 'x\n', 'pyc'), /^HIT path-forbidden /m],
+    ['a binary blob', (g) => g.commit('d.bin', Buffer.from([0, 1, 2, 3, 0, 255]), 'add d'), /^HIT binary-unchecked d\.bin@[0-9a-f]{10}:0$/m],
+    ['a picture with text metadata', async (g) => { const { pngChunk } = await import('../fixtures/release/stage.mjs'); g.commit('p.png', pngWith(pngChunk, [pngChunk('tEXt', Buffer.from('Comment\0hello'))]), 'add p'); }, /^HIT media-text p\.png@[0-9a-f]{10}:0$/m],
+    ['a file named as a picture that is none', (g) => g.commit('p.png', 'not a picture\n', 'add p'), /^HIT media-not-an-image p\.png@/m],
+    ['a pushed ref name', (g) => g.commit('d.txt', 'd\n', 'add d'), /^HIT lit\d+-\S+ ref@refs\/heads\/<user>-topic:0$/m, ['origin', `HEAD:refs/heads/${PLANT.user}-topic`]],
   ]) {
-    await t.test(what, (tt) => {
+    await t.test(what, async (tt) => {
       const g = pushRepo(tt);
       const before = g.remoteHead();
-      plant(g);
-      const r = g.push('origin', 'main');
+      await plant(g);
+      const r = g.push(...(args ?? ['origin', 'main']));
       pushRefused(r, re);
       assert.match(r.out, /^OUTGOING \d+ commit\(s\) to origin: REFUSED$/m);
       assert.doesNotMatch(r.out.toLowerCase(), new RegExp(`${PLANT.name.toLowerCase()}|${PLANT.user}|${FAKE_KEY.toLowerCase()}|10\\.77\\.31`), 'no value is printed');
@@ -306,6 +353,17 @@ test('pre-push: no known values file, or an unreadable one, refuses (fail closed
     pushRefused(g.push('origin', 'main'), re);
     assert.equal(g.remoteHead(), before);
   }
+});
+
+test('pre-push: hooks without the scrub tool beside them refuse every push (fail closed)', (t) => {
+  const d = mkdtempSync(join(tmpdir(), 'rebase-only-hooks-'));
+  t.after(() => rmSync(d, { recursive: true, force: true }));
+  cpSync(HOOKS, join(d, '.githooks'), { recursive: true }); // the hooks alone: no tools/release/ beside them
+  const g = pushRepo(t, { hooks: join(d, '.githooks') });
+  g.commit('d.txt', 'd\n', 'add d');
+  const before = g.remoteHead();
+  pushRefused(g.push('origin', 'main'), /push refused: the scrub check \S+outgoing\.mjs is missing \(fail-closed\)/);
+  assert.equal(g.remoteHead(), before);
 });
 
 test('hook files are executable (git silently ignores non-executable hooks)', () => {
