@@ -1,0 +1,14 @@
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11957,9 +11957,9 @@
+   padding: 0;
+   background: none;
+   opacity: 1;
+-  filter: blur(calc(var(--earn-out) * 10px));
++  /* joinwl-fadeonly (user T-204 #10/#13): at the end of the page the button only fades, like its hide into the hero
++     pill; the original rose 8px (translateY(earn-out * -8px)) and blurred 10px at full opacity before the fade */
+   pointer-events: none;
+-  transform: translateY(calc(var(--earn-out) * -8px));
+   transition: opacity 0.32s cubic-bezier(0.33, 0, 0.2, 1) 0.12s;
+   position: relative;
+   overflow: hidden;
