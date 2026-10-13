@@ -27,3 +27,9 @@ the chat-export tool (I-273) was not landed. The console record export stays.
 - Never run `git push`, `gh release create` or an upload yourself, even in the release folder: hand the user the exact
   line. Plan page and trial data: the lead's release plan (T-170), scratch dirs release-history/, release-branches/,
   release-out/, scrub/.
+
+**Published 2026-10-13 (v1.0).** The user pushed build f (main 602a73b9 -> release main 79fc236f, 307 branches) and
+uploaded its 4 Release files as v1.0; the lead verified the refs and checksums against the build, a fresh clone plus
+`npm run init` (INIT OK, snapshot verified) and every link. The README links the Medium article and both Worker demos
+(user T-170 #498: the links are public). A later change to the public repo is a new build and a new tag, never a
+force-push over v1.0; the Medium post's source links point at v1.0 (kit out/article/medium-kit-v1.0-github).
