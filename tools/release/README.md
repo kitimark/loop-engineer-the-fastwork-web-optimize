@@ -27,8 +27,8 @@ npm run init        # Node >= 22, git and tar; no other dependencies, no GitHub 
 3. checks that the snapshot's `site/` and `site-pretty/` have exactly the git tree ids that `baseline.json` pins, the
    same check the tools run on every start. The release redacts secret-shaped values in the snapshot (third-party keys
    in vendored code, `[secret omitted: <rule>]`); `release-assets.json` lists each such file with its original and
-   redacted git blob ids, and a listed file counts as its original blob, so the pin still matches. Any other
-   difference, or a listed file that is not the listed redacted one, fails;
+   redacted git blob ids, and a listed file counts as its original blob, so the pin still matches (a listed file that
+   holds its original bytes counts as is). Any other difference, or a listed file that is neither, fails;
 4. refuses to overwrite a file with other content, then moves everything into place.
 
 Any failed check stops it with `INIT FAILED: …` and a non-zero exit before anything is installed; fix what it names

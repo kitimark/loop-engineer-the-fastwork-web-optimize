@@ -24,7 +24,8 @@
 // snapshot asset of HEAD's tools/release/release-assets.json lists each such file as {path, rule, originalBlob,
 // redactedBlob}. The check accepts exactly those: a listed file must have the redactedBlob and hold the packer's
 // "[secret omitted: <rule>]" mark, its originalBlob goes into the tree id in its place (git needs only the blob id, not
-// the original bytes), and every other byte must match the pin. Only where HEAD does not track the snapshot: a tracked
+// the original bytes), and every other byte must match the pin. I-277: a listed file may also hold its originalBlob (the
+// study's own untracked snapshot, the pinned bytes themselves; no mark needed); the state line counts both kinds. Only where HEAD does not track the snapshot: a tracked
 // snapshot (this study's repo) never takes a swap.
 // A malformed listing, or one naming a path outside site/ or site-pretty/, refuses (BASELINE-MODIFIED).
 // FW_MIRROR_HOME (tests' fixture baselines) = "override": unchecked.
@@ -156,9 +157,10 @@ export function treeFingerprint(dir) {
  * throwaway bare git dir and index under the system temp dir, then `write-tree --prefix=<t>/`; the temp dir is removed.
  * `home` need not be a git checkout (npm run init checks its staging dir with it). Throws on a git failure.
  * I-270 `swaps` (redactionList): each listed file below <t>/ must hash to its redactedBlob (else RedactionError) and
- * enters the tree as its originalBlob, so the id is the pinned one when nothing else changed.
+ * enters the tree as its originalBlob, so the id is the pinned one when nothing else changed. I-277: or to its
+ * originalBlob (enters as it is). `counts` ({original, redacted}), when given, is incremented per listed file.
  */
-export function dirTreeId(home, t, { swaps = [] } = {}) {
+export function dirTreeId(home, t, { swaps = [], counts = null } = {}) {
   const tmp = mkdtempSync(join(tmpdir(), 'fw-baseline-tree-'));
   try {
     const gd = join(tmp, 'g');
@@ -168,20 +170,24 @@ export function dirTreeId(home, t, { swaps = [] } = {}) {
     const add = gitChecked(home, [...RAW, `--git-dir=${gd}`, `--work-tree=${home}`, 'add', '--force', '--', t, ...volatileExcludes(t)], env);
     if (!add.ok) throw new Error(`git add ${t} failed: ${add.err.split('\n')[0]}`);
     const mine = swaps.filter((s) => s.path.startsWith(`${t}/`));
+    let swapped = 0;
     for (const s of mine) {
       const ls = gitChecked(home, [...RAW, `--git-dir=${gd}`, `--work-tree=${home}`, 'ls-files', '-s', '-z', '--', `:(literal)${s.path}`], env);
       const m = ls.out.split('\0').map((l) => /^(\d{6}) ([0-9a-f]+) 0\t(.*)$/s.exec(l)).find((x) => x?.[3] === s.path);
       if (!ls.ok || !m) throw new RedactionError(`${s.path} is listed as redacted (${s.rule}) but is not a file of ${t}/`);
-      if (m[2] !== s.redactedBlob) throw new RedactionError(`${s.path} is listed as redacted (${s.rule}) but its blob ${m[2].slice(0, 10)} is not the listed ${s.redactedBlob.slice(0, 10)}`);
+      if (m[2] === s.originalBlob) { if (counts) counts.original = (counts.original || 0) + 1; continue; } // I-277: the pinned bytes
+      if (m[2] !== s.redactedBlob) throw new RedactionError(`${s.path} is listed as redacted (${s.rule}) but its blob ${m[2].slice(0, 10)} is neither the listed original ${s.originalBlob.slice(0, 10)} nor the listed redacted ${s.redactedBlob.slice(0, 10)}`);
       // a redacted file shows where: a listing that names a file the packer never redacted is no redaction
       let body = '';
       try { body = readFileSync(join(home, s.path), 'latin1'); } catch {}
       if (!s.rule.split(',').some((id) => body.includes(`[secret omitted: ${id}]`))) throw new RedactionError(`${s.path} is listed as redacted (${s.rule}) but holds no "[secret omitted: …]" mark`);
       const ui = gitChecked(home, [...RAW, `--git-dir=${gd}`, 'update-index', '--cacheinfo', `${m[1]},${s.originalBlob},${s.path}`], env);
       if (!ui.ok) throw new Error(`git update-index ${s.path} failed: ${ui.err.split('\n')[0]}`);
+      swapped++;
+      if (counts) counts.redacted = (counts.redacted || 0) + 1;
     }
     // the original blobs are not in the throwaway object store; their ids are all a tree id needs
-    const wt = gitChecked(home, [...RAW, `--git-dir=${gd}`, 'write-tree', ...(mine.length ? ['--missing-ok'] : []), `--prefix=${t}/`], env);
+    const wt = gitChecked(home, [...RAW, `--git-dir=${gd}`, 'write-tree', ...(swapped ? ['--missing-ok'] : []), `--prefix=${t}/`], env);
     if (!wt.ok || !wt.out) throw new Error(`git write-tree --prefix=${t}/ failed: ${wt.err.split('\n')[0] || 'no tree (empty directory?)'}`);
     return wt.out;
   } finally { rmSync(tmp, { recursive: true, force: true }); }
@@ -189,7 +195,7 @@ export function dirTreeId(home, t, { swaps = [] } = {}) {
 
 /** The release manifest (I-268, I-270), relative to the checkout root. */
 export const RELEASE_MANIFEST = 'tools/release/release-assets.json';
-/** A listed redaction that does not hold (the file is not the listed redacted one, or is gone): not the snapshot. */
+/** A listed redaction that does not hold (the file is neither the listed original nor the redacted one, or is gone): not the snapshot. */
 export class RedactionError extends Error {}
 const BLOB = /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/;
 
@@ -237,33 +243,38 @@ const readCache = (f) => { try { return JSON.parse(readFileSync(f, 'utf8')); } c
 
 /**
  * dirTreeId(home, t), cached by treeFingerprint: the first check of an untracked snapshot hashes it (about a second
- * for the real 61 MB one), later checks only stat its files. Returns {tree, cached}.
+ * for the real 61 MB one), later checks only stat its files. Returns {tree, cached, original, redacted} (I-277: how many
+ * listed files hold their original / redacted blob; 0 and 0 without swaps).
  */
 export function untrackedTreeId(home, t, { swaps = [] } = {}) {
   const mine = swaps.filter((s) => s.path.startsWith(`${t}/`));
   const key = `${real(home)}\0${t}${mine.length ? `\0${createHash('sha256').update(JSON.stringify(mine)).digest('hex').slice(0, 16)}` : ''}`;
   const fp = treeFingerprint(join(home, t));
+  const n = (e) => ({ original: e.original ?? 0, redacted: e.redacted ?? 0 });
+  // an entry from before I-277 has no counts: hashed again once when swaps are listed
+  const counted = (e) => !mine.length || (Number.isInteger(e.original) && Number.isInteger(e.redacted) && e.original + e.redacted === mine.length);
   const mem = treeCache.get(key);
-  if (fp && mem?.fp === fp) return { tree: mem.tree, cached: true };
+  if (fp && mem?.fp === fp && counted(mem)) return { tree: mem.tree, cached: true, ...n(mem) };
   const f = cacheFile(home);
   const disk = f ? readCache(f) : {};
-  if (fp && disk[key]?.fp === fp && /^[0-9a-f]{40,64}$/.test(disk[key].tree ?? '')) {
+  if (fp && disk[key]?.fp === fp && /^[0-9a-f]{40,64}$/.test(disk[key].tree ?? '') && counted(disk[key])) {
     treeCache.set(key, disk[key]);
-    return { tree: disk[key].tree, cached: true };
+    return { tree: disk[key].tree, cached: true, ...n(disk[key]) };
   }
-  const tree = dirTreeId(home, t, { swaps: mine });
+  const counts = { original: 0, redacted: 0 };
+  const tree = dirTreeId(home, t, { swaps: mine, counts });
   if (fp) {
-    treeCache.set(key, { fp, tree });
+    treeCache.set(key, { fp, tree, ...counts });
     if (f) {
       try { // best effort; the fingerprint was taken before hashing, so a file changed meanwhile never matches it again
         mkdirSync(dirname(f), { recursive: true });
         const tmpf = `${f}.${process.pid}.tmp`;
-        writeFileSync(tmpf, JSON.stringify({ ...readCache(f), [key]: { fp, tree, at: new Date().toISOString() } }, null, 1) + '\n');
+        writeFileSync(tmpf, JSON.stringify({ ...readCache(f), [key]: { fp, tree, ...counts, at: new Date().toISOString() } }, null, 1) + '\n');
         renameSync(tmpf, f);
       } catch {}
     }
   }
-  return { tree, cached: false };
+  return { tree, cached: false, ...counts };
 }
 
 const RESTORE = (where) => `git -C ${where} restore --source=HEAD --staged --worktree -- ${TREES.join(' ')} && git -C ${where} clean -fd -- ${TREES.join(' ')}`;
@@ -313,7 +324,8 @@ function checkStatus({ repo, env }) {
       redactions ??= releaseRedactions(home);
       if (redactions.error) return res('modified', false, `BASELINE-MODIFIED: ${PIN_FILE} pins ${pin.snapshot}, but ${RELEASE_MANIFEST}'s list of redacted snapshot files is not usable: ${redactions.error}. Only listed redactions of files below ${TREES.map((x) => `${x}/`).join(' and ')} are accepted.\n  Restore it: git checkout HEAD -- ${RELEASE_MANIFEST}, or take a release's manifest unchanged.`, { homes });
       try {
-        verified[t] = { home, tree: untrackedTreeId(home, t, { swaps: redactions.swaps }).tree };
+        const u = untrackedTreeId(home, t, { swaps: redactions.swaps });
+        verified[t] = { home, tree: u.tree, original: u.original, redacted: u.redacted };
         continue;
       } catch (e) {
         if (e instanceof GitTimeout) throw e;
@@ -357,7 +369,9 @@ function checkStatus({ repo, env }) {
   }
   const vt = TREES.filter((t) => verified[t]);
   const nred = redactions?.swaps?.length || 0;
-  if (vt.length) return res('ok', true, `baseline ${pin.snapshot} (${homes.join(', ')}) matches ${PIN_FILE} (untracked, verified: ${vt.join(', ')}${nred ? `; ${nred} redacted file(s) as ${RELEASE_MANIFEST} lists` : ''})`, { homes, source: 'untracked, verified', ...(nred ? { redacted: nred } : {}) });
+  const sum = (k) => vt.reduce((a, t) => a + (verified[t][k] || 0), 0);
+  const [norig, nredd] = [sum('original'), sum('redacted')]; // I-277: listed files holding the original / redacted blob
+  if (vt.length) return res('ok', true, `baseline ${pin.snapshot} (${homes.join(', ')}) matches ${PIN_FILE} (untracked, verified: ${vt.join(', ')}${nred ? `; ${norig} original / ${nredd} redacted file(s) of the ${nred} ${RELEASE_MANIFEST} lists` : ''})`, { homes, source: 'untracked, verified', ...(nred ? { original: norig, redacted: nredd } : {}) });
   return res('ok', true, `baseline ${pin.snapshot} (${homes.join(', ')}) matches ${PIN_FILE}`, { homes });
 }
 

@@ -355,7 +355,7 @@ test('I-270 init: a snapshot file changed beyond the listed redaction fails (SNA
   assert.match(edited.init.stderr, /^INIT FAILED: SNAPSHOT-MISMATCH snapshot-\S+: its list of redacted files \(3\) is not the one HEAD:tools\/release\/release-assets\.json commits \(2\); was the manifest edited after packing\?/m);
   const listed = tamper(SECRET_FILE, (t) => t.replace("region: 'x'", "region: 'y'"));
   assert.equal(listed.init.code, 1, listed.init.out);
-  assert.match(listed.init.stderr, /^INIT FAILED: SNAPSHOT-MISMATCH snapshot-\S+: site-pretty\/__vendor\/tag\.js is listed as redacted \(secret-kv\) but its blob \w{10} is not the listed \w{10}/m);
+  assert.match(listed.init.stderr, /^INIT FAILED: SNAPSHOT-MISMATCH snapshot-\S+: site-pretty\/__vendor\/tag\.js is listed as redacted \(secret-kv\) but its blob \w{10} is neither the listed original \w{10} nor the listed redacted \w{10}/m); // I-277 wording
   // a listing that names a path outside site*/: refused before anything is fetched
   const clone = makeTempRepo({ worktree: null }).main;
   writeFileSync(join(clone, 'baseline.json'), readFileSync(join(f.source, 'baseline.json')));

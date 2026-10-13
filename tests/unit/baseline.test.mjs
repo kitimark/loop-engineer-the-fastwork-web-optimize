@@ -138,7 +138,7 @@ test('I-268 release checkout: HEAD does not track the snapshot, the unpacked fil
     assert.equal(r.code, 0, r.out);
     return JSON.parse(r.stdout);
   };
-  assert.deepEqual(ids(rel.main), [{ tree: s1.trees.site, cached: true }, { tree: s1.trees['site-pretty'], cached: true }]);
+  assert.deepEqual(ids(rel.main), [{ tree: s1.trees.site, cached: true, original: 0, redacted: 0 }, { tree: s1.trees['site-pretty'], cached: true, original: 0, redacted: 0 }]); // I-277: no listed files
   // volatile files the tools write (and Finder's .DS_Store) do not count, as in a tracked checkout
   writeFileSync(join(rel.main, 'site', '.mirror', 'missing-local.txt'), '/x\n');
   writeFileSync(join(rel.main, 'site-pretty', '_app', '.DS_Store'), 'x');
@@ -207,7 +207,8 @@ test('I-270 release checkout with redacted snapshot files: exactly the listed sw
   assert.equal(s.state, 'ok', s.message);
   assert.equal(s.source, 'untracked, verified');
   assert.equal(s.redacted, 1);
-  assert.match(s.message, /\(untracked, verified: site, site-pretty; 1 redacted file\(s\) as tools\/release\/release-assets\.json lists\)$/);
+  assert.equal(s.original, 0);
+  assert.match(s.message, /\(untracked, verified: site, site-pretty; 0 original \/ 1 redacted file\(s\) of the 1 tools\/release\/release-assets\.json lists\)$/);
   // a local, uncommitted edit of the manifest does not count (HEAD's listing is read)
   writeFileSync(join(rel.main, 'tools', 'release', 'release-assets.json'), manifest([]));
   assert.equal(probe(rel.main).state, 'ok');
@@ -219,11 +220,12 @@ test('I-270 release checkout with redacted snapshot files: exactly the listed sw
   assert.match(s.message, /^BASELINE-MODIFIED: .*site \(not tracked by git\) has tree/);
   writeFileSync(join(rel.main, 'site', 'robots.txt'), 'User-agent: *\nAllow: /\n');
   assert.equal(probe(rel.main).state, 'ok');
-  // 3. a listed path whose current blob is not the redactedBlob (here: the original, unredacted bytes)
-  writeFileSync(join(rel.main, path), orig);
+  // 3. a listed path whose current blob is neither the redactedBlob nor the originalBlob (I-277: the original bytes are
+  // accepted, see the I-277 test below)
+  writeFileSync(join(rel.main, path), Buffer.concat([redacted, Buffer.from('x')]));
   s = probe(rel.main);
   assert.equal(s.state, 'modified', s.message);
-  assert.match(s.message, /^BASELINE-MODIFIED: \S+site-pretty \(not tracked by git\): site-pretty\/index\.html is listed as redacted \(secret-kv\) but its blob \w{10} is not the listed \w{10}/);
+  assert.match(s.message, /^BASELINE-MODIFIED: \S+site-pretty \(not tracked by git\): site-pretty\/index\.html is listed as redacted \(secret-kv\) but its blob \w{10} is neither the listed original \w{10} nor the listed redacted \w{10}/);
   writeFileSync(join(rel.main, path), redacted);
   assert.equal(probe(rel.main).state, 'ok');
   // 4. a listing that names a path outside site*/ (or is malformed): refused as a whole
@@ -280,6 +282,53 @@ test('I-278 temp repos own their release manifest and snapshot ignore lines: mak
   // track one; the volatile files stay ignored
   for (const f of ['site/index.html', 'site-pretty/index.html']) assert.equal(run('git', ['check-ignore', '-q', f], { cwd: r.main }).code, 1, f);
   assert.equal(run('git', ['check-ignore', '-q', 'site/.mirror/missing-local.txt'], { cwd: r.main }).code, 0);
+});
+
+test('I-277 a listed file may hold its original (pinned) bytes instead of the redacted ones: ok, the state line counts each', () => {
+  // this study's repo after the history sync: the snapshot is untracked and holds the ORIGINAL bytes, HEAD commits the
+  // release manifest that lists the redacted ones
+  const rel = makeTempRepo({ worktree: null });
+  writeFileSync(join(rel.main, 'baseline.json'), JSON.stringify(s1, null, 1) + '\n');
+  writeFileSync(join(rel.main, '.gitignore'), `${readFileSync(join(rel.main, '.gitignore'), 'utf8')}/site/\n/site-pretty/\n`);
+  makeFixtureHome(rel.main);
+  const blobOf = (buf) => run('git', ['hash-object', '--stdin'], { cwd: rel.main, input: buf }).stdout.trim();
+  const mark = (buf) => Buffer.concat([buf, Buffer.from('<!-- apiKey: "[secret omitted: secret-kv]" -->\n')]);
+  const files = ['site-pretty/index.html', 'site/robots.txt'].map((path) => {
+    const orig = readFileSync(join(rel.main, path));
+    return { path, orig, red: mark(orig), entry: { path, rule: 'secret-kv', originalBlob: blobOf(orig), redactedBlob: blobOf(mark(orig)) } };
+  });
+  writeFileSync(join(rel.main, 'tools', 'release', 'release-assets.json'), JSON.stringify({ version: 1, release: 'r1', assets: [{ name: 's.tar.gz', sha256: '0'.repeat(64), bytes: 1, unpackTo: '.', kind: 'snapshot', redacted: files.map((f) => f.entry) }] }, null, 1) + '\n');
+  git(rel.main, 'add', 'baseline.json', '.gitignore', 'tools/release/release-assets.json');
+  git(rel.main, 'commit', '-q', '-m', 'release pin + manifest');
+  const expect = (o, r) => {
+    for (const pass of ['hashed', 'cached']) {
+      const s = probe(rel.main);
+      assert.equal(s.state, 'ok', `${pass}: ${s.message}`);
+      assert.equal(s.source, 'untracked, verified');
+      assert.deepEqual([s.original, s.redacted], [o, r], pass);
+      assert.match(s.message, new RegExp(`\\(untracked, verified: site, site-pretty; ${o} original / ${r} redacted file\\(s\\) of the 2 tools/release/release-assets\\.json lists\\)$`), pass);
+    }
+  };
+  // all original (no "[secret omitted" mark needed): the pinned tree ids, recomputed without a swap
+  expect(2, 0);
+  // mixed: one redacted, one original
+  writeFileSync(join(rel.main, files[0].path), files[0].red);
+  expect(1, 1);
+  // all redacted (the release's file, as before)
+  writeFileSync(join(rel.main, files[1].path), files[1].red);
+  expect(0, 2);
+  // any third content of a listed file still refuses, before and after the swap
+  writeFileSync(join(rel.main, files[1].path), Buffer.concat([files[1].orig, Buffer.from('#')]));
+  const s = probe(rel.main);
+  assert.equal(s.state, 'modified', s.message);
+  assert.match(s.message, /site\/robots\.txt is listed as redacted \(secret-kv\) but its blob \w{10} is neither the listed original \w{10} nor the listed redacted \w{10}/);
+  // the original bytes of one file with another, unlisted change elsewhere: the tree id catches it
+  writeFileSync(join(rel.main, files[1].path), files[1].orig);
+  writeFileSync(join(rel.main, 'site', '_app', 'new-build.js'), 'x');
+  assert.match(probe(rel.main).message, /^BASELINE-MODIFIED: .*site \(not tracked by git\) has tree/);
+  rmSync(join(rel.main, 'site', '_app', 'new-build.js'));
+  expect(1, 1);
+  assert.equal(git(rel.main, 'status', '--porcelain'), '', 'the check writes nothing into the checkout');
 });
 
 test('I-268 dirTreeId: the tree id git would commit, also outside a git checkout; treeFingerprint moves on any write', async () => {
