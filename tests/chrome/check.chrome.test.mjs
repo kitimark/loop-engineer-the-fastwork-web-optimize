@@ -6,7 +6,7 @@
 // I-022), the tools re-enter that hold.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { makeTempRepo, node, nodeAsync, run, REPO, chromeLock, startServe } from '../helpers.mjs';
 import { makeFixtureHome, PAGE_JS } from '../fixtures/baseline.mjs';
@@ -39,7 +39,10 @@ document.head.append(s);
   assert.equal(r.code, 1, r.out);
   assert.doesNotMatch(r.out, /\[lock chrome-measure\] busy/, 'check.mjs re-entered the hold instead of queueing');
   const d = join(repo.wt, 'out', 'check', 'breaks-page');
+  // I-071: fix.mjs check also exits 1 when it fails before judging (a server, check.mjs or Chrome failed): say why
+  assert.ok(existsSync(d) && readdirSync(d).length, `fix.mjs check made no out/check/breaks-page/<ts>/ (exit ${r.code}): ${r.out}`);
   const dir = join(d, readdirSync(d).sort().pop());
+  assert.ok(existsSync(join(dir, 'check.json')), `fix.mjs check exited ${r.code} without writing check.json (it failed before judging, not on the page): ${r.out}`);
   const res = JSON.parse(readFileSync(join(dir, 'check.json'), 'utf8'));
   const raw = JSON.parse(readFileSync(join(dir, 'check-raw.json'), 'utf8'));
   const base = raw.results.find((x) => x.label === 'base');
