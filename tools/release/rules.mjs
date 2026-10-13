@@ -158,20 +158,25 @@ export function buildRules(known, { home = homedir() } = {}) {
  * since a token in its place would hide that one was ever committed) and the exports (redactSecrets). ids name the
  * kind; a hit prints the id and path:line only. `match` is a JS RegExp source (compile with flag 'g').
  */
+// key/token/secret as a word, after `_`/`-` (api_key, x-token) or in camelCase (apiKey), never inside a word (monkey);
+// its value: 24+ base64 characters that are not all hex (a cited commit SHA after "key:" is no secret)
+const KV_NAME = '(?:\\b|[_-]|(?<=[a-z])(?=[KTS]))(?i:key|token|secret)["\']?[ \\t]*[:=][ \\t]*["\']?';
+const KV_VALUE = '(?![0-9a-fA-F]+(?![A-Za-z0-9+/=]))[A-Za-z0-9+/]{24,}={0,2}';
+
 export const SECRET_SHAPES = [
   { id: 'secret-github', match: '\\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})' },
   { id: 'secret-sk', match: '\\bsk-(?:ant-[A-Za-z0-9_-]{20,}|[A-Za-z0-9]{20,})' },
   { id: 'secret-aws', match: '\\b(?:AKIA|ASIA)[0-9A-Z]{16}\\b' },
   { id: 'secret-bearer', match: '\\bBearer [A-Za-z0-9._~+/=-]{20,}' },
   { id: 'secret-pem', match: '-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----' },
-  { id: 'secret-kv', match: '(?i:key|token|secret)["\']?[ \\t]*[:=][ \\t]*["\']?[A-Za-z0-9+/]{24,}={0,2}' },   // key=v, key: v, "token": "v"
+  { id: 'secret-kv', match: KV_NAME + KV_VALUE },   // key=v, key: v, "token": "v"
 ];
 
 // redactSecrets only: a whole PEM private key block (to its END line, or to the end of the text) and a key/token/secret
 // value without its name and separator
 const REDACT = {
   'secret-pem': { re: '-----BEGIN ((?:[A-Z0-9]+ )*)PRIVATE KEY-----[\\s\\S]*?(?:-----END \\1PRIVATE KEY-----|$)', keep: '' },
-  'secret-kv': { re: '((?i:key|token|secret)["\']?[ \\t]*[:=][ \\t]*["\']?)[A-Za-z0-9+/]{24,}={0,2}', keep: '$1' },
+  'secret-kv': { re: `(${KV_NAME})${KV_VALUE}`, keep: '$1' },
 };
 
 /** Every secret-shape match replaced by "[secret omitted: <id>]" (exports outside git: console, chat; it matches no

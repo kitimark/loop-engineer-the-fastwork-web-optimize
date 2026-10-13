@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { writeFileSync, chmodSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { tempDir } from '../helpers.mjs';
 
 const R = await import('../../tools/release/rules.mjs');
@@ -135,13 +136,17 @@ test('I-269 secret shapes: each kind found as secret-<kind> with its line, near 
     'secret-aws': [fake('AK', 'IA', X(16, 'Z9')), fake('AS', 'IA', X(16, 'Z9'))],
     'secret-bearer': [fake('Authorization: Bea', 'rer ', X(24, 'a.B-'))],
     'secret-pem': [fake('-----BEGIN ', 'PRIVATE KEY-----'), fake('-----BEGIN RSA ', 'PRIVATE KEY-----'), fake('-----BEGIN OPENSSH ', 'PRIVATE KEY-----')],
-    'secret-kv': [fake('api_ke', 'y=', X(24, 'aZ+/'), '=='), fake('TOK', 'EN=', X(30)), fake('client_sec', 'ret=', X(40)), fake('api_key', ': ', X(30)), fake('{"tok', 'en": "', X(28), '"}'), fake("SECRET", "='", X(26), "'")],
+    'secret-kv': [fake('api_ke', 'y=', X(24, 'aZ+/'), '=='), fake('TOK', 'EN=', X(30)), fake('client_sec', 'ret=', X(40)), fake('api_key', ': ', X(30)), fake('{"tok', 'en": "', X(28), '"}'), fake("SECRET", "='", X(26), "'"),
+      fake('api_ke', 'y=', X(32, 'aB3x')), fake('apiK', 'ey: ', X(32, 'aB3x')), fake('x-tok', 'en=', X(30))],
   };
   for (const [id, list] of Object.entries(samples)) {
     for (const s of list) assert.deepEqual(R.scanText(`ok\nx ${s} y\n`, rs), [{ id, line: 2 }], `${id} finds its sample`);
   }
   const near = [fake('gh', 'p_', X(10)), fake('s', 'k-', X(12)), fake('desk-', X(30)), fake('AK', 'IA', X(10, 'Z9')), 'Bearer of bad news',
-    '-----BEGIN PUBLIC KEY-----', '-----BEGIN CERTIFICATE-----', fake('ke', 'y=', X(20)), 'token=short', 'see 0123456789abcdef0123456789abcdef01234567'];
+    '-----BEGIN PUBLIC KEY-----', '-----BEGIN CERTIFICATE-----', fake('ke', 'y=', X(20)), 'token=short', 'see 0123456789abcdef0123456789abcdef01234567',
+    // inside a word, or a pure-hex value (a cited commit SHA) is no secret (review of 72930aa2)
+    fake('"monk', 'ey": "', X(24, 'aB3'), '"'), fake('cache ke', 'y: ', '0123456789abcdef0123456789abcdef01234567'),
+    fake('"tok', 'en": "', 'ABCDEF0123456789abcdef0123456789', '"'), fake('donkey', '=', X(30))];
   assert.deepEqual(R.scanText(near.join('\n'), rs), [], 'near misses and SHAs are not secrets');
   // secrets are found, not replaced: buildRules (the rewrite's rules) carries none of them
   assert.ok(!rules().some((r) => r.id.startsWith('secret-')));
@@ -197,4 +202,22 @@ test('I-269 scrubAll: literals in any letter case (text and bytes), then the reg
     + '[secret omitted: secret-pem]\n[secret omitted: secret-pem]', 'a PEM block goes whole (to its END line or the end), a key keeps its name');
   assert.deepEqual(red.hits, [{ id: 'secret-github', count: 1 }, { id: 'secret-pem', count: 3 }, { id: 'secret-kv', count: 1 }]);
   assert.deepEqual(R.scanText(red.text, R.withSecrets(rs)), [], 'the markers match no shape');
+  const sha = '0123456789abcdef0123456789abcdef01234567', camel = fake('apiK', 'ey: "', X(32, 'aB3x'), '"');
+  assert.equal(R.redactSecrets(`cache key: ${sha}\n${camel}`).text, `cache key: ${sha}\napiKey: "[secret omitted: secret-kv]"`,
+    'a cited commit SHA stays, a camelCase key is redacted');
+});
+
+test('I-269 secret shapes: Python 3 compiles them and matches as JS does (scoped (?i:), lookbehind)', (t) => {
+  const kv = R.SECRET_SHAPES.find((s) => s.id === 'secret-kv').match;
+  const cases = [fake('"monk', 'ey": "', X(24, 'aB3'), '"'), fake('cache ke', 'y: ', '0123456789abcdef0123456789abcdef01234567'),
+    fake('"tok', 'en": "', 'ABCDEF0123456789abcdef0123456789', '"'), fake('api_ke', 'y=', X(32, 'aB3x')),
+    fake('apiK', 'ey: "', X(32, 'aB3x'), '"'), fake('x-tok', 'en=', X(30)), fake('donkey', '=', X(30))];
+  const js = cases.map((c) => new RegExp(kv).test(c));
+  assert.deepEqual(js, [false, false, false, true, true, true, false]);
+  const py = spawnSync('python3', ['-I', '-c', 'import json,re,sys\nd=json.load(sys.stdin)\n'
+    + 'print(json.dumps([[bool(re.search(m, c)) for c in d["cases"]] for m in d["shapes"]]))'],
+  { input: JSON.stringify({ shapes: R.SECRET_SHAPES.map((s) => s.match), cases }), encoding: 'utf8' });
+  if (py.error) return t.skip('no python3');
+  assert.equal(py.status, 0, py.stderr);
+  assert.deepEqual(JSON.parse(py.stdout), R.SECRET_SHAPES.map((s) => cases.map((c) => new RegExp(s.match).test(c))));
 });
