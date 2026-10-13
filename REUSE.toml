@@ -3,7 +3,7 @@ version = 1
 # Licensing per folder (REUSE specification 3.3: in one file, the last matching table wins).
 # Summary for people: LICENSING.md.
 
-# Default: write-ups, research, fix write-ups, memory, console record and chat export.
+# Default: write-ups, research, fix write-ups, memory and the console record.
 [[annotations]]
 path = "**"
 SPDX-FileCopyrightText = "2026 kitimark"

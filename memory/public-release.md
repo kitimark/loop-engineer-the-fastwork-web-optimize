@@ -14,7 +14,9 @@ files. This repo still gets no remote and no push, and nothing Fastwork-derived 
 **Why.** Fastwork's Engineering Partner approved publishing "the link and source ... according to your study" (12 Oct, pasted
 by the user in T-170 #412). The user chose to include the compiled snapshot (option B, #416), keep every commit and all
 284 branches rewritten rather than fresh history (#421, #423), keep their own commit name and email (artifact comment), put
-large files in a GitHub Release fetched by a setup script (#418), and include the parts of `out/` that write-ups cite (#419).
+large files in a GitHub Release fetched by a setup script (#418), and include the parts of `out/` that write-ups cite (#419). No export of the Claude Code chat: the user first chose a
+short scrubbed one (#436, 3a), then dropped it (#454, 2026-10-13: its confidential parts are too complex to handle);
+the chat-export tool (I-273) was not landed. The console record export stays.
 
 **How to apply.**
 - The release copy is made by script, never by hand: rewrite (git-filter-repo v2.47.0, values to tokens, cited SHAs
