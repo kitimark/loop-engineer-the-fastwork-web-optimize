@@ -19,7 +19,8 @@
 //                      is a note instead of a difference
 //   --sources <mode>   the Medium sources mode (lib/sources.mjs): none (default: no Sources section and no source
 //                      references in Medium), github (--github-base <url>, --sources-map <json>: references link to
-//                      GitHub), artifact (the page as it is, as in kits built before the switch). A kit built in
+//                      GitHub), github-inline (the same links, no Sources section), artifact (the page as it is, as in
+//                      kits built before the switch). A kit built in
 //                      another mode (kit.json "sources") is a WARN line; its captions then show as KIT differences.
 // What it checks: title, subtitle and the disclaimer lines exactly (after normalizing quotes, dashes, spaces);
 // every block in order (missing, extra, moved, changed text as a short word diff, heading level, quote kind, list

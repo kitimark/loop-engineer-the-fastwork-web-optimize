@@ -6,8 +6,9 @@
 //   node research/team-article/medium-check/changes.mjs --from 105        # versions/p1-v105.html -> index.html
 //   node research/team-article/medium-check/changes.mjs --from 104 --to 105
 // Options: --json (the list as JSON), --dir <article folder> (default research/team-article/artifacts/sixteen-milliseconds)
-//   --sources none|github|artifact   the Medium sources mode of both versions (lib/sources.mjs; default none: no
-//                      Sources section and no source references); github takes --github-base <url>, --sources-map
+//   --sources none|github|github-inline|artifact   the Medium sources mode of both versions (lib/sources.mjs; default
+//                      none: no Sources section and no source references); github and github-inline (links, no Sources
+//                      section) take --github-base <url>, --sources-map
 //   --from-sources <mode>            the mode the OLD side is in Medium, when it differs: e.g. the draft pasted from
 //                      a kit with sources, now going to none:  changes.mjs --from 109 --to 109 --from-sources artifact
 //
@@ -32,6 +33,7 @@ const where = (b) => {
   if (!b) return 'at the top';
   if (b.kind === 'picture') return `Picture ${b.n} (${b.file})`;
   if (b.kind === 'clip') return `Clip ${b.n}`;
+  if (b.role === 'disclaimer') return `disclaimer line ${b.dn} ("${clip(b.text, 40)}")`;
   const sec = b.section && b.section !== '(top)' ? b.section.replace(/:.*$/, '') + ', ' : '';
   if (b.kind === 'heading') return `${b.level === 1 ? 'heading' : 'subheading'} "${clip(b.text, 50)}"`;
   if (b.kind === 'hr') return `${sec}separator`;
@@ -53,6 +55,8 @@ function pageAssets(html) {
 export function changes(oldHtml, newHtml, opts = {}) {
   const fromSources = opts.fromSources !== undefined ? opts.fromSources : opts.sources;
   const A = extractArticle(oldHtml, { sources: fromSources }), B = extractArticle(newHtml, { sources: opts.sources });
+  // the disclaimer lines are named as such in the list ("disclaimer line 2"), not as top paragraphs
+  for (const m of [A, B]) m.blocks.filter((b) => b.role === 'disclaimer').forEach((b, k) => { b.dn = k + 1; });
   const ops = [];
   const rebuild = new Map(); // new picture number -> reason
   const add = (op, at, text) => ops.push({ op, at, text });
@@ -103,7 +107,9 @@ export function changes(oldHtml, newHtml, opts = {}) {
   function edits(a, b) {
     const at = where(a);
     if (a.kind !== b.kind) { add('change', at, `make it a ${kindName(b)} (was a ${kindName(a)})`); }
-    if ((a.kind === 'p' || a.kind === 'heading' || a.kind === 'li' || a.kind === 'quote') && a.text !== b.text) add('change', at, `change text: ${wordDiff(a.text, b.text)}`);
+    // a disclaimer line is checked exactly (check.mjs), so its diff is shown whole, not cut to a few spots
+    const full = b.role === 'disclaimer' ? { max: 1e3, cut: 1e4 } : undefined;
+    if ((a.kind === 'p' || a.kind === 'heading' || a.kind === 'li' || a.kind === 'quote') && a.text !== b.text) add('change', at, `change text: ${wordDiff(a.text, b.text, full)}`);
     if (a.kind === 'heading' && b.kind === 'heading' && a.level !== b.level) add('change', at, `make it a ${b.level === 1 ? 'big' : 'small'} heading`);
     if (a.kind === 'quote' && b.kind === 'quote' && a.pull !== b.pull) add('change', at, b.pull ? 'make it a pull quote' : 'make it a plain quote');
     if (a.kind === 'li' && b.kind === 'li' && a.list !== b.list) add('change', at, `make it a ${b.list === 'ol' ? 'numbered' : 'bulleted'} list`);

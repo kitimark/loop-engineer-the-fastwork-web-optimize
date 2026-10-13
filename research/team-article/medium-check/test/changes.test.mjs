@@ -78,3 +78,23 @@ test('changes.mjs CLI: two files, --json, usage errors exit 2', () => {
   assert.equal(spawnSync(process.execPath, [CHANGES, a], { encoding: 'utf8' }).status, 2);
   assert.equal(spawnSync(process.execPath, [CHANGES, a, join(dir, 'missing.html')], { encoding: 'utf8' }).status, 2);
 });
+
+test('a disclaimer edit is named as a disclaimer line, with its new links', () => {
+  const v2 = MINI.replace('<p><em>Times are UTC.</em></p>', '<p><em>Times are UTC. The code is on <a href="https://example.test/repo">GitHub</a>.</em></p>');
+  const L = lines(changes(MINI, v2));
+  assert.deepEqual(L, [
+    'disclaimer line 2 ("Times are UTC."): change text: Times are UTC. {+The code is on GitHub.+}',
+    'disclaimer line 2 ("Times are UTC."): links now: https://example.test/repo',
+  ]);
+});
+
+test('committed versions: v112 -> v113 changes only disclaimer line 2', { skip: !existsSync(join(ART, 'versions', 'p1-v113.html')) && 'versions not in this checkout' }, () => {
+  const v = (n) => readFileSync(join(ART, 'versions', `p1-v${n}.html`), 'utf8');
+  const r = changes(v(112), v(113));
+  assert.deepEqual(r.ops.map((o) => o.at.replace(/ \(.*/, '')), ['disclaimer line 2', 'disclaimer line 2']);
+  assert.match(r.ops[0].text, /\{\+on GitHub: github\.com\/kitimark\/loop-engineer-the-fastwork-web-optimize \(release v1\.0\), published with Fastwork's permission\. You can try both pages yourself:\+\}/, 'the whole diff, not cut');
+  assert.match(r.ops[0].text, /\{\+are study copies, not the real Fastwork site\.\+\}$/);
+  assert.doesNotMatch(r.ops[0].text, /more\)|\.\.\.$/);
+  assert.match(r.ops[1].text, /^links now: https:\/\/github\.com\/kitimark\/loop-engineer-the-fastwork-web-optimize, https:\/\/fastwork-perf-original\.kitimark\.workers\.dev\/, https:\/\/fastwork-perf-optimized\.kitimark\.workers\.dev\/$/);
+  assert.deepEqual(r.rebuild, []);
+});

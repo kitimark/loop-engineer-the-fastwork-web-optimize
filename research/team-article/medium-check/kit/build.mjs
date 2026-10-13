@@ -24,7 +24,8 @@
 //   --text-only       capture no pictures (text files and kit.json only)
 //   --sources <mode>  the Medium sources mode (lib/sources.mjs), written into kit.json: none (default: the kit leaves
 //                     out the Sources section and every source reference), github (--github-base <url>, optional
-//                     --sources-map <json>: references link to GitHub), artifact (the page as it is). The transform is
+//                     --sources-map <json>: references link to GitHub), github-inline (the same links, the Sources
+//                     list left out), artifact (the page as it is). The transform is
 //                     the one lib/article.mjs uses, run on the page's DOM before the walker; it never touches a
 //                     .cap-area, so the pictures are the same in every mode.
 // Needs a checkout of the study repo: Chrome comes from tools/lib/cdp.mjs (launchChrome). Fonts load from Google

@@ -9,6 +9,8 @@
 //             "(Fig. 6; source, 11 Oct)" -> "(Fig. 6)").
 //   github    keep the Sources list; every #src-N link points to <base>/<repo path> from the mapping file
 //             (kit/sources-github.json, src-N -> repo path); a src-N without a path is removed as in none (a warning).
+//   github-inline  the references as in github, the footer as in none (owner's decision T-279 #10: the Sources list
+//             is too long for Medium; the inline "(source)" links stay and go to GitHub).
 //   artifact  the page as it is (the Claude artifact, and every kit built before this switch): no change.
 // Library calls without a sources option (extractArticle, changes) stay in artifact mode, so the artifact's own
 // model is unchanged.
@@ -23,14 +25,20 @@ import { dirname, join, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-export const MODES = ['none', 'github', 'artifact'];
+export const MODES = ['none', 'github', 'github-inline', 'artifact'];
+/** Modes whose references link to GitHub (they need --github-base), and modes that drop the Sources footer. */
+export const linksGithub = (mode) => mode === 'github' || mode === 'github-inline';
+export const dropsFooter = (mode) => mode === 'none' || mode === 'github-inline';
 export const DEFAULT_MODE = 'none';
 export const MAP_FILE = join(HERE, 'kit', 'sources-github.json');
 
-/** The transform (see the header). cfg: { mode: 'none'|'github', urls: { 'src-N': url } }. Returns a report. */
+/** The transform (see the header). cfg: { mode: 'none'|'github'|'github-inline', urls: { 'src-N': url } }. Returns a report. */
 export function applySourcesDom(root, cfg) {
   const report = { mode: cfg.mode, blocks: [], inPicture: [], unhandled: [], unmapped: [], footer: null, linked: 0, removed: 0 };
-  if (!root || !cfg || (cfg.mode !== 'none' && cfg.mode !== 'github')) return report;
+  // (linksGithub/dropsFooter written out: this function's source text must run alone in Chrome)
+  const link = cfg && (cfg.mode === 'github' || cfg.mode === 'github-inline');
+  const dropFooter = cfg && (cfg.mode === 'none' || cfg.mode === 'github-inline');
+  if (!root || !cfg || (!link && !dropFooter)) return report;
   const cls = (e, c) => (' ' + ((e.getAttribute && e.getAttribute('class')) || '') + ' ').replace(/\s+/g, ' ').indexOf(' ' + c + ' ') >= 0;
   const up = (e, pred) => { for (let x = e; x && x.nodeType === 1; x = x.parentNode) if (pred(x)) return x; return null; };
   const all = (e, pred, out = []) => { for (const c of e.children) { if (pred(c)) out.push(c); all(c, pred, out); } return out; };
@@ -39,9 +47,9 @@ export function applySourcesDom(root, cfg) {
   const BLOCK = ['p', 'li', 'figcaption', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'td', 'th', 'dt', 'dd'];
   const figOf = (e) => { const f = up(e, (x) => x.localName === 'figure'); return f ? f.getAttribute('id') || '(figure)' : null; };
 
-  // 1. the Sources list (ol.figsrc): none drops it with its heading and the note paragraphs between them
+  // 1. the Sources list (ol.figsrc): none and github-inline drop it with its heading and the note paragraphs between them
   const lists = all(root, (e) => e.localName === 'ol' && cls(e, 'figsrc'));
-  if (cfg.mode === 'none') {
+  if (dropFooter) {
     report.footer = lists.length ? 'removed' : 'not found';
     for (const ol of lists) {
       const sib = Array.from(ol.parentNode.children);
@@ -80,7 +88,7 @@ export function applySourcesDom(root, cfg) {
   for (const b of blocks) {
     const before = b.innerHTML;
     let h = before;
-    if (cfg.mode === 'github') {
+    if (link) {
       h = h.replace(/(<a\b[^>]*?\bhref=")#(src-\d+)(")/g, (m, p, id, q) => {
         const u = cfg.urls && cfg.urls[id];
         if (!u) { report.unmapped.push(id); return m; }
@@ -89,7 +97,7 @@ export function applySourcesDom(root, cfg) {
       });
     }
     const pending = (h.match(/href="#src-\d+"/g) || []).length;
-    h = drop(h); // none: every reference; github: the ones without a repo path
+    h = drop(h); // none: every reference; github, github-inline: the ones without a repo path
     const left = (h.match(/href="#src-\d+"/g) || []).length;
     if (left) report.unhandled.push({ src: (/#(src-\d+)/.exec(h) || [])[1], text: '', context: txt(b) });
     if (h === before) continue;
@@ -101,11 +109,15 @@ export function applySourcesDom(root, cfg) {
   return report;
 }
 
-/** Text that still looks like a reference to the Sources section (none mode must leave none). */
-export function sourceResidue(text) {
+/**
+ * Text that still looks like a reference to the Sources section (none mode must leave none). In github-inline the
+ * "(source)" words stay (they are GitHub links), so only what points at the dropped list counts.
+ */
+export function sourceResidue(text, mode = 'none') {
   const s = String(text || '');
   const hits = [];
-  for (const re of [/#src-\d+/g, /\bSources\b/g, /\(\s*sources?\s*\)/gi, /[;,]\s*sources?\s*(?=[),;.]|$)/gi, /\bsee (?:the )?sources?\b/gi, /\bsrc-\d+\b/g]) {
+  const words = mode === 'github-inline' ? [] : [/\(\s*sources?\s*\)/gi, /[;,]\s*sources?\s*(?=[),;.]|$)/gi];
+  for (const re of [/#src-\d+/g, /\bSources\b/g, ...words, /\bsee (?:the )?sources?\b/gi, /\bsrc-\d+\b/g]) {
     for (const m of s.matchAll(re)) hits.push(s.slice(Math.max(0, m.index - 40), m.index + m[0].length + 20));
   }
   return hits;
@@ -128,7 +140,7 @@ export function sourcesConfig({ mode = DEFAULT_MODE, base = null, map = MAP_FILE
   if (!MODES.includes(mode)) throw new SourcesError(`--sources must be one of ${MODES.join(', ')} (got ${mode})`);
   if (mode === 'artifact') return null;
   if (mode === 'none') return { mode };
-  if (!base || !/^https?:\/\/[^\s]+$/.test(base)) throw new SourcesError('--sources github needs --github-base <https://github.com/<owner>/<repo>/blob/<ref>>');
+  if (!base || !/^https?:\/\/[^\s]+$/.test(base)) throw new SourcesError(`--sources ${mode} needs --github-base <https://github.com/<owner>/<repo>/blob/<ref>>`);
   const paths = typeof map === 'string' || !map ? loadSourcesMap(map) : map;
   const b = base.replace(/\/+$/, '');
   const urls = {};
@@ -139,13 +151,13 @@ export function sourcesConfig({ mode = DEFAULT_MODE, base = null, map = MAP_FILE
 /** The mode a kit.json was built in: kits from before the switch have no "sources" field (artifact). */
 export const kitMode = (kit) => (kit && kit.sources && kit.sources.mode) || 'artifact';
 
-/** Short label for reports: "none", "github (https://...)", "artifact". */
-export const modeLabel = (cfg) => (!cfg ? 'artifact' : cfg.mode === 'github' ? `github (${cfg.base})` : cfg.mode);
+/** Short label for reports: "none", "github (https://...)", "github-inline (https://...)", "artifact". */
+export const modeLabel = (cfg) => (!cfg ? 'artifact' : linksGithub(cfg.mode) ? `${cfg.mode} (${cfg.base})` : cfg.mode);
 
 /** The kit.json record of the mode (kit/build.mjs): mode, base, map file, and the transform's report. */
 export function kitRecord(cfg, report, repo) {
   const rec = { mode: cfg ? cfg.mode : 'artifact' };
-  if (cfg && cfg.mode === 'github') { rec.base = cfg.base; rec.map = repo && cfg.map.startsWith(repo + '/') ? relative(repo, cfg.map) : cfg.map; }
+  if (cfg && linksGithub(cfg.mode)) { rec.base = cfg.base; rec.map = repo && cfg.map.startsWith(repo + '/') ? relative(repo, cfg.map) : cfg.map; }
   if (report) rec.report = report;
   return rec;
 }

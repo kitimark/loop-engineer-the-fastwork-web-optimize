@@ -45,7 +45,8 @@ export function parseArgs(argv, spec) {
 export class UsageError extends Error {}
 
 // ---- the sources mode (lib/sources.mjs), shared by build.mjs, check.mjs, model.mjs and changes.mjs ----------------
-// --sources none|github|artifact (default none), --github-base <url> (github), --sources-map <json> (github)
+// --sources none|github|github-inline|artifact (default none), --github-base <url> and --sources-map <json> (github,
+// github-inline)
 export const SOURCES_SPEC = { sources: 'v', 'github-base': 'v', 'sources-map': 'v' };
 export function sourcesFromArgs(o, key = 'sources') {
   if (o['sources-map'] && !existsSync(o['sources-map'])) throw new UsageError(`sources map not found: ${o['sources-map']}`);

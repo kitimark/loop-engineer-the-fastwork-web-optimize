@@ -21,15 +21,15 @@
 // with or without a kit, like the kit itself; a kit whose alt for it differs is stale.
 //
 // Sources mode (lib/sources.mjs, opts.sources): the Medium version may leave out the Sources section and its
-// references ("none") or link them to GitHub ("github"). The same transform runs here on the parsed page and in the
-// kit builder on Chrome's DOM, before each walk, so the model and the kit agree. Without opts.sources (or with
-// "artifact") nothing changes: the model of the page as it is.
+// references ("none"), link them to GitHub ("github"), or link them and drop the Sources list ("github-inline"). The
+// same transform runs here on the parsed page and in the kit builder on Chrome's DOM, before each walk, so the model
+// and the kit agree. Without opts.sources (or with "artifact") nothing changes: the model of the page as it is.
 import { readFileSync, existsSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { parseHTML, find, findAll, hasClass, closest, isTag } from './html.mjs';
 import { norm } from './text.mjs';
 import { applyAltMedium, ALT_FILE } from './alt.mjs';
-import { applySourcesDom, sourcesConfig, sourceResidue, kitMode, modeLabel } from './sources.mjs';
+import { applySourcesDom, sourcesConfig, sourceResidue, kitMode, modeLabel, linksGithub, dropsFooter } from './sources.mjs';
 
 export const SCHEMA = 'fw-article-model/1';
 const ws = (s) => String(s ?? '').replace(/\s+/g, ' ');
@@ -112,10 +112,10 @@ export function extractArticle(html, opts = {}) {
   const B = model.blocks;
   // the sources mode: a config from sourcesConfig(), or a mode name; none given = artifact (the page as it is)
   const scfg = typeof opts.sources === 'string' ? sourcesConfig({ mode: opts.sources }) : (opts.sources || null);
-  if (scfg && (scfg.mode === 'none' || scfg.mode === 'github')) {
+  if (scfg && (linksGithub(scfg.mode) || dropsFooter(scfg.mode))) {
     const r = applySourcesDom(main, scfg);
     model.sources = { mode: scfg.mode, label: modeLabel(scfg), footer: r.footer, removed: r.removed, linked: r.linked, changed: r.blocks, inPicture: r.inPicture, unhandled: r.unhandled, unmapped: [...new Set(r.unmapped)] };
-    if (scfg.mode === 'none' && r.footer !== 'removed') model.warnings.push(`sources: the Sources section was ${r.footer}`);
+    if (dropsFooter(scfg.mode) && r.footer !== 'removed') model.warnings.push(`sources: the Sources section was ${r.footer}`);
     for (const u of r.unhandled) model.warnings.push(`sources: a reference to ${u.src || 'a source'} not removed (no known pattern): "${u.context.slice(0, 120)}"`);
     for (const id of model.sources.unmapped) model.warnings.push(`sources: no repo path for ${id} in the mapping file: that reference is removed`);
     for (const p of r.inPicture) model.warnings.push(`sources: "${p.text}" (${p.src}) is drawn inside picture #${p.figure}; pictures do not change with the mode, so it stays in the picture`);
@@ -229,10 +229,11 @@ export function extractArticle(html, opts = {}) {
   // Medium's short alt (kit/alt-medium.json) replaces a too-long page alt, as in the kit; altMedium: false turns it off
   applyAltMedium(B.filter((b) => b.kind === 'picture'), opts.altMedium === undefined ? ALT_FILE : opts.altMedium);
   for (const p of B.filter((b) => b.kind === 'picture' && b.altFrom === 'kit/alt-medium.json')) p.alt = norm(p.alt);
-  // mode none: nothing that reads as a reference to the Sources section may be left in the text Medium gets
-  if (model.sources && model.sources.mode === 'none') {
+  // modes none and github-inline: nothing that reads as a reference to the (dropped) Sources section may be left in
+  // the text Medium gets; in github-inline the "(source)" words stay, as GitHub links
+  if (model.sources && dropsFooter(model.sources.mode)) {
     for (const b of B) for (const [what, t] of [['text', b.text], ['caption', b.caption], ['alt', b.alt]]) {
-      for (const hit of sourceResidue(t)) model.warnings.push(`sources: ${label(b)} ${what} still reads as a source reference: "${norm(hit)}"`);
+      for (const hit of sourceResidue(t, model.sources.mode)) model.warnings.push(`sources: ${label(b)} ${what} still reads as a source reference: "${norm(hit)}"`);
     }
   }
   if (opts.kit) applyKit(model, opts.kit);
@@ -306,7 +307,7 @@ export function applyKit(model, kit) {
     const want = model.sources ? model.sources.mode : 'artifact';
     model.kit.sources = k.sources;
     if (k.sources !== want) model.warnings.push(`sources: the kit was built in sources mode ${k.sources}, this run uses ${want} (rebuild the kit with --sources ${want}, or pass --sources ${k.sources})`);
-    else if (want === 'github' && model.sources.label !== `github (${k.sourcesBase})`) model.warnings.push(`sources: the kit links sources to ${k.sourcesBase}, this run to ${model.sources.label}`);
+    else if (linksGithub(want) && model.sources.label !== `${want} (${k.sourcesBase})`) model.warnings.push(`sources: the kit links sources to ${k.sourcesBase}, this run to ${model.sources.label}`);
   }
   return model;
 }

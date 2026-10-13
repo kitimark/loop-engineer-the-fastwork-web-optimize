@@ -6,8 +6,9 @@
 //   node research/team-article/medium-check/model.mjs --dump <medium-dump.json> [--out <file>]
 //   node research/team-article/medium-check/model.mjs --html <saved Medium page.html> [--out <file>]
 //   --summary   print counts and the first lines instead of the whole JSON
-//   --sources none|github|artifact   the Medium sources mode (lib/sources.mjs; default none: no Sources section, no
-//               source references); github needs --github-base <url> (and takes --sources-map <json>); artifact =
+//   --sources none|github|github-inline|artifact   the Medium sources mode (lib/sources.mjs; default none: no Sources
+//               section, no source references); github and github-inline (links, no Sources section) need --github-base
+//               <url> (and take --sources-map <json>); artifact =
 //               the page as it is (the Claude artifact)
 // The article page defaults to research/team-article/artifacts/sixteen-milliseconds/index.html, the kit to
 // out/article/medium-kit (this checkout, else the main checkout). The model: { title, subtitle, byline, disclaimer[],

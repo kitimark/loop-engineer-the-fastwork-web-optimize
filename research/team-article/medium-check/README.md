@@ -17,7 +17,7 @@ except `check.mjs --url` (one public page, when the owner asks for it) and the k
 | `medium-dump.js` | browser-console snippet: the Medium draft or post → dump JSON (blocks in order, captions, image alt, every URL in an embed, a length + SHA-256 for the copy) | nothing by itself; read-only, story body only |
 | `lib/medium.mjs` | dump JSON or a saved Medium page → the same model | |
 | `check.mjs` | article model vs Medium model | title, subtitle, disclaimer exact; every block present, in order, same text, same heading level / quote kind / list kind / link targets; every picture present in order with the right caption and alt; every clip embedded with the right Stream uid and `loop/autoplay/muted=true`; no kit marker left (`[PICTURE`, `[CLIP`, `Caption:`, a Stream link left as text) |
-| `changes.mjs` | article version A vs B → a to-do list for Medium in story order, plus the kit pictures to rebuild | which edits Medium needs, and which pictures changed (their `.cap-area` HTML, or a copied picture's src/size) |
+| `changes.mjs` | article version A vs B → a to-do list for Medium in story order, plus the kit pictures to rebuild (a disclaimer line is named "disclaimer line N" and its text diff is shown whole: it is checked exactly) | which edits Medium needs, and which pictures changed (their `.cap-area` HTML, or a copied picture's src/size) |
 | `kit/build.mjs`, `kit/render.mjs` | the kit builder (headless Chrome): `story.md`, `story.html`, `NN-*.png`, `alt.txt`, `kit.json`, `CHECKLIST.md`, `contact-sheet.html` | the kit matches the article it was built from |
 
 Normalization (`lib/text.mjs`): curly/straight quotes, dash kinds, `...`/`…`, non-breaking, thin and zero-width
@@ -45,6 +45,7 @@ now; they come back as real GitHub links once Fastwork approves publishing the s
 |---|---|
 | `none` (default) | no Sources heading, no note paragraphs before the list, no `ol.figsrc`; every `#src-N` link removed with the words and punctuation that exist only for it |
 | `github` (`--github-base <url>`, optional `--sources-map <json>`) | the Sources list stays; each `#src-N` link points to `<base>/<repo path>` from `kit/sources-github.json` (a `src-N` with no path is removed as in `none`, with a warning). Implemented and tested with a fake base; not used yet |
+| `github-inline` (`--github-base <url>`, optional `--sources-map <json>`) | the references as in `github` (each `#src-N` link points to `<base>/<repo path>`), the footer as in `none` (no Sources heading, notes or list). Owner's decision T-279 #10: the Sources list is too long for Medium; used from article v113 on |
 | `artifact` | the page as it is: what every kit built before the switch contains (a `kit.json` without `sources` counts as `artifact`) |
 
 One function does it for both sides: `lib/sources.mjs` `applySourcesDom` runs on the parsed page in `lib/article.mjs`
@@ -214,7 +215,9 @@ versions (v104 → v105: one paragraph; v105 → v106: pictures 05 and 13 to reb
 Sources mode (`test/sources.test.mjs`, fixture `article-sources.html` with every reference pattern of v109 plus a
 leading and a middle one, a reference drawn inside a picture and one in an unknown shape): `none` leaves no
 `#src-`/"Sources"/"(source)" in the model and no dangling punctuation, keeps the prose uses of "source" and reports the
-in-picture and unknown ones; `github` links each reference to `<base>/<path>` from a map and keeps the list; no flag
+in-picture and unknown ones; `github` links each reference to `<base>/<path>` from a map and keeps the list;
+`github-inline` links them the same way and drops the footer as `none` does (also the injected source text, the CLIs,
+the checklist, and on the real page: every reference `none` removes is linked or, without a repo path, removed); no flag
 and `artifact` give the same model as before; the transform's source text runs alone (what the kit injects); a draft
 pasted with sources and checked in `none` lists exactly the source edits; the CLIs' flags and the kit-mode WARN; the
 checklist notes per mode. On the real v109 page: 73 references removed, 46 footer blocks, 1 in a picture, 0 unhandled.
