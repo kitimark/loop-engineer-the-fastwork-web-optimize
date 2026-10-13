@@ -3,7 +3,7 @@
 // pinned git-filter-repo v2.47.0 (tools/release/rewrite.mjs PINNED_FILTER_REPO) and skip, saying so, without it.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, mkdirSync, readFileSync, readdirSync, lstatSync, existsSync, unlinkSync, chmodSync, utimesSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readFileSync, readdirSync, lstatSync, existsSync, unlinkSync, chmodSync, utimesSync, symlinkSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { createHash } from 'node:crypto';
 import { tempDir, node, git, run, tool } from '../helpers.mjs';
@@ -24,14 +24,16 @@ const KNOWN = {
   lanPrefixes: ['10.77.3'],
   allow: [],
 };
-function knownFile() {
+function knownFile(known = KNOWN) {
   const f = join(tempDir('fw-known-'), 'known.json');
-  writeFileSync(f, JSON.stringify(KNOWN), { mode: 0o600 });
+  writeFileSync(f, JSON.stringify(known), { mode: 0o600 });
   return f;
 }
 const w = (dir, rel, data) => { mkdirSync(join(dir, rel, '..'), { recursive: true }); writeFileSync(join(dir, rel), data); };
 const commit = (dir, msg) => { git(dir, 'add', '-A'); git(dir, 'commit', '-q', '-m', msg); return git(dir, 'rev-parse', 'HEAD'); };
 const lower = (s) => s.toLowerCase();
+// private-link samples built at run time: this file holds none itself (the release scrubs and checks it too)
+const ART_ID = ['Ab1Cd2Ef3', 'Gh4Ij5Kl6Mn7'].join(''), MED_ID = ['1a2b3c', '4d5e6f'].join('');
 const hasValue = (s) => VALUES.some((v) => lower(s).includes(lower(v))) || /10\.77\.3\.\d/.test(s);
 
 /** sha256 of every file under dir (lstat-based, symlinks by target): the "byte-identical" witness. */
@@ -72,7 +74,7 @@ function fixture() {
   git(src, 'init', '-q', '-b', 'main');
   git(src, 'config', 'commit.gpgsign', 'false');
   w(src, '.gitignore', 'out/\n');
-  w(src, 'README.md', 'Study by zqhome, logs in /Users/zqhome/src/x.\nPhone LAN 10.77.3.42.\n');
+  w(src, 'README.md', 'Study by zqhome, logs in /Users/zqhome/src/x.\nPhone LAN 10.77.3.42.\nPlan https://claude.ai/code/artifact/' + ART_ID + ', draft https://medium.com/p/' + MED_ID + '/edit.\n');
   w(src, 'site/index.html', '<p>snapshot zqhome</p>\n');
   w(src, 'tools/__pycache__/x.cpython-313.pyc', 'zqhome');
   w(src, 'img/shot.bin', Buffer.concat([Buffer.from([0x89, 0, 1, 2, 0]), Buffer.from("device Zed's iPhone 99 end", 'utf8')]));
@@ -85,7 +87,7 @@ function fixture() {
   w(src, 'research/article-clips/recipes/art-x/gitlog.txt', `${cd.slice(0, 7)} counter\n${c1.slice(0, 7)} first\n`);
   w(src, 'research/article-clips/recipes/art-x/other.txt', `${cd.slice(0, 7)} stays\n`);
   unlinkSync(join(src, 'notes/zqhome-todo.md'));
-  const c3 = commit(src, `docs: cite ${c1.slice(0, 8)}`);
+  const c3 = commit(src, `docs: cite ${c1.slice(0, 8)}, plan at https://claude.ai/artifact/${ART_ID}`);
   git(src, 'tag', 'v1');
   git(src, 'checkout', '-q', '-b', 'feature');
   w(src, 'feature.md', 'mail zq.person@mail.invalid via zq-tunnel-77.workers.dev\n');
@@ -118,7 +120,7 @@ test('I-269 rewrite: values out of every blob, message, branch and evidence bran
   const out = join(tempDir('fw-release-out-'), 'release');
   const r = node(REWRITE, [f.src, out, '--known', knownFile()], { timeout: 120000 });
   assert.equal(r.code, 0, r.out);
-  assert.match(r.stdout, /^CHECK 0 residual$/m);
+  assert.match(r.stdout, /^CHECK 0 residual \(\d+ rules\)$/m);
   assert.match(r.stdout, /^CLONED branches 3 tags 1 dropped 1 \(refs\/stash\)$/m);
   assert.match(r.stdout, /^EVIDENCE evidence\/wt-agent base [0-9a-f]{10} modified 1 untracked 1 deleted 1$/m);
   assert.match(r.stdout, /^DANGLING main 2 \(data files 2\) /m, "the two data-file numbers are left alone");
@@ -134,7 +136,8 @@ test('I-269 rewrite: values out of every blob, message, branch and evidence bran
   assert.match(log, /first: from <device-name> at 192\.168\.0\.9/);
   assert.match(log, /feature: contact <email>/);
   assert.equal(run('git', ['--git-dir', mirror, 'log', '--all', '--format=%H', '--', 'site', 'tools/__pycache__']).stdout.trim(), '', 'site/ and __pycache__ gone from history');
-  assert.equal(show(mirror, 'main:README.md'), 'Study by <user>, logs in /Users/<user>/src/x.\nPhone LAN 192.168.0.42.');
+  assert.equal(show(mirror, 'main:README.md'), 'Study by <user>, logs in /Users/<user>/src/x.\nPhone LAN 192.168.0.42.\nPlan https://claude.ai/artifact/<private-artifact>, draft https://medium.com/p/<draft>.');
+  assert.ok(!/Ab1Cd2Ef3Gh4Ij5Kl6Mn7|p\/1a2b3c4d5e6f/.test(log), 'private links gone from blobs and messages (filter-repo runs the same regexes in Python)');
   const bin = run('git', ['--git-dir', mirror, 'cat-file', 'blob', 'main:img/shot.bin'], {}).stdout;
   assert.ok(bin.includes('device <device-name> end') && !bin.includes('Zed'), 'binary blob: literal values replaced');
   // a path holding a value is renamed in every commit, and its later deletion deletes the renamed path (filter-repo
@@ -149,7 +152,7 @@ test('I-269 rewrite: values out of every blob, message, branch and evidence bran
   assert.equal(show(mirror, 'main:data/numbers.json'), `{"count": ${f.cd.slice(0, 7)}, "commit": "${n1.slice(0, 10)}"}`, 'a data file keeps its all-digit token (a number), mixed hex is remapped');
   assert.equal(show(mirror, 'main:research/article-clips/recipes/art-x/gitlog.txt'), `${nd.slice(0, 7)} counter\n${n1.slice(0, 7)} first`, 'gitlog.txt is real git log output: remapped');
   assert.equal(show(mirror, 'main:research/article-clips/recipes/art-x/other.txt'), `${f.cd.slice(0, 7)} stays`);
-  assert.match(git(mirror, 'log', '-1', '--format=%s', 'main'), new RegExp(`^docs: cite ${n1.slice(0, 8)}$`), 'messages: filter-repo remaps cited SHAs');
+  assert.equal(git(mirror, 'log', '-1', '--format=%s', 'main'), `docs: cite ${n1.slice(0, 8)}, plan at https://claude.ai/artifact/<private-artifact>`, 'messages: filter-repo remaps cited SHAs');
 
   // the evidence branch: worktree HEAD + its files now (scrubbed, remapped), deletions applied, ignored files absent
   const ev = 'evidence/wt-agent';
@@ -166,20 +169,30 @@ test('I-269 rewrite: values out of every blob, message, branch and evidence bran
   assert.ok(!hasValue(JSON.stringify(rep)));
   // check.mjs on the result: clean; and fail-closed once a value is planted (an unreachable blob counts)
   const k = knownFile();
-  const c0 = node(CHECK, [mirror, '--known', k]);
+  const c0 = node(CHECK, [mirror, '--known', k, '--source', f.src]);
   assert.equal(c0.code, 0, c0.out);
-  assert.equal(c0.stdout, 'CHECK 0 residual\n');
+  assert.match(c0.stdout, /^CHECK 0 residual \((1[0-9]) rules\)\n$/, 'the rule count is printed (4 literals, home, 3 LAN, 2 links, 6 secrets)');
   run('git', ['--git-dir', mirror, 'hash-object', '-w', '--stdin'], { input: 'planted ZQHOME\n' });
   const c1 = node(CHECK, [mirror, '--known', k]);
   assert.equal(c1.code, 1);
   assert.match(c1.stdout, /^HIT lit0-user \(unreachable\)@[0-9a-f]{10}:1$/m);
   assert.ok(!hasValue(c1.out));
-  // a commit header line other than author/committer (here `encoding`) is scanned too; the identity lines are not
+  // every commit header line is scanned (here `encoding`); with --source an identity the source history has is kept,
+  // any other is a hit identity-unknown; without --source identity lines are scanned like the rest
   const planted = run('git', ['--git-dir', mirror, 'hash-object', '-t', 'commit', '-w', '--literally', '--stdin'], { input:
-    `tree ${git(mirror, 'rev-parse', 'main^{tree}')}\nauthor zqhome <a@b.invalid> 1 +0000\ncommitter zqhome <a@b.invalid> 1 +0000\nencoding zq-tunnel-77\n\nclean message\n` }).stdout.trim();
-  const c2 = node(CHECK, [mirror, '--known', k]);
+    `tree ${git(mirror, 'rev-parse', 'main^{tree}')}\nauthor Other One <o@x.invalid> 1 +0000\ncommitter fw-test <fw-test@example.invalid> 1 +0000\nencoding zq-tunnel-77\n\nclean message\n` }).stdout.trim();
+  const mine = (out) => out.split('\n').filter((l) => l.includes(`commit@${planted.slice(0, 10)}`));
+  const c2 = node(CHECK, [mirror, '--known', k, '--source', f.src]);
   assert.equal(c2.code, 1);
-  assert.deepEqual(c2.stdout.split('\n').filter((l) => l.includes(`commit@${planted.slice(0, 10)}`)), [`HIT lit3-subdomain commit@${planted.slice(0, 10)}:4`]);
+  assert.deepEqual(mine(c2.stdout), [`HIT identity-unknown commit@${planted.slice(0, 10)}:2`, `HIT lit3-subdomain commit@${planted.slice(0, 10)}:4`]);
+  assert.deepEqual(c2.stdout.split('\n').filter((l) => l.startsWith('HIT identity-unknown') && !l.includes(planted.slice(0, 10))), [],
+    'the fixture identity (and the evidence commits, which take their HEAD commit identity) are kept');
+  const c3 = node(CHECK, [mirror, '--known', k]);
+  assert.deepEqual(mine(c3.stdout), [`HIT lit3-subdomain commit@${planted.slice(0, 10)}:4`]);
+  const zq = run('git', ['--git-dir', mirror, 'hash-object', '-t', 'commit', '-w', '--literally', '--stdin'], { input:
+    `tree ${git(mirror, 'rev-parse', 'main^{tree}')}\nauthor zqhome <z@x.invalid> 1 +0000\ncommitter fw-test <fw-test@example.invalid> 1 +0000\n\nm\n` }).stdout.trim();
+  assert.match(node(CHECK, [mirror, '--known', k]).stdout, new RegExp(`^HIT lit0-user commit@${zq.slice(0, 10)}:2$`, 'm'), 'without --source a value in an identity is a hit');
+  assert.equal(node(CHECK, [mirror, '--known', k, '--source', join(f.root, 'nope')]).code, 2);
 });
 
 test('I-269 rewrite refuses a git-filter-repo that is not the pinned v2.47.0 build, an out dir in the source, a non-empty out dir', { skip: NO_FR }, () => {
@@ -195,6 +208,13 @@ test('I-269 rewrite refuses a git-filter-repo that is not the pinned v2.47.0 bui
   const r2 = node(REWRITE, [f.src, join(f.wt, 'release'), '--known', knownFile()]);
   assert.equal(r2.code, 2);
   assert.match(r2.stdout, /REFUSED out dir .* is inside \(or contains\) the source repo/);
+  // through a symlink, to a dir that does not exist yet: the nearest existing ancestor is resolved
+  const link = join(tempDir('fw-release-link-'), 'wt');
+  symlinkSync(f.wt, link);
+  const r4 = node(REWRITE, [f.src, join(link, 'new', 'release'), '--known', knownFile()]);
+  assert.equal(r4.code, 2, r4.out);
+  assert.match(r4.stdout, /REFUSED out dir .* is inside \(or contains\) the source repo/);
+  assert.equal(existsSync(join(f.wt, 'new')), false);
   const full = tempDir('fw-release-full-');
   writeFileSync(join(full, 'x'), '');
   const r3 = node(REWRITE, [f.src, full, '--known', knownFile()]);
@@ -216,10 +236,22 @@ test('I-269 evidence.mjs alone: a branch per dirty worktree in the mirror only, 
   assert.match(r.stdout, /^EVIDENCE_DONE 1 branches$/m, 'the clean main checkout gets none');
   assert.deepEqual(changed(before, snapshot(f.root)), [], "source byte-identical");
   assert.equal(git(mirror, 'show', 'evidence/wt-agent:notes/untracked.md').startsWith('new file citing'), true);
+  assert.equal(git(mirror, 'log', '-1', '--format=%an <%ae>|%cn <%ce>', 'evidence/wt-agent'), git(mirror, 'log', '-1', '--format=%an <%ae>|%an <%ae>', 'wt-branch'), "the HEAD commit's identity");
   // a second run does not overwrite: it adds -2
   const r2 = node(EVIDENCE, [f.src, mirror]);
   assert.match(r2.stdout, /EVIDENCE evidence\/wt-agent-2 /);
   assert.deepEqual(changed(before, snapshot(f.root)), [], "source byte-identical");
+  // never into the source: its git dir, a path inside it, a worktree's gitfile target, a mirror inside a worktree
+  const inWt = join(f.wt, 'out', 'm.git');
+  git(f.root, 'clone', '-q', '--mirror', '--no-local', f.src, inWt);
+  const before2 = snapshot(f.root);
+  for (const m of [join(f.src, '.git'), join(f.src, '.git', 'worktrees', 'wt-agent'), inWt]) {
+    const x = node(EVIDENCE, [f.src, m]);
+    assert.equal(x.code, 2, x.out);
+    assert.match(x.stdout, /^REFUSED the mirror .* (is the source repo's git dir|is inside \(or contains\) a worktree)/m);
+  }
+  assert.deepEqual(changed(before2, snapshot(f.root)), [], 'nothing written by a refused run');
+  assert.equal(git(f.src, 'for-each-ref', 'refs/heads/evidence/'), '');
 });
 
 test('I-269 the release tools print their header on --help and exit 0 before anything runs', () => {
@@ -237,13 +269,14 @@ test('I-269 check.mjs on a directory: exit 1 with HIT lines (rule id, path:line,
   w(d, 'tests/x.mjs', 'ip 192.168.0.4\n');
   const ok = node(CHECK, [d, '--known', k]);
   assert.equal(ok.code, 0, ok.out);
-  assert.equal(ok.stdout, 'CHECK 0 residual\n');
+  assert.match(ok.stdout, /^CHECK 0 residual \(\d+ rules\)\n$/);
   w(d, 'a/doc.md', 'line one\nhost 10.77.3.8\n');
   w(d, 'b/pic.png', Buffer.concat([Buffer.from([0, 0, 0]), Buffer.from('ZED\'S IPHONE 99 and 10.77.3.1')]));
   w(d, 'c/zqhome-notes.txt', 'plain\n');
   const bad = node(CHECK, [d, '--known', k]);
   assert.equal(bad.code, 1);
-  assert.deepEqual(bad.stdout.trim().split('\n'), [
+  const plain = (out) => out.trim().split('\n').map((l) => l.replace(/ \(\d+ rules\)$/, ''));
+  assert.deepEqual(plain(bad.stdout), [
     'HIT lan0 a/doc.md:2',
     'HIT lit1-device-name b/pic.png:1',
     'HIT lit0-user name@c/<user>-notes.txt:0',
@@ -266,4 +299,52 @@ test('I-269 check.mjs on a directory: exit 1 with HIT lines (rule id, path:line,
   const nok = node(CHECK, [d, '--known', join(d, 'none.json')]);
   assert.equal(nok.code, 2);
   assert.match(nok.stderr, /CHECK refused: known values file .* not found/);
+  // fail-closed: an empty known file is refused, not "CHECK 0 residual" (review of 10cd1810)
+  const empty = node(CHECK, [d, '--known', knownFile({})]);
+  assert.equal(empty.code, 2, empty.out);
+  assert.match(empty.stderr, /CHECK refused: .*no literals/);
+  assert.doesNotMatch(empty.stdout, /CHECK 0/);
+});
+
+test('I-269 check.mjs finds secret shapes and private links (kind and path:line only, never the secret) in files and git objects', () => {
+  const d = tempDir('fw-release-secret-');
+  const k = knownFile();
+  const tok = ['gh', 'p_', 'Q7'.repeat(18)].join(''), pem = ['-----BEGIN ', 'PRIVATE KEY-----'].join('');
+  w(d, 'docs/a.md', `fine\nuse ${tok} here\n`);
+  w(d, 'keys/id.txt', `${pem}\nMIIE\n`);
+  w(d, 'notes/links.md', `a\nb\nhttps://claude.ai/artifact/${ART_ID}\nmedium.com/p/${MED_ID}\n`);
+  const r = node(CHECK, [d, '--known', k]);
+  assert.equal(r.code, 1, r.out);
+  assert.deepEqual(r.stdout.trim().split('\n').map((l) => l.replace(/ \(\d+ rules\)$/, '')), ['HIT secret-github docs/a.md:2', 'HIT secret-pem keys/id.txt:1',
+    'HIT link-artifact notes/links.md:3', 'HIT link-medium-draft notes/links.md:4', 'CHECK 4 residual']);
+  assert.ok(!r.out.includes(tok.slice(4)), 'the secret is not printed');
+  const repo = join(d, 'r');
+  mkdirSync(repo);
+  git(repo, 'init', '-q', '-b', 'main');
+  w(repo, 'f.md', 'clean\n');
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-q', '-m', `oops ${['AK', 'IA'].join('')}${'Z9'.repeat(8)}`);
+  const g = node(CHECK, [join(repo, '.git'), '--known', k]);
+  assert.equal(g.code, 1, g.out);
+  assert.match(g.stdout, /^HIT secret-aws commit@[0-9a-f]{10}:\d+$/m);
+});
+
+test('I-269 check.mjs: an allow entry covers a blob only when it covers every path the blob has', () => {
+  const k = knownFile({ ...KNOWN, allow: [{ path: 'tests/**', pattern: '10\\.77\\.3\\.\\d+' }] });
+  const repo = join(tempDir('fw-release-allow-'), 'r');
+  mkdirSync(repo);
+  git(repo, 'init', '-q', '-b', 'main');
+  w(repo, 'tests/a.mjs', 'ip 10.77.3.4\n');
+  w(repo, 'tests/b.mjs', 'ip 10.77.3.5\n');
+  w(repo, 'other.txt', 'ip 10.77.3.5\n');   // the same blob as tests/b.mjs
+  git(repo, 'add', '-A');
+  git(repo, 'commit', '-q', '-m', 'm');
+  const r = node(CHECK, [join(repo, '.git'), '--known', k]);
+  assert.equal(r.code, 1, r.out);
+  const hits = r.stdout.split('\n').filter((l) => l.startsWith('HIT'));
+  assert.equal(hits.length, 1, r.stdout);
+  assert.match(hits[0], /^HIT lan0 (tests\/b\.mjs|other\.txt)@[0-9a-f]{10}:1$/, 'the blob at tests/b.mjs and other.txt is not covered');
+  // the working tree files: by their own path
+  const d = node(CHECK, [repo, '--known', k]);
+  assert.ok(d.stdout.split('\n').some((l) => l === 'HIT lan0 other.txt:1') && !d.stdout.includes('HIT lan0 tests/a.mjs'), d.stdout);
 });

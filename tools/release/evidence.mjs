@@ -8,11 +8,13 @@
 // rewrite.mjs runs it before the history rewrite, so evidence branches are scrubbed and SHA-remapped like the rest.
 // Skipped (one SKIP line each): a clean worktree, a missing or prunable one, an unborn HEAD, a HEAD commit the mirror
 // lacks. Prints "EVIDENCE <branch> base <sha10> modified <n> untracked <n> deleted <n>" per branch, then
-// "EVIDENCE_DONE <n> branches". --dry-run lists what it would save and writes nothing. Exit 0, 2 usage.
+// "EVIDENCE_DONE <n> branches". --dry-run lists what it would save and writes nothing. The commits carry the identity
+// of the worktree's HEAD commit. Refuses (REFUSED, exit 2) a <mirror.git> that is the source's git dir, inside it or
+// inside a worktree. Exit 0, 2 usage or refused.
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, join, resolve } from 'node:path';
+import { basename, join, resolve, sep } from 'node:path';
 import { exitOnHelp, isMain } from '../lib/help.mjs';
 import { gitEnv } from './check.mjs';
 import { tildify } from './rules.mjs';
@@ -56,6 +58,18 @@ export function worktreeChanges(wt) {
   return ch;
 }
 
+const realish = (p) => { try { return realpathSync(p); } catch { return resolve(p); } };
+const within = (p, dir) => p === dir || p.startsWith(dir.endsWith(sep) ? dir : dir + sep);
+
+/** Why the mirror is inside the source repo's git dir or one of its worktrees (or contains one), or null. */
+export function mirrorInSource(source, mirror, worktrees = listWorktrees(source)) {
+  const m = realish(mirror);
+  const common = realish(resolve(source, src(source, 'rev-parse', '--git-common-dir').trim()));
+  if (within(m, common) || within(common, m)) return 'is the source repo\'s git dir (or inside it)';
+  for (const w of worktrees) if (w.path && (within(m, realish(w.path)) || within(realish(w.path), m))) return 'is inside (or contains) a worktree of the source repo';
+  return null;
+}
+
 const refSafe = (s) => s.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[.-]+|[.]+$/g, '').replace(/\.\.+/g, '.').replace(/\.lock$/, '-lock') || 'worktree';
 
 /**
@@ -64,15 +78,12 @@ const refSafe = (s) => s.replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[.-]+|[.]+$
  */
 export function makeEvidence({ source, mirror, dryRun = false, log = () => {}, now = new Date() }) {
   const M = (args, opts = {}) => run(['--git-dir', mirror, ...args], opts);
-  const ident = {};
-  for (const [k, envs] of [['user.name', ['GIT_AUTHOR_NAME', 'GIT_COMMITTER_NAME']], ['user.email', ['GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_EMAIL']]]) {
-    let v = '';
-    try { v = src(source, 'config', '--get', k).trim(); } catch {}
-    if (v) for (const e of envs) if (!process.env[e]) ident[e] = v;
-  }
+  const worktrees = listWorktrees(source);
+  const why = mirrorInSource(source, mirror, worktrees);
+  if (why) throw new Error(`refused: the mirror ${tildify(mirror)} ${why}; evidence is written to the output mirror only`);
   const taken = new Set(M(['for-each-ref', '--format=%(refname)', 'refs/heads/evidence/']).split('\n').filter(Boolean));
   const made = [];
-  for (const w of listWorktrees(source)) {
+  for (const w of worktrees) {
     if (w.bare) continue;
     const name = refSafe(basename(w.path || 'worktree'));
     if (!w.path || w.prunable || !existsSync(w.path)) { log(`SKIP ${name}: worktree missing or prunable`); continue; }
@@ -87,7 +98,9 @@ export function makeEvidence({ source, mirror, dryRun = false, log = () => {}, n
     if (dryRun) { log(`EVIDENCE ${branch} base ${w.head.slice(0, 10)} ${counts} (dry run)`); made.push({ branch, base: w.head, ...ch }); continue; }
     const tmp = mkdtempSync(join(tmpdir(), 'fw-evidence-'));
     try {
-      const env = { GIT_INDEX_FILE: join(tmp, 'index'), ...ident };
+      // the identity of the worktree's HEAD commit: one the history already has (check.mjs --source allows those)
+      const [an, ae] = M(['log', '-1', '--format=%an%x00%ae', w.head]).replace(/\n$/, '').split('\0');
+      const env = { GIT_INDEX_FILE: join(tmp, 'index'), GIT_AUTHOR_NAME: an, GIT_AUTHOR_EMAIL: ae, GIT_COMMITTER_NAME: an, GIT_COMMITTER_EMAIL: ae };
       const MW = (args, opts = {}) => run(['--git-dir', mirror, '--work-tree', w.path, ...args], { ...opts, cwd: tmp, env: { ...env, ...(opts.env || {}) } });
       MW(['read-tree', w.head]);
       MW(['update-index', '--add', '--remove', '-z', '--stdin'], { input: [...ch.modified, ...ch.untracked, ...ch.deleted].join('\0') + '\0' });
@@ -111,6 +124,8 @@ function main(argv) {
   const bad = argv.filter((a) => a.startsWith('--') && a !== '--dry-run');
   if (pos.length !== 2 || bad.length) { console.error('usage: evidence.mjs <source-repo> <mirror.git> [--dry-run]'); return 2; }
   const [source, mirror] = pos.map((p) => resolve(p));
+  const why = mirrorInSource(source, mirror);
+  if (why) { console.log(`REFUSED the mirror ${tildify(mirror)} ${why}; evidence is written to the output mirror only`); return 2; }
   if (!existsSync(join(mirror, 'objects'))) { console.error(`evidence: ${tildify(mirror)} is not a git dir`); return 2; }
   makeEvidence({ source, mirror, dryRun: argv.includes('--dry-run'), log: (l) => console.log(l) });
   return 0;

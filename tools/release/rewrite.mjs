@@ -13,17 +13,18 @@
 //      site/ site-pretty/ */__pycache__/*, --prune-empty never --prune-degenerate never, --date-order, cited SHAs
 //      remapped in file text; then expires reflogs and prunes, so no old object stays;
 //   5. copies filter-repo's old->new commit-map (and ref-map) to <out-dir>/, counts commits and branches, the cited
-//      SHAs on main's tip that still name an old commit (dangling), and runs the residual check (check.mjs).
-// Prints REWRITE/EVIDENCE/DANGLING lines, the check's HIT lines and "CHECK <n> residual", then MIRROR=<path>; writes
+//      SHAs on main's tip that still name an old commit (dangling), and runs the residual check (check.mjs, with the
+//      source history's identities allowed).
+// Prints REWRITE/EVIDENCE/DANGLING lines, the check's HIT lines and "CHECK <n> residual (<r> rules)", then MIRROR=<path>; writes
 // <out-dir>/rewrite-report.json (counts only, no values). Exit 0 clean, 1 rewrite failed or residual hits, 2 refused.
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, copyFileSync, writeFileSync, mkdtempSync, rmSync, realpathSync, statSync, accessSync, constants } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve, delimiter, sep } from 'node:path';
+import { dirname, basename, join, resolve, delimiter, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { exitOnHelp, isMain } from '../lib/help.mjs';
 import { loadKnown, buildRules, filterRepoExpressions, safeText, tildify } from './rules.mjs';
-import { check, formatHits, gitEnv } from './check.mjs';
+import { check, formatHits, gitEnv, identitiesOf } from './check.mjs';
 import { makeEvidence } from './evidence.mjs';
 
 exitOnHelp(import.meta.url);
@@ -35,7 +36,15 @@ const DATA = /\.(json|jsonl|ndjson|csv|tsv|log|txt|raw)$/;
 const GITLOG = /^research\/article-clips\/recipes\/[^/]+\/(gitlog|firstadds)\.txt$/;   // real git log output: prose (rewrite.py)
 
 const git = (args, opts = {}) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 2 ** 31, env: gitEnv(opts.env), cwd: opts.cwd, input: opts.input, stdio: ['pipe', 'pipe', 'pipe'] });
-const real = (p) => { try { return realpathSync(p); } catch { return resolve(p); } };
+/** realpath of p, or of its nearest existing ancestor plus the rest (an out dir that does not exist yet). */
+export function real(p) {
+  const rest = [];
+  for (let d = resolve(p); ; d = dirname(d)) {
+    try { return join(realpathSync(d), ...rest); } catch {}
+    if (dirname(d) === d) return resolve(p);
+    rest.unshift(basename(d));
+  }
+}
 const inside = (p, dir) => { const a = real(p), b = real(dir); return a === b || a.startsWith(b.endsWith(sep) ? b : b + sep); };
 
 /** The git-filter-repo file `git filter-repo` runs: git's exec path first, then $PATH (git's own order). */
@@ -144,14 +153,14 @@ export async function rewrite({ source, out, knownPath, evidence = true, log = (
   log(`REWRITE files ${stats.files} text ${stats.text} changed ${stats.changed} binary ${stats.binary} binaryChanged ${stats.binaryChanged} renamed ${stats.renamed} shaRewrites ${stats.shaRewrites}`);
   log(`COMMIT_MAP ${show(join(real(out), 'commit-map'))}`);
   if (dangling) log(`DANGLING main ${dangling.dangling} (data files ${dangling.inData}) cited-to-new ${dangling.toNew}${dangling.files.length ? ` in ${dangling.files.slice(0, 8).map(show).join(', ')}` : ''}`);
-  const res = await check(mirror, rules);
-  for (const l of formatHits(res.hits).trimEnd().split('\n')) log(l);
+  const res = await check(mirror, rules, { identities: identitiesOf(common) });
+  for (const l of formatHits(res.hits, res.rules).trimEnd().split('\n')) log(l);
   const report = {
     tool: 'tools/release/rewrite.mjs', filterRepo: PINNED_FILTER_REPO, seconds,
     commits: { before: oldCommits.length, withEvidence: oldAll.length, after: newCommits.length },
     branches: branches.length, droppedRefs: drop.length, evidence: ev.map((e) => ({ branch: show(e.branch), modified: e.modified.length, untracked: e.untracked.length, deleted: e.deleted.length })),
     stats, danglingMain: dangling && { dangling: dangling.dangling, inData: dangling.inData, toNew: dangling.toNew, files: dangling.files.map(show) },
-    check: { residual: res.hits.length, rules: [...new Set(res.hits.map((h) => h.id))] }, rules: rules.map((r) => r.id),
+    check: { residual: res.hits.length, rules: [...new Set(res.hits.map((h) => h.id))], ruleCount: res.rules }, rules: rules.map((r) => r.id),
   };
   writeFileSync(join(real(out), 'rewrite-report.json'), JSON.stringify(report, null, 1) + '\n');
   log(`MIRROR=${show(mirror)}`);
