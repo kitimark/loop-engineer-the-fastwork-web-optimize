@@ -6,6 +6,8 @@ the release repo and uploads its files; agents never push, add a remote, run `gh
 - `init.mjs` (`npm run init`, I-268): installs the large files the release repo does not carry.
 - `rules.mjs`, `check.mjs` (I-269): scrub rules and the fail-closed residual checker.
 - the packer (I-270): writes `release-assets.json`, read by `init.mjs`.
+- `outgoing.mjs`: the scrub check `.githooks/pre-push` runs on every push of this repo (only the user pushes, user
+  2026-10-13); by hand `node tools/release/outgoing.mjs [--remote origin] [<range>]` lists and checks unpushed commits.
 
 ## Getting started (text for the release README; the lead merges it)
 

@@ -1,6 +1,6 @@
 #!/bin/sh
 # Rebase-only history guard: CLAUDE.md "Hard rules" 1 (rebase + fast-forward only, no merge or
-# squash-merge commits) and 2 (never push). Called by the thin hooks next to lib/:
+# squash-merge commits) and 2 (only the user pushes, after the scrub check). Called by the thin hooks next to lib/:
 #
 #   pre-merge-commit       any non-fast-forward `git merge` that is about to commit      -> reject
 #   commit-msg             `git commit` while MERGE_HEAD or SQUASH_MSG exists             -> reject
@@ -8,7 +8,9 @@
 #   reference-transaction  any update of refs/heads/* that brings in a commit with 2+ parents
 #                          (backstop: also catches --no-verify, `git merge --continue`,
 #                          `git commit-tree` + `git update-ref`, `git pull` without --rebase)
-#   pre-push               every push
+#   pre-push               a delete, a tag, a non-fast-forward, a merge commit or a scrub hit in the
+#                          outgoing commits (tools/release/outgoing.mjs; a missing tool or known values
+#                          file refuses too)
 #
 # Another hook (e.g. .githooks/pre-commit) can reuse the merge-in-progress check early, before an
 # editor opens:   sh "$(dirname "$0")/lib/rebase-only.sh" merge-in-progress || exit 1
@@ -80,9 +82,20 @@ case $1 in
     ref_transaction "$2"
     ;;
   pre-push)
-    cat >/dev/null
-    printf 'rebase-only: pushing is not allowed in this repo (no remote; Fastwork-derived content never leaves this machine). CLAUDE.md "Hard rules" 2.\n' >&2
-    exit 1
+    # Only the user pushes, after the scrub check (user, 2026-10-13): tools/release/outgoing.mjs reads git's ref
+    # lines on stdin and refuses deletes, tags, non-fast-forwards, merge commits and any scrub hit (fail-closed:
+    # anything but exit 0 refuses). Agents never push (git-guard, .claude/settings.json deny rules).
+    tool="$(dirname "$0")/../../tools/release/outgoing.mjs"
+    if [ ! -f "$tool" ]; then
+      cat >/dev/null
+      printf 'rebase-only: push refused: the scrub check %s is missing (fail-closed). CLAUDE.md "Hard rules" 2.\n' "$tool" >&2
+      exit 1
+    fi
+    if ! node "$tool" --pre-push "$2" "$3"; then
+      printf 'rebase-only: push refused by the scrub check (tools/release/outgoing.mjs, lines above; no value is printed). Fix the commits (rebase), never bypass the hook. CLAUDE.md "Hard rules" 1-2.\n' >&2
+      exit 1
+    fi
+    exit 0
     ;;
   *)
     printf 'rebase-only: unknown mode "%s"\n' "$1" >&2

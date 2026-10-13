@@ -1,12 +1,12 @@
 // Tests for the versioned git hooks in .githooks/ (CLAUDE.md "Hard rules" 1-2: rebase +
-// fast-forward only, no merge or squash-merge commits, never push). Every test builds a throwaway
+// fast-forward only, no merge or squash-merge commits; only the user pushes, after the scrub check). Every test builds a throwaway
 // repo in the OS temp dir and runs git with `-c core.hooksPath=<this checkout>/.githooks`, with the
 // user's global/system git config switched off, so nothing here touches this repository.
 // Hook semantics: https://git-scm.com/docs/githooks. Run: node --test tests/hooks/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync, existsSync, cpSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, existsSync, cpSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -195,14 +195,117 @@ test('hooks apply in linked worktrees (MERGE_HEAD is per worktree)', (t) => {
   assert.equal(g.merges(), '');
 });
 
-test('pre-push rejects every push', () => {
-  // Invoked directly (as git would: remote name + URL args, ref lines on stdin); this suite never runs `git push`.
-  const r = spawnSync(join(HOOKS, 'pre-push'), ['origin', 'https://example.invalid/x.git'], {
-    input: 'refs/heads/main 1111111111111111111111111111111111111111 refs/heads/main 0000000000000000000000000000000000000000\n',
-    encoding: 'utf8',
-  });
-  assert.equal(r.status, 1);
-  assert.match(r.stderr, /pushing is not allowed/);
+// pre-push (user, 2026-10-13: only the user pushes, after a scrub check): the hook runs tools/release/outgoing.mjs
+// on git's ref lines and refuses unless it exits 0. Real pushes into a temp bare remote, with a temp known values file
+// (made-up values only).
+const PLANT = { name: 'Quentin Zorblax', user: 'qzuser' };
+function pushRepo(t, { knownFile } = {}) {
+  const g = makeRepo(t);
+  const remote = join(g.dir, 'remote.git');
+  assert.equal(spawnSync('git', ['init', '-q', '--bare', remote], { env: gitEnv(g.dir) }).status, 0);
+  g.noHooks('remote', 'add', 'origin', remote);
+  g.noHooks('push', '-q', 'origin', 'main'); // the public history: pushed before the hook existed
+  const known = join(g.dir, 'known.json');
+  writeFileSync(known, JSON.stringify({ literals: [{ value: PLANT.name, token: '<name>' }, { value: PLANT.user, token: '<user>' }], lanPrefixes: ['10.77.31'] }), { mode: 0o600 });
+  const env = { ...gitEnv(g.dir), FW_RELEASE_KNOWN: knownFile ?? known };
+  const push = (...args) => {
+    const r = spawnSync('git', ['-c', `core.hooksPath=${HOOKS}`, 'push', ...args], { cwd: g.repo, env, encoding: 'utf8' });
+    return { ...r, out: `${r.stdout}${r.stderr}` };
+  };
+  const remoteHead = (ref = 'main') => spawnSync('git', ['--git-dir', remote, 'rev-parse', '-q', '--verify', ref], { encoding: 'utf8' }).stdout.trim();
+  return { ...g, remote, push, remoteHead };
+}
+const pushRefused = (r, re) => {
+  assert.notEqual(r.status, 0, `expected the push to be refused:\n${r.out}`);
+  assert.match(r.out, /rebase-only: push refused/);
+  assert.match(r.out, re);
+};
+
+test('pre-push: a clean fast-forward push passes the scrub check and lands', (t) => {
+  const g = pushRepo(t);
+  const c = g.commit('d.txt', 'd\n', 'add d');
+  const r = g.push('-q', 'origin', 'main');
+  assert.equal(r.status, 0, r.out);
+  assert.match(r.out, /^COMMIT [0-9a-f]{10} add d$/m);
+  assert.match(r.out, /^CHECK 0 residual \(\d+ rules\)$/m);
+  assert.match(r.out, /^OUTGOING 1 commit\(s\) to origin: clean$/m);
+  assert.equal(g.remoteHead(), c);
+  // nothing new to push: no ref lines, nothing to check
+  assert.equal(g.push('-q', 'origin', 'main').status, 0);
+  // a new branch: only the commits the remote does not have are outgoing
+  g.ok('switch', '-q', '-c', 'topic');
+  g.commit('e.txt', 'e\n', 'add e');
+  const n = g.push('origin', 'topic');
+  assert.equal(n.status, 0, n.out);
+  assert.match(n.out, /^OUTGOING 1 commit\(s\) to origin: clean$/m);
+});
+
+test('pre-push: a planted personal value, secret shape or unknown identity refuses; the value is never printed', async (t) => {
+  const { FAKE_KEY } = await import('../fixtures/release/stage.mjs');
+  for (const [what, plant, re] of [
+    ['file content', (g) => g.commit('d.txt', `by ${PLANT.name}\n`, 'add d'), /^HIT lit\d+-\S+ d\.txt@[0-9a-f]{10}:1$/m],
+    ['letter case', (g) => g.commit('d.txt', `by ${PLANT.name.toUpperCase()}\n`, 'add d'), /^HIT lit\d+-\S+ d\.txt@/m],
+    ['commit message', (g) => g.commit('d.txt', 'd\n', `thanks ${PLANT.name}`), /^HIT lit\d+-\S+ commit@[0-9a-f]{10}:\d+$/m],
+    ['path name', (g) => g.commit(`${PLANT.user}.txt`, 'd\n', 'add a file'), /^HIT lit\d+-\S+ path@[0-9a-f]{10}\/<user>\.txt:0$/m],
+    ['LAN address', (g) => g.commit('d.txt', 'http://10.77.31.12:5173/\n', 'add d'), /^HIT lan0 d\.txt@/m],
+    ['secret shape', (g) => g.commit('d.js', `const apiKey = "${FAKE_KEY}";\n`, 'add d'), /^HIT secret-kv d\.js@/m],
+    ['unknown identity', (g) => { writeFileSync(join(g.repo, 'd.txt'), 'd\n'); g.ok('add', 'd.txt'); g.ok('commit', '-q', '--author', 'Someone Else <else@example.invalid>', '-m', 'add d'); }, /^HIT identity-unknown commit@[0-9a-f]{10}:\d+$/m],
+    ['an earlier commit of the range', (g) => { g.commit('d.txt', `by ${PLANT.name}\n`, 'add d'); g.commit('d.txt', 'd\n', 'clean again'); }, /^HIT lit\d+-\S+ d\.txt@/m],
+  ]) {
+    await t.test(what, (tt) => {
+      const g = pushRepo(tt);
+      const before = g.remoteHead();
+      plant(g);
+      const r = g.push('origin', 'main');
+      pushRefused(r, re);
+      assert.match(r.out, /^OUTGOING \d+ commit\(s\) to origin: REFUSED$/m);
+      assert.doesNotMatch(r.out.toLowerCase(), new RegExp(`${PLANT.name.toLowerCase()}|${PLANT.user}|${FAKE_KEY.toLowerCase()}|10\\.77\\.31`), 'no value is printed');
+      assert.equal(g.remoteHead(), before, 'the remote did not move');
+    });
+  }
+});
+
+test('pre-push: a merge commit, a non-fast-forward, a delete, a tag and a remote commit not fetched are refused', (t) => {
+  const g = pushRepo(t);
+  const before = g.remoteHead();
+  // a merge commit among the outgoing commits (made with the hooks off: the push is the last line)
+  g.noHooks('merge', '-q', '--no-ff', '--no-edit', 'feature');
+  pushRefused(g.push('origin', 'main'), /^REFUSED merge commit [0-9a-f]{10} in the outgoing commits/m);
+  assert.equal(g.remoteHead(), before);
+  // a non-fast-forward (forced: git itself refuses it without --force)
+  g.ok('reset', '-q', '--hard', 'main~1'); // drop the merge: main at c again ...
+  g.ok('reset', '-q', '--hard', 'main~1'); // ... and at a: the remote's c is no ancestor
+  g.commit('e.txt', 'e\n', 'add e');
+  pushRefused(g.push('--force', 'origin', 'main'), /^REFUSED refs\/heads\/main: not a fast-forward/m);
+  assert.equal(g.remoteHead(), before);
+  // a delete
+  g.noHooks('push', '-q', 'origin', 'feature');
+  pushRefused(g.push('origin', '--delete', 'feature'), /^REFUSED deleting refs\/heads\/feature/m);
+  assert.ok(g.remoteHead('feature'));
+  // a tag
+  g.ok('tag', 'v9', 'feature');
+  pushRefused(g.push('origin', 'v9'), /^REFUSED refs\/tags\/v9: only branches/m);
+  assert.equal(g.remoteHead('v9'), '');
+  // the remote moved on and this clone has not fetched it
+  const other = join(g.dir, 'other');
+  g.noHooks('clone', '-q', '-b', 'main', g.remote, other);
+  const o = g.mk(other);
+  o.commit('f.txt', 'f\n', 'add f');
+  o.noHooks('push', '-q', 'origin', 'main');
+  g.ok('reset', '-q', '--hard', before);
+  g.commit('h.txt', 'h\n', 'add h');
+  pushRefused(g.push('--force', 'origin', 'main'), /^REFUSED refs\/heads\/main: the remote is at [0-9a-f]{10}, which is not here \(fetch first/m);
+});
+
+test('pre-push: no known values file, or an unreadable one, refuses (fail closed)', (t) => {
+  for (const [knownFile, re] of [['/nonexistent/known.json', /known values file .* not found/], [null, /readable by others/]]) {
+    const g = pushRepo(t, { knownFile: knownFile ?? undefined });
+    if (!knownFile) chmodSync(join(g.dir, 'known.json'), 0o644);
+    const before = g.remoteHead();
+    g.commit('d.txt', 'd\n', 'add d');
+    pushRefused(g.push('origin', 'main'), re);
+    assert.equal(g.remoteHead(), before);
+  }
 });
 
 test('hook files are executable (git silently ignores non-executable hooks)', () => {

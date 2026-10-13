@@ -8,7 +8,7 @@ import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { writeFileSync, mkdirSync, existsSync, readFileSync, rmSync, unlinkSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { makeTempRepo, run, git } from '../helpers.mjs';
+import { makeTempRepo, run, git, tempDir } from '../helpers.mjs';
 
 let repo;
 before(() => {
@@ -264,4 +264,34 @@ test('baseline: a second authorized snapshot on main replaces the first; ordinar
   const plain = bcommit(repo.main, undefined, 'notes');
   assert.equal(plain.code, 0, plain.out);
   assert.doesNotMatch(plain.stderr, /BASELINE/);
+});
+
+test('pre-push: the versioned hook runs the checkout\'s scrub check; a clean push lands, a planted value is refused', () => {
+  // the real layout: core.hooksPath=.githooks in the repo, tools/release/outgoing.mjs beside it (a temp bare remote,
+  // a temp known values file with made-up values; no real remote, no real known file)
+  const r = makeTempRepo({ worktree: null, withHooks: true });
+  git(r.main, 'config', 'core.hooksPath', '.githooks');
+  const d = tempDir('fw-prepush-');
+  const remote = join(d, 'remote.git');
+  git(d, 'init', '-q', '--bare', remote);
+  git(r.main, 'remote', 'add', 'origin', remote);
+  git(r.main, '-c', 'core.hooksPath=/dev/null', 'push', '-q', 'origin', 'main'); // the public history
+  const known = join(d, 'known.json');
+  writeFileSync(known, JSON.stringify({ literals: [{ value: 'Quentin Zorblax', token: '<name>' }, { value: 'qzuser', token: '<user>' }], lanPrefixes: ['10.77.31'] }), { mode: 0o600 });
+  const push = () => run('git', ['push', 'origin', 'main'], { cwd: r.main, env: { FW_RELEASE_KNOWN: known } });
+  put(r.main, 'research/notes.md', 'clean\n');
+  git(r.main, 'add', 'research/notes.md');
+  git(r.main, 'commit', '-q', '-m', 'notes');
+  const ok = push();
+  assert.equal(ok.code, 0, ok.out);
+  assert.match(ok.out, /^OUTGOING 1 commit\(s\) to origin: clean$/m);
+  assert.equal(git(d, '--git-dir', remote, 'rev-parse', 'main'), head(r.main));
+  put(r.main, 'research/notes.md', 'met Quentin Zorblax\n');
+  git(r.main, 'commit', '-q', '-am', 'more notes');
+  const bad = push();
+  assert.notEqual(bad.code, 0, bad.out);
+  assert.match(bad.out, /^HIT lit\d+-\S+ research\/notes\.md@[0-9a-f]{10}:1$/m);
+  assert.match(bad.out, /rebase-only: push refused by the scrub check/);
+  assert.doesNotMatch(bad.out, /zorblax/i);
+  assert.notEqual(git(d, '--git-dir', remote, 'rev-parse', 'main'), head(r.main));
 });
