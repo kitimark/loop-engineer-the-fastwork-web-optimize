@@ -560,6 +560,8 @@ export async function gatherLive() {
   try { live.ended = Object.fromEntries((await import('./transcripts.mjs')).endedNow()); } catch (e) { live.errors.push(`transcripts: ${e.message}`); }
   // I-169: agents inside a foreground tool call for more than 30 s (name -> {tool, cmd, since, min})
   try { live.deaf = Object.fromEntries((await import('./transcripts.mjs')).deafNow()); } catch (e) { live.errors.push(`transcripts: ${e.message}`); }
+  // I-274: agents whose finished background job's notice sits unread in their transcript (name -> {taskId, status, at, min})
+  try { const TR = await import('./transcripts.mjs'); live.stalled = TR.stalledByAgent(TR.stalledNow()); } catch (e) { live.errors.push(`transcripts: ${e.message}`); }
   // I-155: the idle alarm's open episodes, shown as red alerts on the rows of the agents they concern
   try { live.idle = (await import('./idle.mjs')).boardAlerts(); } catch (e) { live.errors.push(`idle alarm: ${e.message}`); }
   return live;

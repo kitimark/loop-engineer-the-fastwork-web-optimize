@@ -1024,6 +1024,33 @@ export const wakeEndLine = ({ reader, triage = false, waitedSec }) =>
 /** The last line of a --monitor wait that can never be met (its --thread was closed or merged). */
 export const wakeNeverLine = ({ id, why }) => `WAKE never ${id || '-'} ${wakeShort(why)}`;
 
+// I-274: the lead's --monitor listener also wakes on a stalled agent (transcripts.mjs stalledNow: its background job's
+// notice unread, nothing woke it), once per (agent, task) and reader: <console>/stall-wakes.json {reader: {"agent task":
+// ISO reported}}, entries older than 2 days dropped.
+const stallMarksFile = () => join(consoleDir(), 'stall-wakes.json');
+const stallKey = (x) => `${x.agent} ${x.taskId}`;
+const STALL_MARK_MS = 48 * 3600e3;
+/** `WAKE stall <agent> <task> <N> min (<status>, not picked up; …)`. */
+export const stallWakeLine = (x) => `WAKE stall ${oneLine(x.agent)} ${oneLine(x.taskId)} ${Math.floor(x.sinceMs / 60000)} min (${oneLine(x.status)}, not picked up; wake it with SendMessage)`;
+/** The stalls not yet reported to `reader`. */
+export function stallNews(reader, stalls) {
+  const seen = (readJson(stallMarksFile()) || {})[reader] || {};
+  return stalls.filter((x) => !seen[stallKey(x)]);
+}
+/** After a wake: mark `stalls` as reported to `reader`. */
+export async function commitStallNews(reader, stalls, now = Date.now()) {
+  if (!stalls.length) return;
+  await withGuard(GUARD, () => {
+    const all = readJson(stallMarksFile()) || {};
+    const m = all[reader] || {};
+    for (const k of Object.keys(m)) if (!(now - Date.parse(m[k]) < STALL_MARK_MS)) delete m[k];
+    for (const x of stalls) m[stallKey(x)] = new Date(now).toISOString();
+    all[reader] = m;
+    mkdirSync(consoleDir(), { recursive: true });
+    writeJson(stallMarksFile(), all);
+  });
+}
+
 /** One line for `thread list`. */
 export function threadLine(t, reader, ls = null) {
   const s = summary(t, reader || USER);

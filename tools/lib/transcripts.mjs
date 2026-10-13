@@ -17,7 +17,8 @@
 // from transcript write times and Claude Code's team configs; names, times and plain reasons only (no prompts, no
 // paths). Anything unparsable counts as nothing (the rules before). Tests: $FW_STATE_DIR (a temp state dir)
 // means no transcripts at all unless $FW_TRANSCRIPTS_DIR names a directory ("off": none), and no teams unless
-// $FW_TEAMS_DIR does, like I-157's lesson: a test never reads the machine's live state.
+// $FW_TEAMS_DIR does, like I-157's lesson: a test never reads the machine's live state. I-274: also an agent whose
+// background job finished while it slept between turns, the notice unread (stalledAgents): ids, statuses and times only.
 import { readdirSync, statSync, readFileSync, openSync, readSync, closeSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
@@ -113,6 +114,29 @@ export function pendingCall(text) {
   return null;
 }
 
+// I-274 (2026-10-13): an agent that ended its turn while a Bash of its ran in the background (run_in_background) is not
+// woken when the job finishes: Claude Code stores the job's <task-notification> in its transcript as an attachment
+// {type: 'queued_command', prompt: '<task-notification>…<task-id>ID</task-id>…<status>S</status>…'} and starts no turn,
+// so it sleeps until a message arrives (OBSERVED, 2.1.x: four teammates lost 84-103 min each). Unread = queued after the
+// transcript's last assistant record (a turn that started has read it); any other record counts as nothing.
+export const STALL_AFTER_MS = 60e3;
+const tagOf = (p, tag, max) => String(p.match(new RegExp(`<${tag}>([^<]*)</${tag}>`))?.[1] ?? '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, max);
+/** The task notifications queued after the transcript's last assistant record, oldest first: [{taskId, status, at}]. */
+export function unreadNotices(text) {
+  const out = [];
+  try {
+    const recs = parseRecs(text);
+    let last = -1;
+    for (let i = recs.length - 1; i >= 0; i--) if (recs[i].type === 'assistant') { last = i; break; }
+    for (const r of recs.slice(last + 1)) {
+      const p = r.attachment?.type === 'queued_command' ? r.attachment.prompt : null;
+      if (typeof p !== 'string' || !p.includes('<task-notification>')) continue;
+      out.push({ taskId: tagOf(p, 'task-id', 40) || '?', status: tagOf(p, 'status', 20) || '?', at: typeof r.timestamp === 'string' ? r.timestamp : null });
+    }
+  } catch {}
+  return out;
+}
+
 const list = (d) => { try { return readdirSync(d); } catch { return []; } };
 function tail(file) {
   let fd;
@@ -132,12 +156,12 @@ function fileState(jf, st) {
   const m = memo.get(jf);
   if (m && m.mtime === st.mtimeMs && m.size === st.size) return m.state;
   const text = tail(jf);
-  const state = { ...handbackState(text), call: pendingCall(text) };
+  const state = { ...handbackState(text), call: pendingCall(text), notices: unreadNotices(text) };
   memo.set(jf, { mtime: st.mtimeMs, size: st.size, state });
   return state;
 }
 
-/** Map name -> {ended, at, call} from every agent's newest transcript (see the header). */
+/** Map name -> {ended, at, call, notices, sessionMs} from every agent's newest transcript (see the header). */
 export function agentStates({ dir = null, now = Date.now(), maxAgeMs = MAX_AGE_MS } = {}) {
   const out = new Map();
   if (!dir) return out;
@@ -162,8 +186,13 @@ export function agentStates({ dir = null, now = Date.now(), maxAgeMs = MAX_AGE_M
       if (!cur || st.mtimeMs > cur.st.mtimeMs) newest.set(name, { file: jf, st, session: s, teammate, team });
     }
   }
+  const sessionMs = new Map(); // I-274: when the agent's session wrote its own transcript (<dir>/<session>.jsonl), or null
+  const sessionAt = (s) => {
+    if (!sessionMs.has(s)) { let t = null; try { t = statSync(join(dir, `${s}.jsonl`)).mtimeMs; } catch {} sessionMs.set(s, t); }
+    return sessionMs.get(s);
+  };
   for (const [name, { file, st, session, teammate, team }] of newest) {
-    try { out.set(name, { ...fileState(file, st), lastMs: st.mtimeMs, session, teammate, team }); } catch {}
+    try { out.set(name, { ...fileState(file, st), lastMs: st.mtimeMs, session, teammate, team, sessionMs: sessionAt(session) }); } catch {}
   }
   return out;
 }
@@ -278,3 +307,40 @@ export function deafNow({ now = Date.now(), mainCheckout = null } = {}) {
 }
 /** "deaf: in <cmd> for N min" (under a minute: "for under 1 min"). */
 export const deafText = (d) => (d ? `deaf: in ${d.cmd} for ${d.min >= 1 ? `${d.min} min` : 'under 1 min'}` : '');
+
+/**
+ * I-274: [{agent, taskId, status, at, sinceMs}] (longest first), one per unread task notification older than minAgeMs, from
+ * agentStates (pure): not an agent that handed back, nor one inside a foreground call (it reads the notice when the call
+ * returns: I-169 deaf), nor one whose session's own transcript was not written for liveMs (the session is over), nor one
+ * of an older session than the newest (by its own transcript's write time) that has agents: a new lead session (a new
+ * session id) ends the previous one's teammates, unread notices and all.
+ */
+export function stalledOf(states, { now = Date.now(), minAgeMs = STALL_AFTER_MS, liveMs = TEAM_LIVE_MS } = {}) {
+  const out = [];
+  let current = null, currentMs = -Infinity;
+  for (const st of states.values()) if (Number.isFinite(st.sessionMs) && st.sessionMs > currentMs) { currentMs = st.sessionMs; current = st.session; }
+  for (const [agent, st] of states) {
+    if (st.ended || !st.notices?.length) continue;
+    if (current !== null && st.session !== current) continue;
+    const c = st.call, t = c && Date.parse(c.since);
+    if (c && Number.isFinite(t) && now - t <= CALL_RUNNING_MS) continue;
+    if (Number.isFinite(st.sessionMs) && now - st.sessionMs > liveMs) continue;
+    for (const n of st.notices) {
+      const sinceMs = now - (Date.parse(n.at) || st.lastMs);
+      if (sinceMs >= minAgeMs) out.push({ agent, taskId: n.taskId, status: n.status, at: n.at, sinceMs });
+    }
+  }
+  return out.sort((a, b) => b.sinceMs - a.sinceMs);
+}
+/** I-274: stalledOf for the transcripts in `dir`. */
+export const stalledAgents = ({ dir = null, now = Date.now(), minAgeMs = STALL_AFTER_MS } = {}) => stalledOf(agentStates({ dir, now }), { now, minAgeMs });
+/** I-274: stalledOf for this repo's transcripts, cached CACHE_MS like the rest. */
+export const stalledNow = ({ now = Date.now(), mainCheckout = null, minAgeMs = STALL_AFTER_MS } = {}) => stalledOf(statesNow(now, mainCheckout), { now, minAgeMs });
+/** I-274: {agent: {taskId, status, at, min}} with each agent's oldest stall (the board's live.stalled). */
+export function stalledByAgent(stalls) {
+  const out = {};
+  for (const s of stalls) if (!out[s.agent] || Date.parse(s.at) < Date.parse(out[s.agent].at)) out[s.agent] = { taskId: s.taskId, status: s.status, at: s.at, min: Math.floor(s.sinceMs / 60000) };
+  return out;
+}
+/** "stalled: job done N min ago, not picked up". */
+export const stallText = (s) => (s ? `stalled: job done ${minText(s.min)} ago, not picked up` : '');

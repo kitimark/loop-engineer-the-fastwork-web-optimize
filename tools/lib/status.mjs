@@ -850,6 +850,11 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
   // user questions go to the desk or the lead until it returns (thread-routing busy)
   const deafRec = canStale && it.owner ? live.deaf?.[it.owner] : null;
   const deaf = deafRec && typeof deafRec === 'object' ? s(`deaf: in ${deafRec.cmd} for ${deafRec.min >= 1 ? `${deafRec.min} min` : 'under 1 min'}`, 120) : null;
+  // I-274: the owner's background job finished while it slept between turns and nothing woke it (live.stalled,
+  // transcripts.mjs): red until it runs again; the lead wakes it with SendMessage
+  const stallRec = canStale && it.owner ? live.stalled?.[it.owner] : null;
+  const stalled = stallRec && typeof stallRec === 'object' && Number.isFinite(stallRec.min) ? s(`stalled: job done ${stallRec.min >= 1 ? `${stallRec.min} min` : 'under 1 min'} ago, not picked up`, 120) : null;
+  const stallAlert = stalled ? [`${stalled} (its background job ${s(stallRec.taskId, 40)} ${s(stallRec.status, 20)}; the lead wakes it with SendMessage)`] : [];
   const ownerEnded = handedBack || orphanWait ? { at: handedBack && typeof endRec.at === 'string' ? endRec.at : null, ...(orphanWait ? { orphanWait: true } : {}) } : null;
   const waiting = fromGit ? null : it.waitingOn ? { kind: it.waitingOn.kind, target: s(it.waitingOn.target, 80), text: s(it.waitingOn.text, LIMITS.wait), plain: waitingPlain(it.waitingOn) } : null;
   // I-145 (PR-020 N1): the event that ended the owner's wait (the user answered, decided, skipped; the thread closed)
@@ -862,14 +867,14 @@ export function itemView(it, { live = {}, byId = new Map(), now = Date.now(), st
     progressItems: progressMatches(it, ctx ? ctx.items : progress), // I-104: links to /progress#<id>, only to items that exist
     priority: Number.isInteger(it.priority) ? it.priority : null,
     state: it.state, statePlain: gitText || lab.plain || statePlain(it.state, st, waiting), group, groupLabel: GROUPS[group] || group,
-    landedFromGit: fromGit, ownerEnded, deaf,
+    landedFromGit: fromGit, ownerEnded, deaf, stalled,
     // T-124/T-125: one label with the PROGRESS item ("in v7, owner testing", "closed, no fix"), what contradicts it, and
     // a parked row's way back (resumeOn, "ready to resume", "needs review"); alerts = the red lines on /status
     // T-130/T-135: the one line the pages show for the state: the label (a parked row: label · its reason · its way
     // back); null = the row's own state words
     stateText: gitText || (lab.plain && (it.state === 'parked' || st.group === 'finished') ? lab.plain : lab.label),
     label: gitText || lab.label, labelOf: lab.progress, labelHow: lab.how, mismatch: lab.mismatch, resume: lab.resume, needsReview: lab.needsReview,
-    alerts: [...lab.mismatch.map((m) => `does not match: ${m}`), ...(lab.resume?.ready ? [`ready to resume: ${lab.resume.ready}`] : []), ...(lab.needsReview ? [lab.needsReview] : []), ...idleAlerts(it, live, group, now)],
+    alerts: [...lab.mismatch.map((m) => `does not match: ${m}`), ...(lab.resume?.ready ? [`ready to resume: ${lab.resume.ready}`] : []), ...(lab.needsReview ? [lab.needsReview] : []), ...stallAlert, ...idleAlerts(it, live, group, now)],
     // I-108 (4): a waiting row counts from its last change of the wait (state or --waiting-on)
     stateSince: it.stateSince || null, stateForMin: minutes(st.group === 'waiting' ? waitSince(it) : it.stateSince, now),
     waiting, derived, flags, liveWait, unlinked: [...(it.unlinked || [])],

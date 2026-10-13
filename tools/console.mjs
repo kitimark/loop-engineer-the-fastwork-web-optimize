@@ -125,6 +125,9 @@
 //        #   WAKE escalate T-009 by fix-a: <note>   WAKE proposal PR-019 decided accepted by user at …: <notes>
 //        # last line `WAKE end <you> timeout after N s; re-arm: …` (exit 3) or `WAKE never <thread> <why>` (exit 4).
 //        # Each wake is marked read like a plain wait; `thread show <id>` prints the whole message.
+//        # I-274, --as lead only: also `WAKE stall <agent> <task-id> N min (<status>, not picked up; …)` once per (agent,
+//        # task): the agent's background job finished while it slept between turns and nothing woke it (transcripts.mjs
+//        # stalledNow); SendMessage it. Marks: <console>/stall-wakes.json.
 //   node tools/console.mjs thread list [--unread --as <agent>] [--all] [--json]   # open threads (--all: closed too)
 //   node tools/console.mjs thread show <id> [--as <agent>] [--json]               # --as: marks it read for <agent>
 //   node tools/console.mjs thread reply <id> --by <agent> --text "…" | --file <f> | --file - [--ask] [--image <path> [--caption "…"]]…
@@ -219,6 +222,7 @@ import * as RT from './lib/thread-routing.mjs'; // T-050/T-051: listening, desk,
 import { startWait } from './lib/waits.mjs'; // I-058: live wait records for the status board
 import * as AL from './lib/answer-lint.mjs'; // I-146: the answer-format check on agent text the user reads
 import { exitOnHelp } from './lib/help.mjs';
+import { stalledNow } from './lib/transcripts.mjs'; // I-274: the lead's listener wakes on stalled agents
 
 exitOnHelp(import.meta.url, { unless: (a) => a[0] === 'thread' || a[0] === 'proposal' }); // I-152 N10: --help prints the header above and exits before anything runs
 const argv = process.argv.slice(2);
@@ -391,14 +395,17 @@ async function thread() {
     const PR = await import('./lib/proposal.mjs');
     if (withProposals) await PR.initProposalMark(w.reader);
     const proposalNews = () => (withProposals ? PR.proposalNews(w.reader, { all: w.reader === TH.LEAD }) : []);
+    const monitor = flag('monitor'); // I-147: one WAKE line per event, keeps listening until --timeout; no stderr states
+    // I-274: the lead's monitor also wakes on an agent whose finished background job nothing woke it for
+    const stallNews = () => { if (!monitor || w.reader !== TH.LEAD) return []; try { return TH.stallNews(w.reader, stalledNow()); } catch { return []; } };
     const check = () => {
       const t = w.check();
       const ev = proposalNews();
-      if (!ev.length) return t;
+      const stalls = stallNews();
+      if (!ev.length && !stalls.length) return t;
       const news = t.met ? JSON.parse(t.detail) : [];
-      return { met: true, state: `${news.length} thread(s), ${ev.length} proposal decision event(s)`, detail: JSON.stringify({ news, ev }) };
+      return { met: true, state: `${news.length} thread(s), ${ev.length} proposal decision event(s), ${stalls.length} stalled agent(s)`, detail: JSON.stringify({ news, ev, stalls }) };
     };
-    const monitor = flag('monitor'); // I-147: one WAKE line per event, keeps listening until --timeout; no stderr states
     const onChange = flag('quiet') || monitor ? undefined : (state, sec) => console.error(`[thread wait ${new Date().toISOString().slice(11, 19)}Z +${sec}s] ${state}`);
     // I-108: without --thread this is a listener (armed all the time, waits on nobody): marked, and worded as such
     startWait({ tool: 'console.mjs thread wait', owner: w.reader, listener: !opt('thread'), what: w.triage ? 'a thread that needs the lead (triage) or a proposal decision' : opt('thread') ? `a user reply in ${opt('thread')}` : `messages in its console threads${withProposals ? ' or a proposal decision' : ''}`, timeoutSec });
@@ -413,10 +420,11 @@ async function thread() {
         const again = check();
         const settled = TH.settledWake(again);
         if (!settled) continue; // I-181: another reader with this name took the news: nothing to print, keep listening
-        const { news, ev } = settled;
+        const { news, ev, stalls = [] } = settled;
         await TH.commitWait(w.reader, news);
         await PR.commitProposalNews(w.reader, ev);
-        const L = [...news.flatMap((t) => TH.wakeLines(t)), ...ev.map((e) => PR.proposalWakeLine(e))];
+        await TH.commitStallNews(w.reader, stalls);
+        const L = [...news.flatMap((t) => TH.wakeLines(t)), ...ev.map((e) => PR.proposalWakeLine(e)), ...stalls.map((x) => TH.stallWakeLine(x))];
         if (L.length) console.log(L.join('\n'));
       }
     }

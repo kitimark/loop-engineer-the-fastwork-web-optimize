@@ -26,6 +26,8 @@
 // runner (a gated part not ready, a recorded part started without "recording") with no change for more than --step-min
 // minutes (default 2): `STUCK C-037: part 1 (attempt 2) waits on fix-nav-morph for 10 min (…)`, exit 3 in check, one
 // thread per stuck period to the steward (--by lead), ENDED / CLOSED when the step moves on.
+// Stalled agents (I-274, lib/transcripts.mjs stalledNow), in the same passes: `NOTIFY <agent>: your background job <task>
+// completed N min ago and you have not picked it up …`, once per (agent, task) in a watch; no thread, no exit code.
 // Overdue revisions (I-177, lib/proposal-overdue.mjs), in the same passes: a proposal the user sent back (changes
 // requested) whose author has not marked rev N+1 under way (`console.mjs proposal revising`) for more than
 // --proposal-min minutes (default 15), or whose mark's eta has passed: `OVERDUE PR-021 rev 2 (de-x): not started 34 min
@@ -39,7 +41,8 @@
 //        # user (steps, hand tests), Mac holds, Mac wait, idle (before the first use = H-early, between uses = H-gap,
 //        # after the last use = H-done), and how much of the idle and Mac wait had a ready waiter queued; by owner and per
 //        # hold. Read-only. Rules: tools/lib/phone-ledger.mjs. Exit 0, 1 usage.
-import { RESOURCES, RESOURCE_NAMES, MIN_INTERVAL_SEC, DEFAULT_INTERVAL_SEC, gather, assess, record, settle, takeToClose, lineFor, threadFor, addressees, notifyLine, readState } from './lib/idle.mjs';
+import { RESOURCES, RESOURCE_NAMES, MIN_INTERVAL_SEC, DEFAULT_INTERVAL_SEC, gather, assess, record, settle, takeToClose, lineFor, threadFor, addressees, notifyLine, readState, stallNotifyLines } from './lib/idle.mjs';
+import { stalledNow } from './lib/transcripts.mjs'; // I-274: agents whose finished background job nothing woke them for
 import { createThread, setStatus } from './lib/console-threads.mjs';
 import { alarmSteward, stewardTo } from './lib/thread-routing.mjs';
 import { stepPass, STUCK_STEP_MIN } from './lib/step-alarm.mjs';
@@ -70,6 +73,7 @@ function minutesOpt(name, def) {
 
 const limits = () => ({ iphone: minutesOpt('phone-min', RESOURCES.iphone.defaultMin), 'chrome-measure': minutesOpt('chrome-min', RESOURCES['chrome-measure'].defaultMin), step: minutesOpt('step-min', STUCK_STEP_MIN), proposal: minutesOpt('proposal-min', OVERDUE_START_MIN) });
 
+const stallSeen = new Set(); // I-274: the (agent, task) stalls this process has printed
 /** One pass: assess, record (de-duplicated per episode), post / close as the lead. Returns {results, alarm}. */
 async function pass({ by, min, log, quietOk, watching = false }) {
   const now = clock();
@@ -114,6 +118,8 @@ async function pass({ by, min, log, quietOk, watching = false }) {
   // I-124: the disk (alarm thread under FW_SPACE_ALARM_GB, default 20; with --by lead the auto-clean of lib/space-prune.mjs)
   let disk = null;
   try { disk = await diskPass({ by, log, now, autoClean: watching }); } catch (e) { log(`DISK ERROR ${e.message}`); }
+  // I-274: a NOTIFY line per stalled agent, once per (agent, task) in a watch; the exit code stays the locks' and steps'
+  try { for (const l of stallNotifyLines(stalledNow({ now }), stallSeen)) log(l); } catch (e) { log(`STALL ERROR ${e.message}`); }
   return { results, alarm: as.some((a) => a.alarm) || steps.alarm || revs.alarm, disk };
 }
 

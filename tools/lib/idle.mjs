@@ -446,6 +446,21 @@ export function notifyLine(a, n) {
   return `NOTIFY ${n}: ${holder ? 'you hold the iPhone lease with no phone run' : `${R} ${a.heldIdle ? `held by ${a.holder} unused` : 'free'}`} for ${a.freeMin} min while ${holder ? 'others wait' : 'you wait'} (status board alert; I-155)`;
 }
 
+/**
+ * I-274: the watch's `NOTIFY <agent>` line for each stalled agent (transcripts.mjs stalledNow: its background job's
+ * notice unread, nothing woke it), once per (agent, task) and `seen` set (the watch keeps one; check passes none).
+ */
+export function stallNotifyLines(stalls, seen = new Set()) {
+  const out = [];
+  for (const x of stalls) {
+    const k = `${x.agent} ${x.taskId}`;
+    if (seen.has(k) || !AGENT.test(x.agent)) continue;
+    seen.add(k);
+    out.push(`NOTIFY ${x.agent}: your background job ${x.taskId} ${x.status} ${Math.floor(x.sinceMs / 60000)} min ago and you have not picked it up: nothing woke you (I-274); the lead wakes you with SendMessage`);
+  }
+  return out;
+}
+
 /** The console thread for one alarm: {title, text}. Names and minutes only (no notes, URLs or devices; Hard rule 12). */
 export function threadFor(a, { steward = null } = {}) {
   const R = RESOURCES[a.resource] || { name: a.resource, short: a.resource };
