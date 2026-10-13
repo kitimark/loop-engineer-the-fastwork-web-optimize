@@ -288,7 +288,8 @@ export function request(url, { method = 'GET', headers = {}, body, decode = true
  * under review, not HEAD), fixes/_template, package.json and .gitignore, committed on main, plus an
  * optional linked worktree at <root>/main/.claude/worktrees/<wtName>. Lives under a temp dir.
  * The checkout's own release manifest (tools/release/release-assets.json) is left out (I-278): its redactions list the
- * real snapshot's files, not a fixture's; a test that needs one writes and commits its own.
+ * real snapshot's files, not a fixture's; a test that needs one writes and commits its own. Likewise the .gitignore lines
+ * that ignore the snapshot dirs themselves.
  * Returns {root, main, wt}.
  */
 export function makeTempRepo({ worktree = 'fix-wt', withHooks = false } = {}) {
@@ -298,7 +299,10 @@ export function makeTempRepo({ worktree = 'fix-wt', withHooks = false } = {}) {
   const manifest = join(TOOLS, 'release', 'release-assets.json');
   cpSync(TOOLS, join(main, 'tools'), { recursive: true, filter: (src) => src !== manifest });
   cpSync(join(REPO, 'fixes', '_template'), join(main, 'fixes', '_template'), { recursive: true });
-  for (const f of ['package.json', '.gitignore']) cpSync(join(REPO, f), join(main, f));
+  cpSync(join(REPO, 'package.json'), join(main, 'package.json'));
+  // the checkout's .gitignore without its snapshot lines (the study's history sync ignores site/ and site-pretty/):
+  // a fixture repo tracks a snapshot or, modelling the release, ignores it itself (I-278)
+  writeFileSync(join(main, '.gitignore'), readFileSync(join(REPO, '.gitignore'), 'utf8').split('\n').filter((l) => !/^\/?site(-pretty)?\/?$/.test(l.trim())).join('\n'));
   if (withHooks && existsSync(join(REPO, '.githooks'))) cpSync(join(REPO, '.githooks'), join(main, '.githooks'), { recursive: true });
   git(main, 'init', '-q', '-b', 'main');
   git(main, 'config', 'commit.gpgsign', 'false');

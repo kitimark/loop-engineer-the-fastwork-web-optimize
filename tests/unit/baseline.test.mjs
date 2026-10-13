@@ -268,7 +268,7 @@ test('I-270 release checkout with redacted snapshot files: exactly the listed sw
   assert.match(s.message, /^BASELINE-MODIFIED: the committed snapshot \S+ in \S+ has local changes/);
 });
 
-test('I-278 temp repos own their release manifest: makeTempRepo leaves out the checkout\'s (its redactions list the real snapshot)', () => {
+test('I-278 temp repos own their release manifest and snapshot ignore lines: makeTempRepo leaves out the checkout\'s', () => {
   const r = makeTempRepo({ worktree: null });
   assert.equal(existsSync(join(r.main, 'tools', 'release', 'release-assets.json')), false);
   assert.ok(existsSync(join(r.main, 'tools', 'release', 'init.mjs')), 'the rest of tools/release/ is copied');
@@ -276,6 +276,10 @@ test('I-278 temp repos own their release manifest: makeTempRepo leaves out the c
   const o = run(process.execPath, ['--input-type=module', '-e', src], { cwd: r.main });
   assert.equal(o.code, 0, o.out);
   assert.deepEqual(JSON.parse(o.stdout), { swaps: [] });
+  // nor the checkout's ignore lines for the snapshot dirs (the study ignores its untracked snapshot): a fixture repo can
+  // track one; the volatile files stay ignored
+  for (const f of ['site/index.html', 'site-pretty/index.html']) assert.equal(run('git', ['check-ignore', '-q', f], { cwd: r.main }).code, 1, f);
+  assert.equal(run('git', ['check-ignore', '-q', 'site/.mirror/missing-local.txt'], { cwd: r.main }).code, 0);
 });
 
 test('I-268 dirTreeId: the tree id git would commit, also outside a git checkout; treeFingerprint moves on any write', async () => {

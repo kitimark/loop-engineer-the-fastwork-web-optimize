@@ -62,9 +62,10 @@ test('.githooks/pre-commit is executable and guards the expected paths', () => {
   for (const needle of ['^site\\/', '^site-pretty\\/', '^out\\/', 'overlay\\/', '\\.pem$', '^tools\\/', '^tests\\/', 'npm test']) assert.ok(src.includes(needle), needle);
 });
 
-test('the committed baseline snapshot: tracked, its volatile files ignored, changes need the user-authorized form', () => {
+test('the baseline snapshot: untracked and ignored since the history sync, its volatile files ignored, a staged change needs the user-authorized form', () => {
   const gi = readFileSync(join(REPO, '.gitignore'), 'utf8').split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
-  for (const p of ['site/', 'site-pretty/', '/site/', '/site-pretty/', '/site', '/site-pretty', 'site', 'site-pretty']) assert.ok(!gi.includes(p), `.gitignore must not ignore ${p}: the snapshot is committed (user decision 2026-10-01)`);
+  // user, 2026-10-13 (history replaced by the public one, T-279 #22): the snapshot is untracked; before, it was committed
+  for (const p of ['/site/', '/site-pretty/']) assert.ok(gi.includes(p), `.gitignore must ignore ${p}: the snapshot is untracked (user decision 2026-10-13)`);
   for (const p of ['/site/.mirror/missing-local.txt', '/site-pretty/.mirror/missing-local.txt', 'out/', '*.pem', 'fixes/*/overlay/']) assert.ok(gi.includes(p), p);
   const hook = readFileSync(join(REPO, '.githooks', 'pre-commit'), 'utf8');
   for (const needle of ['FW_BASELINE_UPDATE', "'write-tree', `--prefix=${t}/`", "branch === 'main'", '^baseline\\.json$']) assert.ok(hook.includes(needle), needle);
