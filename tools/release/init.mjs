@@ -11,7 +11,8 @@
 // Fail-closed, in this order, and nothing is written outside out/release-init/ until every check passed:
 //   1. fetch every asset not yet installed into out/release-init/downloads/ (public URL via Node fetch, no gh needed),
 //      checking its size and sha256 (a bad file is deleted);
-//   2. unpack each into its own staging dir (tar; absolute paths, `..`, links and special files refused);
+//   2. unpack each into its own staging dir (tar; absolute paths, `..`, `.git/`, links and special files refused from
+//      the listing, before anything is extracted);
 //   3. the snapshot asset's site/ and site-pretty/ must have the git tree ids baseline.json pins (tools/lib/baseline.mjs
 //      dirTreeId); no other asset may write under them;
 //   4. no target file may exist with other bytes (identical files are skipped); then the files are moved into place
@@ -68,7 +69,7 @@ function loadManifest(file) {
     if (!Number.isSafeInteger(a.bytes) || a.bytes < 0) usage(`${where}: "bytes" must be a byte count`);
     if (!KINDS.has(a.kind)) usage(`${where}: "kind" must be snapshot, media or data`);
     a.unpackTo ??= '.';
-    if (typeof a.unpackTo !== 'string' || isAbsolute(a.unpackTo) || a.unpackTo.split(/[\\/]/).includes('..')) usage(`${where}: "unpackTo" must be a path inside the checkout`);
+    if (typeof a.unpackTo !== 'string' || isAbsolute(a.unpackTo) || a.unpackTo.split(/[\\/]/).includes('..') || gitSegment(a.unpackTo)) usage(`${where}: "unpackTo" must be a path inside the checkout, outside .git/`);
   }
   return m;
 }
@@ -149,12 +150,23 @@ function filesBelow(dir, name) {
   return out;
 }
 
-/** tar into `dest`, after checking the listing: no absolute path, no `..`. */
+/** A path segment that would write into a git dir (case-insensitive file systems: `.GIT` too). */
+const gitSegment = (p) => p.split(/[\\/]/).some((s) => s.toLowerCase() === '.git');
+
+/** tar into `dest`, after checking the listing: no absolute path, no `..`, no `.git`, only files and directories. */
 function unpack(file, dest, name) {
-  const list = spawnSync('tar', ['-tf', file], { encoding: 'utf8', maxBuffer: 1 << 28 });
-  if (list.status !== 0) fail(`${name}: not a readable tar file (${(list.stderr || '').trim().split('\n')[0]})`);
-  for (const e of list.stdout.split('\n').filter(Boolean)) {
+  const tarList = (flags) => {
+    const r = spawnSync('tar', [flags, file], { encoding: 'utf8', maxBuffer: 1 << 28 });
+    if (r.status !== 0) fail(`${name}: not a readable tar file (${(r.stderr || '').trim().split('\n')[0]})`);
+    return r.stdout.split('\n').filter(Boolean);
+  };
+  const names = tarList('-tf');
+  const long = tarList('-tvf'); // same entries, same order; the first character is the type (bsdtar and GNU tar)
+  if (long.length !== names.length) fail(`${name}: the archive listing is ambiguous (${names.length} names, ${long.length} entries)`);
+  for (const [i, e] of names.entries()) {
     if (isAbsolute(e) || /^[A-Za-z]:/.test(e) || e.split(/[\\/]/).includes('..')) fail(`${name}: unsafe path in the archive: ${e}`);
+    if (gitSegment(e)) fail(`${name}: ${e} would write into a .git directory`);
+    if (!'-d'.includes(long[i][0])) fail(`${name}: ${e.replace(/\/$/, '')} is a link or special file (type ${long[i][0]}); release files hold regular files only`);
   }
   mkdirSync(dest, { recursive: true });
   const x = spawnSync('tar', ['-xf', file, '-C', dest], { encoding: 'utf8', maxBuffer: 1 << 28 });
@@ -224,6 +236,7 @@ async function main() {
       unpack(join(DOWNLOADS, a.name), base, a.name);
       const files = filesBelow(root, a.name).map((r) => ({ src: join(root, r), rel: r }));
       for (const f of files) {
+        if (gitSegment(f.rel)) fail(`${a.name}: ${f.rel} would write into a .git directory`);
         const top = f.rel.split('/')[0];
         if (a.kind !== 'snapshot' && TREES.includes(top)) fail(`${a.name}: a ${a.kind} file may not write the snapshot (${f.rel})`);
         if (seen.has(f.rel)) fail(`${a.name} and ${seen.get(f.rel)} both hold ${f.rel}`);

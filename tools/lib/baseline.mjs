@@ -118,10 +118,11 @@ export function isSparse(dir = REPO) {
  *  (serve.mjs's 404 log, a Chrome profile, Finder's .DS_Store), so an untracked copy must leave them out too. */
 const VOLATILE = (rel) => rel === '.mirror/missing-local.txt' || rel === '.mirror/chrome-profile' || rel.startsWith('.mirror/chrome-profile/') || rel === '.DS_Store' || rel.endsWith('/.DS_Store');
 const volatileExcludes = (t) => [`:(exclude)${t}/.mirror/missing-local.txt`, `:(exclude)${t}/.mirror/chrome-profile`, `:(exclude,glob)${t}/**/.DS_Store`];
-/** git env for the throwaway git dir: nothing from a calling hook (GIT_DIR, GIT_INDEX_FILE, ...) may redirect it. */
-const ISOLATED = { GIT_DIR: null, GIT_WORK_TREE: null, GIT_COMMON_DIR: null, GIT_OBJECT_DIRECTORY: null, GIT_ALTERNATE_OBJECT_DIRECTORIES: null, GIT_INDEX_FILE: null };
-/** Byte-exact hashing whatever the user's git config says (autocrlf, file modes); uncompressed loose objects: speed. */
-const RAW = ['-c', 'core.autocrlf=false', '-c', 'core.safecrlf=false', '-c', 'core.fileMode=true', '-c', 'core.symlinks=true', '-c', 'core.compression=0', '-c', 'core.looseCompression=0', '-c', 'gc.auto=0'];
+/** git env for the throwaway git dir: nothing from a calling hook (GIT_DIR, GIT_INDEX_FILE, ...) may redirect it, and no
+ *  system, global or inherited `-c` config (filters, attributes, templates) may change what it hashes. */
+const ISOLATED = { GIT_DIR: null, GIT_WORK_TREE: null, GIT_COMMON_DIR: null, GIT_OBJECT_DIRECTORY: null, GIT_ALTERNATE_OBJECT_DIRECTORIES: null, GIT_INDEX_FILE: null, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_SYSTEM: null, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_PARAMETERS: null, GIT_CONFIG_COUNT: null, GIT_TEMPLATE_DIR: null, GIT_ATTR_NOSYSTEM: '1' };
+/** Byte-exact hashing whatever the user's git config says (autocrlf, file modes, attributes); uncompressed loose objects: speed. */
+const RAW = ['-c', 'core.autocrlf=false', '-c', 'core.safecrlf=false', '-c', 'core.fileMode=true', '-c', 'core.symlinks=true', '-c', 'core.attributesFile=/dev/null', '-c', 'core.compression=0', '-c', 'core.looseCompression=0', '-c', 'gc.auto=0'];
 
 /**
  * A cheap fingerprint of directory `dir`: sha256 over every entry's relative path, mode, size, mtime, ctime and inode
@@ -153,7 +154,7 @@ export function dirTreeId(home, t) {
   try {
     const gd = join(tmp, 'g');
     const env = { ...ISOLATED, GIT_INDEX_FILE: join(tmp, 'index') };
-    const init = gitChecked(tmp, ['init', '-q', '--bare', gd], ISOLATED);
+    const init = gitChecked(tmp, ['init', '-q', '--bare', '--template=', gd], ISOLATED);
     if (!init.ok) throw new Error(`git init failed: ${init.err}`);
     const add = gitChecked(home, [...RAW, `--git-dir=${gd}`, `--work-tree=${home}`, 'add', '--force', '--', t, ...volatileExcludes(t)], env);
     if (!add.ok) throw new Error(`git add ${t} failed: ${add.err.split('\n')[0]}`);

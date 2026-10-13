@@ -5,7 +5,7 @@
 // a local HTTP server for the URL path (FW_RELEASE_BASE_URL); never the network, never the real checkout.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync, symlinkSync, rmSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync, symlinkSync, linkSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { createServer } from 'node:http';
 import { makeTempRepo, tempDir, run, runAsync, git, sha256 } from '../helpers.mjs';
@@ -171,8 +171,22 @@ test('I-268 init: unsafe release files are refused (link, a media file writing t
   let { dir, manifest } = makeAssets({ extraMedia: (d) => symlinkSync('/etc', join(d, 'out', 'media', 'etc')) });
   let r = init(repo, ['--from', dir, '--assets', writeManifest(manifest)]);
   assert.equal(r.code, 1, r.out);
-  assert.match(r.stderr, /^INIT FAILED: media-1\.tar\.gz: out\/media\/etc is a link or special file/m);
+  assert.match(r.stderr, /^INIT FAILED: media-1\.tar\.gz: out\/media\/etc is a link or special file \(type l\)/m);
   assertNothingInstalled(repo);
+  // refused from the tar listing, before extraction: a hard link, a fifo, anything under .git/ (any case)
+  for (const [extra, re] of [
+    [(d) => linkSync(join(d, 'out', 'media', 'pic.png'), join(d, 'out', 'media', 'hard.png')), /^INIT FAILED: media-1\.tar\.gz: out\/media\/(hard|pic)\.png is a link or special file \(type h\)/m],
+    [(d) => run('mkfifo', [join(d, 'out', 'media', 'fifo')]), /^INIT FAILED: media-1\.tar\.gz: out\/media\/fifo is a link or special file \(type p\)/m],
+    [(d) => { mkdirSync(join(d, 'out', '.git', 'hooks'), { recursive: true }); writeFileSync(join(d, 'out', '.git', 'hooks', 'post-checkout'), '#!/bin/sh\n'); }, /^INIT FAILED: media-1\.tar\.gz: out\/\.git\/? would write into a \.git directory/m],
+    [(d) => { mkdirSync(join(d, 'research', '.GIT')); writeFileSync(join(d, 'research', '.GIT', 'config'), 'x'); }, /^INIT FAILED: media-1\.tar\.gz: research\/\.GIT\/? would write into a \.git directory/m],
+  ]) {
+    ({ dir, manifest } = makeAssets({ extraMedia: extra }));
+    r = init(repo, ['--from', dir, '--assets', writeManifest(manifest)]);
+    assert.equal(r.code, 1, r.out);
+    assert.match(r.stderr, re);
+    assertNothingInstalled(repo);
+    assert.equal(existsSync(join(repo, 'out', '.git')), false);
+  }
   ({ dir, manifest } = makeAssets());
   // a media file under site/ (unpackTo "."): only the snapshot file may write the baseline
   const media2 = tempDir('fw-rel-m2-');
@@ -192,6 +206,8 @@ test('I-268 init: unsafe release files are refused (link, a media file writing t
     assert.match(x.stderr, re);
   };
   bad((m) => { m.assets[0].unpackTo = '../x'; }, /"unpackTo" must be a path inside the checkout/);
+  bad((m) => { m.assets[0].unpackTo = '.git/hooks'; }, /"unpackTo" must be a path inside the checkout, outside \.git\//);
+  bad((m) => { m.assets[0].unpackTo = 'out/.Git'; }, /outside \.git\//);
   bad((m) => { m.assets[0].name = '../x.tar.gz'; }, /"name" must be a plain/);
   bad((m) => { m.version = 2; }, /"version" must be 1/);
   bad((m) => { m.assets[0].kind = 'other'; }, /"kind" must be/);

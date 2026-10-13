@@ -197,6 +197,29 @@ test('I-268 dirTreeId: the tree id git would commit, also outside a git checkout
   assert.throws(() => b.dirTreeId(d, 'nope'), /git add nope failed/);
 });
 
+test('I-268 dirTreeId ignores the reader\'s git config: a global, -c or template clean filter cannot change the tree id', () => {
+  const d = tempDir('fw-dirtree-cfg-');
+  makeFixtureHome(d);
+  const cfg = tempDir('fw-dirtree-evil-');
+  writeFileSync(join(cfg, 'attributes'), '* filter=evil\n');
+  const evil = `[filter "evil"]\n\tclean = sed s/a/b/g\n[core]\n\tattributesFile = ${join(cfg, 'attributes')}\n\tautocrlf = true\n`;
+  writeFileSync(join(cfg, 'gitconfig'), evil);
+  mkdirSync(join(cfg, 'templates', 'info'), { recursive: true });
+  writeFileSync(join(cfg, 'templates', 'info', 'attributes'), '* filter=evil\n');
+  writeFileSync(join(cfg, 'templates', 'config'), evil);
+  const env = {
+    GIT_CONFIG_GLOBAL: join(cfg, 'gitconfig'), GIT_CONFIG_SYSTEM: join(cfg, 'gitconfig'), GIT_TEMPLATE_DIR: join(cfg, 'templates'),
+    GIT_CONFIG_COUNT: '2', GIT_CONFIG_KEY_0: 'filter.evil.clean', GIT_CONFIG_VALUE_0: 'sed s/a/b/g', GIT_CONFIG_KEY_1: 'core.attributesFile', GIT_CONFIG_VALUE_1: join(cfg, 'attributes'),
+  };
+  // the hostile config does change what plain git hashes (so the check below is not vacuous)
+  const plain = run('git', ['-c', `core.attributesFile=${join(cfg, 'attributes')}`, '-c', 'filter.evil.clean=sed s/a/b/g', 'hash-object', join(d, 'site', 'robots.txt')], { cwd: d, env });
+  assert.notEqual(plain.stdout.trim(), run('git', ['hash-object', '--no-filters', join(d, 'site', 'robots.txt')], { cwd: d }).stdout.trim());
+  const src = `const b = await import(${JSON.stringify(join(repo.main, 'tools/lib/baseline.mjs'))}); console.log(b.dirTreeId(${JSON.stringify(d)}, 'site'), b.dirTreeId(${JSON.stringify(d)}, 'site-pretty'));`;
+  const r = run(process.execPath, ['--input-type=module', '-e', src], { cwd: d, env });
+  assert.equal(r.code, 0, r.out);
+  assert.equal(r.stdout.trim(), `${s1.trees.site} ${s1.trees['site-pretty']}`);
+});
+
 test('unpinned (no baseline.json) and FW_MIRROR_HOME are unchecked', () => {
   const other = makeTempRepo({ worktree: null });
   makeFixtureHome(other.main);

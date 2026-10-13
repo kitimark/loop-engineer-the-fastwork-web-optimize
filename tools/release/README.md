@@ -22,7 +22,8 @@ npm run init        # Node >= 22, git and tar; no other dependencies, no GitHub 
 
 1. downloads every file from `https://github.com/<owner>/<repo>/releases/download/<tag>/<name>` into
    `out/release-init/downloads/` and checks its size and SHA-256;
-2. unpacks each file into a staging folder, refusing absolute paths, `..`, links and special files;
+2. unpacks each file into a staging folder, refusing (from the archive listing, before extracting) absolute paths,
+   `..`, anything under a `.git` folder, links and special files;
 3. checks that the snapshot's `site/` and `site-pretty/` have exactly the git tree ids that `baseline.json` pins, the
    same check the tools run on every start;
 4. refuses to overwrite a file with other content, then moves everything into place.
