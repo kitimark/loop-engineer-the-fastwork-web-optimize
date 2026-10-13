@@ -25,7 +25,10 @@ npm run init        # Node >= 22, git and tar; no other dependencies, no GitHub 
 2. unpacks each file into a staging folder, refusing (from the archive listing, before extracting) absolute paths,
    `..`, anything under a `.git` folder, links and special files;
 3. checks that the snapshot's `site/` and `site-pretty/` have exactly the git tree ids that `baseline.json` pins, the
-   same check the tools run on every start;
+   same check the tools run on every start. The release redacts secret-shaped values in the snapshot (third-party keys
+   in vendored code, `[secret omitted: <rule>]`); `release-assets.json` lists each such file with its original and
+   redacted git blob ids, and a listed file counts as its original blob, so the pin still matches. Any other
+   difference, or a listed file that is not the listed redacted one, fails;
 4. refuses to overwrite a file with other content, then moves everything into place.
 
 Any failed check stops it with `INIT FAILED: …` and a non-zero exit before anything is installed; fix what it names
@@ -51,3 +54,13 @@ the snapshot is not tracked by git here, so the tools hash it as git would and c
   (`.mirror/missing-local.txt`, `.mirror/chrome-profile/`, `.DS_Store`) do not count either way.
 - Media and data files may unpack anywhere in the checkout except under `site/` and `site-pretty/`; two files may not
   hold the same path.
+- What ships from `out/` (`pack.mjs`): `out/lead` and `out/tryit` only as far as the committed write-ups (`research/`,
+  `fixes/`, `memory/`, README files at HEAD) cite a file by path; never `*.log`, keys, SQLite files or
+  cookie/login stores. Pictures lose their metadata (PNG and GIF losslessly); a JPEG, AVIF or WebP with XMP, IPTC, GPS,
+  camera, owner or other non-pixel EXIF data is refused and the build is not ready (`imagemeta.mjs`).
+- The release's snapshot is not byte for byte the study's: its vendored third-party files with secret-shaped values
+  (for the snapshot pinned today, 4 Google gtag/gtm files under `__vendor/www.googletagmanager.com/`, in `site/` and
+  `site-pretty/`) ship with those values replaced by `[secret omitted: <rule>]`, and `release-assets.json` lists each
+  (`redacted`). The pin still verifies (see step 3 above). Served with `--vendors=local`, those scripts run redacted,
+  so console errors and requests may differ from the study's own runs; results measured on a release checkout are not
+  the study's numbers.

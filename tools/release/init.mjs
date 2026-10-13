@@ -2,7 +2,8 @@
 // npm run init (I-268): install the public release's large files (the frozen snapshot site/ + site-pretty/, reviewed
 // pictures and videos, data) that its repo does not carry, listed in tools/release/release-assets.json:
 //   {"version":1, "release":"<tag>", "repo":"<owner>/<repo>" (optional),
-//    "assets":[{"name":"snapshot-<id>.tar.gz", "sha256":"…", "bytes":N, "unpackTo":".", "kind":"snapshot"|"media"|"data"}]}
+//    "assets":[{"name":"snapshot-<id>.tar.gz", "sha256":"…", "bytes":N, "unpackTo":".", "kind":"snapshot"|"media"|"data",
+//               "redacted":[{"path":"site-pretty/…", "rule":"secret-kv", "originalBlob":"…", "redactedBlob":"…"}] (snapshot only, I-270)}]}
 //
 //   npm run init                                  # download from https://github.com/<owner>/<repo>/releases/download/<tag>/<name>
 //   node tools/release/init.mjs --from <dir>      # the same files from a local folder (offline, tests)
@@ -14,7 +15,9 @@
 //   2. unpack each into its own staging dir (tar; absolute paths, `..`, `.git/`, links and special files refused from
 //      the listing, before anything is extracted);
 //   3. the snapshot asset's site/ and site-pretty/ must have the git tree ids baseline.json pins (tools/lib/baseline.mjs
-//      dirTreeId); no other asset may write under them;
+//      dirTreeId); no other asset may write under them. I-270: a file the release redacted (a secret-shaped value in
+//      vendored code) must have its listed redactedBlob and counts as its originalBlob; the list must be the one HEAD's
+//      committed release-assets.json holds; any other difference fails;
 //   4. no target file may exist with other bytes (identical files are skipped); then the files are moved into place
 //      (site/ and site-pretty/ listed in .git/info/exclude when HEAD does not track them), and `baseline.mjs status`
 //      must say ok (untracked, verified).
@@ -31,7 +34,7 @@ import { exitOnHelp } from '../lib/help.mjs';
 exitOnHelp(import.meta.url);
 delete process.env.FW_MIRROR_HOME; // install into and check this checkout, never a fixture override
 const { REPO } = await import('../lib/paths.mjs');
-const { TREES, PIN_FILE, readPin, dirTreeId, baselineStatus } = await import('../lib/baseline.mjs');
+const { TREES, PIN_FILE, RELEASE_MANIFEST, readPin, dirTreeId, baselineStatus, redactionList, releaseRedactions } = await import('../lib/baseline.mjs');
 
 const argv = process.argv.slice(2);
 const KNOWN = new Set(['--from', '--repo', '--assets', '--dry-run', '--keep-downloads']);
@@ -71,6 +74,8 @@ function loadManifest(file) {
     a.unpackTo ??= '.';
     if (typeof a.unpackTo !== 'string' || isAbsolute(a.unpackTo) || a.unpackTo.split(/[\\/]/).includes('..') || gitSegment(a.unpackTo)) usage(`${where}: "unpackTo" must be a path inside the checkout, outside .git/`);
   }
+  const red = redactionList(m);
+  if (red.error) usage(`${file}: ${red.error}`);
   return m;
 }
 
@@ -244,13 +249,19 @@ async function main() {
       }
       if (a.kind === 'snapshot') {
         const have = {};
+        const { swaps } = redactionList({ assets: [a] });
+        // the swaps count only as HEAD's committed manifest lists them (as the baseline check reads them later): an
+        // edited or other manifest cannot widen them
+        const head = releaseRedactions(REPO);
+        if (head.error) fail(`${a.name}: HEAD:${RELEASE_MANIFEST}: ${head.error}`);
+        if (JSON.stringify(swaps) !== JSON.stringify(head.swaps)) fail(`SNAPSHOT-MISMATCH ${a.name}: its list of redacted files (${swaps.length}) is not the one HEAD:${RELEASE_MANIFEST} commits (${head.swaps.length}); was the manifest edited after packing?`);
         for (const t of TREES) {
           if (!existsSync(join(root, t))) fail(`${a.name}: has no ${t}/ (unpacked to ${a.unpackTo}); a snapshot file holds ${TREES.join('/ and ')}/ at the checkout root`);
-          have[t] = dirTreeId(root, t);
+          try { have[t] = dirTreeId(root, t, { swaps }); } catch (e) { fail(`SNAPSHOT-MISMATCH ${a.name}: ${e.message}`); }
         }
         const bad = TREES.filter((t) => have[t] !== pin.trees[t]);
         if (bad.length) fail(`SNAPSHOT-MISMATCH ${a.name}: ${bad.map((t) => `${t} tree ${have[t].slice(0, 10)}, ${PIN_FILE} pins ${pin.trees[t].slice(0, 10)}`).join('; ')}: not the snapshot ${pin.snapshot} (a changed byte?)`);
-        console.log(`VERIFIED ${a.name}: ${TREES.map((t) => `${t} ${have[t].slice(0, 10)}`).join(', ')} = ${PIN_FILE} ${pin.snapshot}`);
+        console.log(`VERIFIED ${a.name}: ${TREES.map((t) => `${t} ${have[t].slice(0, 10)}`).join(', ')} = ${PIN_FILE} ${pin.snapshot}${swaps.length ? ` (${swaps.length} redacted file(s) counted as their original blobs)` : ''}`);
       }
       plan.push({ a, files });
     }

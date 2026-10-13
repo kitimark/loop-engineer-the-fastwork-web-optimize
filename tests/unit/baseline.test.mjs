@@ -177,6 +177,97 @@ test('I-268 release checkout: HEAD does not track the snapshot, the unpacked fil
   assert.equal(probe(rel.main).state, 'ok');
 });
 
+test('I-270 release checkout with redacted snapshot files: exactly the listed swaps are accepted, anything else is MODIFIED', () => {
+  const rel = makeTempRepo({ worktree: null });
+  writeFileSync(join(rel.main, 'baseline.json'), JSON.stringify(s1, null, 1) + '\n');
+  writeFileSync(join(rel.main, '.gitignore'), `${readFileSync(join(rel.main, '.gitignore'), 'utf8')}/site/\n/site-pretty/\n`);
+  makeFixtureHome(rel.main);
+  // the release redacted one vendored file: its bytes differ from the pinned ones, the manifest lists both blob ids
+  const path = 'site-pretty/index.html';
+  const orig = readFileSync(join(rel.main, path));
+  const redacted = Buffer.concat([orig, Buffer.from('<!-- apiKey: "[secret omitted: secret-kv]" -->\n')]);
+  writeFileSync(join(rel.main, path), redacted);
+  const blobOf = (buf) => run('git', ['hash-object', '--stdin'], { cwd: rel.main, input: buf }).stdout.trim();
+  const entry = { path, rule: 'secret-kv', originalBlob: blobOf(orig), redactedBlob: blobOf(redacted) };
+  assert.equal(entry.originalBlob, git(repo.main, 'rev-parse', `HEAD:${path}`));
+  const manifest = (redactedList) => JSON.stringify({ version: 1, release: 'r1', assets: [{ name: 's.tar.gz', sha256: '0'.repeat(64), bytes: 1, unpackTo: '.', kind: 'snapshot', redacted: redactedList }] }, null, 1) + '\n';
+  const commitManifest = (redactedList) => {
+    writeFileSync(join(rel.main, 'tools', 'release', 'release-assets.json'), manifest(redactedList));
+    git(rel.main, 'add', 'baseline.json', '.gitignore', 'tools/release/release-assets.json');
+    git(rel.main, 'commit', '-q', '-m', 'release manifest');
+  };
+  // without a listing the redacted file is a change
+  git(rel.main, 'add', 'baseline.json', '.gitignore');
+  git(rel.main, 'commit', '-q', '-m', 'release pin');
+  let s = probe(rel.main);
+  assert.equal(s.state, 'modified', s.message);
+  // 1. the accepted swap
+  commitManifest([entry]);
+  s = probe(rel.main);
+  assert.equal(s.state, 'ok', s.message);
+  assert.equal(s.source, 'untracked, verified');
+  assert.equal(s.redacted, 1);
+  assert.match(s.message, /\(untracked, verified: site, site-pretty; 1 redacted file\(s\) as tools\/release\/release-assets\.json lists\)$/);
+  // a local, uncommitted edit of the manifest does not count (HEAD's listing is read)
+  writeFileSync(join(rel.main, 'tools', 'release', 'release-assets.json'), manifest([]));
+  assert.equal(probe(rel.main).state, 'ok');
+  git(rel.main, 'checkout', '--', 'tools/release/release-assets.json');
+  // 2. an unlisted change
+  writeFileSync(join(rel.main, 'site', 'robots.txt'), 'User-agent: *\nDisallow: /\n');
+  s = probe(rel.main);
+  assert.equal(s.state, 'modified', s.message);
+  assert.match(s.message, /^BASELINE-MODIFIED: .*site \(not tracked by git\) has tree/);
+  writeFileSync(join(rel.main, 'site', 'robots.txt'), 'User-agent: *\nAllow: /\n');
+  assert.equal(probe(rel.main).state, 'ok');
+  // 3. a listed path whose current blob is not the redactedBlob (here: the original, unredacted bytes)
+  writeFileSync(join(rel.main, path), orig);
+  s = probe(rel.main);
+  assert.equal(s.state, 'modified', s.message);
+  assert.match(s.message, /^BASELINE-MODIFIED: \S+site-pretty \(not tracked by git\): site-pretty\/index\.html is listed as redacted \(secret-kv\) but its blob \w{10} is not the listed \w{10}/);
+  writeFileSync(join(rel.main, path), redacted);
+  assert.equal(probe(rel.main).state, 'ok');
+  // 4. a listing that names a path outside site*/ (or is malformed): refused as a whole
+  for (const [bad, re] of [
+    [[entry, { ...entry, path: 'tools/lib/baseline.mjs' }], /redaction path "tools\/lib\/baseline\.mjs" is not a file below site\/ or site-pretty\//],
+    [[{ ...entry, path: 'site/../tools/x.js' }], /is not a file below/],
+    [[{ ...entry, redactedBlob: entry.originalBlob }], /must be two different git blob ids/],
+    [[entry, entry], /is listed twice/],
+  ]) {
+    commitManifest(bad);
+    s = probe(rel.main);
+    assert.equal(s.state, 'modified', s.message);
+    assert.match(s.message, re);
+    assert.match(s.message, /^BASELINE-MODIFIED: baseline\.json pins \S+, but tools\/release\/release-assets\.json's list of redacted snapshot files is not usable/);
+  }
+  // 5. a listed swap whose original blob id is wrong: the tree id is not the pinned one
+  commitManifest([{ ...entry, originalBlob: 'a'.repeat(40) }]);
+  s = probe(rel.main);
+  assert.equal(s.state, 'modified', s.message);
+  assert.match(s.message, /site-pretty \(not tracked by git\) has tree \w{10}, not the pinned/);
+  // 6. a listing that covers a changed file the packer never redacted (no "[secret omitted: …]" mark in it)
+  const robots = join(rel.main, 'site', 'robots.txt');
+  const robotsOrig = readFileSync(robots);
+  writeFileSync(robots, 'User-agent: *\nDisallow: /\n');
+  commitManifest([entry, { path: 'site/robots.txt', rule: 'secret-kv', originalBlob: blobOf(robotsOrig), redactedBlob: blobOf(readFileSync(robots)) }]);
+  s = probe(rel.main);
+  assert.equal(s.state, 'modified', s.message);
+  assert.match(s.message, /site\/robots\.txt is listed as redacted \(secret-kv\) but holds no "\[secret omitted: …\]" mark/);
+  writeFileSync(robots, robotsOrig);
+  commitManifest([entry]);
+  assert.equal(probe(rel.main).state, 'ok');
+  // 7. a checkout that tracks the snapshot (this study's repo) never takes a swap, listed or not
+  const tracked = makeTempRepo({ worktree: null });
+  makeFixtureHome(tracked.main);
+  commitSnapshot(tracked.main);
+  writeFileSync(join(tracked.main, path), redacted);
+  writeFileSync(join(tracked.main, 'tools', 'release', 'release-assets.json'), manifest([entry]));
+  git(tracked.main, 'add', 'tools/release/release-assets.json');
+  git(tracked.main, 'commit', '-q', '-m', 'a manifest in the study repo');
+  s = probe(tracked.main);
+  assert.equal(s.state, 'modified', s.message);
+  assert.match(s.message, /^BASELINE-MODIFIED: the committed snapshot \S+ in \S+ has local changes/);
+});
+
 test('I-268 dirTreeId: the tree id git would commit, also outside a git checkout; treeFingerprint moves on any write', async () => {
   const b = await import('../../tools/lib/baseline.mjs');
   const d = tempDir('fw-dirtree-');
