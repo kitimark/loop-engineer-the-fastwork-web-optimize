@@ -19,8 +19,8 @@
 // ~/.cache/fw-release/known.json or $FW_RELEASE_KNOWN; literals in any letter case), plus the main checkout's git
 // user.email (the user keeps it in commit headers only; their name stays public, user choice 4). Fail-closed: a
 // residual rule match after the scrub aborts with "RESIDUAL <rule-id> <session file>#<n>" lines, writes nothing and exits 1.
-// Secret shapes (GitHub and sk- tokens, AWS key ids, Bearer tokens, PEM key blocks, long values after key=/token=/
-// secret=) are replaced by "[secret omitted: <kind>]" and listed in needs-human-read.md by kind and place.
+// Secret shapes (rules.mjs SECRET_SHAPES and redactSecrets: the list check.mjs scans with) are replaced by
+// "[secret omitted: <kind>]" and listed in needs-human-read.md by kind and place; one left over is a residual.
 // Never prints a value. Output: "CHAT <n> sessions, <you> you + <lead> lead messages, <d> dropped, <MB> MB -> <dir>";
 // exit 0. Exit 2: usage, a bad known file, an --out inside this repo, no transcripts directory.
 import { readdirSync, statSync, createReadStream, mkdirSync, writeFileSync, rmSync, realpathSync, existsSync } from 'node:fs';
@@ -31,7 +31,7 @@ import { execFileSync } from 'node:child_process';
 import { exitOnHelp, isMain } from '../lib/help.mjs';
 import { mainCheckout } from '../lib/paths.mjs';
 import { transcriptsDir } from '../lib/transcripts.mjs';
-import { loadKnown, buildRules, scrubText, scanText } from './rules.mjs';
+import { loadKnown, buildRules, scrubAll as scrubShared, redactSecrets, scanText, withSecrets } from './rules.mjs';
 
 exitOnHelp(import.meta.url);
 
@@ -218,51 +218,13 @@ export async function readSession(file, seen = new Set(), { lead = 'all' } = {})
   return { id: basename(file, '.jsonl'), messages, drop };
 }
 
-// Secret shapes (I-273, lead): a match is replaced by its kind's marker, never printed. Values after key=/token=/secret=
-// count only when they look like a token (a digit, a letter, and mixed case or 32+ hex), so a path or a word does not.
-const tokenLike = (v) => /\d/.test(v) && /[A-Za-z]/.test(v) && ((/[a-z]/.test(v) && /[A-Z]/.test(v)) || /^[0-9a-f]{32,}$/i.test(v));
-export const SECRET_SHAPES = [
-  { kind: 'private-key', re: /-----BEGIN [A-Z0-9 ]*KEY(?: BLOCK)?-----[\s\S]*?(?:-----END [A-Z0-9 ]*KEY(?: BLOCK)?-----|$)/g },
-  { kind: 'github-token', re: /\b(?:gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{22,})/g },
-  { kind: 'sk-key', re: /\bsk-[A-Za-z0-9_-]{20,}/g },
-  { kind: 'aws-key-id', re: /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g },
-  { kind: 'bearer-token', re: /\bBearer\s+[A-Za-z0-9._~+/-]{20,}=*/g },
-  { kind: 'key-value', re: /\b([A-Za-z0-9_-]*(?:key|token|secret))(["']?\s*[=:]\s*["']?)([A-Za-z0-9+/_-]{24,}={0,2})/gi, value: 3, keep: (m) => `${m[1]}${m[2]}` },
-];
-export const secretMarker = (kind) => `[secret omitted: ${kind}]`;
-
-/** {text, hits: {kind: count}}: every secret shape replaced by its marker. */
-export function redactSecrets(text) {
-  let s = String(text);
-  const hits = {};
-  for (const sh of SECRET_SHAPES) {
-    s = s.replace(sh.re, (...m) => {
-      if (sh.value && !tokenLike(m[sh.value])) return m[0];
-      hits[sh.kind] = (hits[sh.kind] || 0) + 1;
-      return (sh.keep ? sh.keep(m) : '') + secretMarker(sh.kind);
-    });
-  }
-  return { text: s, hits };
-}
-
-const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&');
-
-/**
- * Scrub one text: literal values in any letter case first (fail-closed, like scanText), then scrubText (literals
- * exactly, then the regexes). Adds the hits by rule id to `hits`.
- */
+/** rules.mjs scrubAll (literals in any ASCII case, then the regexes), its hits added to `hits` by rule id; the text. */
 export function scrubAll(text, rules, hits = {}) {
-  let s = String(text);
-  for (const r of rules) {
-    if (r.kind !== 'literal') continue;
-    let n = 0;
-    s = s.replace(new RegExp(escRe(r.match), 'gi'), (m) => (m === r.match ? m : (n++, r.token)));
-    if (n) hits[r.id] = (hits[r.id] || 0) + n;
-  }
-  const out = scrubText(s, rules);
+  const out = scrubShared(String(text), rules);
   for (const h of out.hits) hits[h.id] = (hits[h.id] || 0) + h.count;
   return out.text;
 }
+export { redactSecrets };
 
 /** The known values plus identity values as literals (skipped when a value is there already, in any case, or too short). */
 export function withIdentity(known, identity = []) {
@@ -373,7 +335,7 @@ export async function exportChat({ projectsDir, out, rules, lead = 'all' }) {
     for (const m of s.messages) {
       const r = redactSecrets(scrubAll(m.text, rules, hits));
       m.text = r.text;
-      if (Object.keys(r.hits).length) { m.secrets = r.hits; addTo(secretHits, r.hits); }
+      if (r.hits.length) { m.secrets = Object.fromEntries(r.hits.map((h) => [h.id, h.count])); addTo(secretHits, m.secrets); }
     }
     s.from = s.messages[0]?.at ?? null;
     s.to = s.messages.at(-1)?.at ?? null;
@@ -381,9 +343,9 @@ export async function exportChat({ projectsDir, out, rules, lead = 'all' }) {
     sessions.push(s);
   }
   sessions.sort((a, b) => (a.from ?? '9') < (b.from ?? '9') ? -1 : (a.from ?? '9') > (b.from ?? '9') ? 1 : 0);
-  const residual = [];
+  const residual = [], checked = withSecrets(rules); // check.mjs's rules: a secret shape left over is a residual too
   for (const s of sessions) s.messages.forEach((m, i) => {
-    for (const h of scanText(m.text, rules, { path: `chat/${s.file}`, allow: [] })) residual.push(`${h.id} ${s.file}#${i + 1}`);
+    for (const h of scanText(m.text, checked, { path: `chat/${s.file}`, allow: [] })) residual.push(`${h.id} ${s.file}#${i + 1}`);
   });
   if (residual.length) throw Object.assign(new Error(`${residual.length} residual rule matches after the scrub`), { residual });
   const kept = { you: 0, lead: 0 };

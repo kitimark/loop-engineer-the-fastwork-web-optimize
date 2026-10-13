@@ -19,15 +19,17 @@ test('I-273 CLI: exports the fixture, prints counts only, exit 0', () => {
   assert.match(r.stdout, /^CHAT 2 sessions, 7 you \+ 3 lead messages, \d+ dropped, 0\.\d\d MB -> /m);
   assert.match(r.stdout, /^DROPPED .*tool-result 1/m);
   assert.match(r.stdout, /^NEEDS-HUMAN-READ \d+ messages/m);
-  assert.match(r.stdout, /^SECRETS .*github-token 1/m);
+  assert.match(r.stdout, /^SECRETS .*secret-github 1/m);
   for (const v of Object.values(F.FAKE_SECRETS)) assert.ok(!r.out.includes(v.slice(-12)), 'no secret value printed');
   const tight = node(CLI, ['--projects-dir', dir, '--out', join(root, 'r-ut'), '--known', known, '--lead', 'user-turns'], { env: { FW_STATE_DIR: join(root, 'state') } });
   assert.equal(tight.code, 0, tight.out);
   assert.match(tight.stdout, /^CHAT 2 sessions, 7 you \+ 2 lead messages/m);
-  assert.doesNotMatch(r.out, /SECRET-|Zorblatt|zq\.person|10\.77\.3\./i);
+  assert.doesNotMatch(r.out, /SECRET-/); // the fixture's markers (case-sensitive: the secret kinds are lowercase secret-*)
+  assert.doesNotMatch(r.out, /Zorblatt|zq\.person|10\.77\.3\./i);
   assert.ok(!r.out.includes(homedir() + '/'), 'the output path is printed ~-shortened');
   const all = readdirSync(join(out, 'chat')).map((f) => readFileSync(join(out, 'chat', f), 'utf8')).join('\n');
-  assert.doesNotMatch(all, /SECRET-|Zorblatt|zq\.person|10\.77\.3\./i);
+  assert.doesNotMatch(all, /SECRET-/);
+  assert.doesNotMatch(all, /Zorblatt|zq\.person|10\.77\.3\./i);
   assert.ok(!all.includes(homedir()));
 });
 

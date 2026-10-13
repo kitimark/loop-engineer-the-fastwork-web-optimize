@@ -16,12 +16,12 @@ export const KNOWN = {
 };
 // made-up secret shapes, built at run time so no token-like string sits in the repo
 export const FAKE_SECRETS = {
-  'github-token': 'ghp_' + 'Ab1'.repeat(12),
-  'sk-key': 'sk-' + 'q9Z'.repeat(8),
-  'aws-key-id': 'AKIA' + 'Q7'.repeat(8),
-  'bearer-token': 'Bearer ' + 'eyJ' + 'h0Z'.repeat(10),
-  'private-key': ['-----BEGIN RSA PRIVATE', 'KEY-----\nMIIfake\n-----END RSA PRIVATE', 'KEY-----'].join(' '),
-  'key-value': 'api_token=' + 'Zm9v'.repeat(4) + 'Q1x2'.repeat(4),
+  'secret-github': 'ghp_' + 'Ab1'.repeat(12),
+  'secret-sk': 'sk-' + 'q9Z'.repeat(8),
+  'secret-aws': 'ASIA' + 'Q7'.repeat(8),
+  'secret-bearer': 'Bearer ' + 'eyJ' + 'h0Z'.repeat(10),
+  'secret-pem': ['-----BEGIN RSA PRIVATE', 'KEY-----\nMIIfake\n-----END RSA PRIVATE', 'KEY-----'].join(' '),
+  'secret-kv': 'api_token: "' + 'Zm9v'.repeat(4) + 'Q1x2'.repeat(4) + '"',
 };
 export const SESSION_A = '11111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 export const SESSION_B = '22222222-bbbb-4bbb-8bbb-bbbbbbbbbbbb';

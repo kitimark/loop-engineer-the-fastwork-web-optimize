@@ -14,6 +14,7 @@ const P = await import('../../tools/lib/paths.mjs');
 const T = await import('../../tools/lib/transcripts.mjs');
 
 const rules = () => R.buildRules(F.KNOWN);
+const mark = (kind) => `[secret omitted: ${kind}]`;
 const readAll = (dir) => readdirSync(dir).map((f) => readFileSync(join(dir, f), 'utf8')).join('\n');
 
 test('I-273 classify: each record kind is kept or dropped under its kind', () => {
@@ -160,15 +161,23 @@ test('I-273 needs-human-read: possible names and Thai text by session file and n
 test('I-273 redactSecrets: each secret shape becomes its kind marker; paths, words and SHAs stay', () => {
   for (const [kind, v] of Object.entries(F.FAKE_SECRETS)) {
     const r = C.redactSecrets(`before ${v} after`);
-    assert.deepEqual(r.hits, { [kind]: 1 }, kind);
-    assert.ok(r.text.includes(C.secretMarker(kind)) && r.text.startsWith('before ') && r.text.endsWith(' after'), kind);
+    assert.deepEqual(r.hits, [{ id: kind, count: 1 }], kind);
+    assert.ok(r.text.includes(mark(kind)) && r.text.startsWith('before ') && r.text.endsWith(' after'), kind);
     assert.ok(!r.text.includes(v.slice(-12)), kind);
   }
-  assert.equal(C.redactSecrets('api_token=' + 'Zm9v'.repeat(4) + 'Q1x2'.repeat(4)).text, `api_token=${C.secretMarker('key-value')}`, 'the key name stays');
-  // built at run time: the literal would be a check.mjs secret-kv hit in the release's history (I-269 shapes)
-  const keep = ['monkey: tools/release/export-chat-and-more', ['key', 'abcdefghijklmnopqrstuvwxyz'].join('='), 'commit 0123456789abcdef0123456789abcdef01234567',
+  assert.equal(C.redactSecrets('api_token=' + 'Zm9v'.repeat(4) + 'Q1x2'.repeat(4)).text, `api_token=${mark('secret-kv')}`, 'the key name stays');
+  // built at run time: a literal would be a check.mjs secret-kv hit in the release's history (I-269 shapes)
+  assert.equal(C.redactSecrets(['key', 'abcdefghijklmnopqrstuvwxyz'].join('=')).text, `key=${mark('secret-kv')}`, 'a word after key= goes too (the shared list)');
+  const keep = ['monkey: tools/release/export-chat-and-more', 'commit 0123456789abcdef0123456789abcdef01234567',
     'the task-notification-with-a-long-name', 'Bearer of bad news', 'sk-short', 'BEGIN PUBLIC thoughts'];
-  for (const t of keep) assert.deepEqual(C.redactSecrets(t), { text: t, hits: {} }, t);
+  for (const t of keep) assert.deepEqual(C.redactSecrets(t), { text: t, hits: [] }, t);
+});
+
+test('I-273 secrets: the export redacts with rules.mjs (check.mjs\'s list), so nothing check.mjs flags stays', () => {
+  assert.equal(C.redactSecrets, R.redactSecrets, 'one implementation');
+  const samples = Object.values(F.FAKE_SECRETS).join(' ; ');
+  assert.ok(R.scanText(samples, R.withSecrets(rules()), { allow: [] }).length >= Object.keys(F.FAKE_SECRETS).length, 'the shapes find the samples');
+  assert.deepEqual(R.scanText(C.redactSecrets(samples).text, R.withSecrets(rules()), { allow: [] }), [], 'and nothing after the redaction');
 });
 
 test('I-273 exportChat: secret shapes are replaced and listed by kind and place only', async () => {
