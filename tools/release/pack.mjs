@@ -25,7 +25,9 @@
 // Pictures (imagemeta.mjs; every file with a picture name, whatever its bytes): PNG and GIF lose their text, date and
 // EXIF chunks/blocks losslessly; a JPEG, AVIF or WebP with XMP, IPTC, a comment, GPS, camera, owner or other non-pixel
 // EXIF data, a file that is no picture it reads, HEIC/TIFF/BMP/JPEG XL, and a PNG colour profile with a known value
-// are refused: left out, IMAGE-REFUSED, and the build is not ready.
+// are refused: left out, IMAGE-REFUSED, and the build is not ready. A picture embedded in a shipped text file as a
+// data:image/...;base64 URI is checked the same way as <file>#data-N: stripped in place (the URI rewritten), or refused
+// (a URI that does not decode too), and then the text file is left out.
 // Tar headers carry no owner (uid/gid 0, no user or group name: they would hold the login name), no xattrs.
 // Never packed: out/certs, Chrome profiles, out/archive, out/engines, out/pages-*, out/cf-review, every other out/ entry,
 // *.log anywhere, .DS_Store and ._* (AppleDouble) files, key and certificate files, SQLite files (by their first bytes),
@@ -38,11 +40,11 @@
 import { exitOnHelp } from '../lib/help.mjs';
 import { mkdirSync, readdirSync, readFileSync, writeFileSync, copyFileSync, statSync, lstatSync, renameSync, rmSync, mkdtempSync, openSync, readSync, closeSync, constants } from 'node:fs';
 import { join, resolve, dirname, basename } from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import { loadKnown, buildRules, scrubAll, redactSecrets, scanText, safeText, SECRET_SHAPES } from './rules.mjs';
-import { shipImage, IMAGE_FILE } from './imagemeta.mjs';
+import { shipImage, IMAGE_FILE, dataImages, dataUriVerdict, dataRun, videoMeta, sniffMedia } from './imagemeta.mjs';
 import { parseArgs, knownFile, MAX_ASSET_BYTES, addHits, tallyToList, walkFiles, isDir, isText, sha256File, tarCreate, isVideo, stripVideo, refuseInside, show } from './release-util.mjs';
 
 exitOnHelp(import.meta.url);
@@ -119,6 +121,103 @@ export function citedOutAll({ source }) {
 export const SHIPPED_DIRS = [...OUT_MEDIA, ...OUT_DATA.map((d) => d.dir)];
 /** A cited path under one of SHIPPED_DIRS (else another checkout's or a never-shipped output). */
 export const inShippedDir = (p) => SHIPPED_DIRS.includes(p.split('/')[1]);
+/** Base64 runs shorter than this that do not decode are prose or code (an example, "...", a placeholder), not a picture. */
+export const PICTURE_RUN = 100;
+/** What a short run may be refused for and still be only noted: no picture this reads (an example, a placeholder). */
+const SHORT_NOTED = new Set(['undecodable-data-uri', 'unreadable', 'not-an-image']);
+/**
+ * The picture policy over the release's git history (lead, I-270): every picture or video blob reachable from any ref
+ * of `gitDir`, and every data: URI in a text blob, checked as pack.mjs checks shipped files. History cannot be stripped
+ * in place, so a picture that would be stripped or refused, a video with tags beyond the encoder, a refused data: URI
+ * and a run of PICTURE_RUN+ base64 characters that is no picture this reads are problems (the build is not ready); a
+ * shorter such run (undecodable, unreadable, not an image) and an unparsed "data:image" are noted only (prose, code,
+ * examples), but every short run's text and its bytes (decoded leniently, readable or not) are scanned for the known
+ * values (any letter case; 39 bytes hold an e-mail address): a hit is a problem, known-value-in-data-uri. Only blobs a
+ * ref reaches are read (others are never pushed: counted as `unreachable`). Each blob once, named by the
+ * first path git lists for it: git:<path>@<short blob>[#data-N]. `extra` ([{path, buf}]): files the build is about to
+ * commit (the console export), checked the same way as git:<path>@new.
+ * Returns {blobs, unreachable, checked, items: [{path, buf, video}], problems: [{path, kinds}], notes: [{path, kind, length}]}.
+ */
+export async function historyPictures({ gitDir, rules, extra = [] }) {
+  const literalHits = (text) => scanText(text, rules, { literalsOnly: true, allow: [] }).length;
+  const objs = git(gitDir, 'rev-list', '--objects', '--all');
+  const firstPath = new Map();
+  for (const l of objs.split('\n')) { const i = l.indexOf(' '); if (i > 0 && !firstPath.has(l.slice(0, i))) firstPath.set(l.slice(0, i), l.slice(i + 1)); }
+  const check = spawnSync('git', ['-C', gitDir, 'cat-file', '--batch-check'], { input: [...firstPath.keys()].join('\n') + '\n', encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
+  if (check.status !== 0) throw new Error(`git cat-file --batch-check failed: ${(check.stderr || '').trim().split('\n')[0]}`);
+  const blobs = check.stdout.split('\n').map((l) => l.split(' ')).filter((x) => x[1] === 'blob').map((x) => x[0]);
+  // blobs no ref reaches are never pushed: counted, not read
+  const all = spawnSync('git', ['-C', gitDir, 'cat-file', '--batch-all-objects', '--batch-check=%(objecttype)'], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
+  if (all.status !== 0) throw new Error(`git cat-file --batch-all-objects failed: ${(all.stderr || '').trim().split('\n')[0]}`);
+  const out = { blobs: blobs.length, unreachable: all.stdout.split('\n').filter((t) => t === 'blob').length - blobs.length, checked: 0, items: [], problems: [], notes: [] };
+  const names = new Map(extra.map((f, i) => [`extra:${i}`, [f.path, `git:${f.path}@new`]]));
+  for (const sha of blobs) names.set(sha, [firstPath.get(sha), `git:${firstPath.get(sha)}@${sha.slice(0, 12)}`]);
+  const name = (sha) => names.get(sha)[1];
+  const one = (sha, buf) => {
+    const path = names.get(sha)[0];
+    const magic = sniffMedia(buf); // a picture or video committed under another name is checked too
+    if (isVideo(path) || magic === 'video') {
+      out.checked++;
+      const m = videoMeta(buf);
+      if (m.risky.length) out.problems.push({ path: name(sha), kinds: m.risky }); else out.items.push({ path: name(sha), buf, video: true });
+      return;
+    }
+    if (IMAGE_FILE.test(path) || magic) {
+      out.checked++;
+      const r = shipImage(buf, { name: path, literalHits });
+      if (r.action === 'clean') out.items.push({ path: name(sha), buf });
+      else out.problems.push({ path: name(sha), kinds: r.action === 'refused' ? r.risky : [...r.kinds, 'needs a strip (not possible in history)'] });
+      return;
+    }
+    if (buf.includes(0) || !/data:(image|application\\?\/octet-stream)/i.test(buf.toString('latin1'))) return;
+    const text = buf.toString('utf8');
+    for (const d of dataImages(text)) {
+      const p = `${name(sha)}#data-${d.n}`;
+      if (d.kind === 'unparsed') { out.notes.push({ path: p, kind: 'unparsed data:image (prose or code)', length: 0 }); continue; }
+      const short = d.kind === 'base64' && d.runLength < PICTURE_RUN;
+      if (short) {
+        const run = text.slice(d.start, d.end).replace(/\\\//g, '/');
+        if (literalHits(run) || literalHits(Buffer.from(run, 'base64'))) { out.checked++; out.problems.push({ path: p, kinds: ['known-value-in-data-uri'] }); continue; }
+      }
+      const v = dataUriVerdict(d, { name: p, literalHits });
+      if (v.action === 'ignore') continue;
+      if (short && v.action === 'refused' && v.kinds.every((k) => SHORT_NOTED.has(k))) {
+        out.notes.push({ path: p, kind: d.buf ? `short run that is no picture this reads (${v.kinds.join(', ')}; an example or placeholder)` : 'short undecodable run (an example or placeholder)', length: d.runLength });
+        continue;
+      }
+      out.checked++;
+      if (v.action === 'clean') { if (d.kind === 'base64') out.items.push({ path: p, buf: d.buf }); continue; }
+      out.problems.push({ path: p, kinds: v.action === 'stripped' ? [...v.kinds, 'needs a strip (not possible in history)'] : v.kinds });
+    }
+  };
+  // stream every blob once (git cat-file --batch: "<sha> blob <size>\n<bytes>\n")
+  const proc = spawn('git', ['-C', gitDir, 'cat-file', '--batch'], { stdio: ['pipe', 'pipe', 'inherit'] });
+  proc.stdin.end(blobs.join('\n') + '\n');
+  let pending = Buffer.alloc(0), want = null, parts = [], have = 0; // a large blob is gathered in parts, joined once
+  for await (const chunk of proc.stdout) {
+    if (want) { parts.push(chunk); have += chunk.length; if (have < want.size + 1) continue; pending = Buffer.concat(parts); parts = []; have = 0; } else pending = pending.length ? Buffer.concat([pending, chunk]) : chunk;
+    for (;;) {
+      if (!want) {
+        const nl = pending.indexOf(10);
+        if (nl < 0) break;
+        const [sha, type, size] = pending.toString('latin1', 0, nl).split(' ');
+        if (type !== 'blob') throw new Error(`git cat-file --batch: unexpected "${pending.toString('latin1', 0, nl)}"`);
+        want = { sha, size: Number(size) };
+        pending = pending.subarray(nl + 1);
+      }
+      if (pending.length < want.size + 1) { parts = [pending]; have = pending.length; pending = Buffer.alloc(0); break; }
+      one(want.sha, Buffer.from(pending.subarray(0, want.size)));
+      pending = pending.subarray(want.size + 1);
+      want = null;
+    }
+  }
+  if (want || pending.length || have) throw new Error('git cat-file --batch: output ended inside a blob');
+  extra.forEach((f, i) => one(`extra:${i}`, f.buf));
+  const code = await new Promise((res) => (proc.exitCode !== null ? res(proc.exitCode) : proc.on('close', res)));
+  if (code !== 0) throw new Error(`git cat-file --batch exited ${code}`);
+  return out;
+}
+
 /** The cited out/ paths that do not exist under outRoot (no file, folder or link there): a sorted list. */
 export function citedMissing(outRoot, cited) {
   return [...cited].filter((p) => { try { lstatSync(join(outRoot, p.slice(4))); return false; } catch { return true; } }).sort();
@@ -294,6 +393,26 @@ export async function packRelease({ source, mediaDir, outRoot, assetsDir, manife
     if (r.action === 'stripped') images.stripped.push({ path: rel, kinds: r.kinds });
     return r.buf;
   };
+  // pictures embedded in a shipped text file as data: URIs (imagemeta.mjs dataImages), each checked like a file
+  // (<file>#data-N): a base64 picture stripped in place (the URI rewritten with the stripped bytes, JSON's \/ kept) or
+  // refused; an SVG's decoded text literal-scanned; a non-base64 or unparsed data:image, a URI that does not decode and
+  // an octet-stream run holding a picture refused. One refusal leaves the whole text file out. Returns the text to
+  // ship, or null.
+  const embedded = (rel, text) => {
+    let ok = true;
+    const edits = [];
+    for (const d of dataImages(text)) {
+      const name = `${rel}#data-${d.n}`;
+      const v = dataUriVerdict(d, { name, literalHits });
+      if (v.action === 'ignore') continue;
+      images.checked++;
+      if (v.action === 'refused') { images.refused.push({ path: name, kinds: v.kinds }); ok = false; continue; }
+      if (v.action === 'stripped') { images.stripped.push({ path: name, kinds: v.kinds }); edits.push([d.start, d.end, dataRun(d, v.buf)]); }
+    }
+    if (!ok) { excluded.push({ path: rel, reason: 'a data: URI in it was refused (see its #data-N entry)' }); return null; }
+    for (const [a, z, b64] of edits.reverse()) text = text.slice(0, a) + b64 + text.slice(z);
+    return text;
+  };
   try {
     cited ??= citedOutPaths({ source });
     // 1. the frozen snapshot
@@ -327,6 +446,8 @@ export async function packRelease({ source, mediaDir, outRoot, assetsDir, manife
       mkdirSync(dirname(to), { recursive: true });
       if (isVideo(rel)) { stripVideo(from, to); stripped++; return true; }
       if (IMAGE_FILE.test(rel)) { const b = image(rel, readFileSync(from)); if (!b) return false; writeFileSync(to, b); return true; }
+      const buf = readFileSync(from);
+      if (isText(buf) && dataImages(buf.toString('utf8')).length) { const t = embedded(rel, buf.toString('utf8')); if (t === null) return false; writeFileSync(to, t); return true; }
       copyFileSync(from, to, constants.COPYFILE_FICLONE);
       return true;
     });
@@ -339,7 +460,11 @@ export async function packRelease({ source, mediaDir, outRoot, assetsDir, manife
       const buf = readFileSync(from);
       // a picture name goes through the picture check whatever its bytes (text named .png is no picture: refused)
       if (IMAGE_FILE.test(rel)) { const b = image(rel, buf); if (!b) return false; writeFileSync(to, b); return true; }
-      if (isText(buf)) { const r = scrubAll(buf.toString('utf8'), rules); addHits(tally, r.hits); writeFileSync(to, r.text); scrubbed++; textFiles.push(rel); return true; }
+      if (isText(buf)) {
+        const t = embedded(rel, buf.toString('utf8'));
+        if (t === null) return false;
+        const r = scrubAll(t, rules); addHits(tally, r.hits); writeFileSync(to, r.text); scrubbed++; textFiles.push(rel); return true;
+      }
       copyFileSync(from, to, constants.COPYFILE_FICLONE);
       return true;
     });

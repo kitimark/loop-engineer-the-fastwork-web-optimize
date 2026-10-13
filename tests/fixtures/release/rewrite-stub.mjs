@@ -31,11 +31,12 @@ git(stage, 'config', 'commit.gpgsign', 'false');
 let changed = 0;
 for (const f of git(source, 'ls-files').split('\n').filter(Boolean)) {
   if (/^site(-pretty)?\//.test(f)) continue;
-  const r = scrubText(readFileSync(join(source, f), 'utf8'), rules);
-  if (r.hits.length) changed++;
-  const text = r.text;
+  const raw = readFileSync(join(source, f));
   mkdirSync(dirname(join(stage, f)), { recursive: true });
-  writeFileSync(join(stage, f), text);
+  if (raw.includes(0)) { writeFileSync(join(stage, f), raw); continue; } // a binary file (a picture): as it is
+  const r = scrubText(raw.toString('utf8'), rules);
+  if (r.hits.length) changed++;
+  writeFileSync(join(stage, f), r.text);
 }
 if (process.env.FW_TEST_REWRITE_LEAK === '1') writeFileSync(join(stage, 'LEAK.md'), `left over: ${known.literals[0].value}\n`);
 git(stage, 'add', '-A');

@@ -9,6 +9,7 @@ import os from 'node:os';
 import { join } from 'node:path';
 import { tempDir } from '../helpers.mjs';
 import { stageTools, writeKnown, makeState, makeOutRoot, fakeBins, png, pngChunk, avif, V, ALL_VALUES } from '../fixtures/release/stage.mjs';
+const dataUri = (mime, buf) => `data:${mime};base64,${buf.toString('base64')}`;
 import { spawnSync } from 'node:child_process';
 import { walkFiles, knownFile, DEFAULT_KNOWN, show, scanFileLiterals, insideAny, tarMetaHits, tarCreate, tarFlags } from '../../tools/release/release-util.mjs';
 
@@ -335,4 +336,26 @@ test('I-270 release-util: tarCreate passes --no-xattrs --no-acls (--no-mac-metad
   tarCreate(join(d, 'release.tar.gz'), join(d, 'src'), ['a.png', 'b.txt'], { gzip: true });
   assert.deepEqual(await tarMetaHits(join(d, 'release.tar')), []);
   assert.deepEqual(await tarMetaHits(join(d, 'release.tar.gz'), { gunzip: true }), []);
+});
+
+test('I-270 pictures: pictures embedded in shipped text files as data: URIs get a row each, <file>#data-N, with OCR and their metadata', async () => {
+  const d = tempDir('fw-release-pic-data-');
+  const state = makeState(join(d, 'state'));
+  const outRoot = makeOutRoot(join(d, 'out'));
+  const bins = fakeBins(join(d, 'bin'));
+  await withEnv(bins.env, async () => {
+    const shot = png(1290, 2796, '', [pngChunk('tEXt', 'Author\0someone')]); // the fake OCR reads a status bar on a 1290 px wide PNG
+    writeFileSync(join(outRoot, 'ab', 'hero', 'report.html'), `<p><img src="${dataUri('image/png', shot)}"><img src="${dataUri('image/avif', avif(true))}"><img src="data:image/png;base64,abc"></p>\n`);
+    const r = await P.encodePictures({ state, out: join(d, 'media'), sheet: join(d, 'review-sheet.md'), outRoot, rules });
+    const rows = Object.fromEntries(r.flagged.filter((f) => f.path.includes('#data-')).map((f) => [f.path, [f.note ?? f.kinds, f.meta]]));
+    assert.deepEqual(rows, {
+      'out/ab/hero/report.html#data-1': [['time-like', 'iphone', 'wifi', 'known-literal'], 'stripped: text'],
+      'out/ab/hero/report.html#data-2': ['no OCR for this format: look at it', '**refused** (xmp): xmp'],
+      'out/ab/hero/report.html#data-3': ['data: URI does not decode', '**refused** (undecodable-data-uri)'],
+    });
+    const sheet = readFileSync(join(d, 'review-sheet.md'), 'utf8');
+    assert.match(sheet, /\| out\/ab\/hero\/report\.html#data-1 \| 1290x2796 \| time-like, iphone, wifi, known-literal \| stripped: text \|/);
+    assert.ok(!sheet.includes('someone') && !sheet.includes('upload-1234'), 'kinds only');
+    assert.ok(!existsSync(join(d, 'media', '.data-uri')), 'the temp copies for OCR are removed');
+  });
 });

@@ -274,6 +274,23 @@ const formatOf = (buf) => (buf.length >= 8 && buf.readUInt32BE(0) === 0x89504e47
       : buf.toString('latin1', 0, 4) === 'RIFF' && buf.toString('latin1', 8, 12) === 'WEBP' ? 'webp'
         : buf.toString('latin1', 4, 8) === 'ftyp' && /^avi[fs]$/.test(buf.toString('latin1', 8, 12)) ? 'avif' : null);
 
+/**
+ * What a blob is by its magic bytes, whatever its name: 'png', 'gif', 'jpeg', 'webp', 'avif' (the formats this
+ * reads), 'heic', 'tiff', 'jxl' (pictures it does not read: shipImage refuses them), 'video' (an ISO-BMFF/QuickTime ftyp that is no
+ * picture), or null. So a picture committed as .bin or .txt is still checked.
+ */
+export function sniffMedia(buf) {
+  if (buf.length < 4) return null;
+  const f = formatOf(buf);
+  if (f) return f;
+  const brand = buf.toString('latin1', 8, 12);
+  if (buf.length >= 12 && buf.toString('latin1', 4, 8) === 'ftyp') return /^(heic|heix|hevc|hevx|heim|heis|mif1|msf1)$/.test(brand) ? 'heic' : 'video';
+  const m4 = buf.toString('latin1', 0, 4);
+  if (m4 === 'II*\0' || m4 === 'MM\0*') return 'tiff';
+  if ((buf[0] === 0xff && buf[1] === 0x0a) || buf.toString('latin1', 0, 12) === '\0\0\0\x0cJXL \r\n\x87\n') return 'jxl';
+  return null;
+}
+
 /** The metadata kinds of an image: {format, kinds, risky} (risky: kinds a read-only format may not ship with). */
 export function imageMeta(buf) {
   const format = formatOf(buf);
@@ -369,3 +386,111 @@ export function shipImage(buf, { name = '', literalHits = null } = {}) {
 
 /** Every file name that is (or claims to be) a picture: each goes through shipImage, whatever its bytes. */
 export const IMAGE_FILE = /\.(png|gif|jpe?g|avif|webp|heic|heif|tiff?|bmp|jxl)$/i;
+
+const B64_RUN = '((?:[A-Za-z0-9+/=]|\\\\/)*)'; // base64, with JSON's escaped slash (\/) allowed
+const PARAMS = '((?:;(?!base64,)[A-Za-z0-9.+=_-]+)*)';
+/** A base64 run (escaped slashes already undone) as bytes, or null when it does not decode cleanly. */
+function decodeRun(raw) {
+  return raw.length > 0 && raw.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(raw) && Buffer.from(raw, 'base64').toString('base64') === raw ? Buffer.from(raw, 'base64') : null;
+}
+/** Where a non-base64 URI starting at `at` ends: at the quote or bracket that opened it, else at a space or quote. */
+function plainEnd(text, at, from) {
+  const open = text[at - 1];
+  const close = open === '"' || open === "'" ? open : open === '(' ? ')' : null;
+  if (close) { const e = text.indexOf(close, from); return e < 0 ? text.length : e; }
+  const m = /[\s"'<>)]/.exec(text.slice(from));
+  return m ? from + m.index : text.length;
+}
+
+/**
+ * Every data: URI in a text that may hold a picture (an HTML page, a JSON file, a stylesheet), numbered from 1 in text
+ * order: [{n, kind, mime, start, end, escaped, buf, text, why, runLength}].
+ *   kind 'base64'   data:image/<type>[;params];base64,<run>, also JSON's escaped form data:image\/png;base64,... (the
+ *                   run may hold \/); [start, end) is the run as written, buf its bytes, or null with why
+ *                   'undecodable-data-uri' (empty, padding missing or inside, not canonical, or wrapped: \r \n \t,
+ *                   literal or escaped, followed by more base64)
+ *   kind 'svg-text' data:image/svg+xml[;params],<percent-encoded text>: text is the decoded SVG
+ *   kind 'other'    any other data:image URI that is not base64 (why 'non-base64-data-uri')
+ *   kind 'octet'    data:application/octet-stream;base64,<run>: buf (may be null)
+ *   kind 'unparsed' a "data:image" (any case, \/ too) none of the above covers: parameters with %, quotes or spaces
+ *                   (why 'unparsed-data-uri')
+ */
+export function dataImages(text) {
+  const out = [];
+  const covered = new Set();
+  for (const m of text.matchAll(new RegExp(`data:image(\\\\?/)([A-Za-z0-9.+-]+)${PARAMS};base64,${B64_RUN}`, 'gi'))) {
+    const run = m[4], start = m.index + m[0].length - run.length, raw = run.replace(/\\\//g, '/');
+    const wrapped = /^(?:[\r\n\t]|\\[rnt])+[A-Za-z0-9+/]/.test(text.slice(start + run.length, start + run.length + 8));
+    const buf = wrapped ? null : decodeRun(raw);
+    covered.add(m.index);
+    out.push({ at: m.index, kind: 'base64', mime: `image/${m[2].toLowerCase()}`, start, end: start + run.length, escaped: m[1] !== '/' || run.includes('\\/'), buf, runLength: raw.length, ...(buf ? {} : { why: 'undecodable-data-uri' }) });
+  }
+  for (const m of text.matchAll(new RegExp(`data:image(\\\\?/)([A-Za-z0-9.+-]+)${PARAMS},`, 'gi'))) {
+    if (covered.has(m.index)) continue;
+    covered.add(m.index);
+    const mime = `image/${m[2].toLowerCase()}`, start = m.index + m[0].length, end = plainEnd(text, m.index, start);
+    if (mime !== 'image/svg+xml') { out.push({ at: m.index, kind: 'other', mime, start, end, why: 'non-base64-data-uri' }); continue; }
+    let svg = null;
+    try { svg = decodeURIComponent(text.slice(start, end)); } catch {}
+    out.push({ at: m.index, kind: 'svg-text', mime, start, end, text: svg, ...(svg === null ? { why: 'undecodable-data-uri' } : {}) });
+  }
+  for (const m of text.matchAll(new RegExp(`data:application(\\\\?/)octet-stream${PARAMS};base64,${B64_RUN}`, 'gi'))) {
+    const run = m[3], start = m.index + m[0].length - run.length;
+    out.push({ at: m.index, kind: 'octet', mime: 'application/octet-stream', start, end: start + run.length, buf: decodeRun(run.replace(/\\\//g, '/')) });
+  }
+  for (const m of text.matchAll(/data:image/gi)) if (!covered.has(m.index)) out.push({ at: m.index, kind: 'unparsed', start: m.index, end: m.index + m[0].length, why: 'unparsed-data-uri' });
+  return out.sort((a, b) => a.at - b.at).map(({ at, ...e }, i) => ({ n: i + 1, ...e }));
+}
+
+/**
+ * What the release does with one dataImages entry (name: <file>#data-N): {action: 'clean'|'stripped'|'refused'|'ignore',
+ * kinds, buf, format}. A base64 picture goes through shipImage (buf: the bytes to write back); an SVG's decoded text is
+ * literal-scanned (a known value: 'known-value-in-svg'); an octet-stream run that decodes to a picture is refused
+ * ('picture-as-octet-stream'), any other is ignored; everything else is refused with its why.
+ */
+export function dataUriVerdict(e, { name = '', literalHits = null } = {}) {
+  if (e.kind === 'octet') {
+    let f = null;
+    try { f = e.buf && imageMeta(e.buf).format; } catch { f = null; }
+    return f || (e.buf && /^(II\*\0|MM\0\*)/.test(e.buf.toString('latin1', 0, 4))) ? { action: 'refused', kinds: ['picture-as-octet-stream'] } : { action: 'ignore', kinds: [] };
+  }
+  if (e.why) return { action: 'refused', kinds: [e.why] };
+  if (e.kind === 'svg-text') return literalHits && literalHits(e.text) > 0 ? { action: 'refused', kinds: ['known-value-in-svg'] } : { action: 'clean', kinds: [], format: 'svg' };
+  const r = shipImage(e.buf, { name, literalHits });
+  return { action: r.action, kinds: r.action === 'refused' ? r.risky : r.kinds, buf: r.buf, format: r.format };
+}
+/** The base64 run to write back for an entry whose picture was stripped (JSON's escaped slashes kept). */
+export const dataRun = (e, buf) => (e.escaped ? buf.toString('base64').replace(/\//g, '\\/') : buf.toString('base64'));
+
+/**
+ * Container metadata of an MP4/MOV video (read only: a video in git history cannot be re-muxed): {kinds, risky}.
+ * Kinds: encoder (an ilst ©too tag, which ffmpeg writes even with -map_metadata -1: benign), video-tag (any other
+ * ilst/udta item: title, date, GPS ©xyz, camera), xmp, uuid-box, video-date (a creation or modification time in mvhd,
+ * tkhd or mdhd), unreadable.
+ */
+export function videoMeta(buf) {
+  const kinds = new Set();
+  const CONT = new Set(['moov', 'trak', 'mdia', 'minf', 'stbl', 'udta', 'meta', 'ilst', 'edts', 'dinf']);
+  const walk = (s, e, parent) => {
+    for (let p = s; p + 8 <= e;) {
+      let size = buf.readUInt32BE(p), h = 8;
+      const t = buf.toString('latin1', p + 4, p + 8);
+      if (size === 1) { size = Number(buf.readBigUInt64BE(p + 8)); h = 16; } else if (size === 0) size = e - p;
+      if (size < h || p + size > e) { kinds.add('unreadable'); return; }
+      if (t === 'uuid') kinds.add('uuid-box');
+      if (t === 'XMP_') kinds.add('xmp');
+      if (['mvhd', 'tkhd', 'mdhd'].includes(t)) {
+        const v = buf[p + h], c = v === 1 ? Number(buf.readBigUInt64BE(p + h + 4)) : buf.readUInt32BE(p + h + 4), mo = v === 1 ? Number(buf.readBigUInt64BE(p + h + 12)) : buf.readUInt32BE(p + h + 8);
+        if (c || mo) kinds.add('video-date');
+      }
+      if (parent === 'ilst') kinds.add(t === '\xa9too' ? 'encoder' : 'video-tag');
+      else if (parent === 'udta' && t !== 'meta') kinds.add('video-tag');
+      else if (parent === 'meta' && !['hdlr', 'ilst'].includes(t)) kinds.add('video-tag');
+      if (CONT.has(t)) walk(p + h + (t === 'meta' ? 4 : 0), p + size, t);
+      p += size;
+    }
+  };
+  try { if (buf.toString('latin1', 4, 8) !== 'ftyp') kinds.add('unreadable'); else walk(0, buf.length, null); } catch { kinds.add('unreadable'); }
+  const list = [...kinds].sort();
+  return { kinds: list, risky: list.filter((k) => k !== 'encoder') };
+}

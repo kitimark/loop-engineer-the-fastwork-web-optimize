@@ -200,6 +200,37 @@ test('I-270 pack: shipped pictures lose their metadata (PNG, GIF, losslessly); a
   assert.equal(r.counts['images refused'], 2);
 });
 
+test('I-270 pack: a data: URI picture in a shipped text file is checked like a file: a PNG stripped in place, an AVIF with XMP refused', async () => {
+  const f = fixture();
+  const dataUri = (mime, buf) => `data:${mime};base64,${buf.toString('base64')}`;
+  const meta = png(800, 600, '', [pngChunk('tEXt', 'Author\0someone')]);
+  writeFileSync(join(f.outRoot, 'ab', 'hero', 'report.html'), `<h1>run</h1><img src="${dataUri('image/png', meta)}">\n`);
+  writeFileSync(join(f.outRoot, 'ab', 'hero', 'bad.html'), `<img src="${dataUri('image/png', png(10, 10))}"><img src="${dataUri('image/avif', avif(true))}"><img src="data:image/png;base64,abc">\n`);
+  const assets = join(f.d, 'assets');
+  const r = await PK.packRelease({ source: f.source, mediaDir: f.media, outRoot: f.outRoot, assetsDir: assets, rules });
+  const data = join(assets, 'out-data.tar.gz');
+  const html = tarCat(data, 'out/ab/hero/report.html');
+  assert.equal(html, `<h1>run</h1><img src="${dataUri('image/png', png(800, 600))}">\n`, 'the URI rewritten with the stripped PNG, the rest of the page as it was');
+  assert.ok(r.images.stripped.some((s) => s.path === 'out/ab/hero/report.html#data-1'));
+  assert.deepEqual(r.images.refused.filter((x) => x.path.includes('#data-')), [{ path: 'out/ab/hero/bad.html#data-2', kinds: ['xmp'] }, { path: 'out/ab/hero/bad.html#data-3', kinds: ['undecodable-data-uri'] }]);
+  assert.ok(!tarList(data).includes('out/ab/hero/bad.html'), 'a page with a refused picture is left out');
+  assert.match(r.excluded.find((e) => e.path === 'out/ab/hero/bad.html').reason, /a data: URI in it was refused/);
+  assert.match(r.excluded.find((e) => e.path === 'out/ab/hero/bad.html#data-2').reason, /^picture refused: xmp/);
+  assert.ok(r.textFiles.includes('out/ab/hero/report.html'), 'still on the human-read list');
+});
+
+test('I-270 pack: an out-media text file is checked too: its PNG stripped, its AVIF with XMP refused, the page left out', async () => {
+  const f = fixture();
+  const dataUri = (mime, buf) => `data:${mime};base64,${buf.toString('base64')}`;
+  writeFileSync(join(f.outRoot, 'article-gifs', 'page.html'), `<img src="${dataUri('image/png', png(20, 20, '', [pngChunk('tEXt', 'Author\0someone')]))}"><img src="${dataUri('image/avif', avif(true))}">\n`);
+  const assets = join(f.d, 'assets');
+  const r = await PK.packRelease({ source: f.source, mediaDir: f.media, outRoot: f.outRoot, assetsDir: assets, rules });
+  assert.ok(r.images.stripped.some((s) => s.path === 'out/article-gifs/page.html#data-1'));
+  assert.deepEqual(r.images.refused.filter((x) => x.path.includes('#data-')), [{ path: 'out/article-gifs/page.html#data-2', kinds: ['xmp'] }]);
+  assert.ok(!tarList(join(assets, 'out-media.tar')).includes('out/article-gifs/page.html'), 'left out of out-media.tar');
+  assert.ok(tarList(join(assets, 'out-media.tar')).includes('out/article-gifs/a.gif'), 'the rest of out-media ships');
+});
+
 test('I-270 pack: refuses a snapshot whose trees are not the pinned ones, and an asset at the size limit', async () => {
   const f = fixture();
   await assert.rejects(PK.packRelease({ source: f.source, mediaDir: f.media, outRoot: f.outRoot, assetsDir: join(f.d, 'a1'), rules, maxBytes: 64 }), /at or over the 64-byte Release file limit: split it/);
@@ -368,6 +399,7 @@ test('I-270 build: release repo + console export commit + assets + CHECK 0 resid
   assert.doesNotMatch(rep, /^- out\/article\//m);
   // no xattrs, ACLs or Apple metadata in any archive, the snapshot's git archive included
   assert.match(r.stdout, /^TAR-META 0 xattr, ACL or Apple metadata record\(s\) in 4 archive\(s\)$/m);
+  assert.match(r.stdout, /^HISTORY-PICTURES 0 checked in \d+ blob\(s\) of every ref \(0 clean, listed for review\), 0 problem\(s\), 0 noted; 0 unreachable blob\(s\) skipped \(never pushed\); \d+(\.\d)? s$/m);
   assert.match(rep, /^Tar headers: every archive is read for xattrs, ACLs and Apple metadata .*: none\.$/m);
   assert.ok(!tarList(join(b.out, 'assets', 'out-data.tar.gz')).includes('out/lead/console-cited.txt'), 'cited by the console export only');
   assert.doesNotMatch(rep, /console-cited/);
@@ -466,6 +498,77 @@ process.exit(spawnSync('tar', a, { stdio: 'inherit', env }).status);
   assert.match(r.stdout, /^TAR-META [1-9]\d* xattr, ACL or Apple metadata record\(s\) in 4 archive\(s\)$/m);
   assert.match(r.stdout, /BUILD NOT READY: .* [1-9]\d* tar metadata record\(s\)/);
   assert.match(readFileSync(join(b.out, 'scrub-report.md'), 'utf8'), /^Tar headers: .*: \*\*[1-9]\d*\*\* - NOT READY\.$/m);
+});
+
+test('I-270 build: the picture policy covers the release git history: committed pictures (by name or magic bytes) and data URIs checked, problems not ready, clean ones on the sheet', () => {
+  const b = buildFixture();
+  const dataUri = (mime, buf) => `data:${mime};base64,${buf.toString('base64')}`;
+  writeFileSync(join(b.source, 'research', 'notes', 'fig.png'), png(64, 48));
+  writeFileSync(join(b.source, 'research', 'notes', 'meta.png'), png(64, 48, '', [pngChunk('tEXt', 'Author\0made-up-author-7')]));
+  // a picture committed under another name: found by its magic bytes
+  writeFileSync(join(b.source, 'research', 'notes', 'plot.bin'), png(16, 16, '', [pngChunk('tEXt', 'Author\0made-up-author-7')]));
+  const long = Buffer.alloc(90, 7).toString('base64').slice(0, 119); // 119 base64 characters: picture-shaped, does not decode
+  // below 100 characters a run that is no picture is an example (noted): the AAAA fixture, a truncated 39-byte JPEG; but a
+  // short run holding a known value is refused, and 100+ characters that decode to no picture are refused too
+  const cut = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10]), Buffer.from('JFIF\0', 'latin1'), Buffer.from([1, 1, 0, 0, 1, 0, 1, 0, 0, 0xff, 0xdb, 0, 0x43]), Buffer.alloc(20, 1)]).subarray(0, 39);
+  writeFileSync(join(b.source, 'research', 'notes', 'page.html'), `<img src="${dataUri('image/png', png(32, 32))}">\n<code>data:image/png;base64,abc</code> about data:image URIs\n<img src="data:image/png;base64,${long}">\n`
+    + `<img src="data:image/png;base64,AAAA">\n<img src="${dataUri('image/jpeg', cut)}">\n<img src="${dataUri('image/png', Buffer.from(V.email))}">\n<img src="${dataUri('image/png', Buffer.alloc(90, 7))}">\n`);
+  git(b.source, 'add', 'research'); git(b.source, 'commit', '-q', '-m', 'figures');
+  const r = node(join(staged.dir, 'build.mjs'), b.args, { env: b.env, timeout: 90000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stdout, /^HISTORY-PICTURES 7 checked in \d+ blob\(s\) of every ref \(2 clean, listed for review\), 5 problem\(s\), 4 noted; 0 unreachable blob\(s\) skipped \(never pushed\); \d+(\.\d)? s$/m);
+  assert.match(r.stdout, /^HISTORY-PICTURE-REFUSED git:research\/notes\/meta\.png@[0-9a-f]{12}: text, needs a strip \(not possible in history\)$/m);
+  assert.match(r.stdout, /^HISTORY-PICTURE-REFUSED git:research\/notes\/plot\.bin@[0-9a-f]{12}: text, needs a strip \(not possible in history\)$/m);
+  assert.match(r.stdout, /^HISTORY-PICTURE-REFUSED git:research\/notes\/page\.html@[0-9a-f]{12}#data-4: undecodable-data-uri$/m);
+  assert.match(r.stdout, /^HISTORY-PICTURE-REFUSED git:research\/notes\/page\.html@[0-9a-f]{12}#data-7: known-value-in-data-uri$/m);
+  assert.match(r.stdout, /^HISTORY-PICTURE-REFUSED git:research\/notes\/page\.html@[0-9a-f]{12}#data-8: not-an-image$/m);
+  assert.doesNotMatch(r.stdout, /#data-[56]:/);
+  assert.match(r.stdout, /BUILD NOT READY: .* 5 picture problem\(s\) in the release history/);
+  const sheet = readFileSync(join(b.out, 'review-sheet.md'), 'utf8');
+  assert.match(sheet, /\| git:research\/notes\/fig\.png@[0-9a-f]{12} \| 64x48 \| none found \| none \|/);
+  assert.match(sheet, /\| git:research\/notes\/page\.html@[0-9a-f]{12}#data-1 \| 32x32 \| none found \| none \|/);
+  const rep = readFileSync(join(b.out, 'scrub-report.md'), 'utf8');
+  assert.match(rep, /## Pictures in the release history[\s\S]*#data-2: short undecodable run \(an example or placeholder\), 3 characters\n- git:research\/notes\/page\.html@[0-9a-f]{12}#data-3: unparsed data:image \(prose or code\)/);
+  assert.match(rep, /#data-5: short run that is no picture this reads \(not-an-image; an example or placeholder\), 4 characters\n- git:research\/notes\/page\.html@[0-9a-f]{12}#data-6: short run that is no picture this reads \(unreadable; an example or placeholder\), 52 characters/);
+  noValues(r.out + rep, 'build output and report');
+  assert.match(rep, /unreachable blob\(s\) skipped \(no ref reaches them, so they are never pushed\); \d+(\.\d)? s\.\n\n/);
+  assert.ok(!rep.includes('made-up-author-7') && !sheet.includes('made-up-author-7'), 'kinds only');
+});
+
+test('I-270 historyPictures: a short run is noted unless its text or its bytes (decoded leniently) hold a known value, in any letter case', async () => {
+  const { historyPictures } = await import(join(staged.dir, 'pack.mjs'));
+  const repo = tempDir('fw-hp-short-');
+  git(repo, 'init', '-q', '-b', 'main');
+  git(repo, 'config', 'commit.gpgsign', 'false');
+  const b64 = (s) => Buffer.from(s).toString('base64');
+  writeFileSync(join(repo, 'a.md'), [
+    'data:image/png;base64,AAAA', // an example: noted
+    `data:image/png;base64,${b64(V.email.toUpperCase())}`, // decodes to a known value (any case)
+    `data:image/png;base64,QUFB${V.home}QUFB`, // the run's own text holds one
+    `data:image/png;base64,${b64(`xx${V.email}`).replace(/=+$/, '')}`, // padding missing: undecodable, decoded leniently
+    `data:image\\/png;base64,${b64(V.email).replace(/\//g, '\\/')}`, // JSON's escaped form
+  ].join('\n') + '\n');
+  git(repo, 'add', '-A'); git(repo, 'commit', '-q', '-m', 'a');
+  const hp = await historyPictures({ gitDir: join(repo, '.git'), rules });
+  assert.deepEqual(hp.problems.map((p) => [p.path.replace(/@[0-9a-f]{12}/, ''), p.kinds]), [2, 3, 4, 5].map((n) => [`git:a.md#data-${n}`, ['known-value-in-data-uri']]));
+  assert.deepEqual(hp.notes.map((n) => n.path.replace(/@[0-9a-f]{12}/, '')), ['git:a.md#data-1']);
+  assert.ok(!JSON.stringify(hp.problems).includes(V.home), 'kinds and paths only');
+});
+
+test('I-270 historyPictures: only blobs a ref reaches are read; unreachable ones are counted (never pushed)', async () => {
+  const { historyPictures } = await import(join(staged.dir, 'pack.mjs'));
+  const repo = tempDir('fw-hp-repo-');
+  git(repo, 'init', '-q', '-b', 'main');
+  git(repo, 'config', 'commit.gpgsign', 'false');
+  writeFileSync(join(repo, 'a.png'), png(8, 8));
+  git(repo, 'add', 'a.png'); git(repo, 'commit', '-q', '-m', 'a');
+  const loose = join(tempDir('fw-hp-'), 'x.png');
+  writeFileSync(loose, png(8, 8, '', [pngChunk('tEXt', 'Author\0made-up-author-7')]));
+  git(repo, 'hash-object', '-w', loose); // in the object store, on no ref
+  const hp = await historyPictures({ gitDir: join(repo, '.git'), rules: [] });
+  assert.equal(hp.unreachable, 1);
+  assert.equal(hp.checked, 1);
+  assert.deepEqual(hp.problems, []);
 });
 
 test('I-270 build: --repo is required (npm run init downloads from it)', () => {

@@ -60,7 +60,19 @@ the snapshot is not tracked by git here, so the tools hash it as git would and c
   in the published text: the build reports it (`CITED-MISSING`, the paths in the scrub report). No archive carries
   xattrs, ACLs or Apple metadata (tar `--no-xattrs --no-acls --no-mac-metadata`, `COPYFILE_DISABLE=1`); the build reads
   every archive's headers and is not ready on a hit (`TAR-META`). Pictures lose their metadata (PNG and GIF losslessly); a JPEG, AVIF or WebP with XMP, IPTC, GPS,
-  camera, owner or other non-pixel EXIF data is refused and the build is not ready (`imagemeta.mjs`).
+  camera, owner or other non-pixel EXIF data is refused and the build is not ready (`imagemeta.mjs`). Pictures embedded
+  in a shipped text file as `data:image/...;base64` URIs (JSON's `data:image\/png` form too) get the same check
+  (`<file>#data-N`): stripped in place, or refused with the file left out; an SVG `data:` URI's decoded text is
+  literal-scanned, and any other non-base64, unparsed or undecodable `data:image` and an octet-stream run holding a
+  picture are refused. The review sheet lists each with its OCR result.
+- The same picture policy covers the release repo's git history (`build.mjs`, `pack.mjs` `historyPictures`), check
+  only (history is never stripped): every picture and video blob reachable from a ref (by name or magic bytes) and
+  every `data:` URI in a text blob; unreachable blobs are never pushed and only counted. A picture that would need a
+  strip or is refused, a video with tags beyond the encoder, or a base64 run of 100+ characters that does not decode
+  to a picture this reads makes the build not ready (`HISTORY-PICTURE-REFUSED`); shorter runs (examples,
+  placeholders) and unparsed mentions are noted in the scrub report, except that a short run whose text or decoded
+  bytes hold a known value is refused (`known-value-in-data-uri`); clean ones go on the review sheet as
+  `git:<path>@<blob>[#data-N]`. `HISTORY-PICTURES` gives the pass's wall time.
 - The release's snapshot is not byte for byte the study's: its vendored third-party files with secret-shaped values
   (for the snapshot pinned today, 4 Google gtag/gtm files under `__vendor/www.googletagmanager.com/`, in `site/` and
   `site-pretty/`) ship with those values replaced by `[secret omitted: <rule>]`, and `release-assets.json` lists each

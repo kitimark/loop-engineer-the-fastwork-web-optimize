@@ -27,9 +27,9 @@ import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import { loadKnown, buildRules, scanText } from './rules.mjs';
-import { parseArgs, knownFile, isDir, sha256Buf, pool, isVideo, stripVideo, refuseInside, show } from './release-util.mjs';
+import { parseArgs, knownFile, isDir, isText, sha256Buf, pool, isVideo, stripVideo, refuseInside, show } from './release-util.mjs';
 import { outFiles, citedOutPaths } from './pack.mjs';
-import { imageMeta, shipImage, IMAGE_FILE } from './imagemeta.mjs';
+import { imageMeta, shipImage, IMAGE_FILE, dataImages, dataUriVerdict } from './imagemeta.mjs';
 
 exitOnHelp(import.meta.url);
 
@@ -74,10 +74,11 @@ const OCR_FORMATS = /\.(png|gif|jpe?g)$/i;
 
 /**
  * Encode the pictures, strip the videos, write the review sheet. With `outRoot`, the out/ media and data that pack.mjs
- * ships are listed too (and their PNG/GIF/JPEG read by OCR). Returns {pictures, distinct, videos, skipped, bytesIn,
+ * ships are listed too (and their PNG/GIF/JPEG read by OCR), pictures embedded in their text files as <file>#data-N;
+ * `extra` ([{path, buf, video}]) adds rows for pictures from elsewhere (build.mjs: the release's git history). Returns {pictures, distinct, videos, skipped, bytesIn,
  * bytesOut, ocr:'tesseract'|null, flagged:[{path, size:[w,h]|null, kinds|null, note}], sheet}.
  */
-export async function encodePictures({ state, out, sheet, outRoot, cited = new Set(), rules = [], quality = 85, lossless = false, jobs }) {
+export async function encodePictures({ state, out, sheet, outRoot, cited = new Set(), rules = [], quality = 85, lossless = false, jobs, extra = [] }) {
   const src = join(state, 'console', 'proposals');
   const cwebp = process.env.FW_CWEBP || 'cwebp';
   const tess = process.env.FW_TESSERACT || 'tesseract';
@@ -133,28 +134,57 @@ export async function encodePictures({ state, out, sheet, outRoot, cited = new S
     if (u.review) flagged.push({ path: it.rel, size: it.size, kinds: ocr ? u.kinds : null, meta: u.meta });
   }
   rmSync(tmp, { recursive: true, force: true });
-  // the out/ files pack.mjs ships: every image and video is listed; PNG/GIF/JPEG get OCR
+  // the out/ files pack.mjs ships: every image and video is listed; PNG/GIF/JPEG get OCR. Pictures embedded in shipped
+  // text files as data: URIs get a row each, <file>#data-N, and so do the clean pictures of the release's git history
+  // (`extra`, build.mjs: git:<path>@<blob>[#data-N]); those are read from temp copies (OCR needs a file).
+  const literalHits = (text) => scanText(text, rules, { literalsOnly: true, allow: [] }).length;
+  const dataDir = join(out, '.data-uri');
+  const copies = [];
+  const copy = (path, buf, video = false) => {
+    if (video) return { path, video: true };
+    let fmt = null;
+    try { fmt = imageMeta(buf).format; } catch {}
+    mkdirSync(dataDir, { recursive: true });
+    const file = join(dataDir, `${copies.length}.${fmt === 'jpeg' ? 'jpg' : fmt || 'bin'}`);
+    writeFileSync(file, buf);
+    copies.push(file);
+    return { path, file };
+  };
+  const queue = [];
   let outListed = 0;
   if (outRoot && isDir(outRoot)) {
     const { media, data } = outFiles(outRoot, { cited });
-    const listed = [...media, ...data].filter((f) => IMAGE_FILE.test(f) || isVideo(f));
-    const literalHits = (text) => scanText(text, rules, { literalsOnly: true, allow: [] }).length;
-    outListed = listed.length;
-    const rows = await pool(listed, jobs, async (rel) => {
-      const file = join(outRoot, rel.slice(4));
-      if (isVideo(rel)) return { path: rel, size: null, kinds: null, note: 'video: watch it', meta: 'container metadata stripped' };
-      const buf = readFileSync(file);
-      let size = null;
-      try { size = pngSize(buf); } catch { size = gifSize(buf); }
-      // what pack.mjs will do with its metadata (imagemeta.mjs): stripped, refused, or nothing to do
-      let meta;
-      try { const m = shipImage(buf, { name: rel, literalHits }); meta = m.kinds.length ? `${m.action === 'refused' ? `**refused** (${m.risky.join(', ')}): ` : m.action === 'stripped' ? 'stripped: ' : ''}${m.kinds.join(', ')}` : 'none'; } catch (e) { meta = `unreadable (${e.message})`; }
-      if (size && size[0] === 430 && size[1] === 932 && meta === 'none') return null;
-      if (!OCR_FORMATS.test(rel)) return { path: rel, size, kinds: null, note: 'no OCR for this format: look at it', meta };
-      return { path: rel, size, kinds: ocr ? await read(file) : null, meta };
-    });
-    flagged.push(...rows.filter(Boolean));
+    queue.push(...[...media, ...data].filter((f) => IMAGE_FILE.test(f) || isVideo(f)).map((rel) => ({ path: rel, file: join(outRoot, rel.slice(4)), video: isVideo(rel) })));
+    for (const rel of [...media, ...data].filter((f) => !IMAGE_FILE.test(f) && !isVideo(f))) {
+      const b = readFileSync(join(outRoot, rel.slice(4)));
+      if (!isText(b)) continue;
+      for (const d of dataImages(b.toString('utf8'))) {
+        const path = `${rel}#data-${d.n}`;
+        const v = dataUriVerdict(d, { name: path, literalHits });
+        if (v.action === 'ignore') continue;
+        if (d.kind === 'base64' && d.buf) queue.push(copy(path, d.buf));
+        else queue.push({ path, note: d.kind === 'svg-text' ? 'SVG text: look at it' : d.why === 'undecodable-data-uri' ? 'data: URI does not decode' : 'not a picture this reads', meta: v.action === 'refused' ? `**refused** (${v.kinds.join(', ')})` : 'no known value in its text' });
+      }
+    }
+    outListed = queue.length;
   }
+  for (const x of extra) queue.push(copy(x.path, x.buf, x.video));
+  const rows = await pool(queue, jobs, async (item) => {
+    const rel = item.path;
+    if (item.note) return { path: rel, size: null, kinds: null, note: item.note, meta: item.meta };
+    if (item.video) return { path: rel, size: null, kinds: null, note: 'video: watch it', meta: rel.startsWith('git:') ? 'in git history: no tags beyond the encoder' : 'container metadata stripped' };
+    const buf = readFileSync(item.file);
+    let size = null;
+    try { size = pngSize(buf); } catch { size = gifSize(buf); }
+    // what pack.mjs will do with its metadata (imagemeta.mjs): stripped, refused, or nothing to do
+    let meta;
+    try { const m = shipImage(buf, { name: rel.replace(/#data-\d+$/, ''), literalHits }); meta = m.kinds.length ? `${m.action === 'refused' ? `**refused** (${m.risky.join(', ')}): ` : m.action === 'stripped' ? 'stripped: ' : ''}${m.kinds.join(', ')}` : 'none'; } catch (e) { meta = `unreadable (${e.message})`; }
+    if (size && size[0] === 430 && size[1] === 932 && meta === 'none') return null;
+    if (!OCR_FORMATS.test(item.file)) return { path: rel, size, kinds: null, note: 'no OCR for this format: look at it', meta };
+    return { path: rel, size, kinds: ocr ? await read(item.file) : null, meta };
+  });
+  rmSync(dataDir, { recursive: true, force: true });
+  flagged.push(...rows.filter(Boolean));
   sheet = sheet || join(dirname(resolve(out)), 'review-sheet.md');
   const kindsCell = (f) => (f.note ? f.note : f.kinds === null ? 'OCR not run' : f.kinds.length ? f.kinds.join(', ') : 'none found');
   const row = (f) => `| ${f.path} | ${f.size ? f.size.join('x') : ''} | ${kindsCell(f)} | ${f.meta ?? ''} |`;
@@ -165,7 +195,8 @@ export async function encodePictures({ state, out, sheet, outRoot, cited = new S
     + `OCR: ${ocr ? 'tesseract, run locally on PNG, GIF and JPEG; the column names the kind of text found, never the text' : 'not run (tesseract not installed): read every image'}.\n\n`
     + `- proposal pictures: ${items.length} PNG re-encoded to WebP (${lossless ? 'lossless' : `quality ${quality}`}, metadata none), ${byHash.size} distinct\n`
     + `- proposal videos: ${videos} MP4, container metadata stripped\n`
-    + (outRoot ? `- out/ media and data: ${outListed} images and videos\n` : '')
+    + (outRoot ? `- out/ media and data: ${outListed} images and videos (pictures embedded in text files as data: URIs as <file>#data-N)\n` : '')
+    + (extra.length ? `- release git history: ${extra.length} pictures, videos and data: URI pictures (git:<path>@<blob>[#data-N]), nothing to strip\n` : '')
     + `- listed for review: ${flagged.length}${ocr ? `, with an OCR hit: ${flagged.filter((f) => f.kinds?.length).length}` : ''}\n\n`
     + `Metadata: what the file carries and what the release does with it (PNG/GIF stripped losslessly; another format with more than `
     + `pixel/colour data is refused); kinds only, never values.\n\n`

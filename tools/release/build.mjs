@@ -14,6 +14,10 @@
 //                rewrite, so the evidence branches are scrubbed like the rest
 //   2. worktree  <dir>/repo: a working tree of the mirror's main
 //   3. export-console.mjs -> <dir>/console
+//      history   the picture policy over the release repo (pack.mjs historyPictures): every picture and video blob
+//                reachable from a ref (by name or magic bytes) and every data: URI in a text blob (and in the console
+//                export); unreachable blobs are never pushed, only counted; a problem there is not ready
+//                (HISTORY-PICTURES with its wall time, HISTORY-PICTURE-REFUSED lines), clean ones go on the review sheet
 //   4. pictures.mjs -> <dir>/media and <dir>/review-sheet.md
 //   5. pack.mjs -> <dir>/assets/* and <dir>/repo/tools/release/release-assets.json; the snapshot's secret-shaped values
 //                (third-party keys in vendored code) are redacted and listed in the manifest (I-270), REDACTED lines;
@@ -34,8 +38,8 @@
 // --out must be outside the source repo and empty (or new). Defaults: --known $FW_RELEASE_KNOWN or ~/.cache/fw-release/known.json, --source
 // this repo's main checkout, --state its .git/fastwork-mirror ($FW_STATE_DIR), --out-root <source>/out.
 // Exit 0: built, "CHECK 0 residual". 1: a step failed, a check.mjs run printed no "CHECK n residual (r rules)" line, or
-// residual values, a refused picture, an unredacted snapshot file or tar metadata ("BUILD NOT READY"; the report lists
-// them).
+// residual values, a refused picture, an unredacted snapshot file, tar metadata or a picture problem in the release
+// history ("BUILD NOT READY"; the report lists them).
 // 2: usage or a refused --out. CPU-heavy (git rewrite, cwebp, tesseract, tar): run it in a --no-timing chrome-measure hold.
 import { exitOnHelp } from '../lib/help.mjs';
 import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync, cpSync, rmSync, renameSync } from 'node:fs';
@@ -43,10 +47,10 @@ import { join, resolve, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { loadKnown, buildRules, scanText, safeText } from './rules.mjs';
-import { parseArgs, knownFile, addHits, isDir, tarExtract, insideAny, show, scanFileLiterals, tarMetaHits, isVideo } from './release-util.mjs';
+import { parseArgs, knownFile, addHits, isDir, tarExtract, insideAny, show, scanFileLiterals, tarMetaHits, isVideo, walkFiles } from './release-util.mjs';
 import { exportConsole } from './export-console.mjs';
 import { encodePictures } from './pictures.mjs';
-import { packRelease, citedOutPaths, citedOutAll, citedMissing, inShippedDir, SHIPPED_DIRS } from './pack.mjs';
+import { packRelease, citedOutPaths, citedOutAll, citedMissing, inShippedDir, SHIPPED_DIRS, historyPictures, PICTURE_RUN } from './pack.mjs';
 import { IMAGE_FILE } from './imagemeta.mjs';
 
 exitOnHelp(import.meta.url);
@@ -163,6 +167,17 @@ export function scrubReport(d) {
     + `IPTC, a comment, GPS, camera, owner or other non-pixel EXIF data is refused (left out, not ready). ${d.images.checked} pictures checked, `
     + `${d.images.stripped.length} stripped, ${d.images.refused.length} refused. The review sheet below names the kinds per file.\n\n`
     + (d.images.refused.length ? table(['refused picture', 'metadata'], d.images.refused.map((r) => [r.path, `**${r.kinds.join(', ')}** - NOT READY`])) : '')
+    + `\n## Pictures in the release history\n\nThe same policy over the release repo: every picture and video blob reachable from a ref `
+    + `(by name or by magic bytes), every data: URI in a text blob, and the console export the last commit adds `
+    + `(git:<path>@<blob>[#data-N]). History cannot be stripped in place, so a picture that would need a strip or is refused, `
+    + `a video with tags beyond the encoder, a refused data: URI and a base64 run of ${PICTURE_RUN}+ characters that does not decode `
+    + `to a picture this reads are not ready; a shorter such run (an example, a placeholder) and an unparsed "data:image" are prose `
+    + `or code (noted), but a short run whose text or decoded bytes hold a known value is refused. ${d.hp.checked} checked in `
+    + `${d.hp.blobs} reachable blobs, ${d.hp.items.length} clean (on the review sheet), ${d.hp.problems.length} problem(s), `
+    + `${d.hp.notes.length} noted; ${d.hp.unreachable} unreachable blob(s) skipped (no ref reaches them, so they are never pushed); `
+    + `${d.hp.seconds ?? '?'} s.\n\n`
+    + (d.hp.problems.length ? table(['history picture', 'problem'], d.hp.problems.map((x) => [safeText(x.path, d.rules), `**${x.kinds.join(', ')}** - NOT READY`])) + '\n' : '')
+    + (d.hp.notes.length ? `Noted:\n\n${d.hp.notes.map((x) => `- ${safeText(x.path, d.rules)}: ${x.kind}${x.length ? `, ${x.length} characters` : ''}`).join('\n')}\n` : '')
     + `\n## Cited but missing in out/\n\nout/ paths the committed write-ups (research/, fixes/, memory/, README files) cite under a `
     + `folder the release ships from (out/${SHIPPED_DIRS.join(', out/')}) that this out/ does not have: deleted or never copied here. `
     + `Each is a broken link in the published text (reported, not a refusal). ${d.missing.length} path(s), ${d.missingPictures.length} of `
@@ -214,8 +229,17 @@ async function main() {
   const exp = exportConsole({ state, out: join(out, 'console'), rules });
   // out/lead and out/tryit ship only the files the committed write-ups cite by path (never a console mention)
   const cited = citedOutPaths({ source });
+  step('history-pictures');
+  // the picture policy over the release repo too: every picture and video blob of every ref, every data: URI in a text
+  // blob, and the console export the last commit adds; nothing can be stripped there, so a problem is not ready
+  const consoleDir = join(out, 'console');
+  const hpStart = Date.now();
+  const hp = await historyPictures({ gitDir: mirror, rules, extra: walkFiles(consoleDir).map((f) => ({ path: `console/${f}`, buf: readFileSync(join(consoleDir, f)) })) });
+  hp.seconds = Math.round((Date.now() - hpStart) / 100) / 10;
+  console.log(`HISTORY-PICTURES ${hp.checked} checked in ${hp.blobs} blob(s) of every ref (${hp.items.length} clean, listed for review), ${hp.problems.length} problem(s), ${hp.notes.length} noted; ${hp.unreachable} unreachable blob(s) skipped (never pushed); ${hp.seconds} s`);
+  for (const x of hp.problems) console.log(`HISTORY-PICTURE-REFUSED ${safeText(x.path, rules)}: ${x.kinds.join(', ')}`);
   step('pictures');
-  const pic = await encodePictures({ state, out: join(out, 'media'), sheet: join(out, 'review-sheet.md'), outRoot, cited, rules, quality, lossless: !!a.lossless, jobs: a.jobs });
+  const pic = await encodePictures({ state, out: join(out, 'media'), sheet: join(out, 'review-sheet.md'), outRoot, cited, rules, quality, lossless: !!a.lossless, jobs: a.jobs, extra: hp.items });
   step('pack');
   const pk = await packRelease({ source, mediaDir: join(out, 'media'), outRoot, assetsDir: join(out, 'assets'), manifest: join(repo, 'tools', 'release', 'release-assets.json'), rules, tag: a.tag, repo: a.repo, cited });
   console.log(`CITED ${pk.cited} out/lead and out/tryit file(s) ship (${cited.size} path(s) cited)`);
@@ -283,7 +307,7 @@ async function main() {
     excluded: [...exp.excluded.map((e) => ({ path: `.git/fastwork-mirror/${e.path}`, reason: e.reason })), ...pk.excluded],
     // every shipped out-data text file was scrubbed by rules only: a human reads it too
     needs: [...exp.needsHumanRead, ...pk.textFiles.map((p) => ({ where: `out-data.tar.gz ${p}`, by: 'out/', kinds: ['shipped text file'] }))],
-    images: pk.images, sheet: readFileSync(pic.sheet, 'utf8'), missing, missingPictures, elsewhere, tarMeta,
+    images: pk.images, sheet: readFileSync(pic.sheet, 'utf8'), missing, missingPictures, elsewhere, tarMeta, hp,
     counts: { ...exp.counts, 'snapshot files redacted': pk.redacted.length, pictures: pic.pictures, 'pictures listed for review': pic.flagged.length, videos: pic.videos, ...Object.fromEntries(Object.entries(pk.counts).map(([k, v]) => [`files in ${k}`, v])) },
   });
   const leaks = scanText(report, rules, { path: 'scrub-report.md' });
@@ -291,7 +315,7 @@ async function main() {
   writeFileSync(join(out, 'scrub-report.md.tmp'), report);
   renameSync(join(out, 'scrub-report.md.tmp'), join(out, 'scrub-report.md'));
   for (const x of pk.assets) console.log(`ASSET ${x.name} ${x.bytes} ${x.sha256}`);
-  if (residualHits.length || badLicences.length || pk.images.refused.length || pk.redactKept.length || tarMeta.length) { console.log(`BUILD NOT READY: ${residualHits.length} residual hit(s), ${badLicences.length} licence file(s) changed by the rewrite, ${pk.images.refused.length} picture(s) refused, ${pk.redactKept.length} snapshot file(s) not redacted, ${tarMeta.length} tar metadata record(s); see ${show(join(out, 'scrub-report.md'), rules)}`); process.exit(1); }
+  if (residualHits.length || badLicences.length || pk.images.refused.length || pk.redactKept.length || tarMeta.length || hp.problems.length) { console.log(`BUILD NOT READY: ${residualHits.length} residual hit(s), ${badLicences.length} licence file(s) changed by the rewrite, ${pk.images.refused.length} picture(s) refused, ${pk.redactKept.length} snapshot file(s) not redacted, ${tarMeta.length} tar metadata record(s), ${hp.problems.length} picture problem(s) in the release history; see ${show(join(out, 'scrub-report.md'), rules)}`); process.exit(1); }
   console.log('CHECK 0 residual');
   console.log(`BUILD OK ${show(out, rules)} (release main ${releaseSha.slice(0, 12)}, ${pk.assets.length} release files); report: ${show(join(out, 'scrub-report.md'), rules)}`);
 }
