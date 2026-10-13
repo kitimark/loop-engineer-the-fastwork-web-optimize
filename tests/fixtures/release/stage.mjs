@@ -74,9 +74,10 @@ export const gifApp = (id, data) => Buffer.concat([Buffer.from([0x21, 0xff, 11])
 export const xmp = (id = 'upload-1234') => `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF><rdf:Description xmp:Identifier="${id}"/></rdf:RDF></x:xmpmeta>`;
 /** An ISO BMFF box. */
 export const bmffBox = (type, data) => { const h = Buffer.alloc(8); h.writeUInt32BE(8 + data.length); h.write(type, 4, 'latin1'); return Buffer.concat([h, Buffer.from(data)]); };
-/** A minimal AVIF (brand `brand`): ftyp, an XMP packet in a free box when asked, mdat. */
+/** A minimal AVIF (brand `brand`): ftyp, an XMP packet in an xml box of the meta box when asked, mdat. */
 export function avif(withXmp = false, brand = 'avif') {
-  return Buffer.concat([bmffBox('ftyp', Buffer.from(`${brand}\0\0\0\0avifmif1`, 'latin1')), ...(withXmp ? [bmffBox('free', xmp())] : []), bmffBox('mdat', 'pixels')]);
+  const meta = withXmp ? [bmffBox('meta', Buffer.concat([Buffer.alloc(4), bmffBox('xml ', xmp())]))] : [];
+  return Buffer.concat([bmffBox('ftyp', Buffer.from(`${brand}\0\0\0\0avifmif1`, 'latin1')), ...meta, bmffBox('mdat', 'pixels')]);
 }
 
 const put = (root, rel, data) => { const p = join(root, rel); mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, data); return p; };

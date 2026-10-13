@@ -28,8 +28,9 @@
 // are refused: left out, IMAGE-REFUSED, and the build is not ready.
 // Tar headers carry no owner (uid/gid 0, no user or group name: they would hold the login name), no xattrs.
 // Never packed: out/certs, Chrome profiles, out/archive, out/engines, out/pages-*, out/cf-review, every other out/ entry,
-// *.log anywhere, .DS_Store, key and certificate files, SQLite files (by their first bytes), anything named or below a
-// folder named like Cookies or Login Data. Each file must stay under 2 GiB (GitHub's Release file limit).
+// *.log anywhere, .DS_Store and ._* (AppleDouble) files, key and certificate files, SQLite files (by their first bytes),
+// anything named or below a folder named like Cookies or Login Data. Each file must stay under 2 GiB (GitHub's Release
+// file limit).
 // All assets unpack at the release repo's root ("unpackTo": "."). Defaults: --source this repo's main checkout,
 // --out-root <source>/out, --manifest <assets>/release-assets.json, --tag release-<baseline id>. --assets and
 // --manifest must be outside this repo and the source repo (exit 2). Output names files, counts and rule ids only,
@@ -63,8 +64,8 @@ export function outReason(name, isDirectory) {
   if (!isDirectory && /\.log$/i.test(name)) return 'loose logs';
   return 'not in the release include set (not cited by the write-ups)';
 }
-/** Files inside an included folder that are never packed. */
-const skipFile = (rel) => (/(^|\/)\.DS_Store$/.test(rel) ? 'Finder metadata' : /\.(pem|key|p12|crt|cer|keychain)$/i.test(rel) ? 'key or certificate file'
+/** Files inside an included folder that are never packed (._name: AppleDouble forks a copy or restore may bring). */
+const skipFile = (rel) => (/(^|\/)(\.DS_Store|\._[^/]*)$/.test(rel) ? 'Finder metadata' : /\.(pem|key|p12|crt|cer|keychain)$/i.test(rel) ? 'key or certificate file'
   : /\.log$/i.test(rel) ? 'log files' : /(^|\/)[^/]*(Cookies|Login Data)[^/]*(\/|$)/i.test(rel) ? 'browser cookie or login stores' : null);
 const skipDir = (rel, name) => /^chrome-|-profile$|^Default$/i.test(name);
 /** A file whose first bytes say SQLite (browser history, cookies, app stores): never packed, whatever its name. */

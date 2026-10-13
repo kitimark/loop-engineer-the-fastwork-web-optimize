@@ -4,8 +4,10 @@
 // pixel and colour ones is refused (the build is not ready). Library, no CLI. Names kinds, never values.
 // Fail closed: a file with a picture name that is no picture this reads, a format it does not read (HEIC/HEIF, TIFF,
 // BMP, JPEG XL), an unreadable or truncated file, a PNG critical chunk it does not know, a WebP chunk outside the
-// pixel/animation/colour ones, JPEG bytes after EOI or an APP0 that is not JFIF, an AVIF uuid box or EXIF bytes outside
-// a parsed Exif item, and a known value inside a PNG colour profile (iCCP, inflated) are all refused.
+// pixel/animation/colour ones, JPEG bytes after EOI or an APP0 that is not JFIF, an AVIF top-level box other than
+// ftyp/meta/mdat (and empty or zero-filled free/skip), an AVIF uuid box or EXIF bytes outside a parsed Exif item, and a
+// known value inside a colour profile (PNG iCCP inflated, JPEG APP2, WebP ICCP, AVIF colr; read as text and as UTF-16
+// big and little endian, the ICC mluc strings) are all refused.
 //
 //   imageMeta(buf) -> {format: 'png'|'gif'|'jpeg'|'avif'|'webp'|null, kinds: [...], risky: [...]}
 //   stripImage(buf) -> {buf, removed: [...]} for PNG and GIF, else null
@@ -14,10 +16,11 @@
 // Kinds: text (PNG tEXt/zTXt/iTXt), xmp, exif-pixel (only pixel/colour tags), exif-camera (Make, Model, lens),
 // exif-owner (Artist, Copyright, owner, serial numbers), exif-gps, exif-other (any other tag: dates, software, notes),
 // exif-unparsed, time (PNG tIME), private-chunk (any other PNG ancillary chunk but the pixel, colour and animation ones),
-// comment (GIF/JPEG comment), app-ext (a GIF application block other than looping), iptc, icc (a colour profile, kept),
-// trailing-data (bytes after the PNG IEND or the GIF trailer: stripped; after a JPEG EOI or the WebP RIFF: refused),
-// and the refusals: not-an-image, format-not-shipped, unreadable, unknown-critical-chunk, known-value-in-icc,
-// unknown-webp-chunk, app0-not-jfif, uuid-box.
+// comment (GIF/JPEG comment), plain-text (a GIF plain-text block: stripped), app-ext (a GIF application block other
+// than looping), iptc, icc (a colour profile, kept), trailing-data (bytes after the PNG IEND or the GIF trailer:
+// stripped; after a JPEG EOI, the WebP RIFF or the last AVIF box: refused), and the refusals: not-an-image,
+// format-not-shipped, unreadable, unknown-critical-chunk, known-value-in-icc, unknown-webp-chunk, app0-not-jfif,
+// uuid-box, unknown-avif-box.
 import { inflateSync } from 'node:zlib';
 
 /** EXIF/TIFF tags that only describe pixels, layout or colour (and the pointers to the sub-directories). */
@@ -39,6 +42,8 @@ const PNG_CRITICAL = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND']);
 const WEBP_OK = new Set(['VP8 ', 'VP8L', 'VP8X', 'ALPH', 'ANIM', 'ANMF', 'ICCP']);
 /** Picture formats this module does not read: never shipped. */
 const NOT_SHIPPED = /\.(heic|heif|tiff?|bmp|jxl)$/i;
+/** AVIF top-level boxes that may carry data; free/skip pass only empty or zero-filled. */
+const AVIF_TOP = new Set(['ftyp', 'meta', 'mdat']);
 
 /** Classify the tags of a TIFF (EXIF) block: a Set of kinds. */
 export function exifKinds(t) {
@@ -111,7 +116,8 @@ function gifBlocks(buf) {
       const app = buf.toString('latin1', p + 3, p + 3 + buf[p + 2]);
       const loop = app === 'NETSCAPE2.0' || app === 'ANIMEXTS1.0';
       out.push({ keep: loop, kind: loop ? null : app.startsWith('XMP Data') ? 'xmp' : 'app-ext', start: p, end });
-    } else out.push({ keep: true, start: p, end }); // graphic control, plain text
+    } else if (label === 0x01) out.push({ keep: false, kind: 'plain-text', start: p, end }); // text drawn over the picture
+    else out.push({ keep: true, start: p, end }); // graphic control
     p = end;
   }
   if (p < buf.length) out.push({ keep: false, kind: 'trailing-data', start: p, end: buf.length });
@@ -166,6 +172,10 @@ function heifKinds(buf) {
   const kinds = new Set();
   const top = boxes(buf);
   if (top.some((b) => b.type === 'uuid')) kinds.add('uuid-box');
+  // top level: ftyp, meta, mdat, and free/skip only when empty or all zero; anything else (or bytes the boxes don't cover)
+  const zero = (b) => buf.subarray(b.body, b.end).every((x) => x === 0);
+  if (top.some((b) => !AVIF_TOP.has(b.type) && !((b.type === 'free' || b.type === 'skip') && zero(b)))) kinds.add('unknown-avif-box');
+  if ((top.length ? top[top.length - 1].end : 0) < buf.length) kinds.add('trailing-data');
   const exifRanges = []; // [start, end) of the Exif items read through iloc
   const meta = top.find((b) => b.type === 'meta');
   if (meta) {
@@ -289,13 +299,44 @@ export function stripImage(buf) {
   return null;
 }
 
-/** The colour profile of a PNG (iCCP: name, 0, method, zlib data) as text: name and inflated profile, or null. */
-function pngProfile(buf) {
-  const c = pngChunks(buf).find((x) => x.type === 'iCCP');
-  if (!c) return null;
-  const z = c.data.indexOf(0);
-  if (z < 0) throw new Error('iCCP without a name');
-  return c.data.toString('latin1', 0, z) + '\n' + inflateSync(c.data.subarray(z + 2)).toString('latin1');
+/** The colour profile bytes of a picture: PNG iCCP (its name, and the profile inflated), JPEG APP2 ICC_PROFILE
+ *  segments (joined), WebP ICCP, AVIF colr (prof/rICC). */
+function iccProfiles(buf, format) {
+  if (format === 'png') {
+    return pngChunks(buf).filter((c) => c.type === 'iCCP').flatMap((c) => {
+      const z = c.data.indexOf(0);
+      if (z < 0) throw new Error('iCCP without a name');
+      return [c.data.subarray(0, z), inflateSync(c.data.subarray(z + 2))];
+    });
+  }
+  if (format === 'jpeg') {
+    const parts = [];
+    for (let p = 2; p + 4 <= buf.length && buf[p] === 0xff && buf[p + 1] !== 0xda && buf[p + 1] !== 0xd9;) {
+      const end = p + 2 + buf.readUInt16BE(p + 2);
+      if (buf[p + 1] === 0xe2 && buf.toString('latin1', p + 4, p + 15) === 'ICC_PROFILE') parts.push(buf.subarray(p + 18, end));
+      p = end;
+    }
+    return parts.length ? [Buffer.concat(parts)] : [];
+  }
+  if (format === 'webp') {
+    const out = [];
+    for (let p = 12; p + 8 <= buf.length;) { const len = buf.readUInt32LE(p + 4); if (buf.toString('latin1', p, p + 4) === 'ICCP') out.push(buf.subarray(p + 8, p + 8 + len)); p += 8 + len + (len & 1); }
+    return out;
+  }
+  if (format === 'avif') {
+    const out = [];
+    for (let i = buf.indexOf('colr', 0, 'latin1'); i >= 4; i = buf.indexOf('colr', i + 1, 'latin1')) {
+      const t = buf.toString('latin1', i + 4, i + 8), end = i - 4 + buf.readUInt32BE(i - 4);
+      if ((t === 'prof' || t === 'rICC') && end <= buf.length) out.push(buf.subarray(i + 8, end));
+    }
+    return out;
+  }
+  return [];
+}
+/** A profile as text the literal scan can read: latin1, and UTF-16 big and little endian at both byte alignments. */
+function profileTexts(b) {
+  const u16 = (x, be) => { const y = Buffer.from(x.subarray(0, x.length & ~1)); if (be) y.swap16(); return y.toString('utf16le'); };
+  return [b.toString('latin1'), u16(b, true), u16(b, false), u16(b.subarray(1), true), u16(b.subarray(1), false)];
 }
 
 /**
@@ -310,7 +351,7 @@ export function shipImage(buf, { name = '', literalHits = null } = {}) {
   try {
     m = imageMeta(buf);
     if (!m.format) return refuse(['not-an-image']);
-    if (m.format === 'png' && literalHits) { const t = pngProfile(buf); if (t && literalHits(t) > 0) m = { ...m, kinds: [...m.kinds, 'known-value-in-icc'].sort() }; }
+    if (literalHits && iccProfiles(buf, m.format).some((b) => profileTexts(b).some((t) => literalHits(t) > 0))) m = { ...m, kinds: [...m.kinds, 'known-value-in-icc'].sort() };
   } catch (e) {
     return refuse(['unreadable'], m?.format ?? null);
   }

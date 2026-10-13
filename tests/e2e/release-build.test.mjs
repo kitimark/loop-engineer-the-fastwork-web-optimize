@@ -145,6 +145,19 @@ test('I-270 pack: out-data text files are scrubbed, binaries kept; never-packed 
   assert.deepEqual(PK.citedOutPaths({ source: f.source }), new Set(['out/lead/notes.txt', 'out/lead/pic.avif', 'out/tryit/t.diff', 'out/lead/run.log', 'out/lead/link.txt']), 'no .. path');
 });
 
+test('I-270 pack: AppleDouble ._ files (a restore may bring them) are skipped as Finder metadata, never refused pictures', async () => {
+  const f = fixture();
+  const fork = Buffer.concat([Buffer.from([0, 5, 0x16, 7, 0, 2, 0, 0]), Buffer.from('Mac OS X        '), Buffer.alloc(16)]); // AppleDouble header
+  writeFileSync(join(f.outRoot, 'article-gifs', '._a.gif'), fork);
+  writeFileSync(join(f.outRoot, 'ab', 'hero', '._shot.png'), fork);
+  writeFileSync(join(f.outRoot, 'ab', 'hero', '._results.json'), fork);
+  assert.equal(PK.outFiles(f.outRoot, { cited: PK.citedOutPaths({ source: f.source }) }).skipped.get('Finder metadata'), 4, '.DS_Store and the three ._ files');
+  const assets = join(f.d, 'assets');
+  const r = await PK.packRelease({ source: f.source, mediaDir: f.media, outRoot: f.outRoot, assetsDir: assets, rules });
+  assert.deepEqual(r.images.refused, [], 'no picture refused: the build stays ready');
+  for (const a of ['out-media.tar', 'out-data.tar.gz']) for (const x of tarList(join(assets, a))) assert.ok(!/(^|\/)\._/.test(x), x);
+});
+
 test('I-270 pack: a linked out/lead or out/tryit folder is refused (it could point anywhere)', async () => {
   for (const dir of ['lead', 'tryit']) {
     const f = fixture();

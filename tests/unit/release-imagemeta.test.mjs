@@ -142,13 +142,13 @@ test('I-270 imagemeta: a truncated JPEG (no EOI, a segment past the end) is unre
 
 test('I-270 imagemeta: an AVIF uuid box (top level or in meta) is refused', () => {
   const uuid = bmffBox('uuid', Buffer.concat([Buffer.alloc(16, 7), Buffer.from('vendor data')]));
-  assert.deepEqual(refused(Buffer.concat([avif(), uuid])), ['refused', ['uuid-box']]);
+  assert.deepEqual(refused(Buffer.concat([avif(), uuid])), ['refused', ['unknown-avif-box', 'uuid-box']], 'at the top level no uuid is allowed either');
   const meta = bmffBox('meta', Buffer.concat([Buffer.alloc(4), uuid]));
   assert.deepEqual(refused(Buffer.concat([avif(), meta])), ['refused', ['uuid-box']]);
 });
 
-test('I-270 imagemeta: an EXIF block outside the parsed Exif items (a free box, an unnamed mdat) is refused', () => {
-  const stray = bmffBox('free', Buffer.concat([Buffer.from('Exif\0\0', 'latin1'), tiff([[0x0112, 1]])]));
+test('I-270 imagemeta: an EXIF block outside the parsed Exif items (an mdat no item names) is refused', () => {
+  const stray = bmffBox('mdat', Buffer.concat([Buffer.from('Exif\0\0', 'latin1'), tiff([[0x0112, 1]])]));
   assert.deepEqual(refused(Buffer.concat([avif(), stray])), ['refused', ['exif-unparsed']], 'even pixel-only EXIF');
   assert.equal(shipImage(avifWithExif(tiff([[0x0112, 1]]))).action, 'clean', 'the Exif item itself is read');
   assert.deepEqual(refused(Buffer.concat([avifWithExif(tiff([[0x0112, 1]])), stray])), ['refused', ['exif-unparsed']]);
@@ -161,4 +161,42 @@ test('I-270 imagemeta: a known value inside a PNG colour profile (iCCP, inflated
   const fine = png(10, 10, '', [iccp('desc Display P3')]);
   assert.deepEqual([shipImage(fine, { literalHits }).action, shipImage(fine, { literalHits }).buf], ['clean', fine], 'kept byte for byte');
   assert.deepEqual(refused(png(10, 10, '', [pngChunk('iCCP', 'profile\0\0not zlib')]), { literalHits }), ['refused', ['unreadable']], 'a profile that does not inflate');
+});
+
+// Follow-up review of 2d711b1c (non-blocking items): every case below shipped there.
+test('I-270 imagemeta: AVIF top level is ftyp, meta, mdat and empty or zero-filled free/skip only; anything else is refused', () => {
+  assert.equal(shipImage(Buffer.concat([avif(), bmffBox('free', ''), bmffBox('skip', Buffer.alloc(32)), bmffBox('free', Buffer.alloc(3))])).action, 'clean');
+  assert.deepEqual(refused(Buffer.concat([avif(), bmffBox('abcd', 'someone')])), ['refused', ['unknown-avif-box']]);
+  assert.deepEqual(refused(Buffer.concat([avif(), bmffBox('free', 'someone')])), ['refused', ['unknown-avif-box']], 'a free box with data');
+  assert.deepEqual(refused(Buffer.concat([avif(), bmffBox('skip', 'someone')])), ['refused', ['unknown-avif-box']]);
+  assert.deepEqual(refused(Buffer.concat([avif(), Buffer.from('hidden after the last box')])), ['refused', ['trailing-data']]);
+});
+
+test('I-270 imagemeta: a GIF plain-text block (text drawn over the picture) is dropped like a comment', () => {
+  const plain = Buffer.concat([Buffer.from([0x21, 0x01, 12]), Buffer.alloc(12), Buffer.from([7]), Buffer.from('someone', 'latin1'), Buffer.from([0])]);
+  const loop = gifApp('NETSCAPE2.0', '\x01\x00\x00');
+  assert.deepEqual(imageMeta(gif([loop, plain])).kinds, ['plain-text']);
+  assert.deepEqual(stripImage(gif([loop, plain])), { buf: gif([loop]), removed: ['plain-text'] });
+  assert.equal(shipImage(gif([loop, plain])).action, 'stripped');
+});
+
+test('I-270 imagemeta: a known value in a colour profile is found as UTF-16 (BE and LE) too, in PNG, JPEG, WebP and AVIF profiles', () => {
+  const literalHits = (t) => (t.toLowerCase().includes('someone-private') ? 1 : 0);
+  const be = Buffer.from('desc mluc enUS someone-private', 'utf16le').swap16(), le = Buffer.from('desc someone-private', 'utf16le');
+  const icc = (text) => Buffer.concat([Buffer.alloc(9), text]); // odd offset: the scan reads both byte alignments
+  const iccp = (b) => pngChunk('iCCP', Buffer.concat([Buffer.from('ICC Profile\0\0', 'latin1'), deflateSync(b)]));
+  const app2 = (b) => [0xe2, Buffer.concat([Buffer.from('ICC_PROFILE\0\x01\x01', 'latin1'), b])];
+  const colr = (b) => bmffBox('meta', Buffer.concat([Buffer.alloc(4), bmffBox('iprp', bmffBox('ipco', bmffBox('colr', Buffer.concat([Buffer.from('prof'), b]))))]));
+  const withProfile = {
+    png: (b) => png(10, 10, '', [iccp(b)]),
+    jpeg: (b) => jpeg([[0xe0, Buffer.from('JFIF\0\x01\x02', 'latin1')], app2(b)]),
+    webp: (b) => riff([['VP8X', Buffer.alloc(10)], ['ICCP', b], ['VP8 ', Buffer.from('pix')]]),
+    avif: (b) => Buffer.concat([avif().subarray(0, 24), colr(b), bmffBox('mdat', 'pixels')]),
+  };
+  for (const [format, make] of Object.entries(withProfile)) {
+    assert.equal(shipImage(make(icc(Buffer.from('desc Display P3', 'utf16le').swap16())), { literalHits }).action, 'clean', format);
+    for (const [name, text] of [['UTF-16BE', be], ['UTF-16LE', le], ['UTF-16BE at an odd offset', icc(be)], ['latin1', Buffer.from('cprt someone-private')]]) {
+      assert.deepEqual(refused(make(text), { literalHits }), ['refused', ['known-value-in-icc']], `${format} ${name}`);
+    }
+  }
 });

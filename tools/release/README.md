@@ -55,8 +55,8 @@ the snapshot is not tracked by git here, so the tools hash it as git would and c
 - Media and data files may unpack anywhere in the checkout except under `site/` and `site-pretty/`; two files may not
   hold the same path.
 - What ships from `out/` (`pack.mjs`): `out/lead` and `out/tryit` only as far as the committed write-ups (`research/`,
-  `fixes/`, `memory/`, README files at HEAD) cite a file by path; never `*.log`, keys, SQLite files or
-  cookie/login stores. Pictures lose their metadata (PNG and GIF losslessly); a JPEG, AVIF or WebP with XMP, IPTC, GPS,
+  `fixes/`, `memory/`, README files at HEAD) cite a file by path; never `*.log`, keys, SQLite files,
+  cookie/login stores, `.DS_Store` or AppleDouble `._*` files. Pictures lose their metadata (PNG and GIF losslessly); a JPEG, AVIF or WebP with XMP, IPTC, GPS,
   camera, owner or other non-pixel EXIF data is refused and the build is not ready (`imagemeta.mjs`).
 - The release's snapshot is not byte for byte the study's: its vendored third-party files with secret-shaped values
   (for the snapshot pinned today, 4 Google gtag/gtm files under `__vendor/www.googletagmanager.com/`, in `site/` and
