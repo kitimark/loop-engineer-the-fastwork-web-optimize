@@ -56,7 +56,10 @@ the snapshot is not tracked by git here, so the tools hash it as git would and c
   hold the same path.
 - What ships from `out/` (`pack.mjs`): `out/lead` and `out/tryit` only as far as the committed write-ups (`research/`,
   `fixes/`, `memory/`, README files at HEAD) cite a file by path; never `*.log`, keys, SQLite files,
-  cookie/login stores, `.DS_Store` or AppleDouble `._*` files. Pictures lose their metadata (PNG and GIF losslessly); a JPEG, AVIF or WebP with XMP, IPTC, GPS,
+  cookie/login stores, `.DS_Store` or AppleDouble `._*` files. A cited `out/` path that does not exist is a broken link
+  in the published text: the build reports it (`CITED-MISSING`, the paths in the scrub report). No archive carries
+  xattrs, ACLs or Apple metadata (tar `--no-xattrs --no-acls --no-mac-metadata`, `COPYFILE_DISABLE=1`); the build reads
+  every archive's headers and is not ready on a hit (`TAR-META`). Pictures lose their metadata (PNG and GIF losslessly); a JPEG, AVIF or WebP with XMP, IPTC, GPS,
   camera, owner or other non-pixel EXIF data is refused and the build is not ready (`imagemeta.mjs`).
 - The release's snapshot is not byte for byte the study's: its vendored third-party files with secret-shaped values
   (for the snapshot pinned today, 4 Google gtag/gtm files under `__vendor/www.googletagmanager.com/`, in `site/` and

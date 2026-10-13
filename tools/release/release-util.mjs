@@ -85,13 +85,68 @@ export function isText(buf) {
 export const readText = (p) => readFileSync(p, 'utf8');
 
 /**
- * Flags for the system tar: no owner names or ids in the headers (they carry the login name), no xattrs or macOS
- * metadata. bsdtar (macOS): --uid/--gid 0, empty --uname/--gname; GNU tar: --owner=0 --group=0 --numeric-owner.
+ * Flags for the system tar: no owner names or ids in the headers (they carry the login name), no xattrs, ACLs or macOS
+ * metadata (com.apple.provenance and friends, AppleDouble ._ entries). bsdtar (macOS): --uid/--gid 0, empty
+ * --uname/--gname; GNU tar: --owner=0 --group=0 --numeric-owner. tarMetaHits checks the result.
  */
 export function tarFlags(bin = process.env.FW_TAR || 'tar') {
   const v = spawnSync(bin, ['--version'], { encoding: 'utf8' }).stdout || '';
-  if (/GNU tar/.test(v)) return ['--owner=0', '--group=0', '--numeric-owner', '--no-xattrs'];
-  return ['--uid', '0', '--gid', '0', '--uname', '', '--gname', '', '--no-xattrs', ...(process.platform === 'darwin' ? ['--no-mac-metadata'] : [])];
+  if (/GNU tar/.test(v)) return ['--owner=0', '--group=0', '--numeric-owner', '--no-xattrs', '--no-acls'];
+  return ['--uid', '0', '--gid', '0', '--uname', '', '--gname', '', '--no-xattrs', '--no-acls', ...(process.platform === 'darwin' ? ['--no-mac-metadata'] : [])];
+}
+
+/** Header strings of file metadata a release archive must not carry (pax keys of xattrs and ACLs, any Apple name). */
+const TAR_META_MARKS = [['LIBARCHIVE.xattr', 'xattr'], ['SCHILY.xattr', 'xattr'], ['SCHILY.acl', 'ACL'], ['LIBARCHIVE.acl', 'ACL'], ['com.apple', 'Apple metadata']];
+/**
+ * Walk a tar archive's headers (gunzipped when asked) and return [{entry, what}] for every header or pax/long-name
+ * record that names an xattr, an ACL or com.apple, every AppleDouble entry (a name starting "._") and every entry type
+ * other than a file, a folder, a pax ('x', 'g') or GNU long-name ('L', 'K') record. File data is
+ * skipped, never scanned (a write-up may mention these words). Streams, so a large archive is fine.
+ */
+export async function tarMetaHits(file, { gunzip = false } = {}) {
+  const src = createReadStream(file);
+  const input = gunzip ? src.pipe(createGunzip()) : src;
+  if (gunzip) src.on('error', (e) => input.destroy(e));
+  const hits = [];
+  const cstr = (b, o, n) => { const e = b.indexOf(0, o); return b.toString('utf8', o, e < 0 || e > o + n ? o + n : e); };
+  const sizeOf = (h) => {
+    if (h[124] & 0x80) { let n = 0; for (let i = 125; i < 136; i++) n = n * 256 + h[i]; return n; }
+    return parseInt(h.toString('latin1', 124, 136).replace(/[\0 ]/g, ''), 8) || 0;
+  };
+  const marks = (text, entry) => { for (const [m, what] of TAR_META_MARKS) if (text.includes(m)) hits.push({ entry, what: `${what} (${m})` }); };
+  let acc = [], accLen = 0, want = 512, skip = 0, record = null, longName = null, paxPath = null, paxText = '';
+  const take = (block) => {
+    if (record) { // the data of a pax ('x', 'g') or GNU long-name ('L', 'K') record
+      const text = block.subarray(0, record.size).toString('utf8');
+      if (record.type === 'g') marks(text, '(pax global header)');
+      else paxText += text; // named by the entry it belongs to (the next header)
+      if (record.type === 'L') longName = text.replace(/\0+$/, '');
+      if (record.type === 'x') { const m = /(?:^|\n)\d+ path=([^\n]*)\n/.exec(text); if (m) paxPath = m[1]; }
+      record = null; want = 512; return;
+    }
+    if (block.every((x) => x === 0)) return;
+    const type = String.fromCharCode(block[156] || 48), size = sizeOf(block);
+    const prefix = block.toString('latin1', 257, 262) === 'ustar' ? cstr(block, 345, 155) : '';
+    const name = paxPath || longName || (prefix ? `${prefix}/${cstr(block, 0, 100)}` : cstr(block, 0, 100));
+    const padded = Math.ceil(size / 512) * 512;
+    if ('xgLK'.includes(type)) { if (type === 'g') marks(block.toString('latin1'), '(pax global header)'); else paxText += block.toString('latin1'); if (size) { record = { type, size }; want = padded; } return; }
+    marks(paxText + block.toString('latin1'), name);
+    // a file ('0', '\0') or a folder ('5') only: Solaris 'X', 'A', 'E' records, links and devices are hits
+    if (!'05'.includes(type)) hits.push({ entry: name, what: `unexpected tar entry type ${/^[!-~]$/.test(type) ? type : `0x${type.charCodeAt(0).toString(16)}`}` });
+    if (/(^|\/)\._[^/]*\/?$/.test(name)) hits.push({ entry: name, what: 'AppleDouble entry (._)' });
+    paxPath = longName = null; paxText = '';
+    skip = padded;
+  };
+  for await (const chunk of input) {
+    let off = 0;
+    while (off < chunk.length) {
+      if (skip) { const n = Math.min(skip, chunk.length - off); skip -= n; off += n; continue; }
+      const n = Math.min(want - accLen, chunk.length - off);
+      acc.push(chunk.subarray(off, off + n)); accLen += n; off += n;
+      if (accLen === want) { const block = Buffer.concat(acc); acc = []; accLen = 0; take(block); }
+    }
+  }
+  return hits;
 }
 
 /**

@@ -18,13 +18,15 @@
 //   5. pack.mjs -> <dir>/assets/* and <dir>/repo/tools/release/release-assets.json; the snapshot's secret-shaped values
 //                (third-party keys in vendored code) are redacted and listed in the manifest (I-270), REDACTED lines;
 //                out/lead and out/tryit only as far as the committed write-ups cite them (CITED line);
-//                pictures stripped of metadata or refused (IMAGES, IMAGE-REFUSED lines)
+//                pictures stripped of metadata or refused (IMAGES, IMAGE-REFUSED lines); every out/ path the committed
+//                text cites that out/ does not have is reported (CITED-MISSING line, the paths in the report), not refused
 //   6. commit    the console export and the manifest go onto main as one last commit "release: console
 //                record export" (console/.gitignore keeps the unpacked pictures out of git); they are made from the
 //                store after the rewrite, so they enter history only in this commit
 //   7. check     tools/release/check.mjs over the mirror (all refs, every object) and over every asset unpacked; the
 //                licence files (LICENSE, LICENSES/, REUSE.toml, LICENSING.md) must come out of the rewrite byte-identical
-//                (same blob ids as the source HEAD), else a rule matched them: LICENCE-CHANGED, not ready
+//                (same blob ids as the source HEAD), else a rule matched them: LICENCE-CHANGED, not ready; every
+//                archive's headers are read for xattrs, ACLs and Apple metadata (TAR-META, TAR-META-HIT lines), not ready
 //   8. report    <dir>/scrub-report.md: per rule id the counts replaced, allowlisted (kept, with reason) and residual
 //                (must be 0), the excluded folders and why, the image review sheet, the needs-human-read list, the source
 //                sha and the sha256 of every asset. It names rule ids, paths and counts only, and is scanned before it is
@@ -32,7 +34,8 @@
 // --out must be outside the source repo and empty (or new). Defaults: --known $FW_RELEASE_KNOWN or ~/.cache/fw-release/known.json, --source
 // this repo's main checkout, --state its .git/fastwork-mirror ($FW_STATE_DIR), --out-root <source>/out.
 // Exit 0: built, "CHECK 0 residual". 1: a step failed, a check.mjs run printed no "CHECK n residual (r rules)" line, or
-// residual values, a refused picture or an unredacted snapshot file ("BUILD NOT READY"; the report lists them).
+// residual values, a refused picture, an unredacted snapshot file or tar metadata ("BUILD NOT READY"; the report lists
+// them).
 // 2: usage or a refused --out. CPU-heavy (git rewrite, cwebp, tesseract, tar): run it in a --no-timing chrome-measure hold.
 import { exitOnHelp } from '../lib/help.mjs';
 import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync, cpSync, rmSync, renameSync } from 'node:fs';
@@ -40,10 +43,11 @@ import { join, resolve, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { loadKnown, buildRules, scanText, safeText } from './rules.mjs';
-import { parseArgs, knownFile, addHits, isDir, tarExtract, insideAny, show, scanFileLiterals } from './release-util.mjs';
+import { parseArgs, knownFile, addHits, isDir, tarExtract, insideAny, show, scanFileLiterals, tarMetaHits, isVideo } from './release-util.mjs';
 import { exportConsole } from './export-console.mjs';
 import { encodePictures } from './pictures.mjs';
-import { packRelease, citedOutPaths } from './pack.mjs';
+import { packRelease, citedOutPaths, citedOutAll, citedMissing, inShippedDir, SHIPPED_DIRS } from './pack.mjs';
+import { IMAGE_FILE } from './imagemeta.mjs';
 
 exitOnHelp(import.meta.url);
 
@@ -134,6 +138,9 @@ export function scrubReport(d) {
     + table(['', ''], [['source repo HEAD', d.sourceSha], ['release repo', 'history/repo.git (bare, every branch); main checked out in repo/'], ['release main HEAD', d.releaseSha],
       ['baseline snapshot', d.snapshot], ['release tag', d.tag], ['GitHub repo (release-assets.json "repo")', d.repo], ['residual (check.mjs)', `**${totalResidual}**${totalResidual ? ' - NOT READY' : ' (CHECK 0 residual)'}`]])
     + `\n## Release files\n\n` + table(['name', 'kind', 'bytes', 'sha256'], d.assets.map((a) => [a.name, a.kind, a.bytes, a.sha256]))
+    + `\nTar headers: every archive is read for xattrs, ACLs and Apple metadata (pax LIBARCHIVE.xattr / SCHILY.xattr / SCHILY.acl `
+    + `records, com.apple names, AppleDouble ._ entries): ${d.tarMeta.length ? `**${d.tarMeta.length}** - NOT READY` : 'none'}.\n`
+    + (d.tarMeta.length ? table(['archive', 'entry', 'what'], d.tarMeta.map((m) => [m.asset, m.entry, m.what])) : '')
     + `\n## Snapshot redactions\n\nSecret-shaped values in the snapshot's text files (third-party keys in vendored code) are replaced by `
     + `"[secret omitted: <rule>]", in both copies (site/, site-pretty/); release-assets.json lists each file with its original and `
     + `redacted blob ids, so npm run init and the baseline check still verify the pinned snapshot. A file whose secret held a known `
@@ -156,6 +163,12 @@ export function scrubReport(d) {
     + `IPTC, a comment, GPS, camera, owner or other non-pixel EXIF data is refused (left out, not ready). ${d.images.checked} pictures checked, `
     + `${d.images.stripped.length} stripped, ${d.images.refused.length} refused. The review sheet below names the kinds per file.\n\n`
     + (d.images.refused.length ? table(['refused picture', 'metadata'], d.images.refused.map((r) => [r.path, `**${r.kinds.join(', ')}** - NOT READY`])) : '')
+    + `\n## Cited but missing in out/\n\nout/ paths the committed write-ups (research/, fixes/, memory/, README files) cite under a `
+    + `folder the release ships from (out/${SHIPPED_DIRS.join(', out/')}) that this out/ does not have: deleted or never copied here. `
+    + `Each is a broken link in the published text (reported, not a refusal). ${d.missing.length} path(s), ${d.missingPictures.length} of `
+    + `them picture or video files (first). Not listed: ${d.elsewhere} missing path(s) in other out/ folders (per-worktree outputs, `
+    + `never shipped).\n\n`
+    + (d.missing.length ? [...d.missingPictures, ...d.missing.filter((p) => !d.missingPictures.includes(p))].map((p) => `- ${safeText(p, d.rules)}`).join('\n') + '\n' : 'None.\n')
     + `\n## Needs a human read\n\nThe rules cannot judge these texts: Thai text, pasted e-mails, e-mail addresses and capitalised words outside the study's `
     + `vocabulary in the user's messages (maybe a name), and every text file of out-data.tar.gz (scrubbed by rules only). Read each `
     + `(console/ in the release repo, out/ after npm run init) before the release (the list names places, not text).\n\n`
@@ -210,6 +223,14 @@ async function main() {
   for (const x of pk.images.refused) console.log(`IMAGE-REFUSED ${safeText(x.path, rules)}: ${x.kinds.join(', ')}`);
   for (const x of pk.redacted) console.log(`REDACTED ${safeText(x.path, rules)} ${x.rule} ${x.count}`);
   for (const x of pk.redactKept) console.log(`NOT-REDACTED ${safeText(x.path, rules)} ${x.rule}: ${x.why} (the check reports it)`);
+  // a path the write-ups cite under a folder the release ships from that out/ does not have (deleted, never copied
+  // here): a broken link in the published text; reported, not a refusal. Other folders are other checkouts' or
+  // never-shipped outputs: one count.
+  const missingAll = citedMissing(outRoot, citedOutAll({ source }));
+  const missing = missingAll.filter(inShippedDir), elsewhere = missingAll.length - missing.length;
+  const missingPictures = missing.filter((p) => IMAGE_FILE.test(p) || isVideo(p));
+  console.log(`CITED-MISSING ${missing.length} out/ path(s) cited by the committed text do not exist (${missingPictures.length} picture or video file(s)); listed in the scrub report`);
+  console.log(`CITED-ELSEWHERE ${elsewhere} (per-worktree outputs, never shipped)`);
 
   step('commit');
   rmSync(join(repo, 'console'), { recursive: true, force: true });
@@ -220,7 +241,7 @@ async function main() {
   const releaseSha = git(['rev-parse', 'HEAD'], repo);
 
   step('check');
-  const residualHits = [];
+  const residualHits = [], tarMeta = [];
   // check.mjs's own lines are not echoed: its per-target "CHECK 0 residual" is not the build's verdict
   const checked = (what, hits) => { for (const h of hits) console.log(`HIT ${h.id} ${h.where}`); console.log(`CHECKED ${what}: ${hits.length} residual`); };
   // --source: the identities of the source history are the user's chosen public ones (I-269)
@@ -240,7 +261,13 @@ async function main() {
     for (const b of await scanFileLiterals(join(out, 'assets', x.name), rules, { gunzip: /\.(tar\.gz|tgz)$/.test(x.name) })) hits.push({ id: b.id, where: `assets/${x.name} (archive ${b.where}, ${b.count}x)` });
     checked(`assets/${x.name}`, hits);
     residualHits.push(...hits);
+    // file metadata in the headers: xattrs (com.apple.provenance on every file macOS wrote), ACLs, AppleDouble ._ entries
+    for (const m of await tarMetaHits(join(out, 'assets', x.name), { gunzip: /\.(tar\.gz|tgz)$/.test(x.name) })) {
+      tarMeta.push({ asset: x.name, ...m });
+      console.log(`TAR-META-HIT assets/${x.name} ${safeText(m.entry, rules)}: ${m.what}`);
+    }
   }
+  console.log(`TAR-META ${tarMeta.length} xattr, ACL or Apple metadata record(s) in ${pk.assets.length} archive(s)`);
   rmSync(unpacked, { recursive: true, force: true });
   const licences = licenceChanges(source, repo);
   const badLicences = licences.filter((l) => l.state !== 'identical');
@@ -256,7 +283,7 @@ async function main() {
     excluded: [...exp.excluded.map((e) => ({ path: `.git/fastwork-mirror/${e.path}`, reason: e.reason })), ...pk.excluded],
     // every shipped out-data text file was scrubbed by rules only: a human reads it too
     needs: [...exp.needsHumanRead, ...pk.textFiles.map((p) => ({ where: `out-data.tar.gz ${p}`, by: 'out/', kinds: ['shipped text file'] }))],
-    images: pk.images, sheet: readFileSync(pic.sheet, 'utf8'),
+    images: pk.images, sheet: readFileSync(pic.sheet, 'utf8'), missing, missingPictures, elsewhere, tarMeta,
     counts: { ...exp.counts, 'snapshot files redacted': pk.redacted.length, pictures: pic.pictures, 'pictures listed for review': pic.flagged.length, videos: pic.videos, ...Object.fromEntries(Object.entries(pk.counts).map(([k, v]) => [`files in ${k}`, v])) },
   });
   const leaks = scanText(report, rules, { path: 'scrub-report.md' });
@@ -264,7 +291,7 @@ async function main() {
   writeFileSync(join(out, 'scrub-report.md.tmp'), report);
   renameSync(join(out, 'scrub-report.md.tmp'), join(out, 'scrub-report.md'));
   for (const x of pk.assets) console.log(`ASSET ${x.name} ${x.bytes} ${x.sha256}`);
-  if (residualHits.length || badLicences.length || pk.images.refused.length || pk.redactKept.length) { console.log(`BUILD NOT READY: ${residualHits.length} residual hit(s), ${badLicences.length} licence file(s) changed by the rewrite, ${pk.images.refused.length} picture(s) refused, ${pk.redactKept.length} snapshot file(s) not redacted; see ${show(join(out, 'scrub-report.md'), rules)}`); process.exit(1); }
+  if (residualHits.length || badLicences.length || pk.images.refused.length || pk.redactKept.length || tarMeta.length) { console.log(`BUILD NOT READY: ${residualHits.length} residual hit(s), ${badLicences.length} licence file(s) changed by the rewrite, ${pk.images.refused.length} picture(s) refused, ${pk.redactKept.length} snapshot file(s) not redacted, ${tarMeta.length} tar metadata record(s); see ${show(join(out, 'scrub-report.md'), rules)}`); process.exit(1); }
   console.log('CHECK 0 residual');
   console.log(`BUILD OK ${show(out, rules)} (release main ${releaseSha.slice(0, 12)}, ${pk.assets.length} release files); report: ${show(join(out, 'scrub-report.md'), rules)}`);
 }

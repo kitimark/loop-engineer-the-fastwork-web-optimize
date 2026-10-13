@@ -75,10 +75,13 @@ const isSqlite = (file) => {
   try { fd = openSync(file, 'r'); return readSync(fd, b, 0, 16, 0) === 16 && b.toString('latin1') === 'SQLite format 3\0'; } catch { return false; } finally { if (fd !== undefined) closeSync(fd); }
 };
 
-/** out/lead and out/tryit paths cited in text: "out/lead/x/y.png" (trailing dots and slashes trimmed). */
-const CITE_ERE = `out/(${CITED_ONLY.join('|')})/[A-Za-z0-9._@+/-]+`; // POSIX ERE for git grep; the same as CITE_RE
-export const CITE_RE = new RegExp(CITE_ERE, 'g');
 const trimCite = (p) => p.replace(/[./]+$/, '');
+/** out/lead and out/tryit paths cited in text: "out/lead/x/y.png" (trailing dots and slashes trimmed), at the start of a
+ *  word or after ./ and ../ segments (../../out/lead/x.png); not checkout/lead/..., not a worktree's .../out/lead/... */
+const CITE_START = '(^|[^A-Za-z0-9_./-])(\\.{1,2}/)*out/';
+const CITE_ERE = `${CITE_START}(${CITED_ONLY.join('|')})/[A-Za-z0-9._@+/-]+`; // POSIX ERE for git grep; the same as CITE_RE
+export const CITE_RE = new RegExp(CITE_ERE, 'g');
+const citeOf = (match) => trimCite(match.replace(/^HEAD:/, '').replace(/^[^A-Za-z0-9_./-]?(\.{1,2}\/)*/, ''));
 /**
  * The out/lead and out/tryit paths the committed text cites: `git grep` over HEAD's research/, fixes/, memory/ and
  * README files of the source repo, nothing else (a console thread that names a file does not ship it). A Set of paths
@@ -89,10 +92,36 @@ export function citedOutPaths({ source }) {
   const r = spawnSync('git', ['-C', source, 'grep', '-I', '-h', '-o', '-E', CITE_ERE, 'HEAD', '--', 'research', 'fixes', 'memory', 'README*', ':(glob)**/README*'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   if (r.status !== 0 && r.status !== 1) throw new Error(`git grep for cited out/ paths failed: ${(r.stderr || '').trim().split('\n')[0]}`);
   for (const l of r.stdout.split('\n').filter(Boolean)) {
-    const p = trimCite(l.replace(/^HEAD:/, ''));
+    const p = citeOf(l);
     if (!p.split('/').some((x) => x === '..' || x === '.' || x === '')) cited.add(p);
   }
   return cited;
+}
+
+/** Any out/ path where CITE_ERE's may start; placeholders matched to be dropped. */
+const ANY_CITE_ERE = `${CITE_START}[A-Za-z0-9._@+/<>*{}$-]+`;
+/**
+ * Every out/ path the committed text cites (the same files as citedOutPaths, any out/ folder), without placeholders
+ * (`<topic>`, `*`, `{a,b}`, `$x`) and `.`/`..` segments: a Set.
+ */
+export function citedOutAll({ source }) {
+  const cited = new Set();
+  const r = spawnSync('git', ['-C', source, 'grep', '-I', '-h', '-o', '-E', ANY_CITE_ERE, 'HEAD', '--', 'research', 'fixes', 'memory', 'README*', ':(glob)**/README*'], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
+  if (r.status !== 0 && r.status !== 1) throw new Error(`git grep for cited out/ paths failed: ${(r.stderr || '').trim().split('\n')[0]}`);
+  for (const l of r.stdout.split('\n').filter(Boolean)) {
+    const p = citeOf(l);
+    if (/[<>*{}$]/.test(p) || p === 'out') continue;
+    if (!p.split('/').some((x) => x === '..' || x === '.' || x === '')) cited.add(p);
+  }
+  return cited;
+}
+/** The out/ folders the release ships from (out-media and out-data include sets, out/lead and out/tryit among them). */
+export const SHIPPED_DIRS = [...OUT_MEDIA, ...OUT_DATA.map((d) => d.dir)];
+/** A cited path under one of SHIPPED_DIRS (else another checkout's or a never-shipped output). */
+export const inShippedDir = (p) => SHIPPED_DIRS.includes(p.split('/')[1]);
+/** The cited out/ paths that do not exist under outRoot (no file, folder or link there): a sorted list. */
+export function citedMissing(outRoot, cited) {
+  return [...cited].filter((p) => { try { lstatSync(join(outRoot, p.slice(4))); return false; } catch { return true; } }).sort();
 }
 
 /**

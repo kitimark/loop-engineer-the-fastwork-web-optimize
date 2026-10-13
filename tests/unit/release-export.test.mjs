@@ -9,7 +9,8 @@ import os from 'node:os';
 import { join } from 'node:path';
 import { tempDir } from '../helpers.mjs';
 import { stageTools, writeKnown, makeState, makeOutRoot, fakeBins, png, pngChunk, avif, V, ALL_VALUES } from '../fixtures/release/stage.mjs';
-import { walkFiles, knownFile, DEFAULT_KNOWN, show, scanFileLiterals, insideAny } from '../../tools/release/release-util.mjs';
+import { spawnSync } from 'node:child_process';
+import { walkFiles, knownFile, DEFAULT_KNOWN, show, scanFileLiterals, insideAny, tarMetaHits, tarCreate, tarFlags } from '../../tools/release/release-util.mjs';
 
 const root = tempDir('fw-release-unit-');
 const staged = stageTools(root);
@@ -274,4 +275,64 @@ test('I-270 release-util: literal byte scan finds values in any case, across str
   await assert.rejects(scanFileLiterals(join(d, 'bad.gz'), rules, { gunzip: true }), /incorrect header check/);
   await assert.rejects(scanFileLiterals(join(d, 'no-such.gz'), rules, { gunzip: true }), /ENOENT/);
   await assert.rejects(scanFileLiterals(d, rules, { gunzip: true }), /EISDIR/);
+});
+
+/** One ustar entry (header + data padded to 512); `type` '0' file, 'x' pax header. */
+function tarEntry(name, data = '', type = '0') {
+  const h = Buffer.alloc(512), d = Buffer.from(data);
+  h.write(name, 0, 'utf8'); h.write('0000644\0', 100); h.write('0000000\0', 108); h.write('0000000\0', 116);
+  h.write(d.length.toString(8).padStart(11, '0') + '\0', 124); h.write('00000000000\0', 136); h.write(type, 156); h.write('ustar\0' + '00', 257);
+  return Buffer.concat([h, d, Buffer.alloc((512 - (d.length % 512)) % 512)]);
+}
+/** A pax record "<len> key=value\n" (len counts itself). */
+function pax(key, value) {
+  const body = ` ${key}=${value}\n`;
+  let n = body.length + 1;
+  while (String(n).length + body.length !== n) n = String(n).length + body.length;
+  return `${n}${body}`;
+}
+const tarOf = (...entries) => Buffer.concat([...entries, Buffer.alloc(1024)]);
+
+test('I-270 release-util: tarMetaHits finds xattr, ACL and Apple pax records and ._ entries in the headers, never in file data', async () => {
+  const d = tempDir('fw-release-tarmeta-');
+  const w = (name, buf) => { writeFileSync(join(d, name), buf); return join(d, name); };
+  const clean = w('clean.tar', tarOf(tarEntry('a.txt', 'a write-up may say SCHILY.xattr, LIBARCHIVE.xattr, com.apple and ._x'), tarEntry('dir/b.txt', 'b')));
+  assert.deepEqual(await tarMetaHits(clean), []);
+  const meta = tarOf(
+    tarEntry('PaxHeader/a.txt', pax('LIBARCHIVE.xattr.com.apple.provenance', 'AQ') + pax('SCHILY.xattr.com.apple.provenance', 'x'), 'x'), tarEntry('a.txt', 'a'),
+    tarEntry('PaxHeader/b.txt', pax('SCHILY.acl.access', 'user::rw-'), 'x'), tarEntry('b.txt', 'b'),
+    tarEntry('dir/._c.txt', 'apple double'),
+    tarEntry('PaxHeader/x', pax('path', 'deep/._d.png'), 'x'), tarEntry('short-name', 'd'));
+  const want = [
+    { entry: 'a.txt', what: 'xattr (LIBARCHIVE.xattr)' }, { entry: 'a.txt', what: 'xattr (SCHILY.xattr)' }, { entry: 'a.txt', what: 'Apple metadata (com.apple)' },
+    { entry: 'b.txt', what: 'ACL (SCHILY.acl)' },
+    { entry: 'dir/._c.txt', what: 'AppleDouble entry (._)' },
+    { entry: 'deep/._d.png', what: 'AppleDouble entry (._)' },
+  ];
+  assert.deepEqual(await tarMetaHits(w('meta.tar', meta)), want, 'a pax record is named by the entry it belongs to');
+  assert.deepEqual(await tarMetaHits(w('global.tar', tarOf(tarEntry('pax_global_header', pax('SCHILY.xattr.user.x', 'y'), 'g'), tarEntry('a.txt', 'a')))), [{ entry: '(pax global header)', what: 'xattr (SCHILY.xattr)' }]);
+  assert.deepEqual(await tarMetaHits(w('meta.tar.gz', gzipSync(meta)), { gunzip: true }), want, 'gunzipped');
+  await assert.rejects(tarMetaHits(w('bad.gz', 'not gzip'), { gunzip: true }), /incorrect header check/);
+  // a file or a folder only: a Solaris 'X' record (xattrs in its data), a symlink, a device
+  const odd = tarOf(tarEntry('dir/', '', '5'), tarEntry('X/a.txt', pax('SCHILY.xattr.com.apple.provenance', 'AQ'), 'X'), tarEntry('a.txt', 'a'), tarEntry('link', '', '2'), tarEntry('dev', '', '3'));
+  assert.deepEqual(await tarMetaHits(w('odd.tar', odd)), [{ entry: 'X/a.txt', what: 'unexpected tar entry type X' }, { entry: 'link', what: 'unexpected tar entry type 2' }, { entry: 'dev', what: 'unexpected tar entry type 3' }]);
+});
+
+test('I-270 release-util: tarCreate passes --no-xattrs --no-acls (--no-mac-metadata on macOS); a file macOS tagged leaves no trace', { skip: process.platform !== 'darwin' && 'xattr and bsdtar defaults are macOS' }, async () => {
+  const flags = tarFlags();
+  for (const f of ['--no-xattrs', '--no-acls', '--no-mac-metadata']) assert.ok(flags.includes(f), f);
+  const d = tempDir('fw-release-xattr-');
+  mkdirSync(join(d, 'src'));
+  writeFileSync(join(d, 'src', 'a.png'), 'pixels');
+  writeFileSync(join(d, 'src', 'b.txt'), 'text');
+  assert.equal(spawnSync('xattr', ['-w', 'com.apple.metadata:fwtest', 'made-up', join(d, 'src', 'a.png')]).status, 0);
+  assert.equal(spawnSync('chmod', ['+a', 'everyone deny delete', join(d, 'src', 'b.txt')]).status, 0);
+  // the system tar's defaults store both, as pax records and ._ entries: the scan sees them
+  assert.equal(spawnSync('tar', ['-cf', join(d, 'plain.tar'), 'a.png', 'b.txt'], { cwd: join(d, 'src') }).status, 0);
+  const plain = await tarMetaHits(join(d, 'plain.tar'));
+  assert.ok(plain.some((h) => /xattr/.test(h.what)) && plain.some((h) => /AppleDouble/.test(h.what)), JSON.stringify(plain));
+  tarCreate(join(d, 'release.tar'), join(d, 'src'), ['a.png', 'b.txt']);
+  tarCreate(join(d, 'release.tar.gz'), join(d, 'src'), ['a.png', 'b.txt'], { gzip: true });
+  assert.deepEqual(await tarMetaHits(join(d, 'release.tar')), []);
+  assert.deepEqual(await tarMetaHits(join(d, 'release.tar.gz'), { gunzip: true }), []);
 });

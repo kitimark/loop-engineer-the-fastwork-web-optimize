@@ -142,7 +142,12 @@ test('I-270 pack: out-data text files are scrubbed, binaries kept; never-packed 
   assert.equal(r.cited, 3);
   assert.deepEqual(tarList(data).filter((x) => /^out\/(lead|tryit)\//.test(x)), ['out/tryit/t.diff', 'out/lead/notes.txt', 'out/lead/pic.avif']);
   assert.deepEqual(r.textFiles, ['out/ab/hero/results.json', 'out/iphone-screen/r.json', 'out/snapshots/best/x.js', 'out/tryit/t.diff', 'out/lead/notes.txt'], 'every shipped text file, for the needs-human-read list');
-  assert.deepEqual(PK.citedOutPaths({ source: f.source }), new Set(['out/lead/notes.txt', 'out/lead/pic.avif', 'out/tryit/t.diff', 'out/lead/run.log', 'out/lead/link.txt']), 'no .. path');
+  assert.deepEqual(PK.citedOutPaths({ source: f.source }), new Set(['out/lead/notes.txt', 'out/lead/pic.avif', 'out/tryit/t.diff', 'out/lead/run.log', 'out/lead/link.txt', 'out/lead/gone.png']), 'no .. path');
+  // any out/ folder: what out/ does not have is CITED-MISSING (a link counts as there; placeholders and checkout/ are no path)
+  const all = PK.citedOutAll({ source: f.source });
+  assert.deepEqual([...all].sort(), ['out/ab/old-run/results.json', 'out/article/old/shot.png', 'out/article/old/x.png', 'out/lead/gone.png', 'out/lead/link.txt', 'out/lead/notes.txt', 'out/lead/pic.avif', 'out/lead/run.log', 'out/people-blink/gone.mov', 'out/tryit/t.diff']);
+  assert.deepEqual(PK.citedMissing(f.outRoot, all), ['out/ab/old-run/results.json', 'out/article/old/shot.png', 'out/article/old/x.png', 'out/lead/gone.png', 'out/people-blink/gone.mov'], '../../out/ and ./out/ citations count');
+  assert.deepEqual(PK.citedMissing(f.outRoot, all).filter(PK.inShippedDir), ['out/ab/old-run/results.json', 'out/lead/gone.png', 'out/people-blink/gone.mov'], 'out/article is no folder the release ships from');
 });
 
 test('I-270 pack: AppleDouble ._ files (a restore may bring them) are skipped as Finder metadata, never refused pictures', async () => {
@@ -295,7 +300,7 @@ function buildFixture() {
   const bins = fakeBins(join(d, 'bin'));
   const out = join(d, 'release');
   const args = ['--out', out, '--repo', 'someone/study', '--known', knownPath, '--source', source, '--state', state, '--out-root', join(source, 'out'), '--jobs', '2'];
-  return { d, source, state, out, args, env: bins.env };
+  return { d, source, state, out, outRoot: join(source, 'out'), args, env: bins.env };
 }
 const noValues = (s, what) => { for (const v of ALL_VALUES) assert.ok(!s.includes(v), `${what} holds a made-up value`); };
 
@@ -355,7 +360,15 @@ test('I-270 build: release repo + console export commit + assets + CHECK 0 resid
   assert.match(rep, /\| out\/article-video\/v\.mp4 \|  \| video: watch it \| container metadata stripped \|/, 'out/ media on the review sheet');
   // out/lead: only what the committed write-ups cite (a console thread naming a file ships nothing); every shipped
   // out-data text file on the human-read list
-  assert.match(r.stdout, /^CITED 3 out\/lead and out\/tryit file\(s\) ship \(5 path\(s\) cited\)$/m);
+  assert.match(r.stdout, /^CITED 3 out\/lead and out\/tryit file\(s\) ship \(6 path\(s\) cited\)$/m);
+  // cited but not in out/: reported (pictures first in the report), not a refusal
+  assert.match(r.stdout, /^CITED-MISSING 3 out\/ path\(s\) cited by the committed text do not exist \(2 picture or video file\(s\)\); listed in the scrub report$/m);
+  assert.match(r.stdout, /^CITED-ELSEWHERE 2 \(per-worktree outputs, never shipped\)$/m);
+  assert.match(rep, /## Cited but missing in out\/\n[\s\S]*?Not listed: 2 missing path\(s\) in other out\/ folders[\s\S]*?\n- out\/lead\/gone\.png\n- out\/people-blink\/gone\.mov\n- out\/ab\/old-run\/results\.json\n\n/);
+  assert.doesNotMatch(rep, /^- out\/article\//m);
+  // no xattrs, ACLs or Apple metadata in any archive, the snapshot's git archive included
+  assert.match(r.stdout, /^TAR-META 0 xattr, ACL or Apple metadata record\(s\) in 4 archive\(s\)$/m);
+  assert.match(rep, /^Tar headers: every archive is read for xattrs, ACLs and Apple metadata .*: none\.$/m);
   assert.ok(!tarList(join(b.out, 'assets', 'out-data.tar.gz')).includes('out/lead/console-cited.txt'), 'cited by the console export only');
   assert.doesNotMatch(rep, /console-cited/);
   assert.match(rep, /^- out-data\.tar\.gz out\/tryit\/t\.diff \(out\/\): shipped text file$/m);
@@ -433,6 +446,26 @@ process.exit(spawnSync('tar', a, { stdio: 'inherit' }).status);
   assert.match(r.stdout, /^HIT \S+ assets\/out-data\.tar\.gz \(archive gunzipped, \d+x\)$/m);
   assert.match(r.stdout, /BUILD NOT READY/);
   noValues(r.out, 'build output');
+});
+
+test('I-270 build: an archive with xattrs or AppleDouble entries (a tar without the no-metadata flags) is not ready: TAR-META-HIT', { skip: process.platform !== 'darwin' && 'xattr and bsdtar defaults are macOS' }, () => {
+  const b = buildFixture();
+  assert.equal(spawnSync('xattr', ['-w', 'com.apple.metadata:fwtest', 'made-up', join(b.outRoot, 'article-gifs', 'a.gif')]).status, 0);
+  // a tar as it behaves by default: the no-metadata flags dropped, COPYFILE_DISABLE unset
+  const wrap = join(b.d, 'bin', 'tar-with-metadata.mjs');
+  writeFileSync(wrap, `#!/usr/bin/env node
+import { spawnSync } from 'node:child_process';
+const a = process.argv.slice(2).filter((x) => !['--no-xattrs', '--no-acls', '--no-mac-metadata'].includes(x));
+const env = { ...process.env }; delete env.COPYFILE_DISABLE;
+process.exit(spawnSync('tar', a, { stdio: 'inherit', env }).status);
+`, { mode: 0o755 });
+  const r = node(join(staged.dir, 'build.mjs'), b.args, { env: { ...b.env, FW_TAR: wrap }, timeout: 90000 });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stdout, /^TAR-META-HIT assets\/out-media\.tar out\/article-gifs\/a\.gif: xattr \(LIBARCHIVE\.xattr\)$/m);
+  assert.match(r.stdout, /^TAR-META-HIT assets\/out-media\.tar out\/article-gifs\/\._a\.gif: AppleDouble entry \(\._\)$/m);
+  assert.match(r.stdout, /^TAR-META [1-9]\d* xattr, ACL or Apple metadata record\(s\) in 4 archive\(s\)$/m);
+  assert.match(r.stdout, /BUILD NOT READY: .* [1-9]\d* tar metadata record\(s\)/);
+  assert.match(readFileSync(join(b.out, 'scrub-report.md'), 'utf8'), /^Tar headers: .*: \*\*[1-9]\d*\*\* - NOT READY\.$/m);
 });
 
 test('I-270 build: --repo is required (npm run init downloads from it)', () => {

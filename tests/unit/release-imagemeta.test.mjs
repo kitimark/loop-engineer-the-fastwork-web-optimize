@@ -144,7 +144,7 @@ test('I-270 imagemeta: an AVIF uuid box (top level or in meta) is refused', () =
   const uuid = bmffBox('uuid', Buffer.concat([Buffer.alloc(16, 7), Buffer.from('vendor data')]));
   assert.deepEqual(refused(Buffer.concat([avif(), uuid])), ['refused', ['unknown-avif-box', 'uuid-box']], 'at the top level no uuid is allowed either');
   const meta = bmffBox('meta', Buffer.concat([Buffer.alloc(4), uuid]));
-  assert.deepEqual(refused(Buffer.concat([avif(), meta])), ['refused', ['uuid-box']]);
+  assert.deepEqual(refused(Buffer.concat([avif(), meta])), ['refused', ['unknown-avif-box', 'uuid-box']], 'no uuid among the meta children either');
 });
 
 test('I-270 imagemeta: an EXIF block outside the parsed Exif items (an mdat no item names) is refused', () => {
@@ -199,4 +199,24 @@ test('I-270 imagemeta: a known value in a colour profile is found as UTF-16 (BE 
       assert.deepEqual(refused(make(text), { literalHits }), ['refused', ['known-value-in-icc']], `${format} ${name}`);
     }
   }
+});
+
+// Second review (89c1255d): each case below shipped there.
+test('I-270 imagemeta: an AVIF meta child other than hdlr/pitm/iloc/iinf/iprp/iref/idat/dinf/grpl is refused; an xml box only as XMP', () => {
+  const meta = (...kids) => bmffBox('meta', Buffer.concat([Buffer.alloc(4), ...kids]));
+  const ok = ['hdlr', 'pitm', 'iloc', 'iinf', 'iprp', 'iref', 'idat', 'dinf', 'grpl'].map((t) => bmffBox(t, Buffer.alloc(8)));
+  assert.equal(shipImage(Buffer.concat([avif().subarray(0, 24), meta(...ok), bmffBox('mdat', 'pixels')])).action, 'clean');
+  for (const t of ['abcd', 'free', 'xml ', 'ipro']) {
+    assert.deepEqual(refused(Buffer.concat([avif().subarray(0, 24), meta(...ok, bmffBox(t, 'someone')), bmffBox('mdat', 'pixels')])), ['refused', ['unknown-avif-box']], t);
+  }
+  assert.deepEqual(refused(avif(true)), ['refused', ['xmp']], 'an xml box holding XMP: refused as xmp');
+});
+
+test('I-270 imagemeta: JPEG fill bytes (0xFF 0xFF) before a marker do not hide an ICC profile from the known-value scan', () => {
+  const literalHits = (t) => (t.toLowerCase().includes('someone-private') ? 1 : 0);
+  const icc = Buffer.concat([Buffer.from('ICC_PROFILE\0\x01\x01', 'latin1'), Buffer.from('desc someone-private', 'utf16le').swap16()]);
+  const seg = (m, data) => { const h = Buffer.from([0xff, m, 0, 0]); h.writeUInt16BE(data.length + 2, 2); return Buffer.concat([h, data]); };
+  const filled = Buffer.concat([Buffer.from([0xff, 0xd8]), seg(0xe0, Buffer.from('JFIF\0\x01\x02', 'latin1')), Buffer.from([0xff, 0xff, 0xff]), seg(0xe2, icc), Buffer.from([0xff, 0xda, 0, 2, 0xff, 0xd9])]);
+  assert.deepEqual(imageMeta(filled).kinds, ['icc'], 'jpegKinds reads past the fill');
+  assert.deepEqual(refused(filled, { literalHits }), ['refused', ['known-value-in-icc']]);
 });

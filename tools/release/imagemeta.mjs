@@ -5,7 +5,8 @@
 // Fail closed: a file with a picture name that is no picture this reads, a format it does not read (HEIC/HEIF, TIFF,
 // BMP, JPEG XL), an unreadable or truncated file, a PNG critical chunk it does not know, a WebP chunk outside the
 // pixel/animation/colour ones, JPEG bytes after EOI or an APP0 that is not JFIF, an AVIF top-level box other than
-// ftyp/meta/mdat (and empty or zero-filled free/skip), an AVIF uuid box or EXIF bytes outside a parsed Exif item, and a
+// ftyp/meta/mdat (and empty or zero-filled free/skip) or a meta child other than hdlr/pitm/iloc/iinf/iprp/iref/idat/
+// dinf/grpl (an 'xml ' box only as XMP, refused as such), an AVIF uuid box or EXIF bytes outside a parsed Exif item, and a
 // known value inside a colour profile (PNG iCCP inflated, JPEG APP2, WebP ICCP, AVIF colr; read as text and as UTF-16
 // big and little endian, the ICC mluc strings) are all refused.
 //
@@ -44,6 +45,8 @@ const WEBP_OK = new Set(['VP8 ', 'VP8L', 'VP8X', 'ALPH', 'ANIM', 'ANMF', 'ICCP']
 const NOT_SHIPPED = /\.(heic|heif|tiff?|bmp|jxl)$/i;
 /** AVIF top-level boxes that may carry data; free/skip pass only empty or zero-filled. */
 const AVIF_TOP = new Set(['ftyp', 'meta', 'mdat']);
+/** AVIF meta children that hold items, their locations and properties; an 'xml ' box only when it is XMP (refused as xmp). */
+const AVIF_META = new Set(['hdlr', 'pitm', 'iloc', 'iinf', 'iprp', 'iref', 'idat', 'dinf', 'grpl']);
 
 /** Classify the tags of a TIFF (EXIF) block: a Set of kinds. */
 export function exifKinds(t) {
@@ -180,6 +183,7 @@ function heifKinds(buf) {
   const meta = top.find((b) => b.type === 'meta');
   if (meta) {
     const kids = boxes(buf, meta.body + 4, meta.end);
+    if (kids.some((b) => !AVIF_META.has(b.type) && !(b.type === 'xml ' && hasXmp(buf.subarray(b.body, b.end))))) kinds.add('unknown-avif-box');
     const iprp = kids.find((b) => b.type === 'iprp');
     const ipco = iprp && boxes(buf, iprp.body, iprp.end).find((b) => b.type === 'ipco');
     if ([kids, ipco ? boxes(buf, ipco.body, ipco.end) : []].some((l) => l.some((b) => b.type === 'uuid'))) kinds.add('uuid-box');
@@ -312,6 +316,7 @@ function iccProfiles(buf, format) {
   if (format === 'jpeg') {
     const parts = [];
     for (let p = 2; p + 4 <= buf.length && buf[p] === 0xff && buf[p + 1] !== 0xda && buf[p + 1] !== 0xd9;) {
+      if (buf[p + 1] === 0xff) { p++; continue; } // fill byte, as jpegKinds
       const end = p + 2 + buf.readUInt16BE(p + 2);
       if (buf[p + 1] === 0xe2 && buf.toString('latin1', p + 4, p + 15) === 'ICC_PROFILE') parts.push(buf.subarray(p + 18, end));
       p = end;
