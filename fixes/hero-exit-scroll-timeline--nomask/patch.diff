@@ -1,0 +1,29 @@
+# fastwork mirror fix: hero-exit-scroll-timeline--nomask
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply hero-exit-scroll-timeline--nomask --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11548,8 +11548,16 @@
+     max-width 0.68s cubic-bezier(0.33, 0, 0.2, 1),
+     opacity 0.2s cubic-bezier(0.33, 0, 0.2, 1),
+     padding-inline 0.68s cubic-bezier(0.33, 0, 0.2, 1);
+-  -webkit-mask-image: none;
+-  mask-image: none;
++  /* P9 diagnostic `nomask` (hero-exit, D5 candidate a): the earn button carries its final mask from load,
++     so the is-hero-pill drop no longer switches mask-image none -> some. Size/repeat match the unpilled rule;
++     the button is max-width 0 / opacity 0 while pilled, so nothing visible changes. The unmask and sheen
++     animations are untouched (still start at the pill drop). Diagnostic only. */
++  -webkit-mask-image: var(--nav-earn-mask);
++  mask-image: var(--nav-earn-mask);
++  -webkit-mask-size: 240% 100%;
++  mask-size: 240% 100%;
++  -webkit-mask-repeat: no-repeat;
++  mask-repeat: no-repeat;
+ }
+ .start-selling-top-nav.is-expanded.svelte-1dcozpm .start-selling-top-nav-btn.is-earn:where(.svelte-1dcozpm) {
+   pointer-events: none;

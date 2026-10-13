@@ -1,0 +1,23 @@
+# fastwork mirror fix: hero-exit-scroll-timeline--re-keep
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply hero-exit-scroll-timeline--re-keep --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -2416,7 +2416,11 @@
+ .start-selling-future.is-visible > .start-selling-future-card {
+   visibility: visible;
+   opacity: 1;
+-  filter: none;
++  /* ST-2 diagnostic `re-keep` (de-pm-hero Card 4): the reveal ends at blur(0px) / translateY(0) instead of
++     none, so filter and transform never switch to none at the transition end (WebKit forces a layout on that
++     switch, StyleDifference) and the flip + ~940 ms frame should lose its layout. Opacity still ends at 1. */
++  filter: blur(0px);
++  transform: translateY(0);
+   pointer-events: auto;
+   transition:
+     opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),

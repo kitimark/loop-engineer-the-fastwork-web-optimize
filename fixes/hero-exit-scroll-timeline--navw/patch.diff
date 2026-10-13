@@ -1,0 +1,27 @@
+# fastwork mirror fix: hero-exit-scroll-timeline--navw
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply hero-exit-scroll-timeline--navw --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -11628,6 +11628,16 @@
+   }
+   .start-selling-top-nav-actions.svelte-1dcozpm {
+     gap: calc(var(--nav-expand) * (1 - clamp(0, calc(var(--morph) / 0.2), 1)) * 4px);
++    /* P9 diagnostic `navw` (hero-exit, D5 candidate b): the fixed nav's actions box gets an explicit size
++       (>= its widest content: 73 px pilled + 4 px gap + earn max-width 9.5rem = 229 px) and packs its items
++       to the right, so its rect (left/width) is constant across the is-hero-pill drop; contain: layout size
++       makes it a relayout boundary in WebKit and Blink, so the earn button's max-width/padding/gap
++       transitions (kept) relayout only inside it. Visual: same item positions (right-anchored, no
++       background); the transparent box covers x 150-390 of the bar. Diagnostic only. */
++    width: 232px;
++    height: 36px;
++    justify-content: flex-end;
++    contain: layout size;
+   }
+   .start-selling-top-nav-btn.svelte-1dcozpm {
+     height: 36px;

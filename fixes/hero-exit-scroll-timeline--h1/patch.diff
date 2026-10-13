@@ -1,0 +1,79 @@
+# fastwork mirror fix: hero-exit-scroll-timeline--h1
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply hero-exit-scroll-timeline--h1 --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -2430,7 +2430,27 @@
+ .start-selling-future.is-visible.is-future-shrinking > .start-selling-future-card {
+   transform: scale(var(--future-shrink-scale));
+   transform-origin: 50% 100%;
++}
++/* hero-exit-scroll-timeline h1 (de-hero hero.md §2D R1): once JS has armed the section (data-fw-reveal,
++   FRreveal in 2.DyWL8TcE.js; the card is `inert` while hidden: not focusable, out of the a11y tree), the
++   hidden card stays visibility: visible at opacity 0, so it is laid out and rastered before the 0.72 flip,
++   and the flip toggles no inherited property. Same transitions as above minus visibility. The reveal
++   blur ends at blur(0px) (a list matching blur(14px)); data-fw-revealed (~1 s later) drops it to none. */
++.start-selling-future[data-fw-reveal]:not(.is-visible) > .start-selling-future-card {
++  visibility: visible;
++  transition:
++    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
++    filter 0.7s linear(0, 0.0538 2%, 0.1310 5%, 0.2037 8%, 0.2933 12%, 0.3745 16%, 0.4473 20%, 0.5272 25%, 0.5957 30%, 0.6648 36%, 0.7304 43%, 0.7828 50%, 0.8402 60%, 0.8824 70%, 0.9137 80%, 0.9370 90%, 0.9528 99%, 1),
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+ }
++.start-selling-future[data-fw-reveal].is-visible > .start-selling-future-card:not([data-fw-revealed]) {
++  filter: blur(0px);
++}
++.start-selling-future[data-fw-reveal].is-visible > .start-selling-future-card[data-fw-revealed] {
++  transition:
++    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
++    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
++}
+ .start-selling-future-header {
+   z-index: 10;
+   text-align: center;
+diff --git a/_app/immutable/nodes/2.DyWL8TcE.js b/_app/immutable/nodes/2.DyWL8TcE.js
+--- a/_app/immutable/nodes/2.DyWL8TcE.js
++++ b/_app/immutable/nodes/2.DyWL8TcE.js
+@@ -3955,6 +3955,29 @@
+     }),
+     f(t, d),
+     H());
++}
++// hero-exit-scroll-timeline h1 (de-hero hero.md §2D R1): take the 0.72 flip of #people apart. Once armed
++// (data-fw-reveal on the section, CSS in 2.gBuqKVzi.css), the hidden card is opacity 0 + `inert` instead of
++// visibility: hidden, so it is laid out and rastered while invisible, and the reveal frame toggles no
++// inherited property: is-visible changes only the card's opacity / filter / transform. The reveal blur runs
++// blur(14px) -> blur(0px) (matching lists); ~1 s later (after the 0.9 s filter / transform transitions) the
++// card drops the filter (data-fw-revealed -> filter: none) and becomes interactive (inert off) in one later
++// frame. Hiding sets inert at once (pointer-events was already none) and keeps the baseline blur-out.
++function FRreveal(sec, vis) {
++  let c = sec && sec.firstElementChild;
++  // state on the card itself (one per mounted section): the render effect re-runs for text changes too
++  if (!c || c.__fwRv === vis) return;
++  c.__fwRv = vis;
++  window.clearTimeout(c.__fwRt);
++  if (vis) {
++    // reduced motion / a reload below the flip: visible from the first run, nothing to stage
++    if (!sec.hasAttribute(`data-fw-reveal`)) return;
++    c.__fwRt = window.setTimeout(() => {
++      ((c.inert = !1), c.setAttribute(`data-fw-revealed`, ``));
++    }, 1e3);
++  } else {
++    ((c.inert = !0), c.removeAttribute(`data-fw-revealed`), sec.setAttribute(`data-fw-reveal`, ``));
++  }
+ }
+ function HEflip(d, dw) {
+   if (typeof d.animate != `function`) return;
+@@ -11711,6 +11734,7 @@
+     ),
+     l(() => {
+       ((j = U(A, 1, `start-selling-future`, null, j, { "is-visible": s(y), "is-future-shrinking": s(b) })),
++        FRreveal(A, s(y)),
+         t(B, s(i).people.titleLead),
+         t(ie, s(o)),
+         t(oe, s(c)),

@@ -1,0 +1,43 @@
+# Fix: hero-exit-scroll-timeline--noblur
+
+> Personal, educational experiment on a local mirror of https://fastwork.com/ (not affiliated with
+> Fastwork). `patch.diff` contains excerpts of Fastwork's code: keep it on local branches, never push.
+
+**Status:** draft | measured | rejected
+**Topic:** see `fixes/TOPICS.md` (hero-exit-scroll-timeline--noblur)
+**Files touched:** `/_app/immutable/nodes/2.DyWL8TcE.js` (functions / pretty line ranges), `...css` (rules)
+
+## Why it lags
+
+What the code does today and why that costs frames. Cite the evidence:
+
+- research: `research/01-initial-investigation/motion-inventory.md` section ..., `README.md` finding ...
+- code: `site-pretty/_app/immutable/nodes/2.DyWL8TcE.js:<line>` (`node tools/fix.mjs show <file> --lines a-b`)
+- measurement: LoAF top scripts / forced layout from the baseline run (`results.json` -> `raw`)
+
+## What changed
+
+Short description of the patch (see `patch.diff`). What is visually identical and what, if anything,
+differs (with the screenshot diff numbers).
+
+## Why that is faster
+
+The mechanism (e.g. "reads moved before writes, so style/layout is computed once per frame instead of
+N times"; "work skipped on phones where CSS forces scale 1").
+
+## Before / after
+
+`node tools/fix.mjs ab hero-exit-scroll-timeline--noblur --runs 5` (Chrome, mobile 430x932 DPR3, CPU 6x, ABBA order, cold cache,
+serve `--vendors=local --https --latency 150`). Paste `results.json` -> `markdown` here:
+
+| mobile 6x, n=5 | baseline median [min-max] | patched median [min-max] | delta | verdict |
+|---|---|---|---|---|
+
+A/A noise floor for comparison (`node tools/fix.mjs ab --aa --runs 5`), if available: ...
+
+iPhone (optional, under the `iphone` lease): scripted scroll summary / finger test notes.
+
+## Risks, conflicts, follow-ups
+
+- Behaviour differences (reduced-motion, desktop layout, resize).
+- Overlap with other topics (functions/rules also touched by ...).

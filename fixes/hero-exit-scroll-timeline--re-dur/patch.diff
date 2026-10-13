@@ -1,0 +1,27 @@
+# fastwork mirror fix: hero-exit-scroll-timeline--re-dur
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply hero-exit-scroll-timeline--re-dur --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -2418,12 +2418,14 @@
+   opacity: 1;
+   filter: none;
+   pointer-events: auto;
++  /* ST-2 diagnostic `re-dur` (de-pm-hero Card 4): the reveal's opacity transition 0.7 s -> 0.5 s, so the
++     frame where opacity reaches 1 (a WebKit layout, StyleDifference) should move from flip + ~745 to ~545 ms. */
+   transition:
+-    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
++    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+     filter 1.6s cubic-bezier(0.16, 1, 0.3, 1),
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+   transition:
+-    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
++    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+     filter 0.9s linear(0, 0.0688 2%, 0.1662 5%, 0.2560 8%, 0.3634 12%, 0.4570 16%, 0.5376 20%, 0.6219 25%, 0.6906 30%, 0.7565 36%, 0.8154 43%, 0.8599 50%, 0.9057 60%, 0.9370 70%, 0.9584 80%, 0.9732 90%, 0.9823 99%, 1),
+     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+ }

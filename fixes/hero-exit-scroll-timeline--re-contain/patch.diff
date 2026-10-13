@@ -1,0 +1,28 @@
+# fastwork mirror fix: hero-exit-scroll-timeline--re-contain
+# baseline: site-pretty/ (Prettier-formatted copy of the production mirror); paths are URL paths
+# STACKED on fixes/aw1-10e/overlay: apply aw1-10e first, then this patch on top of it
+# rebuild the overlay with: node tools/fix.mjs apply hero-exit-scroll-timeline--re-contain --on aw1-10e
+# contains excerpts of Fastwork's code: local branches only, never push
+# base-sha256 _app/immutable/assets/2.gBuqKVzi.css c6aad94b455fa394a2ab2faafe3bb5d90085b5441a12aa22ab5488899b71d928
+# base-sha256 _app/immutable/nodes/2.DyWL8TcE.js 3e2f599a163256c15778669da841db97c16818cfdff75db81edd284c8c6b8089
+diff --git a/_app/immutable/assets/2.gBuqKVzi.css b/_app/immutable/assets/2.gBuqKVzi.css
+--- a/_app/immutable/assets/2.gBuqKVzi.css
++++ b/_app/immutable/assets/2.gBuqKVzi.css
+@@ -3554,6 +3554,17 @@
+     padding: 32px 20px 48px;
+     overflow: visible;
+   }
++  /* Boundary-ticket diagnostic `re-contain` (hero-exit, arch-claims F-049 verdict): #people (whose only
++     child is the card) becomes a sized relayout boundary, so the card's presence flips at the reveal
++     start/end (+~40/+745/+945 ms) and is-future-shrinking (+1.13 s) relayout only #people, not the view.
++     Parity holds while the card's content fits in 100svh (card is min-height 100svh here). Diagnostic only. */
++  #people {
++    contain: layout size;
++    height: 100svh;
++  }
++  #people > .start-selling-future-card {
++    height: 100svh;
++  }
+   .start-selling-future-header {
+     gap: 32px;
+     margin-bottom: 40px;
