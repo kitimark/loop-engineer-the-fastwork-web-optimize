@@ -85,6 +85,57 @@ test('every protected tooling path triggers the tests, deletions included', () =
 });
 function readFileSyncSafe(f) { try { return readFileSync(f, 'utf8'); } catch { return ''; } }
 
+// Release-only commits run the release command (user T-170 #489): every staged tooling path must be a release path.
+const commit2 = (dir, full, rel) => run('git', ['commit', '-q', '-m', 'release'], { cwd: dir, env: { FW_PRECOMMIT_TEST_CMD: full, FW_PRECOMMIT_RELEASE_TEST_CMD: rel } });
+const undo = (dir) => { git(dir, 'reset', '-q', 'HEAD'); git(dir, 'checkout', '-q', 'HEAD', '--', '.'); git(dir, 'clean', '-fdq', '--', 'tools', 'tests', 'docs'); };
+test('release-only tooling commits run the release command; any other tooling path runs the full command', () => {
+  const cases = [
+    // [staged paths, expected command: 'release' | 'full']
+    [['tools/release/pack.mjs', 'tests/unit/release-pack.test.mjs', 'tests/e2e/release-build.test.mjs', 'tests/fixtures/release/stub.mjs'], 'release'],
+    [['tools/release/pack.mjs', 'docs/notes.md'], 'release'], // non-tooling paths don't count
+    [['tools/release/pack.mjs', 'tools/lib/baseline.mjs'], 'full'],
+    [['tools/release/pack.mjs', 'package.json'], 'full'],
+    [['tools/release/pack.mjs', '.githooks/pre-commit'], 'full'],
+    [['tests/unit/release.test.mjs'], 'full'], // no "release-" prefix
+    [['tests/e2e/sub/release-x.test.mjs'], 'full'], // not directly in unit/ or e2e/
+    [['tests/hooks/release-x.test.mjs'], 'full'],
+    [['tools/releases/x.mjs'], 'full'],
+    [['tests/fixtures/release-other/x.mjs'], 'full'],
+  ];
+  for (const [paths, want] of cases) {
+    for (const p of paths) { const was = readFileSyncSafe(join(repo.wt, p)); put(repo.wt, p, p.endsWith('.json') ? (was || '{}') + '\n' : was + '// edit\n'); git(repo.wt, 'add', p); }
+    const before = head(repo.wt);
+    try {
+      // the expected command fails: the commit must be blocked by it, and name the mode
+      const r = want === 'release' ? commit2(repo.wt, 'exit 0', 'exit 5') : commit2(repo.wt, 'exit 5', 'exit 0');
+      assert.notEqual(r.code, 0, `${paths.join(' + ')} should run the ${want} command`);
+      assert.match(r.stderr, /failed \(exit 5\); commit blocked/, `${paths.join(' + ')}: ${r.stderr}`);
+      assert.match(r.stderr, want === 'release' ? /pre-commit: release-only tooling changed/ : /pre-commit: tooling changed/, paths.join(' + '));
+      assert.equal(head(repo.wt), before);
+    } finally { undo(repo.wt); }
+  }
+});
+
+test('a release-only commit with a passing release command is committed; a release deletion counts as release-only', () => {
+  put(repo.wt, 'tools/release/gone.mjs', '// a\n');
+  git(repo.wt, 'add', 'tools/release/gone.mjs');
+  const ok = commit2(repo.wt, 'exit 5', 'exit 0');
+  assert.equal(ok.code, 0, ok.out);
+  assert.match(ok.stderr, /release-only tooling changed \(tools\/release\/gone\.mjs\); running: exit 0/);
+  git(repo.wt, 'rm', '-q', 'tools/release/gone.mjs');
+  const del = commit2(repo.wt, 'exit 5', 'exit 0');
+  assert.equal(del.code, 0, del.out);
+  assert.match(del.stderr, /release-only tooling changed/);
+});
+
+test('the release command defaults to npm run test:release, which runs the unit and release e2e tests', () => {
+  const hook = readFileSync(new URL('../../.githooks/pre-commit', import.meta.url), 'utf8');
+  assert.match(hook, /FW_PRECOMMIT_RELEASE_TEST_CMD \|\| 'npm run test:release'/);
+  assert.match(hook, /FW_PRECOMMIT_TEST_CMD \|\| 'npm test'/);
+  const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
+  assert.match(pkg.scripts['test:release'], /"tests\/unit\/\*\.test\.mjs" "tests\/e2e\/release-\*\.test\.mjs"/);
+});
+
 test('the main checkout uses the same hook (core.hooksPath is shared config)', () => {
   put(repo.main, 'tools/main-only.mjs');
   git(repo.main, 'add', 'tools/main-only.mjs');

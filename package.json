@@ -17,6 +17,7 @@
     "iphone": "node tools/iphone.mjs",
     "test": "node --test --test-concurrency=6 --test-timeout=120000 \"tests/unit/*.test.mjs\" \"tests/e2e/*.test.mjs\" \"tests/hooks/*.test.mjs\"",
     "test:unit": "node tools/scope.mjs && node --test --test-concurrency=2 --test-timeout=120000 \"tests/unit/*.test.mjs\"",
+    "test:release": "node --test --test-concurrency=4 --test-timeout=120000 \"tests/unit/*.test.mjs\" \"tests/e2e/release-*.test.mjs\"",
     "test:scope": "node tools/scope.mjs",
     "test:hooks": "node --test \"tests/hooks/*.test.mjs\"",
     "test:bench": "node tools/bench.mjs reconfirm",

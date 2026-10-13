@@ -18,6 +18,10 @@
 // 3. When the commit touches the tooling (tools/, tests/, package.json, .claude/settings.json,
 //    .claude/hooks/, .githooks/), runs the test suite (`npm test`) and blocks the commit if it fails.
 //    FW_PRECOMMIT_TEST_CMD overrides the command (used by the hook's own tests).
+//    Release-only commits (user T-170 #489, approved in the Claude Code chat 2026-10-13): when every staged
+//    tooling path is a release path (tools/release/, tests/unit|e2e/release-*.test.mjs, tests/fixtures/release/),
+//    the hook runs `npm run test:release` instead (all unit tests + the release e2e tests);
+//    FW_PRECOMMIT_RELEASE_TEST_CMD overrides that command (hook tests). Any other tooling path runs `npm test`.
 //
 // Tests run against the working tree, not only the staged snapshot: commit what you tested.
 // `git commit --no-verify` skips this hook; that is for humans in an emergency, never for agents.
@@ -32,6 +36,7 @@ const FORBIDDEN = [/^out\//, /^fixes\/[^/]+\/overlay\//, /^\.serena\/cache\//, /
 const BASELINE = [/^site\//, /^site-pretty\//, /^baseline\.json$/];
 const TREES = ['site', 'site-pretty'];
 const TOOLING = [/^tools\//, /^tests\//, /^package\.json$/, /^\.claude\/settings\.json$/, /^\.claude\/hooks\//, /^\.githooks\//];
+const RELEASE_ONLY = [/^tools\/release\//, /^tests\/(unit|e2e)\/release-[^/]+\.test\.mjs$/, /^tests\/fixtures\/release\//];
 
 const added = list('ACMRT'); // deleting a forbidden path that slipped in earlier is always allowed
 const bad = added.filter((f) => FORBIDDEN.some((re) => re.test(f)));
@@ -90,8 +95,11 @@ if (!tooling.length) process.exit(0);
 // must not leak into them (they would point every temp `git` call at this repository).
 const env = { ...process.env };
 for (const k of Object.keys(env)) if (/^GIT_/.test(k) && !/^GIT_(AUTHOR|COMMITTER)_/.test(k)) delete env[k];
-const cmd = process.env.FW_PRECOMMIT_TEST_CMD || 'npm test';
-console.error(`pre-commit: tooling changed (${tooling.slice(0, 5).join(', ')}${tooling.length > 5 ? ', ...' : ''}); running: ${cmd}`);
+const releaseOnly = tooling.every((f) => RELEASE_ONLY.some((re) => re.test(f)));
+const cmd = releaseOnly
+  ? process.env.FW_PRECOMMIT_RELEASE_TEST_CMD || 'npm run test:release'
+  : process.env.FW_PRECOMMIT_TEST_CMD || 'npm test';
+console.error(`pre-commit: ${releaseOnly ? 'release-only tooling' : 'tooling'} changed (${tooling.slice(0, 5).join(', ')}${tooling.length > 5 ? ', ...' : ''}); running: ${cmd}`);
 const t0 = Date.now();
 const r = spawnSync(cmd, { cwd: top, env, stdio: 'inherit', shell: true });
 if (r.status !== 0) {
