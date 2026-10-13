@@ -11,9 +11,12 @@ the release repo and uploads its files; agents never push, add a remote, run `gh
   It refuses tags (and deletes, non-fast-forwards, merge commits): make release tags on GitHub, not by pushing them.
   What it cannot stop: `git push --no-verify` (or `-c core.hooksPath=…`), a known values file pointed elsewhere
   (`FW_RELEASE_KNOWN`, `--known`), and a clone where `core.hooksPath` is not set to `.githooks` (`npm run setup`):
-  those push unchecked, so the check is a guard for the user's own pushes, not a lock. What it does not see: values
-  encoded inside a text file other than a `data:` URI picture (base64 or hex runs, a text that was compressed before
-  committing), and pictures it cannot read (only the formats `imagemeta.mjs` reads pass). It only blocks: it never
+  those push unchecked, so the check is a guard for the user's own pushes, not a lock. It decodes only `data:image/…` and
+  `data:application/octet-stream` URIs (as `imagemeta.mjs` dataImages reads them; their runs are checked by the release
+  packer's history rule, a refused run of 100+ characters refused, and every run's text and bytes scanned for known
+  values). What it does not see: values encoded any other way inside a text file (`data:video/…`, `data:text/…;base64`,
+  `data:application/json` and other URIs, bare base64 or hex runs, a text compressed before committing), and pictures
+  it cannot read (only the formats `imagemeta.mjs` reads pass). It only blocks: it never
   fixes a commit (rebase it). It asks the remote what it has (`git ls-remote`): over ssh a passphrase or host-key
   prompt can stall it, and an unreachable remote refuses the push. A binary file passes only pinned in the known
   values file: `"allowBinary": [{"path": "<glob>", "sha256": "<hex>", "reason": "…"}]` (or `"blob": "<git blob id>"`);

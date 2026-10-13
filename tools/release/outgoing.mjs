@@ -19,8 +19,11 @@
 // `identity-unknown` and scanned); every path it adds or changes (`path-forbidden`, any letter case: what
 // .githooks/pre-commit and the release rewrite keep out of git: the snapshot site/ and site-pretty/, out/, overlays,
 // .serena/cache/, *.pem, __pycache__/, volatile mirror files); every blob it adds or changes: its raw bytes for the
-// literal values always; text (also UTF-16, when the whole blob decodes as such) fully, and every data: URI picture
-// in it through imagemeta.mjs dataUriVerdict (`media-<kinds>` at <path>#data-N unless clean); pictures through
+// literal values always; text (also UTF-16, when the whole blob decodes as such) fully, and every data: URI in it
+// (data:image and data:application/octet-stream, what imagemeta.mjs dataImages reads) by the release packer's rule
+// for history (historyDataUri: a refused run of 100+ characters stays refused unless the bytes a browser reads from it
+// are a clean picture or video; shorter ones pass as examples), every run's text and bytes scanned with the full
+// rules (`media-known-value-in-data-uri`; `media-<kinds>` at <path>#data-N); pictures through
 // shipImage (anything but `clean` refuses: `media-<kinds>`), videos through videoMeta; any other binary blob refused
 // (`binary-unchecked`) unless a known values file `allowBinary` entry pins it (path glob + sha256 or blob id; the text
 // `allow` entries never exempt a binary); the pushed ref names.
@@ -33,7 +36,7 @@ import { readFileSync } from 'node:fs';
 import { exitOnHelp, isMain } from '../lib/help.mjs';
 import { loadKnown, buildRules, scanText, safeText, withSecrets } from './rules.mjs';
 import { gitEnv, formatHits } from './check.mjs';
-import { shipImage, videoMeta, sniffMedia, IMAGE_FILE, dataImages, dataUriVerdict } from './imagemeta.mjs';
+import { shipImage, videoMeta, sniffMedia, IMAGE_FILE, dataImages, historyDataUri } from './imagemeta.mjs';
 import { createHash } from 'node:crypto';
 
 exitOnHelp(import.meta.url);
@@ -128,23 +131,26 @@ function lenientBytes(text, d) {
   return Buffer.from(out);
 }
 /**
- * Why a data: URI in a pushed text blob refuses (kinds), or null: dataUriVerdict (imagemeta.mjs, the packer's rule)
- * on what it reads, anything but clean or ignore refusing. A URI it refuses only for its syntax (undecodable,
- * non-base64, unparsed) or as no picture is decoded leniently, as a browser would: it refuses when those bytes are a
- * picture or video that is not clean; bytes that are none (source code that mentions the syntax) cannot be shown.
+ * Why a data: URI in a pushed text blob refuses (kinds), or null. The release packer's rule for history
+ * (imagemeta.mjs historyDataUri, PICTURE_RUN), with every run's text and bytes scanned with the full rules (literals,
+ * LAN addresses, secret shapes: known-value-in-data-uri), not only the short runs. On top, the bytes a browser would
+ * read (lenientBytes: a wrapped or escaped run, percent-encoding) are scanned the same way and, when they are a
+ * picture or video, must be clean; a run refused only for its syntax or as no picture passes when those bytes are a
+ * clean picture or video.
  */
-function dataUriKinds(text, d, name, literalHits) {
-  const v = dataUriVerdict(d, { name, literalHits });
-  if (v.action === 'clean' || v.action === 'ignore') return null;
-  const syntax = ['undecodable-data-uri', 'non-base64-data-uri', 'unparsed-data-uri', 'not-an-image'];
-  if (!v.kinds.length || !v.kinds.every((k) => syntax.includes(k))) return v.kinds.length ? v.kinds : [v.action];
-  const bytes = d.buf && v.kinds.includes('not-an-image') ? d.buf : lenientBytes(text, d);
-  if (!bytes || bytes.length < 4) return null;
-  const kind = sniffMedia(bytes);
-  if (!kind) return null;
-  if (kind === 'video') { const vm = videoMeta(bytes); return vm.risky.length ? vm.risky : null; }
-  const s = shipImage(bytes, { name, literalHits });
-  return s.action === 'clean' ? null : (s.risky.length ? s.risky : s.kinds).length ? (s.risky.length ? s.risky : s.kinds) : [s.action];
+function dataUriKinds(text, d, name, literalHits, valueHits) {
+  const bytes = lenientBytes(text, d);
+  if (bytes && valueHits(bytes)) return ['known-value-in-data-uri'];
+  let media = null; // null: the lenient bytes are no picture or video; [] clean; [kinds] not clean
+  const kind = bytes && bytes.length >= 4 ? sniffMedia(bytes) : null;
+  if (kind === 'video') media = videoMeta(bytes).risky;
+  else if (kind) { const s = shipImage(bytes, { name, literalHits }); media = s.action === 'clean' ? [] : (s.risky.length ? s.risky : s.kinds).length ? (s.risky.length ? s.risky : s.kinds) : [s.action]; }
+  if (media && media.length) return media;
+  const r = historyDataUri(text, d, { name, literalHits, valueHits, scanAll: true });
+  if (r.status !== 'problem') return null;
+  const syntax = ['undecodable-data-uri', 'non-base64-data-uri', 'unparsed-data-uri', 'not-an-image', 'unreadable'];
+  if (media && r.kinds.every((k) => syntax.includes(k))) return null;
+  return r.kinds;
 }
 
 /**
@@ -194,6 +200,7 @@ export function checkCommits(cwd, { args = [], input } = {}, rules, { identities
   }
   const allow = rules.allow || [], allowBinary = rules.allowBinary || [];
   const literalHits = (t) => scanText(t, rules, { literalsOnly: true, allow: [] }).length;
+  const valueHits = (t) => scanText(t, rules, { allow: [] }).length; // the full rules: literals, LAN, secret shapes
   const blobs = readBlobs(git, [...blobPaths.keys()]);
   for (const [oid, ps] of blobPaths) {
     const data = blobs.get(oid);
@@ -215,7 +222,7 @@ export function checkCommits(cwd, { args = [], input } = {}, rules, { identities
       if (binary) for (const h of scanText(text, rules, { path: name, allow: here })) hit(h.id, where, h.line);
       // pictures inside the text as data: URIs, each checked like a picture file (the packer's rule since e9439bbf)
       for (const d of dataImages(text)) {
-        const kinds = dataUriKinds(text, d, `${name}#data-${d.n}`, literalHits);
+        const kinds = dataUriKinds(text, d, `${name}#data-${d.n}`, literalHits, valueHits);
         if (kinds) hit(`media-${kinds.join('+')}`, `${where}#data-${d.n}`, 0);
       }
     } else if (!kind) {

@@ -47,7 +47,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import { loadKnown, buildRules, scrubAll, redactSecrets, scanText, safeText, SECRET_SHAPES } from './rules.mjs';
-import { shipImage, IMAGE_FILE, dataImages, dataUriVerdict, dataRun, videoMeta, sniffMedia } from './imagemeta.mjs';
+import { shipImage, IMAGE_FILE, dataImages, dataUriVerdict, dataRun, videoMeta, sniffMedia, historyDataUri, PICTURE_RUN } from './imagemeta.mjs';
 import { parseArgs, knownFile, MAX_ASSET_BYTES, addHits, tallyToList, walkFiles, isDir, isText, sha256File, tarCreate, isVideo, stripVideo, refuseInside, show } from './release-util.mjs';
 
 exitOnHelp(import.meta.url);
@@ -131,12 +131,8 @@ export function citedOutAll({ source }) {
 export const SHIPPED_DIRS = [...new Set([...OUT_MEDIA, ...OUT_DATA.map((d) => d.dir), ...OUT_SPLIT.map((d) => d.dir.split('/')[0])])];
 /** A cited path under one of SHIPPED_DIRS (else another checkout's or a never-shipped output). */
 export const inShippedDir = (p) => SHIPPED_DIRS.includes(p.split('/')[1]);
-/** Base64 runs shorter than this that do not decode are prose or code (an example, "...", a placeholder), not a picture. */
-export const PICTURE_RUN = 100;
-/** What a short run may be refused for and still be only noted: no picture this reads (an example, a placeholder). */
-const SHORT_NOTED = new Set(['undecodable-data-uri', 'unreadable', 'not-an-image']);
-/** The bytes of a percent-encoded data: URI payload, decoded leniently (a bad escape stays as it is). */
-const pctBytes = (s) => Buffer.from(s.replace(/%([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16))), 'latin1');
+/** Base64 runs shorter than this that do not decode are prose or code (imagemeta.mjs, shared with outgoing.mjs). */
+export { PICTURE_RUN };
 /**
  * The picture policy over the release's git history (lead, I-270): every picture or video blob reachable from any ref
  * of `gitDir`, and every data: URI in a text blob, checked as pack.mjs checks shipped files. History cannot be stripped
@@ -186,32 +182,13 @@ export async function historyPictures({ gitDir, rules, extra = [] }) {
     const text = buf.toString('utf8');
     for (const d of dataImages(text)) {
       const p = `${name(sha)}#data-${d.n}`;
-      if (d.kind === 'unparsed') { out.notes.push({ path: p, kind: 'unparsed data:image (prose or code)', length: 0 }); continue; }
-      // short: a base64 run, or the payload of a percent-encoded (SVG text or other) URI, under PICTURE_RUN characters
-      const len = d.kind === 'base64' ? d.runLength : d.end - d.start;
-      const short = d.kind !== 'octet' && len < PICTURE_RUN;
-      if (short) {
-        const run = text.slice(d.start, d.end).replace(/\\\//g, '/');
-        if (literalHits(run) || literalHits(d.kind === 'base64' ? Buffer.from(run, 'base64') : pctBytes(run))) { out.checked++; out.problems.push({ path: p, kinds: ['known-value-in-data-uri'] }); continue; }
-        if (d.kind === 'other') {
-          // percent-encoded bytes can be a real picture (a 1x1 GIF is 73 characters): checked like a decoded base64 run
-          const bytes = pctBytes(run), r = shipImage(bytes, { name: p, literalHits });
-          if (r.action === 'refused' && r.risky.every((k) => SHORT_NOTED.has(k))) { out.notes.push({ path: p, kind: `short percent-encoded URI that is no picture this reads (${r.risky.join(', ')}; an example or placeholder)`, length: len }); continue; }
-          out.checked++;
-          if (r.action === 'clean') out.items.push({ path: p, buf: bytes });
-          else out.problems.push({ path: p, kinds: r.action === 'refused' ? r.risky : [...r.kinds, 'needs a strip (not possible in history)'] });
-          continue;
-        }
-      }
-      const v = dataUriVerdict(d, { name: p, literalHits });
-      if (v.action === 'ignore') continue;
-      if (short && v.action === 'refused' && v.kinds.every((k) => SHORT_NOTED.has(k))) {
-        out.notes.push({ path: p, kind: d.kind === 'svg-text' ? `short SVG text URI (${v.kinds.join(', ')}; an example or placeholder)` : d.buf ? `short run that is no picture this reads (${v.kinds.join(', ')}; an example or placeholder)` : 'short undecodable run (an example or placeholder)', length: len });
-        continue;
-      }
-      out.checked++;
-      if (v.action === 'clean') { if (d.kind === 'base64') out.items.push({ path: p, buf: d.buf }); continue; }
-      out.problems.push({ path: p, kinds: v.action === 'stripped' ? [...v.kinds, 'needs a strip (not possible in history)'] : v.kinds });
+      // the per-URI rule (imagemeta.mjs historyDataUri, shared with the pre-push check outgoing.mjs)
+      const r = historyDataUri(text, d, { name: p, literalHits });
+      if (r.status === 'skip') continue;
+      if (r.checked) out.checked++;
+      if (r.status === 'note') out.notes.push({ path: p, kind: r.note, length: r.length });
+      else if (r.status === 'item') { if (r.buf) out.items.push({ path: p, buf: r.buf }); }
+      else out.problems.push({ path: p, kinds: r.kinds });
     }
   };
   // stream every blob once (git cat-file --batch: "<sha> blob <size>\n<bytes>\n")

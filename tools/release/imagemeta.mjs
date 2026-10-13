@@ -459,6 +459,48 @@ export function dataUriVerdict(e, { name = '', literalHits = null } = {}) {
   const r = shipImage(e.buf, { name, literalHits });
   return { action: r.action, kinds: r.action === 'refused' ? r.risky : r.kinds, buf: r.buf, format: r.format };
 }
+/** Base64 runs shorter than this that do not decode are prose or code (an example, "...", a placeholder), not a picture. */
+export const PICTURE_RUN = 100;
+/** What a short run may be refused for and still be only noted: no picture this reads (an example, a placeholder). */
+const SHORT_NOTED = new Set(['undecodable-data-uri', 'unreadable', 'not-an-image']);
+/** The bytes of a percent-encoded data: URI payload, decoded leniently (a bad escape stays as it is). */
+export const pctBytes = (s) => Buffer.from(s.replace(/%([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16))), 'latin1');
+
+/**
+ * The release's rule for one dataImages entry in a text that cannot be rewritten (git history: pack.mjs
+ * historyPictures, I-270; a push: outgoing.mjs). A picture that would be stripped or refused, a refused URI and a run of
+ * PICTURE_RUN+ characters that is no picture this reads are problems; a shorter such run (undecodable, unreadable, not
+ * an image; a short SVG-text or percent-encoded payload) and an unparsed "data:image" are notes (prose, code,
+ * examples), but a short run's text and its bytes (base64 or percent, decoded leniently) are scanned for known values
+ * first: valueHits(text or bytes) > 0 is a problem, known-value-in-data-uri. scanAll: scan every run that way, not
+ * only the short ones (a push: valueHits then runs the full rules). literalHits: for shipImage / dataUriVerdict.
+ * Returns {status: 'skip'|'note'|'item'|'problem', kinds, note, length, buf (a clean picture's bytes), checked}.
+ */
+export function historyDataUri(text, d, { name = '', literalHits = null, valueHits = literalHits, scanAll = false } = {}) {
+  if (d.kind === 'unparsed') return { status: 'note', note: 'unparsed data:image (prose or code)', length: 0 };
+  // short: a base64 run, or the payload of a percent-encoded (SVG text or other) URI, under PICTURE_RUN characters
+  const len = d.kind === 'base64' ? d.runLength : d.end - d.start;
+  const short = d.kind !== 'octet' && len < PICTURE_RUN;
+  if ((short || scanAll) && valueHits) {
+    const run = text.slice(d.start, d.end).replace(/\\\//g, '/');
+    if (valueHits(run) || valueHits(d.kind === 'base64' || d.kind === 'octet' ? Buffer.from(run, 'base64') : pctBytes(run))) return { status: 'problem', kinds: ['known-value-in-data-uri'], checked: true };
+  }
+  if (short && d.kind === 'other') {
+    // percent-encoded bytes can be a real picture (a 1x1 GIF is 73 characters): checked like a decoded base64 run
+    const bytes = pctBytes(text.slice(d.start, d.end).replace(/\\\//g, '/')), r = shipImage(bytes, { name, literalHits });
+    if (r.action === 'refused' && r.risky.every((k) => SHORT_NOTED.has(k))) return { status: 'note', note: `short percent-encoded URI that is no picture this reads (${r.risky.join(', ')}; an example or placeholder)`, length: len };
+    if (r.action === 'clean') return { status: 'item', buf: bytes, checked: true };
+    return { status: 'problem', kinds: r.action === 'refused' ? r.risky : [...r.kinds, 'needs a strip (not possible in history)'], checked: true };
+  }
+  const v = dataUriVerdict(d, { name, literalHits });
+  if (v.action === 'ignore') return { status: 'skip' };
+  if (short && v.action === 'refused' && v.kinds.every((k) => SHORT_NOTED.has(k))) {
+    return { status: 'note', note: d.kind === 'svg-text' ? `short SVG text URI (${v.kinds.join(', ')}; an example or placeholder)` : d.buf ? `short run that is no picture this reads (${v.kinds.join(', ')}; an example or placeholder)` : 'short undecodable run (an example or placeholder)', length: len };
+  }
+  if (v.action === 'clean') return { status: 'item', buf: d.kind === 'base64' ? d.buf : null, checked: true };
+  return { status: 'problem', kinds: v.action === 'stripped' ? [...v.kinds, 'needs a strip (not possible in history)'] : v.kinds, checked: true };
+}
+
 /** The base64 run to write back for an entry whose picture was stripped (JSON's escaped slashes kept). */
 export const dataRun = (e, buf) => (e.escaped ? buf.toString('base64').replace(/\//g, '\\/') : buf.toString('base64'));
 
