@@ -5,6 +5,15 @@ web-performance study. I'm not affiliated with Fastwork. The mirror runs the sam
 bundles, so its scroll animations should lag the way the live site does. You can then try
 optimizations locally, on desktop Chrome or on an iPhone on the same Wi-Fi.
 
+## Live demos and the article
+
+- Article on Medium: https://medium.com/@kitimark/sixteen-milliseconds-ai-loop-engineering-the-fastwork-com-scroll-0c0f735c84bb
+- Original: https://fastwork-perf-original.kitimark.workers.dev/ (a copy of the frozen 2026-10 snapshot, unchanged)
+- Optimized: https://fastwork-perf-optimized.kitimark.workers.dev/ (the same snapshot with the fixes)
+
+Both demos are copies for this study, not the real Fastwork site: each opens on a short notice page first, where you
+tick a box to continue. Search engines are asked not to index them. The real site is https://fastwork.com/.
+
 > **Legal and ethics.** Everything under `site/` and `site-pretty/` (HTML, JS, CSS, images, fonts,
 > and the saved third-party scripts) belongs to Fastwork or the respective vendors. Use it only
 > for personal study on your own machine and LAN. Don't redeploy it publicly, don't push the
