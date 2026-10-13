@@ -14,6 +14,26 @@ optimizations locally, on desktop Chrome or on an iPhone on the same Wi-Fi.
 Both demos are copies for this study, not the real Fastwork site: each opens on a short notice page first, where you
 tick a box to continue. Search engines are asked not to index them. The real site is https://fastwork.com/.
 
+## Getting started (public copy)
+
+The public copy of this repository is a scrubbed release of the local study repository. The frozen fastwork.com
+snapshot the study measured (`site/`, `site-pretty/`) and the reviewed pictures and videos are not in its git
+history: they are files of the GitHub Release `v1.0`, listed with their size and SHA-256 in
+`tools/release/release-assets.json`. One command fetches and checks them:
+
+```sh
+git clone https://github.com/kitimark/loop-engineer-the-fastwork-web-optimize.git
+cd loop-engineer-the-fastwork-web-optimize
+npm run init        # Node >= 22, git and tar; no other dependencies, no GitHub login
+```
+
+`npm run init` (not `npm init`) downloads each Release file, checks its size and SHA-256, refuses unsafe archive
+entries, checks that the snapshot has exactly the tree ids `baseline.json` pins, and only then moves everything into
+place. Afterwards `node tools/baseline.mjs status` reports `state ok`. Details, the offline form (`--from <folder>`)
+and what the release changed (secret-shaped values in vendored third-party scripts are redacted) are in
+[`tools/release/README.md`](tools/release/README.md). Files the write-ups cite that were deleted before the release
+are listed in [`LOST-FILES.md`](LOST-FILES.md).
+
 > **Legal and ethics.** Everything under `site/` and `site-pretty/` (HTML, JS, CSS, images, fonts,
 > and the saved third-party scripts) belongs to Fastwork or the respective vendors. Use it only
 > for personal study on your own machine and LAN. Don't redeploy it publicly, don't push the
