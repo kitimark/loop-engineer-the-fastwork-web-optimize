@@ -1,0 +1,58 @@
+{
+  "id": "T-054",
+  "title": "PR-012: two small wording corrections before you decide",
+  "topic": "morph-gpu",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-03T19:33:41.861Z",
+  "updatedAt": "2026-10-04T11:14:49.583Z",
+  "rev": 8,
+  "assignees": [
+    "mgmt-desk-1"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T19:33:41.861Z",
+      "by": "lead",
+      "text": "A second check of PR-012 (end-of-page menu morph) reproduced every number within noise. It also showed that two of the proposal's lines read a bit too strongly:\n1. The 'Chrome against itself' line should add: on another pair of page loads, the nav's 'EN' label sat a fraction of a pixel to the side (22 CSS px of its edges, up to 94 shades). This happens in either version, original or fix, and has nothing to do with this change.\n2. Item 4 says that after the last step the picture is 'exact'. More precisely: it is exact apart from a known Chrome flicker between two states at the end of the morph (here 23 CSS px at shade 18), which the original shows too.\nNothing else changes: the Simulator (Safari) lines, the desktop result (0 px) and the cost numbers (about 24 -> 35 restyled elements per moving frame) all hold. All of these differences are within your PR-010 limits. Nothing for you to do; this is so the proposal doesn't overstate."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T10:33:32.862Z",
+      "by": "user",
+      "text": "Do we need me to decide ?"
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T10:33:48.314Z",
+      "by": "mgmt-desk-1",
+      "text": "No, nothing to decide here. You already accepted this proposal (PR-012, the end-of-page menu animation) on 2026-10-03; this thread was only a wording note.\n\n- Now: its phone checks are running (the first started this morning, the second follows).\n- If both pass, it joins the next best build (v7). If not, v7 ships without it.\n- The result is posted on the Progress page and in T-030.\n\nWhat you need to do: nothing. I'll close this thread once you've read this."
+    }
+  ],
+  "reads": {
+    "lead": 2,
+    "user": 3,
+    "mgmt-desk-1": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-04T10:33:32.862Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-1 (the desk)"
+    },
+    {
+      "at": "2026-10-04T10:34:02.014Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T11:14:49.583Z",
+    "mgmt-desk-1": "2026-10-04T10:33:48.314Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "id": "T-031",
+  "title": "What's about the best build progress ?",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-02T23:21:53.734Z",
+  "updatedAt": "2026-10-03T07:31:46.648Z",
+  "rev": 12,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-02T23:21:53.734Z",
+      "by": "user",
+      "text": "What's about the best build progress ?\nWhen we can test the wave 2 ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-02T23:24:40.009Z",
+      "by": "lead",
+      "text": "Best build today: \"st6-rb2\", the wave-1 base plus seven fixes.\n- Its newest piece, the section-switch style fix, passed its own phone test (S7): resting at the top of the page, 0 slow frames per run vs 19-27 on the original. A clear gain, and it holds when the threshold is shifted.\n- Every fix in it was measured on the phone on its own. The build as a whole has not had one full phone scroll against the original yet.\n\nWave 2 = this build + the countdown-digit fix + the menu-morph fix (F3), plus whatever comes out of the GPU research (T-030), which is your highest priority.\nWhere each piece stands:\n1. F3 (menu morph): the robot-finger phone test is running now. The first attempt was void (the phone's start check failed), so it is re-running on a cooled phone and a quiet Mac, about 40 min. If it passes, a review comes next, then it lands.\n2. Countdown digits (you accepted it, PR-007): it still needs a Safari check (it cuts the digit layers from 80 to 24, and one repaint detail is being checked now). It also needs a re-base: 5 of its 12 code pieces don't apply on top of today's build yet.\n3. GPU research: running now. I'll post the candidates and a fix plan in T-030 when it reports.\n4. Then one agent builds wave 2, checks it on Chrome and the Simulator (pixels must be identical), and hands it to you.\n\nWhen can you test it? Realistically some hours from now, not within the hour. The steps above run in a row on one phone. When the build is ready I'll post a blind swipe test (original vs wave 2) in your console.\nTwo questions for you:\n(a) Do you want a blind swipe test of today's best build vs the original now, while you wait? It takes about 5 min of your time.\n(b) A full phone timing run of wave 2 needs your OK, because timing is paused project-wide right now. Should I plan one once wave 2 is built?",
+      "ask": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-02T23:27:31.265Z",
+      "by": "user",
+      "text": "(a) yes\n(b) yes"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-02T23:28:01.015Z",
+      "by": "lead",
+      "text": "Got it, both yes.\n(a) The swipe test is being set up now on the phone: original vs today's best build, blind (you won't know which is which). It will appear as a step in your console in a few minutes. Press Start, swipe as asked, then say which one felt smoother. The F3 phone test waits until you're done.\n(b) Noted: a full phone timing run of wave 2 is approved. I'll plan it for when wave 2 is built and checked; it comes to you as a console step before it starts."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-02T23:42:13.481Z",
+      "by": "lead",
+      "text": "Thanks, the swipe test confirms it. You picked page 2, which was the best build (page 1 was the original). The phone's own frame log from your two swipes agrees:\n- frames slower than 50 ms (a visible hitch): 44 on the original, 13 on the best build;\n- frames slower than 34 ms: 122 vs 81.\nOne swipe each, so it's a strong hint, not a final measurement.\nYou're right that some lag is left: 13 hitches is not 0. Two things now:\n1. I've given your note to the GPU research agent as its main task: find what still makes the best build stutter during a finger scroll, and which of it can move to the GPU. Fixes it proposes go first.\n2. A new lead: during your swipes, Safari's toolbar resized the page 63-94 times. Each resize can make the page redo layout. The GPU agent checks that too.\nNext on the phone: the F3 (menu) test, then the countdown test, then the heat test."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "lead": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-03T07:31:46.648Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

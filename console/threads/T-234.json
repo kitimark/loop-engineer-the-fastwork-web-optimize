@@ -1,0 +1,47 @@
+{
+  "id": "T-234",
+  "title": "queue me, the iphone",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-07T08:17:53.793Z",
+  "updatedAt": "2026-10-07T08:29:00.999Z",
+  "rev": 10,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-07T08:17:53.793Z",
+      "by": "user",
+      "text": "queue me, the iphone"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-07T08:18:55.367Z",
+      "by": "lead",
+      "text": "Done: the iPhone is yours now, until 08:33Z or until you say done. The v13 test ended at 08:17Z, so nothing else is using it.\n\n| Build | Link on the iPhone |\n|---|---|\n| C: today's best (v9-final rev 7d) | http://lan:53903/ |\n| v13: blink fix plus toolbar and legacy clean-ups | http://lan:53904/ |\n| v12: the one you felt smoother but blinking | http://lan:5318/ |\n\n- The v13 test result comes from arch-compositor-morph soon; it reads the numbers on the Mac and does not need the phone.\n- Your slot ends when you say done or decide, no extra reply needed.\n\nWhat you need to do: open the links on the iPhone and try them; tell me here when you are done."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-07T08:28:35.826Z",
+      "by": "user",
+      "text": "done"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-07T08:29:00.512Z",
+      "by": "lead",
+      "text": "Thanks: your iPhone slot is closed (08:28Z), and the USB link is back after your re-plug.\n\n- The three build servers stay up a little longer, in case you want another try.\n- If v13 felt better or worse than today's best, a one-line note here helps the next fix (c3b); no need otherwise.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "lead": 4
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-07T08:29:00.512Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

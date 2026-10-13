@@ -1,0 +1,60 @@
+{
+  "id": "T-216",
+  "title": "Check disk, there're 12GB left",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-06T11:32:35.887Z",
+  "updatedAt": "2026-10-06T12:22:14.151Z",
+  "rev": 15,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-06T11:32:35.887Z",
+      "by": "user",
+      "text": "Check disk, there're 12GB left"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-06T11:35:40.477Z",
+      "by": "lead",
+      "text": "The disk is at 11 GB free (98 % used); the biggest part that is ours is the agents' work folders, 39 GB in 162 folders.\n| Where | Size | What it is |\n|---|---|---|\n| agents' work folders | 39 GB | one per agent; mostly test output (traces, frame logs) |\n| Simulator devices | 8.4 GB | the iPhone Simulator we use |\n| Xcode build caches | 7.5 GB | phone-control builds, several old copies |\n| Xcode iOS device files | 5.6 GB | per iOS version the phone had |\n- Safe now, with your yes: remove the 81 folders of finished agents whose work is already on main; their commits stay, only the test output goes (about 8 GB or more).\n- Also possible: old phone-control build copies (about 2.5 GB); they rebuild by themselves if needed, but I would do it after the running phone test.\n- I removed one 7.9 GB leftover of mine, but it shared its space with the installed Simulator, so it freed nothing.\n- Long term: I add a cleanup step that removes a finished agent's folder when its work lands; mgmt-devices owns it.\nWhat you need to do: reply \"yes\" to remove the 81 finished folders (about 8 GB), or \"no\".",
+      "ask": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-06T11:36:43.985Z",
+      "by": "user",
+      "text": "yes, keep evidence for writing the article. we'll have the new article for explain how we optimize and how it improve."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-06T11:54:14.538Z",
+      "by": "user",
+      "text": "You are bottleneck, now. delegate"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-06T11:55:16.839Z",
+      "by": "lead",
+      "text": "You're right; I've handed the cleanup to a helper agent (ops-disk-cleanup), which is starting now.\n- It removes the 78 finished agents' folders, but first moves their evidence (logs, results, screenshots, phone recordings) into one local archive folder for the article.\n- It deletes only browser profiles, caches, rebuildable page copies and raw traces over 20 MB.\n- It works in small batches at low priority, so the running iPhone test is not disturbed; it reports the GB freed.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-06T12:22:07.352Z",
+      "by": "lead",
+      "text": "Cleanup done: free disk went from 12 GB to 29 GB; all 78 finished folders are removed and their evidence is kept.\n| | Size |\n|---|---|\n| evidence kept in out/archive (logs, results, 14,054 screenshots, 21 phone recordings) | 5.3 GB |\n| raw traces over 20 MB, deleted (52 files, paths listed) | 3.2 GB |\n| page copies and branch checkouts, deleted (all still in git) | 6.2 GB |\n| browser profiles and caches, deleted | about 0.4 GB |\n- No branch or commit was deleted; the archive stays on this Mac only and is never committed.\n- The work ran in 1-minute batches, so the phone test was not disturbed.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 6,
+    "lead": 6
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-06T12:22:07.352Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

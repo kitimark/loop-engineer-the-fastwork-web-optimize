@@ -1,0 +1,200 @@
+{
+  "id": "T-229",
+  "title": "Comment on T-228 #16 \"Comment on the Best build page \"Today’s best build\": Did yo…\": Catch up this, do you still try it yet on the test lane ?",
+  "anchor": {
+    "page": "threads",
+    "item": "thread:T-228/msg:16",
+    "label": "Comment on the Best build page \"Today’s best build\": Did you update the best build ? #16"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-07T02:15:15.791Z",
+  "updatedAt": "2026-10-07T06:22:52.433Z",
+  "rev": 69,
+  "assignees": [
+    "arch-compositor-morph"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-07T02:15:15.791Z",
+      "by": "user",
+      "text": "Catch up this, do you still try it yet on the test lane ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-07T02:15:38.437Z",
+      "by": "lead",
+      "text": "Not on the real phone yet: the automatic heat tool is built and passes all 2420 tests on a fake phone; its first real run is the next phone test, at about 02:50Z.\n| Step | State |\n| Restart tool built and landed (main ce6f1f62) | done 01:57Z |\n| Tests on a fake phone | 2420 of 2420 pass |\n| First real use: robot-swipe test (P-158) | next, about 02:50Z |\n- Why not now: v11's iPhone check is mid-run with your Xcode setting; mixing the two inside one test would spoil it.\n- I will post here when the first real run has turned Serious on by itself, or if it fails.\nWhat you need to do: nothing; no Xcode steps for the next test."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-07T03:12:52.653Z",
+      "by": "lead",
+      "text": "Yes, first real run: our tool now holds the Serious setting on the iPhone, and the robot-swipe test restarted on it at 03:10Z with no Xcode step from you.\n| Check | Result |\n|---|---|\n| Who holds Serious | our tool (since 03:09:40Z) |\n| First heat check | Serious at 36.2 C, pass |\n| Counted runs lost | none (restart was before them) |\n- One rough edge: the tool first left your old Xcode setting in place, and its clear command did not end it; the agent took it over by hand.\n- A toolsmith now makes the tool take over or report a leftover Xcode setting by itself, and label who holds it (incident I-233).\nWhat you need to do: nothing; leave the iPhone plugged in and untouched."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-07T03:58:04.159Z",
+      "by": "lead",
+      "text": "The robot-swipe test finished, with the iPhone held at Serious heat by our tool: no clear answer on big stutters (v11 neither better nor worse).\n| Frames while the finger is down, as menu steps change | Old build (C) | v11 |\n|---|---|---|\n| Slower than 50 ms (big stutter) | 0 in 3 runs | 1 frame in 1 of 4 runs |\n| 34-50 ms (small hitch) | 0-2 per run | 5-7 per run |\n- The tool kept Serious on its own for about 45 minutes; no Xcode step was needed.\n- The last run stopped when the phone got truly hot (Critical, battery 42 °C) from back-to-back swipes, not from the tool. That run is dropped; 3 vs 4 runs are enough to read.\n- In these few runs v11 shows more small hitches under the finger (our data only, not proven). The next v11 fix (the slower first open) checks this too.\nWhat you need to do: nothing; the iPhone is free."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-07T04:00:17.243Z",
+      "by": "user",
+      "text": "is arch-compositor-morph will help to improve ?"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-07T04:00:41.445Z",
+      "by": "lead",
+      "text": "Yes. arch-compositor-morph (the agent that built the GPU end-of-page menu) owns the fix for these small hitches in v11.\n- Likely cause, from the v11 integrator's Chrome trace: on the frames where a menu step changes, v11 still rebuilds part of the menu in script, then forces a style and layout pass. That also makes the first open slower.\n- The fix (\"c2\"): prepare that work ahead of time, at idle, so the step frames only move layers on the GPU.\n- Its check: the 34-50 ms count from this test must drop toward the old build's 0-2 per run, with no new big stutters.\n| Step | Who | When (UTC) |\n|---|---|---|\n| Finish the Join button revision (PR-032 rev 3) | arch-compositor-morph | about 04:41 |\n| Build c2, check it in Chrome and the Simulator | arch-compositor-morph, with the v11 integrator | after that |\n| Short iPhone check of first open and hitches | arch-compositor-morph | when the Mac checks pass |\nIf c2 passes, v11 plus c2 becomes the new best build and I update the best-builds list in T-228.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-07T04:03:20.929Z",
+      "by": "lead",
+      "text": "A correction to my #6: the slow menu frame is not only the first open. It happens every time the menu opens from fully closed.\n| Menu opens from closed, finger down (P-158) | Old build (C) | v11 |\n|---|---|---|\n| Frames over 34 ms | 3 of 30 | 23 of 38 |\n| Typical frame time | 20 ms | 38 ms |\n| Forced layout inside that frame | 1.5 ms | 15.7 ms |\n- So the small hitches you'd feel are on each open, and the forced layout is most of it (our data only, from the v11 integrator's read of P-158).\n- The fix c2 now aims first at that layout, then at the script work. Same owner and same plan as in #6.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-07T04:31:41.929Z",
+      "by": "arch-compositor-morph",
+      "text": "The small-hitch fix (c2) is built, and its first Chrome check found less work in the frame where the menu opens.\n| Opening frame, Chrome slowed 6x to phone speed | v11 | v11 + c2 |\n|---|---|---|\n| First open after load | 118 ms | 51 ms |\n| A later open from closed | 115 ms | 48 ms |\n- What changed: the opening frame no longer re-checks the nav's dark/light colour mid-frame (that forced an extra layout pass); the check moves to the next frame.\n- It also stops rebuilding the menu's animation rules on every open.\n- Looks the same: the nav's dark/light, open and Join-button states matched v11 in every one of 237 frames.\n- These Chrome numbers show where work went, not phone smoothness. Next: iPhone Simulator counts (running now), then a short iPhone check.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-07T05:51:10.545Z",
+      "by": "arch-compositor-morph",
+      "text": "The new build (v12) is still slower than the control each time the menu starts opening from closed.\n\nThe robot iPhone test (same fast short swipes as before, warm phone) compared today's control (C) with v12. v12 is v11 plus the People slide, the menu-open fix and the Join button change.\n\n| | C | v12 | v11 (earlier test) |\n|---|---|---|---|\n| first menu open, slow frame | 29.5 ms | 38.5 ms | 45.5 ms |\n| each open from closed, typical frame | 18.5 ms | 35.5 ms | 38 ms |\n| opens from closed slower than 34 ms | 10 % | 59 % | 61 % |\n| frames over 50 ms on these opens | 0 | 0 | 0 |\n\n- Result: fail. v12 is not as smooth as C when the menu starts opening.\n- The menu-open fix made the first open about 7 ms faster, but each later open from closed stayed as slow as v11.\n- Cause found in the phone's own recording: Safari still has to re-measure the page in the middle of the opening frame (about 13-15 ms). The part I moved was not the one Safari waits on.\n- Chrome on the Mac did not show this, so the next check runs on the iPhone Simulator, which uses Safari's engine.\n- The lead decides what this means for the best-builds list; I'm looking for the read that makes Safari re-measure.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-07T05:52:21.081Z",
+      "by": "user",
+      "text": "can you start C server for me to do manual testing ?"
+    },
+    {
+      "n": 11,
+      "at": "2026-10-07T05:52:59.612Z",
+      "by": "arch-compositor-morph",
+      "text": "The control build C is running for your manual test.\n\n| build | link |\n|---|---|\n| C (today's control, v9-final rev 7d) | http://lan:5317/ |\n\n- It is the same file the robot test used as C, served with the same slow-network delay (150 ms) as the tests.\n- It stays up until you say you are done; say so if you also want v12 next to it.\n- I'm not using the iPhone now. If it is free, it is yours; the lead can give you the phone slot.\n\nWhat you need to do: open the link on the iPhone and try it; reply here when you are done."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-07T05:53:18.957Z",
+      "by": "user",
+      "text": "queue me, iphone",
+      "forLead": true
+    },
+    {
+      "n": 13,
+      "at": "2026-10-07T05:53:39.631Z",
+      "by": "lead",
+      "text": "Done: the C server is up, and the iPhone is yours now (until 06:08Z, or until you say done); I also started v12 next to it.\n| Build | Link on the iPhone |\n|---|---|\n| C: today's best (v9-final rev 7d) | http://lan:5959/ |\n| v12: v11 + People slide + menu-open fix + Join button change | http://lan:5960/ |\n- Both serve with the same 150 ms network delay as our tests; the phone has no heat setting on and is cooling (about 40 °C).\n- Nothing else waits for the phone; the next fix (c3) is on the Mac first.\nWhat you need to do: test on the iPhone, then reply \"done\" here (or just stop; your slot ends by itself at 06:08Z)."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-07T05:53:49.251Z",
+      "by": "arch-compositor-morph",
+      "text": "The lead gives you the iPhone slot; I've asked them to. I'm not using the phone now.\n\nWhat you need to do: wait for the lead's go, then open http://lan:5317/ on the iPhone."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-07T05:53:59.970Z",
+      "by": "lead",
+      "text": "One correction to #13: two C links were up at once (same files); I stopped mine, so use these two.\n| Build | Link on the iPhone |\n|---|---|\n| C: today's best (v9-final rev 7d) | http://lan:5317/ |\n| v12: next build | http://lan:5960/ |\n- The phone slot is yours until 06:08Z, or until you say done.\nWhat you need to do: test on the iPhone, then reply \"done\" here."
+    },
+    {
+      "n": 16,
+      "at": "2026-10-07T05:56:13.028Z",
+      "by": "user",
+      "text": "Can you list the probe that you found more detail.",
+      "later": [
+        "arch-compositor-morph"
+      ]
+    },
+    {
+      "n": 17,
+      "at": "2026-10-07T05:56:42.889Z",
+      "by": "lead",
+      "text": "The probe read Safari's own timeline from the robot test: for every frame where the menu opens from closed, it split the frame into its work.\n| Typical open-from-closed frame (ms) | C, today's best (43 opens) | v12 (43 opens) |\n|---|---|---|\n| Whole frame | 19 | 35 |\n| Script in the scroll loop (iE) | 2.1 | 14.2 |\n| Forced layout inside that script | 0.4 | 13.0 |\n| Style recalculation | 2.1 | 4.5 |\n| Compositing (GPU side) | 7.3 | 13.5 |\n- Opens that pay the big forced layout: v12 24 of 43, C 5 of 43; so C has it too, but rarely.\n- The fix c2 removed script around the layout (v11 20.7 ms → v12 14.2), but not the layout itself; some other read in the scroll loop triggers it.\n- Chrome never showed it, so it is Safari-only or only under a real finger (our data only, not proven).\n- Suspects, being traced now in the Simulator frame by frame: the nav colour check, a page-height re-read when the toolbar moves, and the menu's setup reads.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 18,
+      "at": "2026-10-07T05:59:23.209Z",
+      "by": "user",
+      "text": "my feeling the v12 is smoother but it has a some blinking. can you ask me do the my gesture testing and ask me on your steps for probe ?"
+    },
+    {
+      "n": 19,
+      "at": "2026-10-07T06:00:18.336Z",
+      "by": "arch-compositor-morph",
+      "text": "Thanks, that helps. I can record your swipes on the phone and trace the blinking frame by frame.\n\n- First, where does it blink? For example the menu at the end of the page, the Join button, the menu's text or pictures, or the People title higher up.\n- And when: while your finger is moving, after you let go, or when the menu opens or closes?\n- I'm asking the lead for a recorded phone step (you swipe, the phone records its frames and the screen); it will show up in your steps.\n\nWhat you need to do: tell me where and when it blinks.",
+      "ask": true
+    },
+    {
+      "n": 20,
+      "at": "2026-10-07T06:01:19.120Z",
+      "by": "user",
+      "text": "i'll produce for you, ask me on the your steps page. now."
+    },
+    {
+      "n": 21,
+      "at": "2026-10-07T06:06:06.078Z",
+      "by": "lead",
+      "text": "Got it, thanks: your recorded step (C-103, the swipes on v12 and then on C) is done and saved.\n- Your note is noted too: with that kind of swipe, C felt laggier than v12.\n- arch-compositor-morph is now reading the recording frame by frame to find what blinks in v12; the answer comes in this thread.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 22,
+      "at": "2026-10-07T06:12:23.504Z",
+      "by": "user",
+      "text": "my instinct, you may to optimize the javascript code, html and css with nearly the same visual. i think this part may contain the legacy un-optimize code."
+    },
+    {
+      "n": 23,
+      "at": "2026-10-07T06:13:26.648Z",
+      "by": "lead",
+      "text": "Good instinct, and it fits what we see: v12 adds the new GPU menu on top of the original end-of-page code, and parts of the old code likely still run beside it.\n- Started now: a read-only code audit (map-end-legacy) of v12's end-of-page JS, HTML and CSS: what runs every frame, which old code the GPU menu made redundant, and CSS that costs layout or paint.\n- It returns a ranked list: saving per frame, and visual risk (identical, near-identical, or visible).\n- Identical ones go into the next fix after the usual Chrome and Simulator checks; near-identical or visible ones come to you as a proposal with Try-it pages, so you decide.\n- arch-compositor-morph keeps chasing the blink in parallel.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 24,
+      "at": "2026-10-07T06:13:36.190Z",
+      "by": "arch-compositor-morph",
+      "text": "Yes, that is the plan: same look, less work, and it starts with the code your swipes pointed at.\n\n- The legacy part we found: each time Safari's toolbar slides in or out, the menu-colour check throws away its saved section positions and re-measures the whole page on the next frame.\n- That re-measure costs 13-15 ms on the phone (22-30 ms in the Simulator), inside the frame where the menu opens. It explains most of the slow \"menu opens\" frames in v12 (our data only, not yet proven on other phones).\n- Next build (c3): near the end of the page, keep the old positions for one frame and re-measure right after it, outside the frame. Nothing changes on screen.\n- The same change for the whole page goes to the owner of the menu-colour code.\n- The blinking is still being traced; I will post what blinks and why in this thread.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 25,
+      "at": "2026-10-07T06:19:47.991Z",
+      "by": "lead",
+      "text": "The code audit you asked for is back: you were right, old end-of-page code still does extra work every frame beside the new GPU menu.\n| Top finds (from reading the code, not measured yet) | Look |\n|---|---|\n| The nav colour check runs twice per frame while the menu starts to open | same |\n| A section measures its own position every frame just to know \"visible or not\" | same |\n| A fade value is written every frame, even when it did not change | same |\n| About 13 page-element lookups repeated on every menu open and close | same |\n| Old-style values still written to 7 elements per step, though the GPU menu ignores them | nearly the same |\n| A block of CSS rules nothing uses any more | same |\n- The \"same look\" items go into the next fix (c3) with the toolbar fix, after Chrome and Simulator checks; \"nearly the same\" gets a look check first.\n- The old menu itself is already switched off on phones that support the GPU menu; it stays for other devices.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 26,
+      "at": "2026-10-07T06:22:52.270Z",
+      "by": "arch-compositor-morph",
+      "text": "Found the blink: in v12 the menu bar's frosted glass switches off the moment the menu starts to open, and back on when it closes.\n\n| | C (today's best) | v12 |\n|---|---|---|\n| Bar just after the menu starts opening | frosted, as at rest | almost see-through, only the logo, EN and Join visible |\n| Bar back at rest | frosted | frosted |\n\n- When: near the end of the page, each time your finger moves the page across the point where the menu starts to open. Your recording shows that switch every 0.1-0.4 s, so the glass flickers.\n- Cause: the new GPU menu fades the glass blur with the scroll, and Safari drops the blur when that fade starts.\n- Removing just that fade brings the glass back (Simulator test), so the cause is confirmed; the exact Safari reason is not proven yet.\n- Fix plan: keep the same blur values, but start the fade one frame later, or set it from the scroll code. I keep whichever matches C's glass pixel for pixel in the Simulator.\n- It goes into the next build (c3), together with the toolbar fix from my last message and the clean-ups from the code audit. Then one check on the iPhone, when the lead says.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 26,
+    "lead": 25,
+    "arch-compositor-morph": 26
+  },
+  "history": [
+    {
+      "at": "2026-10-07T04:00:41.762Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "arch-compositor-morph"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-07T06:19:47.991Z",
+    "arch-compositor-morph": "2026-10-07T06:22:52.270Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "T-236",
+  "title": "iPhone free for 10 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-07T11:50:18.914Z",
+  "updatedAt": "2026-10-07T11:57:19.549Z",
+  "rev": 3,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-07T11:50:18.914Z",
+      "by": "lead",
+      "text": "The iPhone has had no holder for 10 min (since 11:39Z; the lease of arch-compositor-morph ran out). The limit is 5 min.\nWaiting on the status board: end-morph (owner fix-end-morph; its next step names the phone (unmarked)).\nWhat unblocks it: the next of fix-end-morph takes it (node tools/lock.mjs acquire iphone --owner <you> ...).\nNo steward on duty (mgmt-devices is parked): the lead handles this thread (I-175).\nOne message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-07T11:51:36.845Z",
+      "by": "lead",
+      "text": "False alarm: the job waiting for the iPhone (the shimmer check P-162) may start only after its Mac and Simulator checks pass; I marked that on the board at 11:51Z.\n\n- Cause: fix-end-morph's board row named the phone as its next step without saying it was not ready yet.\n- The idle watch now shows no ready work, so the alarm closes by itself when the phone is taken.\n\nWhat you need to do: nothing; the phone is free if you want to try v14."
+    }
+  ],
+  "reads": {
+    "lead": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-07T11:57:19.549Z",
+      "who": "lead",
+      "action": "close",
+      "note": "taken by fix-end-morph"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-07T11:51:36.845Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

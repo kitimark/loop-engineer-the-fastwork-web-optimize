@@ -1,0 +1,150 @@
+{
+  "id": "T-100",
+  "title": "Frame audit research catch up",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T09:48:30.112Z",
+  "updatedAt": "2026-10-07T02:15:40.592Z",
+  "rev": 34,
+  "assignees": [
+    "mgmt-ops-10",
+    "fix-scroll-cb",
+    "de-countdown",
+    "fix-nav-morph",
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T09:48:30.112Z",
+      "by": "user",
+      "text": "Frame audit research catch up\nI'm not sure where's the thread of frame audit research.\n\nI'd like to catch up the progress.",
+      "forLead": true
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T09:51:05.531Z",
+      "by": "lead",
+      "text": "The frame audit is finished (done 05:30Z). It is in thread T-066, which was merged into the best-build talk, so it was hard to find. Here is the catch-up.\n\nWhat it found:\n- Your idea (compute only what reaches the screen) is right, and half of it is already in today's best build: at rest, the countdown's hidden animation used to run 60 frames a second, now 2-8.\n- The browser already batches style and layout once per frame; the real cost is script that reads the page layout in the middle of a frame.\n\nWhat it left, and what happens now:\n- 1. The top bar checks which section is under it on every scroll frame. Fix: remember section edges and only re-check when one is crossed. Goes to the top-bar agent once its current fix lands.\n- 2. Four scroll handlers keep running on phones for effects the phone hides. Fix: switch them off while the effect is off. A new agent starts on it now.\n- 3. Two countdown timers tick while no clock is on screen. Goes to the countdown agent, together with its \"hide while unseen\" work.\n- 4. The agents' typing text: visible, so it stays.\n\nFull write-up: research/design-engineering/frame-audit.md (section 5).\n\nWhat you need to do: nothing. Progress will be posted in this thread."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T09:53:29.735Z",
+      "by": "user",
+      "text": "What the priority of this ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T09:53:53.970Z",
+      "by": "mgmt-ops-10",
+      "text": "Medium priority. These three come after today's top three smoothness fixes (hero card, countdown, top-bar hitch). They still start now, because they don't need the phone much.\n- Item 2, phone scroll handlers that run for hidden effects: highest of the three. A new agent (fix-scroll-cb) starts on it now.\n- Item 3, countdown timers ticking with no clock on screen: next. It joins the countdown agent's \"hide while unseen\" work, which is under way.\n- Item 1, the top bar's per-frame section check: after the top-bar hitch fix (F3) lands, by the same agent (fix-nav-morph).\nAll three are \"does less work\" fixes: they cut wasted work, so each needs only its cost counts plus a short phone check.\nThe lead sets the order. Tell us here if you want one moved up.\nI'll post progress for each item in this thread.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T10:16:13.956Z",
+      "by": "mgmt-ops-10",
+      "text": "Item 1 (the top bar section check) has started. The fix is built; nothing is measured yet. (Posted for fix-nav-morph.)\n\n- What it does: the top bar remembers where each section starts and ends. It checks again which section it is over only near a section border, while a section animates, or when the page layout changes. Everywhere else it reuses its last answer.\n- What should change: in Chrome, about half of the page's per-frame rendering passes during a scroll should go away. Nothing on screen changes, by design.\n- Test plan, written before any data:\n  - count the rendering work per scroll frame in Chrome and in the iPhone Simulator, old build vs new;\n  - a built-in check compares the top bar's answer with a full check on every frame, in 5 page setups;\n  - then one short phone check that it is no worse.\n- Next: I read the plan, then the counts run. The phone isn't needed until the last step.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T10:18:41.646Z",
+      "by": "mgmt-desk-1",
+      "text": "Item 2 (phone scroll handlers that run for hidden effects) has started. Nothing is measured yet. (Posted for fix-scroll-cb.)\n\n- What it does: the page keeps all its scroll listeners. On phones, four side jobs run only while the effect they serve is near the screen; elsewhere they skip.\n- What stays the same: every visible change happens on the same frame as today.\n- Next: count the work of today's best build in Chrome (queued), then the same count with the change.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T10:31:00.499Z",
+      "by": "mgmt-desk-1",
+      "text": "Item 3 (countdown timers that tick while no clock is on screen): the fix is built; first counts look good. (Posted for de-countdown.)\n\n- What it does: each clock stops its 1-second timer while none of its digits can be seen (off screen or fully transparent), and restarts in step.\n- When a clock comes back, its first frame already shows the right time; nothing rolls through the skipped seconds.\n- Screen readers: the hidden clock's label still updates once a minute and on focus.\n\n| check | before | after |\n|---|---|---|\n| hidden digit writes per 4 s | 44-66 | 0 |\n\n- Next: pixel checks, the reduced-motion check and a work count in Chrome, then the same in the iPhone Simulator.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T10:48:36.718Z",
+      "by": "mgmt-desk-1",
+      "text": "Item 2 (phone scroll jobs for hidden effects): built, and its test plan is written before any data. (Posted for fix-scroll-cb.)\n\n- On phones, four scroll jobs (the commission, future, platform and profile sections) now run only near the points where their effect switches on or off.\n- Test plan, counts only, in Chrome and the iPhone Simulator, old vs new: scroll-job work per frame, layout reads per frame, and a frame-by-frame check that the page looks and behaves the same.\n- Next: the ops agent reads the plan, then the counts run.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T11:07:50.885Z",
+      "by": "mgmt-desk-1",
+      "text": "Item 3 (countdown timers while no clock is on screen): built, and it passes the Chrome look checks. Its work counts are next. (Posted for de-countdown.)\n\n| check (Chrome, looks only) | result |\n|---|---|\n| frozen frames with a wrong digit | 0 of 428 |\n| delay when a clock comes back | at most 1 s, same as today |\n| page writes from an off-screen clock, per 4 s | 44-66 -> 0 (fewer is better) |\n\n- One tiny open point: a 1-of-255 shade difference in the end-panel background in some frames. The original shows it too, less often; a repeat check is queued.\n- Next: work counts, the iPhone Simulator check, then the request to land.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T12:05:05.291Z",
+      "by": "de-countdown",
+      "text": "(item 3) Countdown pause: finished and handed to the lead for landing.\n- What changed: the two 1 s countdown timers stop while neither clock can be seen. A clock that comes back shows the right time in its first frame; it does not roll through the skipped seconds.\n- Looks: identical to today on the iPhone Simulator, with normal and reduced motion. In Chrome the only differences are ones today's page also shows against itself (a 1-of-255 shade).\n- Saving, per second with the page at rest:\n\n| where | timer fires | page frames |\n|---|---|---|\n| past the hero | 4 -> 2 | 8 -> 6 |\n| end of page | 2 -> 0 | 60 -> 60 (the page draws for other reasons) |\n| top | 5 -> 4 | about the same |\n\n- One non-visual difference: a screen reader's label on an off-screen clock refreshes once a minute and on focus, not every second.\n- Nothing for you to do."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T13:44:11.529Z",
+      "by": "mgmt-desk-1",
+      "text": "Item 2 (phone scroll jobs for hidden effects): it does clearly less work, but one of its pass rules was too strict, so the plan gets a revision before the phone check. (Posted for fix-scroll-cb.)\n\n| per scroll frame, phone width | change (less is better) |\n|---|---|\n| extra animation-frame requests | 74-77 % fewer |\n| layout reads | about 60 % fewer |\n| desktop | unchanged |\n\n- Why it can't land yet: drawing work rose slightly (+0.07-0.09 per frame, limit +0.05), and 2 single page loads differed. A first look points to the page's own animations (countdown, hero, orbit), not the fix; not proven yet.\n- Next: a revised plan that allows for that animation noise, read by the ops agent, then a short phone check that it is no worse.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 11,
+    "lead": 3,
+    "mgmt-ops-10": 5,
+    "fix-nav-morph": 3,
+    "mgmt-desk-1": 11,
+    "fix-scroll-cb": 3,
+    "de-countdown": 10,
+    "mgmt-desk-2": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-04T09:48:30.112Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T09:51:05.608Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    },
+    {
+      "at": "2026-10-04T10:18:15.450Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-scroll-cb,de-countdown,fix-nav-morph"
+    },
+    {
+      "at": "2026-10-04T10:18:32.911Z",
+      "who": "mgmt-desk-1",
+      "action": "assign",
+      "note": "mgmt-desk-1"
+    },
+    {
+      "at": "2026-10-04T14:03:23.534Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    },
+    {
+      "at": "2026-10-04T14:03:39.205Z",
+      "who": "lead",
+      "action": "unassign",
+      "note": "lead,mgmt-desk-1"
+    },
+    {
+      "at": "2026-10-07T02:15:40.592Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T11:14:49.594Z",
+    "mgmt-ops-10": "2026-10-04T10:16:13.956Z",
+    "fix-nav-morph": "2026-10-04T10:18:16.745Z",
+    "mgmt-desk-1": "2026-10-04T13:44:11.529Z",
+    "fix-scroll-cb": "2026-10-04T10:21:40.835Z",
+    "de-countdown": "2026-10-04T12:05:05.291Z",
+    "mgmt-desk-2": "2026-10-04T14:03:25.865Z"
+  },
+  "histSeen": {
+    "lead": 4
+  }
+}

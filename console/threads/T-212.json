@@ -1,0 +1,135 @@
+{
+  "id": "T-212",
+  "title": "Private webs for fastwork.com",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-06T06:49:59.630Z",
+  "updatedAt": "2026-10-06T08:07:34.154Z",
+  "rev": 44,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-06T06:49:59.630Z",
+      "by": "user",
+      "text": "I have an idea, we'll writing article and put the images of result. that i'll not break the law right ? \n\nso, i'd like to send the email to fastwork.com for ask permission for publish the website and source code for educational. \n\nand i'll put the link that deploy on vercel and lock with single password hash that contain in the vercel server no need database. and add this website to attachment. \n\ni'd like to ask you for research can we to the website likes this ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-06T06:51:04.154Z",
+      "by": "lead",
+      "text": "Asking Fastwork for permission first is the right move. A researcher is now checking the legal side and the Vercel setup with sources; I'll reply here with its findings in about 20 min.\n- Law: I'm not a lawyer. Thai and US copyright law both allow some use for study, criticism and review, but that is what the researcher is checking, with citations. Until then, treat it as unconfirmed.\n- Lower-risk article: our own result images, charts and short clips, a credit to Fastwork, no logo use, and a note that we're not affiliated.\n- Higher-risk: publishing the whole site copy or its source code. That is Fastwork's property, so it needs their written OK.\n- Vercel without a database is possible in principle: a small server check of one password against a hash. The researcher is confirming which Vercel plan allows it.\n- Our standing rule: nothing from this project goes online (no push, no deploy) until Fastwork says yes in writing and you then type \"yes, prepare the public source copy\".\n- I can draft the email for you to send yourself. We never send email for you.\nWhat you need to do: nothing now. Wait for the research reply here, then decide on the email."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-06T06:58:17.652Z",
+      "by": "lead",
+      "text": "The article with our result images and short clips looks allowed; the website copy needs Fastwork's written OK first.\n- This is research from the law texts, not legal advice. Thai Copyright Act sections 32-33 allow non-profit study and review with credit, and quoting \"in part\" with credit.\n- Code (section 35): study or review is allowed only if not for profit. A whole working site copy goes beyond quoting \"in part\", so ask first, as you planned.\n- Fastwork's terms (buyer and seller): no clause found on copying, scraping or reverse engineering. The operator is named as Changesy Co., Ltd., so confirm whom to address.\n- Vercel: its built-in password lock needs the Pro plan ($20/month per project). The free (Hobby) plan works with a small middleware check of one password hash.\n- Free-plan rule: personal, non-commercial use only. An unpaid study demo fits.\n- Demo must-haves:\n  - cover every path, including scripts and images;\n  - add a \"noindex\" header so search engines skip it;\n  - strip the analytics scripts (Amplitude, Hotjar, Google Tag Manager);\n  - drop or ask about Fastwork's font and logo.\n- Email contents (Columbia University guidance):\n  - who you are, and exactly what you'd use;\n  - non-commercial and educational, with credit and \"not affiliated\";\n  - password-only demo, taken down on request;\n  - ask for a written reply saying what is allowed.\n- Not settled: whether a password-only link sent to one company counts as \"public\" under Thai law.\nWhat you need to do: tell me \"draft the email\" if you want it. You send it yourself; we publish nothing until Fastwork says yes in writing.",
+      "ask": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-06T07:01:12.592Z",
+      "by": "user",
+      "text": "I'd like to do the private website with single password hash first. i'll add in the email attachment for they can review the real result. (the optimize website could remove the script that contain the tracking and any observation)"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-06T07:01:49.008Z",
+      "by": "lead",
+      "text": "Yes: I'm starting the private site now, built and tested on this Mac only; putting it online stays your step.\n- Build: the v10 smooth version, with every tracking script removed (Amplitude, Hotjar, Google Tag Manager, Cloudflare Insights).\n- Lock: one password hash in a Vercel setting, checked on every file, plus a \"noindex\" header so search engines skip it.\n- Password: you pick it and run a small script that prints only the hash; we never see or store the password.\n- Test: run locally first. Without the password every file must be refused; with it, the page must match v10.\n- Online: our rule needs you to type \"yes, prepare the public source copy\" before any upload. You then deploy from your own Vercel account.\n- Risk to weigh: the research could not settle whether a password link sent to Fastwork counts as \"public\". Sending clips first and the link after their reply is the safer order.\n- Timing: the build is ready in about 1 h. If v10 changes before it lands, I rebuild it.\nWhat you need to do: nothing now. When the build is ready, I'll post the steps here."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-06T07:26:29.398Z",
+      "by": "lead",
+      "text": "The private site is built and tested on this Mac; nothing is online.\n- Tracking removed: Google Tag Manager (which loads Analytics, Amplitude and Hotjar) and Cloudflare's beacon. A scan finds no tracking left.\n- Lock: the browser's own password box on every file; any user name works, only the password counts. No password: 67 of 67 lock tests are refused.\n- Look: same layout and height as v10 at 6 scroll points; no errors from the lock or from removed scripts.\n- Unproven until the first upload: one Vercel detail (passing the request on to the file). The guide has the check and a fallback.\n- My defaults, unless you say otherwise:\n  - built from the copy we measured;\n  - the waitlist form stays dead (it sends nothing);\n  - the browser's password box instead of a login page;\n  - a project name without \"fastwork\";\n  - the password goes to Fastwork in a separate message;\n  - the site is deleted after their reply.\n- The guide (research/private-demo/README.md) lists your steps: pick a password, run hash-password.mjs, create the Vercel project, set 2 settings, upload, check.\nWhat you need to do: before any upload, type \"yes, prepare the public source copy\" here. Then I'll post the exact steps for you to run.",
+      "ask": true
+    },
+    {
+      "n": 7,
+      "at": "2026-10-06T07:36:29.421Z",
+      "by": "user",
+      "text": "Can you start the local server and ask me for testing."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-06T07:37:37.157Z",
+      "by": "lead",
+      "text": "The demo server is running on this Mac, and your test step is on the console (C-080).\n- Open http://localhost:5731/ in a Mac browser. The iPhone is mid-test, so don't use it.\n- Without the password you should see only a sign-in box. Any user name works with the test password shown in C-080.\n- The server stops by itself after 2 hours, and the password changes on every restart.\nWhat you need to do: run C-080, then press Done with any notes."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-06T07:38:36.109Z",
+      "by": "lead",
+      "text": "Thanks, the local test passed (C-080: looks good).\n- v10 may still change before it lands: the page-load fix (I-219) and fix B's first-open fix. If it does, I rebuild the demo from the final v10 and you test once more.\n- The local server keeps running until about 09:37Z in case you want another look.\nWhat you need to do: when you want it online, type \"yes, prepare the public source copy\" here. Then I post your upload steps."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-06T07:39:33.876Z",
+      "by": "user",
+      "text": "What's the next step for deploy on vercel ?"
+    },
+    {
+      "n": 11,
+      "at": "2026-10-06T07:40:02.589Z",
+      "by": "lead",
+      "text": "The next step is your one-line OK: type \"yes, prepare the public source copy\". Then I post the exact commands, and you run them from your own Vercel account.\n- Why the OK first: our standing rule says nothing from this project leaves the Mac without it. The upload happens under your name.\n- Then you run 8 steps (about 15 min):\n  - pick a strong password and run the hash script, which prints 2 values;\n  - create a Vercel project from the demo folder only (never from git);\n  - add the 2 values as Sensitive settings and turn off Vercel's own login wall;\n  - deploy, then check that the page asks for the password and shows v10.\n- Before the upload I copy the demo folder outside this project, so the upload can't include anything else.\n- After the upload: the link and the password go to Fastwork in separate messages, and you delete the project when they reply.\nWhat you need to do: type \"yes, prepare the public source copy\" here when you're ready.",
+      "ask": true
+    },
+    {
+      "n": 12,
+      "at": "2026-10-06T07:43:05.148Z",
+      "by": "user",
+      "text": "no, need to prepare the source at this time. i'd like waiting the v10 done. \ni just would like to know how to deploy for information"
+    },
+    {
+      "n": 13,
+      "at": "2026-10-06T07:43:22.069Z",
+      "by": "lead",
+      "text": "Understood: nothing gets prepared now; we wait for v10. For your information, the deploy works like this:\n- Password: pick 16+ random characters, then run \"node hash-password.mjs\" in the demo folder. It asks for the password without showing it and prints 2 values (a salt and a hash).\n- Project: in a terminal in the demo folder, run \"npx vercel@latest link\" to create a new project under your account, never from git.\n- Settings: add the 2 values as Sensitive environment variables (DEMO_PASS_SALT, DEMO_PASS_SHA256) in Project > Settings.\n- Login wall: turn OFF \"Vercel Authentication\" under Deployment Protection, so Fastwork sees our password box, not a Vercel login.\n- Upload: run \"npx vercel@latest deploy --prod\".\n- Check: the link must ask for the password; with it, the page must look like v10.\n- Afterwards: send the link and the password in separate messages; delete the project after Fastwork replies.\n- The free Hobby plan is enough (non-commercial use).\nWhat you need to do: nothing now. When v10 is done, I rebuild the demo and ask you to test it again."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-06T07:44:16.494Z",
+      "by": "user",
+      "text": "Can we do the vercel config on this project ? i'd not create new project."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-06T07:44:48.679Z",
+      "by": "lead",
+      "text": "Yes, both readings are possible. Which one do you mean: (a) reuse a Vercel project you already have, or (b) deploy straight from this repo folder?\n- (a) An existing Vercel project: link the demo folder to it (\"vercel link\", then choose that project). The upload replaces what that project serves now, and its password and login-wall settings apply.\n- (b) From this repo: the Vercel config already lives here (research/private-demo/). Deploying from the repo root needs a strict allow-list, so only the demo files go up. Without it, the upload would also send site/, fixes/ and out/.\n- Never from git in either case: our rule forbids pushing this repo to GitHub, so the upload is always the Vercel command, never a git connection.\n- My recommendation: (a) if you have a spare project, or (b) with an allow-list. With (b), I'd run a dry upload list first and show it to you before any real upload.\nWhat you need to do: reply \"a\" or \"b\". Nothing happens until v10 is done and you type the public-copy phrase.",
+      "ask": true
+    },
+    {
+      "n": 16,
+      "at": "2026-10-06T07:45:47.518Z",
+      "by": "user",
+      "text": "b"
+    },
+    {
+      "n": 17,
+      "at": "2026-10-06T07:46:11.625Z",
+      "by": "lead",
+      "text": "Noted: (b), deploy straight from this repo folder with the Vercel command, never through git. I'll set it up after v10 is done, as you asked.\n- Root files: a Vercel config and the password check at the repo root. The demo files go in one gitignored folder.\n- Allow-list: a Vercel ignore file that blocks everything except those few files, so site/, fixes/, out/ and our logs never upload.\n- Private ids: the \".vercel\" folder that \"vercel link\" creates holds your account and project ids, so it gets added to .gitignore.\n- Before the real upload: a script prints the exact upload list, you check it, and only then you deploy.\nWhat you need to do: nothing now. When v10 is done, I post the upload list for your check, and then the phrase decides."
+    },
+    {
+      "n": 18,
+      "at": "2026-10-06T08:07:11.690Z",
+      "by": "lead",
+      "text": "Correction: the local demo server stopped at 08:07Z, not 09:37Z as I said. My background job had a 30-min limit.\n- Nothing is lost; the demo files are unchanged. I'll start it again whenever you want another look (it also frees your browser and the Mac for the timing checks).\nWhat you need to do: nothing; just ask here if you want the demo back."
+    }
+  ],
+  "reads": {
+    "user": 18,
+    "lead": 18
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-06T08:07:11.690Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

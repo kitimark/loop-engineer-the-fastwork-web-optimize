@@ -1,0 +1,235 @@
+{
+  "id": "C-069",
+  "by": "fix-end-bg",
+  "topic": "end-bg",
+  "kind": "swipe-pair",
+  "title": "End of page: which page follows your finger better?",
+  "instructions": "On each page, swipe down to the very bottom (where the menu opens) and back up a little, a few times, as you normally would. One page has the background pictures switched off, so it looks different: judge only how well each follows your finger, or say \"same\".",
+  "url": "http://192.168.0.57:64420/",
+  "showUrl": false,
+  "meta": {
+    "ticket": "end-bg swipe pair after P-137",
+    "key": {
+      "1": "C",
+      "2": "V"
+    },
+    "arms": {
+      "C": "v9-final + 7d JS 1b2eecc66011 CSS e1359ab9994a",
+      "V": "C + nobg.css JS 1b2eecc66011 CSS 38679ce9de15"
+    },
+    "by": "fix-end-bg",
+    "blind": "order only (V shows no pictures)"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ],
+    "scale": {
+      "min": 1,
+      "max": 5,
+      "label": "How different did they feel?"
+    }
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.57:64420/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-05T12:53:41.735Z",
+        "ready": "2026-10-05T12:53:54.703Z",
+        "started": "2026-10-05T12:53:56.979Z",
+        "recording": "2026-10-05T12:53:59.498Z",
+        "done": "2026-10-05T12:54:26.628Z"
+      },
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-05T12:48:59.209Z",
+            "ready": "2026-10-05T12:49:11.961Z",
+            "started": "2026-10-05T12:52:55.826Z",
+            "recording": "2026-10-05T12:52:58.364Z",
+            "done": "2026-10-05T12:53:40.585Z"
+          },
+          "ended": "redo",
+          "by": "fix-end-bg",
+          "endedAt": "2026-10-05T12:53:41.532Z"
+        }
+      ],
+      "attempt": 2
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.57:64425/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-05T12:55:02.846Z",
+        "ready": "2026-10-05T12:55:14.134Z",
+        "started": "2026-10-05T12:55:17.796Z",
+        "recording": "2026-10-05T12:55:20.043Z",
+        "done": "2026-10-05T12:55:50.491Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-05T12:48:58.488Z",
+  "queuedAt": "2026-10-05T12:48:58.488Z",
+  "updatedAt": "2026-10-05T12:55:54.551Z",
+  "rev": 18,
+  "history": [
+    {
+      "at": "2026-10-05T12:48:58.488Z",
+      "who": "fix-end-bg",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-05T12:48:59.209Z",
+      "who": "fix-end-bg",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-05T12:49:11.961Z",
+      "who": "fix-end-bg",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-05T12:52:55.826Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-05T12:52:58.364Z",
+      "who": "fix-end-bg",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-05T12:53:40.585Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-05T12:53:41.532Z",
+      "who": "fix-end-bg",
+      "action": "redo",
+      "part": 1,
+      "epoch": 1,
+      "attempts": [
+        2,
+        1
+      ],
+      "note": "That swipe was not recorded. Please swipe this page again."
+    },
+    {
+      "at": "2026-10-05T12:53:41.735Z",
+      "who": "fix-end-bg",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-05T12:53:54.703Z",
+      "who": "fix-end-bg",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-05T12:53:56.979Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-05T12:53:59.498Z",
+      "who": "fix-end-bg",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-05T12:54:26.628Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-05T12:55:02.846Z",
+      "who": "fix-end-bg",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-05T12:55:14.134Z",
+      "who": "fix-end-bg",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-05T12:55:17.796Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-05T12:55:20.043Z",
+      "who": "fix-end-bg",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-05T12:55:50.491Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-05T12:55:54.551Z",
+      "who": "user",
+      "action": "answer",
+      "value": "2"
+    }
+  ],
+  "queueSeq": 28,
+  "startedAt": "2026-10-05T12:52:55.826Z",
+  "epoch": 1,
+  "result": {
+    "value": "2",
+    "scale": 3,
+    "at": "2026-10-05T12:55:54.551Z"
+  }
+}

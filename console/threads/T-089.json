@@ -1,0 +1,76 @@
+{
+  "id": "T-089",
+  "title": "Why threads button of top menu still display 1 ?",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T08:14:01.738Z",
+  "updatedAt": "2026-10-04T13:41:00.595Z",
+  "rev": 14,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T08:14:01.738Z",
+      "by": "user",
+      "text": "Why threads button of top menu still display 1 ? i try to find my unseen thread, there have no one unseen.",
+      "forLead": true
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T08:14:50.719Z",
+      "by": "mgmt-ops-10",
+      "text": "The 1 is T-081, a closed thread you haven't opened.\n- T-081 was an automatic phone-idle alarm from 06:48 UTC. It closed itself at 07:10 UTC while 2 messages in it were still unread.\n- The badge counts unread messages in closed threads too, but the Threads page lists closed threads at the bottom, so it is easy to miss.\n- Open T-081 once (scroll down to the closed threads) and the 1 goes away. Nothing in it needs you now: the phone test it was about is done.\n- I've asked the lead to have the badge skip closed threads, or show where the unread one is.\nWhat you need to do: nothing, or open T-081 to clear the badge."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T08:14:50.878Z",
+      "by": "lead",
+      "text": "It's a bug: the 1 is a closed thread, T-081, that still has 2 replies you haven't opened.\n- T-081 was an automatic 'phone unused' alarm from 06:48Z. It was closed at 07:10Z, so it sits at the bottom of the list, among the closed threads.\n- The counter still counts unread replies in closed threads. That is wrong: it should only count threads you can act on.\n- Fix: the agent building the thread merge tool (ts-threads) adds 'closed threads don't count' to its change. I'll tell you here when it is live.\nWhat you need to do: nothing. If you want the 1 gone now, open T-081 at the bottom of the Threads list."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T08:50:44.677Z",
+      "by": "user",
+      "text": "Update, it stuck on 2 already. i was see no thread is unseen."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T08:51:39.833Z",
+      "by": "user",
+      "text": "I found the issue, the threads are already closed from you mark duplicated and send the new reply on the closed thread. so i didn't see them."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T08:55:05.389Z",
+      "by": "mgmt-ops-10",
+      "text": "You're right, and the badge is 0 now (checked 08:53 UTC).\n- Cause: when I merged duplicate threads at 07:55 UTC, some had replies you hadn't opened yet. Closing them moved those replies to the bottom of the list, so the badge counted them but you couldn't find them.\n- No agent has written in a closed thread since then (I checked every closed thread).\n- The fix is already being built by the thread toolsmith (ts-threads): closed threads stop counting, and a closed thread shows 'Merged into T-xxx' with the related threads listed on the kept one.\n- Until it is live, I won't close a thread that has replies you haven't read.\n- The lead will say here when it is live.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 6,
+    "mgmt-ops-10": 6,
+    "lead": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-04T08:14:01.738Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T13:41:00.595Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T08:55:05.389Z",
+    "lead": "2026-10-04T11:14:49.592Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

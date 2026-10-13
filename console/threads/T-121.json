@@ -1,0 +1,65 @@
+{
+  "id": "T-121",
+  "title": "iPhone held by user-try, unused for 5 min while 2 jobs wait",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T13:13:16.473Z",
+  "updatedAt": "2026-10-04T13:18:37.757Z",
+  "rev": 9,
+  "assignees": [
+    "user-try",
+    "fix-toolbar-resize",
+    "fix-hero-exit-threaded"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T13:13:16.473Z",
+      "by": "lead",
+      "text": "user-try has held the iPhone lease for 5 min without a phone run (iphone.mjs run, scroll, record or gesture; since 13:07Z, lease taken by user-try). The limit is 5 min.\nQueued for it: fix-toolbar-resize.\nWaiting on the status board: hero-exit-threaded (owner fix-hero-exit-threaded; its wait names the phone).\nuser-try: run your phone part now, or release the lease (node tools/lock.mjs release iphone --owner user-try) so the next one can start, or say here why it waits.\nOne message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T13:13:58.492Z",
+      "by": "lead",
+      "text": "Not a problem: this is your own hand test of PR-018 (T-120), so no robot runs are expected while you hold the phone. Ignore this alert; I'm fixing the alarm so it skips your own phone time."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T13:18:14.775Z",
+      "by": "user",
+      "text": "done."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T13:18:32.629Z",
+      "by": "lead",
+      "text": "Thanks, got it: the phone goes back to the robot tests now. Your PR-018 choice goes on the Proposals page whenever you're ready."
+    }
+  ],
+  "reads": {
+    "lead": 4,
+    "user": 4,
+    "fix-hero-exit-threaded": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-04T13:13:16.473Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "user-try,fix-toolbar-resize,fix-hero-exit-threaded"
+    },
+    {
+      "at": "2026-10-04T13:18:37.757Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T13:18:32.629Z",
+    "fix-hero-exit-threaded": "2026-10-04T13:18:15.998Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

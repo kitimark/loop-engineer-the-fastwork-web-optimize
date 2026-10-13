@@ -1,0 +1,36 @@
+{
+  "id": "T-186",
+  "title": "Disk nearly full: 19.8 GB free (I-124)",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-05T07:27:19.380Z",
+  "updatedAt": "2026-10-06T12:12:51.215Z",
+  "rev": 3,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T07:27:19.380Z",
+      "by": "lead",
+      "text": "Only 19.8 GB free on the Mac's disk (alarm under 20 GB; under 8 GB new timing holds are refused). Auto-clean (space.mjs prune) removes only leftover Chrome profiles, uncited full-frame images (a record and thumbnails stay) and rebuildable snapshot copies; every JSON, Markdown, log, phone record and recording stays.\n\nBiggest out/ folders:\n- 2.1 GB .claude/worktrees/agent-a277ea00c8773c1ea/out/costcard (nav-hit-cache, fix-nav-morph)\n- 1.8 GB .claude/worktrees/agent-a2f94e91a40164a51/out/iphone-screen (worktree-agent-a2f94e91a40164a51)\n- 1.5 GB .claude/worktrees/agent-a7696771bf38f1229/out/iphone-runner (worktree-agent-a7696771bf38f1229)\n- 1.2 GB .claude/worktrees/agent-aba87d90ba0eb8282/out/nav-fade (worktree-agent-aba87d90ba0eb8282, fix-nav-fade)\n- 1.2 GB .claude/worktrees/agent-ae86b805e8f947ff0/out/hext (fix/morph-scroll-7d, fix-hero-exit-threaded)\n- 1.0 GB .claude/worktrees/agent-a4e37c413d9ae3d5b/out/morph-gpu (worktree-agent-a4e37c413d9ae3d5b, fix-morph-gpu)\n- 753 MB .claude/worktrees/agent-a3218eb3da6f14d91/out/breakpoints (worktree-agent-a3218eb3da6f14d91)\n- 567 MB .claude/worktrees/agent-a097ffbf8f44a4d14/out/countdown-faces (worktree-agent-a097ffbf8f44a4d14, fix-cd-roll-ca, fix-cd-strip, de-countdown)\n\nWhat helps: the folder owners keep fewer full frames (write them only on a diff, or behind a --keep-frames flag). See what can go: node tools/space.mjs prune (dry run), node tools/space.mjs report.\n\nNo steward on duty (mgmt-devices is parked): the lead handles this thread (I-175)."
+    }
+  ],
+  "reads": {
+    "lead": 1,
+    "user": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-06T12:12:51.215Z",
+      "who": "lead",
+      "action": "close",
+      "note": "23.6 GB free again"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T07:27:19.380Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

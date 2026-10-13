@@ -1,0 +1,65 @@
+{
+  "id": "C-029",
+  "by": "iphone-runner",
+  "kind": "action",
+  "title": "Xcode: turn OFF the phone's thermal condition",
+  "instructions": "In Xcode > Window > Devices and Simulators, select the iPhone, and under Device Conditions click Stop. Pick 'stopped' only when the button reads Start again (inactive). About your CLI question: Xcode 26.6's devicectl has no command to read or set device conditions, and its device details carry no thermal state, so this panel is the record.",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "stopped (panel shows Start)",
+      "could not stop"
+    ]
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-03T09:09:24.376Z",
+        "done": "2026-10-03T09:09:53.188Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-03T09:08:46.074Z",
+  "queuedAt": "2026-10-03T09:08:46.074Z",
+  "updatedAt": "2026-10-03T09:09:57.209Z",
+  "rev": 4,
+  "history": [
+    {
+      "at": "2026-10-03T09:08:46.074Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-03T09:09:24.376Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-03T09:09:53.188Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-03T09:09:57.209Z",
+      "who": "user",
+      "action": "answer",
+      "value": "stopped (panel shows Start)"
+    }
+  ],
+  "startedAt": "2026-10-03T09:09:24.376Z",
+  "result": {
+    "value": "stopped (panel shows Start)",
+    "at": "2026-10-03T09:09:57.209Z"
+  }
+}

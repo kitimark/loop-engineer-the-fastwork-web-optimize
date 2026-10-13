@@ -1,0 +1,47 @@
+{
+  "id": "T-021",
+  "title": "FEATURE: Current fixed apply and how it improve display",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-02T10:15:35.433Z",
+  "updatedAt": "2026-10-03T00:16:02.349Z",
+  "rev": 8,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-02T10:15:35.433Z",
+      "by": "user",
+      "text": "I'd like add more feature in console to know the current stage of this animation performance optimization.\n\nSo, it could display the detail we already applied in the current optimize version and how it improve.\n\nShow the previous experiment and why we didn't applied them as well."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-02T10:16:20.288Z",
+      "by": "lead",
+      "text": "Good idea, and it's planned. A new 'Best build' view in the console with three parts:\n1) What's in today's best build: each applied fix in one plain line (what it changes on the page), with its own measured gain on the iPhone and how sure we are.\n2) The whole build against the original page on the phone: the combined numbers, e.g. the slow frames at the top and at the people cards, with when and how they were measured.\n3) Tried, not applied: every experiment we dropped or parked, with the reason in one line ('looked different', 'no faster on the phone', 'froze', 'uses too much memory', 'parked by you'), and a link to its write-up.\nThe toolsmith who is finishing the 'Right now' change (T-020) builds the page next, so the two don't collide, and the ops agent fills in the data. I'll post here when it's live."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-02T10:44:53.820Z",
+      "by": "lead",
+      "text": "Done: a 'Best build' button in the top bar opens a new page. It lists each fix in today's best build with its own measured gain on the phone, a table of the whole build against the original page, and 'Tried, not applied': each experiment we did not use with the reason, plus a link to its write-up. The ops agent is filling in the data now. Until then the page says 'No best build is written up yet'. I'll tell you here when it is filled in."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-02T10:48:06.404Z",
+      "by": "lead",
+      "text": "The Best build page is filled in now; reload it to see. Today's best build is st6-rb: the wave-1 base plus the countdown, card-reveal, touch-listener, section-switch and avatar-carousel fixes. Each fix shows the slow frames it removed on the phone, measured against the build before it. To be upfront: the whole build has not yet been compared with the original page in one full phone scroll, and the page says so. Two small corrections are coming: a clearer name for the section-switch fix, and one fix that is missing from the list (the bottom panel's pin clamp)."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "lead": 4
+  },
+  "history": [
+    {
+      "at": "2026-10-03T00:16:02.349Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

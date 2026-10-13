@@ -1,0 +1,49 @@
+{
+  "id": "T-088",
+  "title": "iPhone held by fix-nav-morph, unused for 5 min while 4 jobs wait",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T07:48:00.932Z",
+  "updatedAt": "2026-10-04T07:50:01.052Z",
+  "rev": 3,
+  "assignees": [
+    "mgmt-ops-10",
+    "fix-nav-morph",
+    "fix-rest-script",
+    "cd-roll-ca",
+    "fix-cd-roll-ca",
+    "fix-morph-gpu"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T07:48:00.932Z",
+      "by": "lead",
+      "text": "fix-nav-morph has held the iPhone lease for 5 min without a phone run (iphone.mjs run, scroll, record or gesture; since 07:42Z, last phone run of fix-nav-morph). The limit is 5 min.\nQueued for it: fix-rest-script, cd-roll-ca.\nWaiting on the status board: cd-roll-ca (owner fix-cd-roll-ca; waits on the phone); morph-gpu-rev2 (owner fix-morph-gpu; its note names the phone).\nfix-nav-morph: run your phone part now, or release the lease (node tools/lock.mjs release iphone --owner fix-nav-morph) so the next one can start, or say here why it waits. Desk (mgmt-ops-10): please make sure the phone is used.\nOne message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111)."
+    }
+  ],
+  "reads": {
+    "lead": 1,
+    "user": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T07:48:00.932Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-ops-10,fix-nav-morph,fix-rest-script,cd-roll-ca,fix-cd-roll-ca,fix-morph-gpu"
+    },
+    {
+      "at": "2026-10-04T07:50:01.052Z",
+      "who": "lead",
+      "action": "close",
+      "note": "the user is on fix-nav-morph's step"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T07:48:00.932Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

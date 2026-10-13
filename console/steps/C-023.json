@@ -1,0 +1,143 @@
+{
+  "id": "C-023",
+  "by": "iphone-runner",
+  "kind": "action",
+  "title": "Retry of C-021: record the iPhone screen while 4 versions play (about 6 min)",
+  "instructions": "Same as C-021, from the start. The phone records its own screen; the Mac camera is not used. Numbers only: no agent looks at the video without asking you first.",
+  "showUrl": false,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 4,
+  "parts": [
+    {
+      "label": "Start the screen recording",
+      "instructions": "On the iPhone: turn on Do Not Disturb. Open Control Center, press and hold the Screen Recording button and check that Microphone is OFF. Tap Start Recording, wait for the 3-second countdown, then close Control Center. Click Done here when it is recording (\"started\").",
+      "record": false,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "ready": "2026-10-02T09:41:24.396Z",
+        "started": "2026-10-02T09:41:46.419Z",
+        "done": "2026-10-02T09:41:58.817Z"
+      }
+    },
+    {
+      "label": "Versions 1-4 play (about 3.5 min)",
+      "instructions": "Click Start, then put the phone down and don't tap anything, not even Done here. I load 4 versions of the page, one after another, about 48 s each, and I end this part myself when version 4 is done (about 3.5 min).",
+      "record": false,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "ready": "2026-10-02T09:42:05.827Z",
+        "started": "2026-10-02T09:42:23.922Z",
+        "done": "2026-10-02T09:42:24.636Z"
+      }
+    },
+    {
+      "label": "Stop the recording",
+      "instructions": "Tap the red recording indicator at the top of the iPhone screen, then Stop. Click Done.",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-02T09:42:26.285Z",
+        "done": "2026-10-02T09:42:27.009Z"
+      }
+    },
+    {
+      "label": "Move the file to the Mac",
+      "instructions": "AirDrop the recording from Photos to this Mac. In Finder press Shift-Cmd-G, paste this folder path: /Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/agent-afc7d9fff1fcc6154/out/pr001-visual/ and drag the recording from Downloads into it. Click Done when it is moved (\"moved\"). The copies in your Photos (this one and the first try's) are yours to delete.",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-02T09:42:29.950Z",
+        "done": "2026-10-02T09:42:42.712Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-02T09:41:11.415Z",
+  "queuedAt": "2026-10-02T09:41:11.415Z",
+  "updatedAt": "2026-10-02T09:42:42.712Z",
+  "rev": 11,
+  "history": [
+    {
+      "at": "2026-10-02T09:41:11.415Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-02T09:41:24.397Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "state": "ready",
+      "note": "Phone is ready again, version 1 is loaded. Start whenever you like."
+    },
+    {
+      "at": "2026-10-02T09:41:46.419Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-02T09:41:58.817Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    },
+    {
+      "at": "2026-10-02T09:42:05.827Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "state": "ready",
+      "note": "Recording started, thanks. Click Start, put the phone down, and don't tap Done: I end this part in about 3.5 min."
+    },
+    {
+      "at": "2026-10-02T09:42:23.922Z",
+      "who": "user",
+      "action": "start",
+      "part": 2
+    },
+    {
+      "at": "2026-10-02T09:42:24.636Z",
+      "who": "user",
+      "action": "done",
+      "part": 2
+    },
+    {
+      "at": "2026-10-02T09:42:26.285Z",
+      "who": "user",
+      "action": "start",
+      "part": 3
+    },
+    {
+      "at": "2026-10-02T09:42:27.009Z",
+      "who": "user",
+      "action": "done",
+      "part": 3
+    },
+    {
+      "at": "2026-10-02T09:42:29.950Z",
+      "who": "user",
+      "action": "start",
+      "part": 4
+    },
+    {
+      "at": "2026-10-02T09:42:42.712Z",
+      "who": "user",
+      "action": "done",
+      "part": 4
+    }
+  ],
+  "startedAt": "2026-10-02T09:41:46.419Z",
+  "result": {
+    "value": "done",
+    "notes": "Retry C-021 again. my bad",
+    "at": "2026-10-02T09:42:42.712Z"
+  }
+}

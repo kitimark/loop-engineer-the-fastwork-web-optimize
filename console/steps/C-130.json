@@ -1,0 +1,46 @@
+{
+  "id": "C-130",
+  "by": "lead",
+  "kind": "question",
+  "title": "Optional: 25-min iPhone test of the MIDDLE slow spot (y≈4600) while the end-of-page work is prepared?",
+  "instructions": "End of the page is top priority; its phone test is not ready yet. This one (P-169) uses the phone meanwhile. Yes = start now, keep the phone plugged in and untouched for about 25 minutes. Later = skip it for now.",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "yes",
+      "later"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-08T17:01:27.668Z",
+  "queuedAt": "2026-10-08T17:01:27.668Z",
+  "updatedAt": "2026-10-08T17:01:41.132Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-08T17:01:27.668Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-08T17:01:39.708Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-08T17:01:41.132Z",
+      "who": "user",
+      "action": "answer",
+      "value": "yes"
+    }
+  ],
+  "queueSeq": 89,
+  "startedAt": "2026-10-08T17:01:39.708Z",
+  "result": {
+    "value": "yes",
+    "at": "2026-10-08T17:01:41.132Z"
+  }
+}

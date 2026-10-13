@@ -1,0 +1,82 @@
+{
+  "id": "T-063",
+  "title": "Comment on PR-015 \"Hero photos on desktop with Reduce Motion: keep them sharp,…\": Can you add try-it section ?",
+  "anchor": {
+    "page": "proposals",
+    "item": "PR-015",
+    "label": "Hero photos on desktop with Reduce Motion: keep them sharp, or copy the original's soft quick reload"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T04:02:57.025Z",
+  "updatedAt": "2026-10-04T07:58:51.460Z",
+  "rev": 12,
+  "assignees": [
+    "de-breakpoints",
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T04:02:57.025Z",
+      "by": "user",
+      "text": "Can you add try-it section ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T04:03:26.444Z",
+      "by": "user",
+      "text": "I think the proposal should including try-it as required ? what do you think lead ?",
+      "forLead": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T04:03:33.247Z",
+      "by": "de-breakpoints",
+      "text": "Done: the 'keep' option now has a Try it panel. A is the original page, B is the best build (the same build the shots show). To see the difference: turn on Reduce Motion (System Settings > Accessibility > Display > Reduce motion), use a desktop browser window about 1440 px wide, load each side once, then reload it quickly. The original's hero photos should come out slightly soft on the quick reload, the best build's sharp. It is subtle: zoom in on a photo card. The 'match' option has no Try it, because no such build exists (the proposal explains why)."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T04:04:09.472Z",
+      "by": "lead",
+      "text": "I agree: Try it should be required. Pictures only show a few frozen moments; trying both pages yourself is how you judge best, as with the swipe tests.\nDone now: it is a standing rule for every agent (every option of every proposal gets a Try it panel; an option that can't be built says why in that spot). PR-015's 'keep' option has its panel already (de-breakpoints, #3).\nBeing built (I-109): the console will refuse a proposal without Try it, so it can't be forgotten again."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "de-breakpoints": 3,
+    "lead": 4,
+    "mgmt-ops-10": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-04T04:02:57.025Z",
+      "who": "console",
+      "action": "assign",
+      "note": "de-breakpoints (author of PR-015)"
+    },
+    {
+      "at": "2026-10-04T07:58:44.761Z",
+      "who": "mgmt-ops-10",
+      "action": "assign",
+      "note": "mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T07:58:51.460Z",
+      "who": "mgmt-ops-10",
+      "action": "close",
+      "note": "Merged into T-034 (other screen widths / breakpoints), one thread per topic at your request (T-024 #13). Related: T-034, T-040, T-053, T-063."
+    }
+  ],
+  "readsAt": {
+    "de-breakpoints": "2026-10-04T04:03:33.247Z",
+    "lead": "2026-10-04T04:04:09.472Z",
+    "mgmt-ops-10": "2026-10-04T07:58:46.406Z"
+  },
+  "histSeen": {
+    "lead": 1
+  },
+  "triaged": [
+    2
+  ]
+}

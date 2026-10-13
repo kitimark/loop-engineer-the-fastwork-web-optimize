@@ -1,0 +1,64 @@
+{
+  "id": "T-242",
+  "title": "The \"join waitlist\" button",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-07T19:03:43.928Z",
+  "updatedAt": "2026-10-08T03:05:38.214Z",
+  "rev": 13,
+  "assignees": [
+    "fix-join-fade"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-07T19:03:43.928Z",
+      "by": "user",
+      "text": "I found the \"join waitlist\" rounded edge is not transparent and the gap of lang button and this button is lost, during it fade-out when the end of page is appear.\n\nthis is bug from original fastwork and it inherit to the latest version.  \nlet's investigate"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-07T19:04:21.552Z",
+      "by": "lead",
+      "text": "Got it: a new agent, fix-join-fade, is investigating both Join waitlist problems now; causes in about 45 min.\n- Corners: likely the same Safari bug as the platform card (a blurred element ignores its rounded corners); the button blurs while it fades.\n- Gap: the language-to-Join spacing collapses during the fade; it checks why in the original code.\n- It compares the original page, v14 and today's best (g0.0c) frame by frame during the fade, then makes the smallest fix and shows it to you as a Try-it proposal.\n\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-07T19:26:30.939Z",
+      "by": "lead",
+      "text": "Both causes are found; both come from the original site, and a small CSS fix works in Chrome so far.\n- Corners: the button's blur during the fade is cut to its rectangle, not its pill shape. Safari shows a dark square-edged blur hanging off the left end (seen in the Simulator; the Safari reason is still being checked in its source).\n- Gap: the original closes the language-to-Join gap about 0.05 s into the 0.68 s menu opening, while the button stays visible 0.44 s longer.\n- Safari also skips the button's width animation, so the button snaps narrower and the language button jumps about 32 px (from reading Safari's source).\n- Fix: clip the blur to the pill shape; keep the gap until the button has faded; animate the width in Safari too.\n\n| Check (Chrome, phone width) | Today | With fix |\n|---|---|---|\n| Corner pixels outside the pill | 59 | 0 |\n| Gap during the fade | lost | kept at 4 px |\n\n- Next (fix-join-fade): Simulator check, other widths, then a Try-it proposal (A today, B fixed), about 40 min.\n\nWhat you need to do: nothing now; you'll get the proposal to try."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-07T20:12:50.146Z",
+      "by": "lead",
+      "text": "The Join waitlist fix is ready for you to try: proposal PR-036 (Proposals page), A = today's best, B = with the fix.\n\n| Problem during the fade | Today | With fix |\n|---|---|---|\n| Dark square next to the button (Safari) | 1645 px | 0 |\n| Gap to the language button (phone) | lost, 0-2 px | kept at 4 px until the button is gone |\n| Button width (Safari) | snaps 110 to 78 px | animates smoothly |\n\n- The rest of the page is unchanged (only noise-level differences, the same as comparing a build with itself).\n- Try it on the phone over Wi-Fi with the Try-it phone links, or in a browser; no cable needed.\n\nWhat you need to do: open PR-036, try A and B at the end of the page, then accept or request changes."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-08T03:04:08.061Z",
+      "by": "lead",
+      "text": "Landed: your accepted fix is now in the best build g0.0e (fixes/BEST_BUILDS.md), together with the other end-of-page fix you accepted.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "lead": 5,
+    "fix-join-fade": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-07T19:04:21.635Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-join-fade"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-08T03:04:08.061Z",
+    "fix-join-fade": "2026-10-07T19:25:20.376Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

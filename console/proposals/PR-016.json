@@ -1,0 +1,93 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-016",
+  "by": "wi-gpu-bundle",
+  "title": "GPU preview: today's best build plus the three GPU fixes, to try by hand",
+  "area": "whole",
+  "topic": "gpu-preview",
+  "problem": "You asked to try the GPU rendering fixes together in one build (T-073). Each one is checked on its own; this page puts them together so you can feel the whole page.",
+  "idea": "B = today's best build plus: the countdown as static strips (cd-strip, landed), the countdown roll on the GPU (cd-roll-ca), the hero exit on the GPU (hero R2, touch phones only) and the end-of-page menu reveal on the GPU (morph-gpu, phones only). A = today's best build. Each fix's code is byte for byte the code that fix was checked with.",
+  "looksSame": "Each fix was checked against today's page on its own (its own pixel checks). Here only the combination is new; the combined checks are listed under the differences.",
+  "risk": "Preview only, each fix lands on its own. Known cost: the end-of-page menu reveal (morph-gpu rev 1) makes the first frame of a repeat open about 7 ms longer on the phone, paid back the next frame; a rev 2 is coming. The GPU countdown roll has not had its phone check yet, and the hero fix still waits for its finger swipe test.",
+  "visualDiff": [
+    "Morph (Simulator, 12 frozen steps): the preview draws what morph-gpu alone draws, at most 1 colour level off, the same as loading the same page twice.",
+    "Countdown (Simulator, 42 frozen roll frames): the preview draws what the GPU countdown roll alone draws, at most 1 level off, the same as a repeat load.",
+    "Hero (Simulator, top, 300 px, 548 px): 0 pixels differ from the hero fix alone.",
+    "Chrome: no errors, no missing files; screenshots differ 0-0.22 %, the usual countdown and card-animation phase."
+  ],
+  "gain": [
+    {
+      "what": "Smoothness on the iPhone",
+      "before": "not measured",
+      "after": "for you to try",
+      "tag": "UNRESOLVED",
+      "how": "This is a preview to try by hand; no timing was measured for the combination.",
+      "needsPhone": true
+    }
+  ],
+  "live": {
+    "patch": "fixes/gpu-preview/patch.diff",
+    "ref": "HEAD",
+    "blob": "def3be4cdea15fd2c2329d0532035be5323fa2f8",
+    "base": "site-pretty",
+    "files": [
+      "_app/immutable/assets/2.gBuqKVzi.css",
+      "_app/immutable/nodes/2.DyWL8TcE.js"
+    ],
+    "a": {
+      "patch": "fixes/best-build/patch.diff",
+      "ref": "HEAD",
+      "blob": "ff190d0566e7d681866f7300bab0e2d9d9878ca8",
+      "base": "site-pretty",
+      "files": [
+        "_app/immutable/assets/2.gBuqKVzi.css",
+        "_app/immutable/nodes/2.DyWL8TcE.js"
+      ]
+    }
+  },
+  "compare": {
+    "a": {
+      "label": "Today's best build"
+    },
+    "b": {
+      "label": "GPU preview"
+    },
+    "view": "side",
+    "shots": []
+  },
+  "state": "draft",
+  "rev": 2,
+  "decision": null,
+  "decisions": [],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-04T05:40:59.841Z",
+      "by": "wi-gpu-bundle",
+      "note": "first version"
+    },
+    {
+      "rev": 2,
+      "at": "2026-10-04T07:09:21.621Z",
+      "by": "wi-gpu-bundle",
+      "note": "Check results filled in (morph, countdown and hero pixels match each fix alone; Chrome clean) and the morph-gpu rev 1 known cost added to the risk line. Still a draft."
+    }
+  ],
+  "createdAt": "2026-10-04T05:40:59.841Z",
+  "updatedAt": "2026-10-04T07:09:21.621Z",
+  "history": [
+    {
+      "at": "2026-10-04T05:40:59.841Z",
+      "who": "wi-gpu-bundle",
+      "action": "drafted",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-04T07:09:21.621Z",
+      "who": "wi-gpu-bundle",
+      "action": "revised",
+      "rev": 2,
+      "note": "Check results filled in (morph, countdown and hero pixels match each fix alone; Chrome clean) and the morph-gpu rev 1 known cost added to the risk line. Still a draft."
+    }
+  ]
+}

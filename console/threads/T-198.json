@@ -1,0 +1,76 @@
+{
+  "id": "T-198",
+  "title": "How cards of hero section are optimize ?",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T13:18:57.936Z",
+  "updatedAt": "2026-10-05T21:05:01.636Z",
+  "rev": 17,
+  "assignees": [
+    "fix-hero-exit-threaded"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T13:18:57.936Z",
+      "by": "user",
+      "text": "How cards of hero section are optimize ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T13:19:44.942Z",
+      "by": "lead",
+      "text": "Short answer: the hero cards' scroll-out already moved off JavaScript, two more savings are being tested, and their pictures are in the image proposal.\n\n| what | state |\n|---|---|\n| cards slide and fade out as you scroll | done: Safari runs it as a scroll-linked CSS animation, not a script every frame (in today's best build) |\n| card pictures (18 orbit pictures a phone never shows) | in the image proposal: shrink, lighter format, skip the hidden ones |\n| hero lag when Safari's toolbar collapses | being measured now on the Simulator (P-133) |\n| hero keeps working after it has left the screen | candidate fix: stop it once it is past its end |\n\n- New today (Simulator only, not yet checked on the phone): the hero's scroll animations stay attached well past the hero, up to about 2800 px down the page.\n- Stopping them there cut style work per frame from about 3.6 ms to 0.7 ms in the 1000-1500 px range.\n- They are not the big cost: page layout costs 14-21 ms per frame down to about 3500 px whatever the hero does; the team now switches sections off one by one to find which section is expensive.\n- Owner: fix-hero-exit-threaded (the agent on the hero); it posts its ranked list here.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T13:20:52.181Z",
+      "by": "user",
+      "text": "mark fix-hero-exit-threaded as highest priority and integrate them to best build."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T13:22:23.054Z",
+      "by": "lead",
+      "text": "Done: the hero work is now top priority, and its fix is planned into the next best build.\n- Board: the hero row is #1; its Simulator work moved to second in line, right after the toolbar test already running.\n- The fix: stop the hero's scroll animations once the hero is past the screen (it does less work, the look stays the same).\n- Path: build it on today's best build, check the look is unchanged, count the work saved on the Simulator, then a short phone check that it is no worse.\n- Then int-v8 (the agent that builds the combined version) adds it to the next best build, together with your People word change.\n- The images work stays top priority too; the two use different machines, so neither waits for the other.\n- Progress comes here in this thread from fix-hero-exit-threaded.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-05T13:33:13.373Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "The hero fix is built and in testing. The bigger slowdown is not in the hero: it is the profile-card carousel just below it.\n\n- **Hero fix (\"hero-park\"):** the hero's fade-out was still being worked out on every frame long after it had finished, as far down as about 2,800 px in one test. Now it switches off 40 px after the fade ends.\n- In the iPhone simulator this cut that style work from 3.6 to 0.7 ms per frame between 1,000 and 1,500 px. Simulator times are rough, and nothing changes on screen.\n- **Next for the hero fix:** a check that the screen looks exactly the same, a count card, and a short iPhone \"no worse\" run. Then it goes into the next combined build with the people-word fix.\n- **Bigger cost (simulator, not yet checked on the phone):** while you scroll down to about 3,500 px, the whole profile-card carousel is laid out again on almost every frame, about 40 ms a frame in the simulator.\n\n| simulator test | layout time per frame, 0-3,500 px |\n|---|---|\n| page as built | about 40 ms |\n| hero effects off | about 40 ms |\n| all animations off | about 40 ms |\n| profile carousel frozen | about 1 ms |\n\n- On your iPhone runs the slow frames also stop right after the carousel leaves the screen, at about 2,100 px.\n- I am now checking whether a change already in the next build (fewer scroll callbacks) removes this. If not, I'll name the exact cause and propose a fix.\n\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-05T14:09:19.765Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "Hero-park update: the big screenshot difference in my first trial run came from my test tool, not from the fix.\n- The tool reset the page's fade-in effects at different moments, so the two pages looked different.\n- Without that reset, both pages look the same past the hero.\n- I made the fix do a little less work: past the hero's end, it stops re-checking the hero's position on every frame.\n- The written test plan is waiting for a second check. Then the lead signs it and I run the counted test (about 4 minutes in the Simulator).\n- The phone parts now go into int-v8's combined v9.2 build: one phone check and one blind swipe test for everything in it.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-05T14:25:54.466Z",
+      "by": "lead",
+      "text": "Update: the hero-park fix will not join the v9.2 best build; its practice run failed the card's own count checks.\n- The card counts layout and style work per frame; with hero-park it did not go down (layouts 3.3 vs 2.5-2.6 per frame past the hero).\n- Its real gain shows only as time: style work past the hero fell from 121-185 ms to 24 ms in the Simulator. Counts don't capture that.\n- It also changed a few pixels (0.3 % of the screen, small shade steps), and the card had no rule allowing that.\n- I parked it rather than rewrite the rules after seeing data. It can return later with a new card.\n- The hero owner now works on the bigger lead: the profile cards deck, where freezing it took layout from ~40 to ~1 ms per frame (Simulator, our setup).\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 7,
+    "lead": 7,
+    "fix-hero-exit-threaded": 6
+  },
+  "history": [
+    {
+      "at": "2026-10-05T13:19:45.024Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-hero-exit-threaded"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T14:25:54.466Z",
+    "fix-hero-exit-threaded": "2026-10-05T14:09:19.765Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

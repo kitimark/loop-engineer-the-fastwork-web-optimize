@@ -1,0 +1,90 @@
+{
+  "id": "C-004",
+  "by": "iphone-runner",
+  "kind": "action",
+  "title": "Follow-the-finger test on the iPhone, round 2 (about 6 min) (run 2)",
+  "instructions": "Same as before: when the iPhone shows 'Does it follow your finger?', tap Start there. Each pair: use version 1, tap Done, use version 2, tap Done, then pick the one that followed your finger better; the first pair is practice.",
+  "showUrl": false,
+  "meta": {
+    "ticket": "F-v3",
+    "run": 2,
+    "prevRun": "C-002",
+    "blindKey": "v3 PLAN set 2 = set 1 with the order inside every pair swapped (v3.js; per-pair order is in the saved result)",
+    "page": "pacing/v3.html?set=2",
+    "set": 2,
+    "commit": "867fa88+1b66d7b",
+    "owner": "de-unknowns-ux"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "done",
+      "stopped early"
+    ]
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-01T16:10:23.729Z",
+        "ready": "2026-10-01T16:10:38.288Z",
+        "started": "2026-10-01T16:12:09.688Z",
+        "done": "2026-10-01T16:32:06.992Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-01T16:10:16.926Z",
+  "queuedAt": "2026-10-01T16:10:16.926Z",
+  "updatedAt": "2026-10-01T16:33:29.925Z",
+  "rev": 6,
+  "history": [
+    {
+      "at": "2026-10-01T16:10:16.926Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-01T16:10:23.730Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-01T16:10:38.288Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-01T16:12:09.688Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T16:32:06.992Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T16:33:29.925Z",
+      "who": "user",
+      "action": "answer",
+      "value": "done"
+    }
+  ],
+  "startedAt": "2026-10-01T16:12:09.688Z",
+  "result": {
+    "value": "done",
+    "notes": "this is tester opinion, not me. (they was make mistake by reload the page accidentally, but they retry all questions again)",
+    "at": "2026-10-01T16:33:29.925Z"
+  }
+}

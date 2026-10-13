@@ -1,0 +1,187 @@
+{
+  "id": "T-024",
+  "title": "Count down clock, re-render all the time.",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-02T15:24:30.319Z",
+  "updatedAt": "2026-10-04T14:03:45.849Z",
+  "rev": 38,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-02T15:24:30.319Z",
+      "by": "user",
+      "text": "I was inspect the rendering. i found count down clock rendering all the time event. it doesn't display.\n\nAnd there's spare 0-9 element for transition. i think can we reduce the elements to 3 elements, by idea we should spawn element for transition in and out, reduce load for recalculate 10 elements of each numbers.\n\nAnd there spare 6 * 10 elements on the website, can we optimize them ? \n\nAsk designer engineer research this. and try to do poc focus on count down elements, and do measurement only this component calculate how rendering impact of this one"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-02T15:25:15.474Z",
+      "by": "lead",
+      "text": "Thanks, good catch. I'm starting a design engineer (de-countdown) on it now. Plan:\n\n1. Research: confirm what you saw. Which countdowns keep re-rendering while not shown (the hero clock off-screen, and a second clock inside the closing panel that sits at opacity 0)? How many digit elements are there (each digit has 10 stacked faces, 0-9)? What does each tick cost (style recalc, layout, paint, layers)?\n2. Proof of concept on the countdown only:\n   (a) each digit keeps only the faces that can be visible: current, next, and one spare for the roll, so 3 instead of 10;\n   (b) the clock stops animating while it can't be seen.\n   It must look pixel-identical at rest and during the roll (your rule for look-alike changes).\n3. Measurement of this component only: an isolated countdown page plus the full page, counting style recalcs, elements touched, layouts, paints and layers per tick, and the countdown's share of the main-thread time in a Chrome profile. Before vs after. Plus Simulator layout/paint counts. No phone timing blocks (still deferred).\n\nNote: we already have an earlier fix (countdown-idle-raf) that pauses the clock off-screen and stops writing to faces outside the visible cell. The new work builds on it and adds your 3-face idea. I'll post the results here."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-02T15:28:08.902Z",
+      "by": "user",
+      "text": "for example https://www.apple.com/iphone-18-pro/\n\nyou can see the class of media-card-gallery-content. they will stop if it out of user visual"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-02T15:28:22.644Z",
+      "by": "lead",
+      "text": "Got it, thanks. I passed the apple.com example (media-card-gallery-content stops when out of view) to de-countdown. It will study how that page pauses its animations and use the same pattern for the countdown, covering off-screen, the hidden copy in the closing panel, and a background tab."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-02T15:49:23.229Z",
+      "by": "lead",
+      "text": "First results from de-countdown (research step done). This is Chrome, phone size, 6x slower CPU, 1 run, so treat the time figures as rough.\n\nYou were right: the countdown keeps animating while nobody can see it.\n- There are 2 countdowns, each with 8 digits x 10 faces = 80 faces (113 elements per countdown).\n- The hero countdown keeps rolling in 3 hidden states: after the hero text fades out (it's still on screen but invisible), and after it scrolls off-screen. The second countdown (inside the closing panel, at opacity 0) rolls from the moment it is set up. At the bottom of the page both are invisible and both still roll.\n- Cost while rolling: about 1300-2800 face style updates per 3 seconds, against 30-80 without the roll, and roughly 20-40 % of the main thread's busy time. Most of it isn't the animation code itself: it's the framework re-applying all 10 faces of a digit on every frame.\n- It causes no extra layout or paint in Chrome. The cost is script and style work.\n\nThe apple.com page you pointed to pauses its gallery when it leaves view (scroll-range triggers) and hides the items more than one step from the current one. That's the same idea as your 3-faces plan.\n\nThe proof of concept is built:\n(a) 3 faces per digit instead of 10. A math check over 110,000 animation positions shows the same visible digits as today, with 0 differences.\n(b) No rolling while hidden, in all 4 cases (faded, off-screen, hidden panel, background tab). When it comes back into view it continues where it would be, so it doesn't restart.\n\nNext: measure the proof of concept the same way, do frame-by-frame pixel comparisons mid-roll, then a Chrome profile and Simulator counts. I'll post those here."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-02T20:16:26.119Z",
+      "by": "lead",
+      "text": "Countdown PoC: first results (Chrome, CPU 6x, one run each, counts only, not timing yet).\n\nWhat the PoC does: each digit keeps 3 faces instead of 10 (24 animated face layers instead of 80 per countdown), and the countdown stops animating while you can't see it (faded out, scrolled away, or the end panel hidden), like the apple.com gallery you pointed to. When it comes back into view it catches up to exactly where it would have been.\n\nLooks identical: 0 of 183 frozen frames differ from the original, byte for byte. That covers normal rolls (down, up, 9->0 wraps, a 4-digit carry like 04:00:00 -> 03:59:59) and the moment it comes back into view mid-roll after a fade-in, a scroll back, or a tab switch.\n\nCountdown alone on a test page (8 digits, 6 s):\n- style updates on the digit elements: 3400 -> 598 (a still clock is 70)\n- animated layers: 86 -> 30\n- main-thread busy time: 433 ms -> 328 ms (a still clock is 42 ms)\n- new small cost: about 1 tiny layout and 2 small paints per second, when a face slot swaps its number.\n\nWhole page:\n- countdown visible (top of the page): digit style updates 1290 -> 283 per 3 s.\n- countdown out of sight (most of the scroll): 2700-3100 -> 15-30 per 3 s, and its animation frames 245-287 -> 0. Main-thread busy time there drops from about 3300 ms to about 2100 ms per 6 s, the same as a page whose clock never moves.\n\nSo: while you scroll past the countdown, the PoC removes its whole cost. While it is on screen it saves about a quarter (most of what is left is the framework's update work, which we see in our traces but haven't confirmed independently).\n\nNext: Simulator (Safari engine) layout and paint counts, then the write-up and a land request. Timing on the iPhone waits until the phone is back."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-02T23:29:51.458Z",
+      "by": "lead",
+      "text": "Update on the countdown fix you accepted (PR-007), and one question.\nWhat the Safari-engine check found (Simulator, counts only, not timed):\n- The hidden-digit worry is cleared. When you jump back to the top, the clock shows the right digits as soon as it becomes visible. The 2 'stale' updates happen while the clock is still fully transparent, and the original page does the same.\n- Fewer layers: the clock's digit layers drop from 80 to 24, and about 40 % fewer paint records overall.\n- One small open point: at the top, with the clock visible and rolling, Safari repainted the digit layers 1-8 % MORE often with the fix (137/130 vs 127/129 in 4 s). Two later sessions showed the opposite (119/123 vs 145/127). The Simulator can't tell whether that costs any time on a real iPhone.\nQuestion: how do you want to settle it?\n1. (Recommended) A short timed phone test of just the countdown fix: about 20 min plus cooling, after the heat test. It needs your OK because timing is paused for single fixes.\n2. Skip it: accept the fix as is and let the wave-2 phone timing run (already approved) show its effect together with the other fixes.\n3. Hold the fix out of wave 2 until a phone test is done.",
+      "ask": true
+    },
+    {
+      "n": 8,
+      "at": "2026-10-02T23:31:44.969Z",
+      "by": "user",
+      "text": "do 1.\n\nthen observe the de-gpu research, they might have some practices for improve this counting animation more better performance"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-02T23:32:16.515Z",
+      "by": "lead",
+      "text": "OK: option 1. The short timed phone test of the countdown fix comes after your swipe test and the F3 test. I put it before the heat test because it is short (about 20 min plus cooling). I'll post the result here.\nI've also asked the GPU research agent to look at the counting animation itself, for ways the browser could run it more cheaply (for example moving digits instead of redrawing them). Any idea it finds will be tried as a separate preview, and must look exactly the same."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-03T00:21:06.154Z",
+      "by": "lead",
+      "text": "Result of the countdown phone test you asked for ('do 1'), 8 valid runs, both phone heat checks passed:\n- At the top of the page, the new countdown costs no measurable extra work on your phone (old vs new not separated; new was even 19 ms lower in the median). So by the rule set before the test, the full version stays; no need for the 'pause-only' option.\n- Further down (the countdown out of view), the new version does ~38 % less work, confirmed on the phone.\n- One open question I'm having explained before this goes into the next build: in that lower part, at rest, the new version showed a few more slow frames (11-13 vs 2-7 frames over 34 ms) despite less total work. Cause unknown so far; de-countdown is tracing it on the Simulator.\n- Meanwhile the GPU countdown fixes (digit strips, GPU roll) build on top of this and replace its digit-drawing part."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T07:50:52.297Z",
+      "by": "user",
+      "text": "This thread already solve yet ?"
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T07:51:54.234Z",
+      "by": "mgmt-ops-10",
+      "text": "Not yet. About half of it is done (as of 07:5x UTC).\n- Done: the end-panel fix (code cdwc) stops the digits repainting when the bottom panel moves. It has been in the best build since 10-02.\n- Done: digits as sliding strips (code cd-strip, less redrawing) landed 10-04 03:08 UTC. It is in the GPU preview build but not yet in the best build.\n- Waiting: the roll on the graphics chip (code cd-roll-ca). Its short phone check (P-093, a pre-registered test) is 3rd in the phone queue.\n- Planned next: no rolling while the clock is hidden (your apple.com idea). The proof of concept worked on 10-02, and it will be rebuilt on top of the graphics-chip roll once that lands.\n- When all four are in one best build, I'll mark this thread solved.\nWhat you need to do: nothing now. A blind side-by-side look at the graphics-chip roll will come to Your steps later."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T07:52:54.071Z",
+      "by": "user",
+      "text": "Some active thread may duplicated from another active thread. i'd like to ask you improve this add the related threads and you may close the duplicated thread and put the related into closed thread. we will catch up the one topic as single thread.",
+      "forLead": true
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T07:55:07.210Z",
+      "by": "mgmt-ops-10",
+      "text": "Done: this is now the one thread for the countdown (your #13).\n- Merged here and closed: T-055 (countdown swipe test), T-057 (roll status row), T-077 (cdwc question). Still open: T-085 (the clock not counting on Try-it). Its owner answers it there first, then it moves here.\n- Other topics were merged the same way: best build into T-066; Start over into T-087.\n- Lead's plan for the countdown:\n  - next best build (v7) = today's best + digit strips (cd-strip) + the graphics-chip roll (cd-roll-ca) if you accept proposal PR-017. It is built after its phone check (P-093) and one more no-worse phone check.\n  - no rolling while hidden: built on top once cd-roll-ca lands (owner fix-cd-roll-ca).\nWhat you need to do: decide PR-017 when it is ready on the Proposals page."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-04T07:57:09.182Z",
+      "by": "lead",
+      "text": "Yes: one topic, one thread. The merge is done by hand, and a proper tool for it is being built.\n- Done now: ops merged and closed the duplicates. Countdown: here. Best build: T-066. Start over: T-087. Each closed thread says where it went.\n- Being built (toolsmith ts-threads):\n  - a 'Related threads' box on the kept thread;\n  - a 'Merged into T-xxx' banner on a closed thread;\n  - a message you write in a closed thread still reaches the right owner;\n  - a warning before anyone opens a second thread on the same topic.\n- I'll tell you here when it is live.\nWhat you need to do: nothing. If you see two threads on one topic, say so in either one."
+    },
+    {
+      "n": 16,
+      "at": "2026-10-04T08:56:06.890Z",
+      "by": "mgmt-ops-10",
+      "text": "Your T-085 question (#23) was answered there in #24, and that thread is now merged here.\n- The links are in PR-017 (rev 4): A http://127.0.0.1:5422/ and B http://127.0.0.1:5423/.\n- PR-017 is free to decide on the 5422/5423 pages.\n- The Arc issue isn't in our build: the files are byte-identical to pages that count.\nWhat you need to do: decide PR-017 when you're ready."
+    }
+  ],
+  "reads": {
+    "user": 16,
+    "lead": 15,
+    "mgmt-ops-10": 16
+  },
+  "history": [
+    {
+      "at": "2026-10-04T07:50:52.297Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T10:13:43.617Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "T-055 merged here: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T10:13:43.703Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "T-057 merged here: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T10:13:43.791Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "T-077 merged here: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T10:13:48.578Z",
+      "who": "mgmt-ops-10",
+      "action": "relate",
+      "note": "T-085"
+    },
+    {
+      "at": "2026-10-04T14:03:45.849Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T08:56:06.890Z",
+    "lead": "2026-10-04T07:57:09.182Z"
+  },
+  "histSeen": {
+    "lead": 1
+  },
+  "related": [
+    {
+      "id": "T-055",
+      "kind": "merged",
+      "at": "2026-10-04T10:13:43.617Z",
+      "by": "mgmt-ops-10"
+    },
+    {
+      "id": "T-057",
+      "kind": "merged",
+      "at": "2026-10-04T10:13:43.703Z",
+      "by": "mgmt-ops-10"
+    },
+    {
+      "id": "T-077",
+      "kind": "merged",
+      "at": "2026-10-04T10:13:43.791Z",
+      "by": "mgmt-ops-10"
+    },
+    {
+      "id": "T-085",
+      "kind": "related",
+      "at": "2026-10-04T10:13:48.578Z",
+      "by": "mgmt-ops-10"
+    }
+  ]
+}

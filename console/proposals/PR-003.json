@@ -1,0 +1,296 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-003",
+  "by": "wi-stack",
+  "title": "Stack test follow-up: the one slow frame stack5 adds when the #people cards start to reveal",
+  "area": "middle",
+  "topic": "best-stack",
+  "problem": "Stack verdict: the idle gain holds; there is no scroll gain overall; and stack5 has a candidate worst-frame regression where the #people cards start to reveal. Your swipe pick: stack5, a moderate difference, better but still a bit laggy.\n\nThe regression is in the frame right after the reveal starts.\n- Phone, 16 scripted runs: stack5 median 70 ms, every run over 50 ms. Today's best: median 41 ms, no run over 50 ms.\n- Excess per run (time over a smooth frame): 58 vs 21 ms. That alone outweighs everything else stack5 gains while scrolling.\n- Simulator leave-one-out (Simulator figures, OBSERVED, never a phone gain): the extra work is all layer commit (Composite), and it comes from blur-cubic, not from the avatar rotator st6.\n\nContext. These are not part of this decision; each has a track already.\n- The frame that starts the reveal costs about 54 ms in both builds. Part of it may be our own probe; a probe-off read waits for a later phone slot.\n- y≈2990 hero-track: fwreskip P2 (fix-scroll-engine).\n- Platform gate: PR-002 (already absent in stack5).\n- Three smaller spots, each one layer-commit frame of about 20-28 ms excess per run: the platform 'secure' picture starting, the first scroll frame, and #people starting to shrink. A Simulator layer diff is running now.\n- Five spots under ~13 ms per run: no action.",
+  "visualDiff": [],
+  "gain": [],
+  "compare": {
+    "a": {
+      "label": "Today's best (RB, landed)"
+    },
+    "view": "slider",
+    "shots": []
+  },
+  "options": [
+    {
+      "name": "drop-blur",
+      "label": "A: ship the stack without blur-cubic",
+      "idea": "Ship RB + st6 (the build exists, hashes checked) instead of RB + blur-cubic + st6. The cards' blur reveal keeps today's curve.\nCost: one phone block (today's best, stack5 and this build, Latin-square order, about 30 min) and no Simulator hold. Agent effort: small.",
+      "looksSame": "Yes: the cards reveal exactly as today; only the avatar rotator differs, as in stack5.",
+      "risk": "Low. This is today's reveal. Coupling: st6 still needs its selector added to RB's will-change list when it lands (fix-scroll-engine).",
+      "visualDiff": [
+        "Nothing visible: the reveal is today's. Headless shots at 0.15 s, 0.35 s and 2 s into the reveal differ from today's by 0.11-0.14 % of pixels, within the page's own animation noise (0-0.4 %)."
+      ],
+      "gain": [
+        {
+          "what": "#people, frame after the reveal starts (phone median)",
+          "before": "70 ms (stack5)",
+          "after": "about 41 ms, like today's best",
+          "tag": "estimate",
+          "how": "S1 phone runs, 8 per build; the Simulator puts this frame's extra cost on blur-cubic (OBSERVED). The phone block confirms it.",
+          "needsPhone": true
+        },
+        {
+          "what": "Excess per run at #people",
+          "before": "58 ms",
+          "after": "about 21 ms",
+          "tag": "estimate",
+          "how": "Sum of (dt - 16.7) over frames > 34 ms in that frame, per run; today's best value used as the target.",
+          "needsPhone": true
+        },
+        {
+          "what": "Frames over 50 ms at #people, per run",
+          "before": "1 (in 8 of 8 runs)",
+          "after": "about 0 (0 of 7 today)",
+          "tag": "estimate",
+          "how": "S1 phone runs.",
+          "needsPhone": true
+        },
+        {
+          "what": "Idle gain at the top (frames > 34 ms)",
+          "before": "0 per run (stack5)",
+          "after": "unknown; likely kept",
+          "tag": "UNRESOLVED",
+          "how": "Which part carries the 3 -> 0 idle gain is unknown. By code reading it is probably st6 (it removes the rotator's DOM churn during idle): PREDICTED, unverified. The phone block checks it.",
+          "needsPhone": true
+        },
+        {
+          "what": "Paint at the reveal (iPhone, Mpx per run)",
+          "before": "48-49 (with blur-cubic)",
+          "after": "54-55 (as today)",
+          "tag": "OBSERVED",
+          "how": "blur-cubic's own iPhone paint measurement; this saving is what option A gives up. It never showed as a scroll gain on the phone."
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "RB + st6 (no blur-cubic)"
+        },
+        "shots": [
+          {
+            "caption": "0.15 s into the reveal (headless Chrome, 430 wide)",
+            "a": "r1-o1-a-1.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r1-o1-b-1.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          },
+          {
+            "caption": "0.35 s into the reveal",
+            "a": "r1-o1-a-2.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r1-o1-b-2.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          },
+          {
+            "caption": "Settled, 2 s",
+            "a": "r1-o1-a-3.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r1-o1-b-3.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "prepromote",
+      "label": "B: keep blur-cubic, prepare its layer early",
+      "idea": "Keep blur-cubic, but set up the cards' filter layer before the reveal starts (for example will-change: filter on the card once #people is near), so the layer commit leaves the first reveal frame. Not built yet; a fix owner the lead assigns.\nCost: one Simulator mechanism hold, a pixel-identity check, then one phone block (about 30 min). Agent effort: medium.",
+      "looksSame": "It must look exactly like stack5. That is not checked yet: a layer prepared early can draw the blur slightly differently, so pixel identity is checked before any phone run.",
+      "risk": "Medium. Memory for one full-width card layer held longer. It may only move the cost to an earlier frame. Couplings: RB's will-change list and re-keep-op.",
+      "visualDiff": [
+        "Intended: nothing visible against stack5. Not built yet; the shots show stack5, which B must match.",
+        "Possible: a slightly different blur edge during the 0.7 s reveal if the early layer rasterizes differently. A failed pixel check stops it."
+      ],
+      "gain": [
+        {
+          "what": "#people, frame after the reveal starts (phone median)",
+          "before": "70 ms (stack5)",
+          "after": "unknown, up to about 41 ms",
+          "tag": "UNRESOLVED",
+          "how": "Only if moving the commit earlier removes it, rather than moving it into another frame. A Simulator check first, then the phone.",
+          "needsPhone": true
+        },
+        {
+          "what": "Paint at the reveal (iPhone, Mpx per run)",
+          "before": "48-49",
+          "after": "48-49 (kept)",
+          "tag": "estimate",
+          "how": "blur-cubic's own measurement, if the early layer does not change painting."
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "stack5 (what B must look like)"
+        },
+        "shots": [
+          {
+            "caption": "0.15 s into the reveal: stack5, which B must match",
+            "a": "r1-o2-a-1.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r1-o2-b-1.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          },
+          {
+            "caption": "0.35 s into the reveal",
+            "a": "r1-o2-a-2.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r1-o2-b-2.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "keep",
+      "label": "C: keep stack5 as it is",
+      "idea": "Change nothing: stack5 stays the candidate, blur-cubic included.\nCost: none. Agent effort: none.",
+      "looksSame": "Yes, it is stack5.",
+      "risk": "None new. It keeps the one slow frame (about 1 over 50 ms per pass) you may feel at #people.",
+      "visualDiff": [
+        "Nothing new: stack5 against today differs by 0.15-0.25 % of pixels in the headless shots, within the page's animation noise (0-0.4 %)."
+      ],
+      "gain": [
+        {
+          "what": "Excess per run at #people (phone)",
+          "before": "about 21 ms (today)",
+          "after": "about 58 ms (+37 ms)",
+          "tag": "OBSERVED",
+          "how": "S1 phone runs, 8 per build. Keeping stack5 keeps this cost."
+        },
+        {
+          "what": "Frames over 50 ms at #people, per run (phone)",
+          "before": "0 (today)",
+          "after": "about 1 (8 of 8 runs)",
+          "tag": "OBSERVED",
+          "how": "S1 phone runs."
+        },
+        {
+          "what": "Idle frames > 34 ms at the top, per run (phone)",
+          "before": "3 (today)",
+          "after": "0",
+          "tag": "OBSERVED",
+          "how": "S1 phone runs, both blocks: WIN."
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "stack5"
+        },
+        "shots": [
+          {
+            "caption": "0.15 s into the reveal",
+            "a": "r1-o3-a-1.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r1-o3-b-1.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          },
+          {
+            "caption": "Settled, 2 s",
+            "a": "r1-o3-a-2.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r1-o3-b-2.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "recommended": {
+    "option": "drop-blur",
+    "why": "Cheapest: the build exists, it needs one 30-min phone block, and there is no visual change. It targets the only spot where stack5 is worse. B can follow later if the paint saving matters."
+  },
+  "state": "accepted",
+  "rev": 1,
+  "decision": {
+    "value": "accepted",
+    "notes": "I'd like to know about the performance of option (b). it may better. \nAnyway, i'd like to applied option (a) and research option (b) more in parallel.\nPrefer apply option (a) is higher priority than do research (b)",
+    "at": "2026-10-02T09:12:55.131Z",
+    "who": "user",
+    "rev": 1,
+    "option": "drop-blur"
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "notes": "I'd like to know about the performance of option (b). it may better. \nAnyway, i'd like to applied option (a) and research option (b) more in parallel.\nPrefer apply option (a) is higher priority than do research (b)",
+      "at": "2026-10-02T09:12:55.131Z",
+      "who": "user",
+      "rev": 1,
+      "option": "drop-blur"
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-02T09:04:25.574Z",
+      "by": "wi-stack",
+      "note": "first version"
+    }
+  ],
+  "createdAt": "2026-10-02T09:04:25.574Z",
+  "updatedAt": "2026-10-02T09:12:55.131Z",
+  "proposedAt": "2026-10-02T09:04:25.574Z",
+  "history": [
+    {
+      "at": "2026-10-02T09:04:25.574Z",
+      "who": "wi-stack",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-02T09:12:55.131Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 1,
+      "note": "I'd like to know about the performance of option (b). it may better. \nAnyway, i'd like to applied option (a) and research option (b) more in parallel.\nPrefer apply option (a) is higher priority than do research (b)",
+      "option": "drop-blur"
+    }
+  ]
+}

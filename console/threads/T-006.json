@@ -1,0 +1,157 @@
+{
+  "id": "T-006",
+  "title": "Catch up PR-001",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-01T21:19:04.531Z",
+  "updatedAt": "2026-10-02T11:33:47.101Z",
+  "rev": 43,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-01T21:19:04.531Z",
+      "by": "user",
+      "text": "Catch up PR-001 what's the next step ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-01T21:19:31.662Z",
+      "by": "lead",
+      "text": "PR-001 next step: the change request (play the accent word like apple.com does, as pre-rendered image frames or video) went to de-illusion-style just now, at the 04:20 reset.\n1. Research how apple.com does it: a canvas image sequence vs video. Check sharpness on the 3x screen, transparency, file size, and what Safari does with each.\n2. Capture the original drawing frame by frame and build the new version.\n3. Compare the two frame by frame. The goal is no visible difference at any moment, not only at rest.\n4. Post a revised proposal on the Proposals page for your decision.\nI'll post here when the revision is up."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-01T22:24:46.567Z",
+      "by": "user",
+      "text": "What's about this progress ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-01T22:25:09.740Z",
+      "by": "lead",
+      "text": "PR-001 progress (the hero accent word, redone the way you asked):\n- Done: the new version no longer swaps the stroke-by-stroke drawing for a wipe. It plays the original drawing as pre-rendered frames on a canvas, like apple.com, using lossless PNGs so it can be pixel-identical. Only the draw/erase is covered; the wobble ('boil') stays as it is, because it was shown not to be the cost.\n- Now: de-illusion-style has its capture script written and is in line for Chrome (#5) to record the frames and run the pixel-by-pixel comparison against the original.\n- Next: if every frame matches, I post the revised PR-001 on the Proposals page with the comparison and the cost numbers for your decision. If any frame differs, I'll say so up front.\nChrome is busy for about 5 more minutes with a load test, then the waiting jobs go 3 at a time."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-01T22:26:12.010Z",
+      "by": "user",
+      "text": "Mark this PR-001 as highest priority of testing lane"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-01T22:26:32.007Z",
+      "by": "lead",
+      "text": "Done. PR-001's capture job is now first in line for Chrome, and its board row is priority 1. Chrome is finishing a load test right now (until about 05:28); PR-001's job goes next, and its frames-and-pixel-check jobs keep the front of the line from here on. I'll post the frame comparison here as soon as it's done."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-01T22:35:42.100Z",
+      "by": "lead",
+      "text": "PR-001 update, with corrections to what I told you at 05:25:\n- Correction: the frame capture had already run, sharing Chrome with other jobs; it wasn't waiting in line. Also only 7 of the accent words are actually shown (4 are hidden), not 11.\n- Option A, 'contain' (a CSS limit on the word): pixel-identical, every one of 1526 frames matches exactly. But WebKit's own source code shows it can't help Safari: the drawing already is its own layout island. The real trigger is that all 3 stacked copies of each word animate at once, 2 of them invisible, and 2 or more of those in one frame make Safari re-lay out the whole page. So A is dropped.\n- Option B, 'onecopy' (animate only the visible copy): halves the paint work in Chrome. Pixel check: 499 of 518 sampled frames identical; in one word ('du') a single pixel differs while that stroke draws. The cause isn't known yet. So B is not yet pixel-identical, and I won't offer it to you until that pixel is explained or gone.\n- Option C, canvas frames (apple.com style): its first pixel check failed, and de-illusion-style is debugging it.\nNext: a Simulator run compares all the options on Safari's engine and decides which one actually removes the full-page layouts. It's first in line."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-01T22:36:20.863Z",
+      "by": "user",
+      "text": "Do you push to proposal yet ?"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-01T22:36:33.107Z",
+      "by": "lead",
+      "text": "Not yet. None of the options is ready for you:\n- A matches every pixel but can't help Safari, so it's dropped.\n- B is one pixel off in one word.\n- C's first check failed.\nYou said a fix must look exactly the same, so I'm holding PR-001 back until one option matches every frame and the Simulator shows it removes Safari's full-page layouts.\nIf you'd rather see B now, I can post it with the one-pixel difference marked and side-by-side frames of 'du', and you judge. Reply 'post B' for that, or 'wait' to wait for an exact match.",
+      "ask": true
+    },
+    {
+      "n": 10,
+      "at": "2026-10-01T22:36:48.921Z",
+      "by": "user",
+      "text": "Let's put it all for review the visual"
+    },
+    {
+      "n": 11,
+      "at": "2026-10-01T22:37:06.223Z",
+      "by": "lead",
+      "text": "OK. de-illusion-style is posting all three options on the Proposals page now (A, B, then C). Each one states its difference from the original in the first line, B has a zoomed side-by-side of the one-pixel spot in 'du', and C is shown in its current state with its failed check marked. None of them has timing numbers yet. I'll tell you here when they're up."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-01T22:37:51.787Z",
+      "by": "user",
+      "text": "I still didn't see any PR ?"
+    },
+    {
+      "n": 13,
+      "at": "2026-10-01T22:38:11.097Z",
+      "by": "lead",
+      "text": "Right, they aren't up yet. I asked de-illusion-style only about a minute ago, and it has to make the side-by-side frame images before it can post. For now the page has only the old PR-001 (the wipe you rejected). I also restarted the console at 05:35 to load new code, so if the Proposals tab looks stuck, reload it. I'll write here the moment the first one is up, probably within 10-15 minutes, B first."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-01T22:41:56.919Z",
+      "by": "user",
+      "text": "LEADER. i'd like to ask you re-design the change my decision more proper."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-01T22:42:11.085Z",
+      "by": "lead",
+      "text": "Got it. I want to be sure which redesign you mean:\n1. The Proposals page: how you change a decision you already made. Today that takes Undo and then a new choice, it shows no history, and until 05:35 nobody was told when you changed your mind. I'd redesign it as: a 'Change decision' button on each proposal, every decision shown in a history list with your note, and the agent and I told at once with a reply in this thread.\n2. Something else, for example how a PR is laid out or what it asks you to decide.\nReply 1 or 2, and add anything you want on it.",
+      "ask": true
+    },
+    {
+      "n": 16,
+      "at": "2026-10-01T22:43:02.216Z",
+      "by": "user",
+      "text": "Observe this PR-001, you might learn something"
+    },
+    {
+      "n": 17,
+      "at": "2026-10-01T22:43:42.735Z",
+      "by": "lead",
+      "text": "I read PR-001 and its history. Here's what I learned:\n1. Your decision is the spec. You asked for one thing: research playing the word as animation frames or video, the way apple.com does. We drifted. Two of the three options (A, a CSS limit on the word, and B, animating only the visible copy) are things you didn't ask for. B was even listed in rev 1 as the fallback you had just seen.\n2. A change request means rev 2 of the SAME proposal, not new separate PRs. PR-001 is still sitting at rev 1, and nothing answers your note.\n3. Your full note ends with 'let's research them'. Our internal summary cut that off, which is part of how we drifted.\nWhat I'm changing now:\n- PR-001 rev 2 is the frames/video approach only, posted as a revision of PR-001. Its first lines quote your request and say how each point is met.\n- It comes with the research: how apple.com does it (an image sequence drawn on a canvas, or video), which of the two fits a transparent hand-drawn word, file size, sharpness on a 3x screen, all 7 words, and a pixel check of every frame against today's drawing.\n- A and B appear only as a short 'also tried, not chosen' note inside rev 2, not as proposals.\n- From now on every agent follows this rule for proposals.\nTell me if I misread you."
+    },
+    {
+      "n": 18,
+      "at": "2026-10-01T22:55:08.423Z",
+      "by": "lead",
+      "text": "PR-001 rev 2 progress (frames/video, our own Chrome measurements so far):\n- Frames: the stored frames match today's drawing exactly, all 1526. The earlier mismatch came from how Chrome placed the canvas on screen: a parent element sits half a pixel off, so the canvas got resampled by about 1 px. The fix is being checked now; this run is first in line.\n- Video: not pixel-identical. Video formats with transparency store colour at reduced resolution, so edges change by up to 5-26 levels even at top quality. We're checking whether any full-colour variant exists that browsers can play.\n- Size: all 7 words as frames come to about 105 KB (WebP) to 244 KB (PNG).\nNext: the full frame-by-frame check, then a Safari (Simulator) check, then rev 2 on the Proposals page."
+    },
+    {
+      "n": 19,
+      "at": "2026-10-02T02:09:07.303Z",
+      "by": "lead",
+      "text": "PR-001 status, honest version: the canvas frames match the original exactly when the clock is stopped (142/142 on the Simulator). But in live playback on Safari/WebKit (Simulator), the canvas animation stalls. Each word draws a few frames, freezes part-way, then jumps at the end. So it is NOT pixel-identical or smooth yet. The cause is unproven. The leading guess is that Safari copies the image strip back from the GPU each frame. Next: one Simulator test of 4 variants (image source, accelerated canvas, both, as-is) against the original SVG. If one plays every frame, revision 2 uses it. If none does, revision 2 will say the canvas route failed on Safari, and why. Revision 2 waits until then."
+    },
+    {
+      "n": 20,
+      "at": "2026-10-02T02:26:09.796Z",
+      "by": "lead",
+      "text": "Correction on PR-001. Earlier I said swapping the image source or the canvas mode made no difference. That was wrong: those runs were void. The page drops the test switch from the address before the code reads it, so every 'variant' actually ran the original canvas build. The re-run is queued with a fixed switch, plus the minimal standalone page. New lead (OBSERVED, cause unknown): while the canvas stalls, Safari's graphics process in the Simulator uses one full CPU core. That hints the Simulator may be the problem, not Safari on the phone, and the standalone page will help tell. Also confirmed: Apple's transparent HEVC video stores colour at reduced resolution (4:2:0), so the video route can't be pixel-identical."
+    },
+    {
+      "n": 21,
+      "at": "2026-10-02T02:37:49.114Z",
+      "by": "lead",
+      "text": "PR-001 revision 2 is up in the console, under Proposals. It answers your note point by point:\n- Image frames like apple.com: built and tested. Every frame matches the original exactly when frozen.\n- Live playback: it stalls in the Simulator, and so does a minimal page with no Fastwork code. So only the real iPhone can tell whether it works.\n- Video: can't be pixel-identical (4:2:0 colour, CONFIRMED).\n- Status: parked until a phone check, not withdrawn. No savings are claimed.\nYour decision: approve the phone check (today's version plus a test-only one-image-per-frame version, about 83 MB in memory, ESTIMATE), or withdraw the frames route. The phone check needs the iPhone plugged in by USB."
+    },
+    {
+      "n": 22,
+      "at": "2026-10-02T06:32:32.927Z",
+      "by": "lead",
+      "text": "PR-001: got your decision (accepted rev 2, 06:31Z). What happens now:\n1) Your feedback on the proposal feature: opened as I-053, and a toolsmith (ts-i053) is building it. One proposal will carry several options side by side, and you pick one when you accept. Old proposals keep working.\n2) 'Investigate which one gives the best performance and pick it': de-illusion-style compares the candidate solutions against the original. They are: frames (tiles), frames (one image per frame), video (HEVC with alpha) and 'animate only the visible copy'. The rev 1 wipe stays out (you rejected it as a visual change). Each option's pixel difference is measured and shown with numbers, since you accept 'a bit' of difference.\n3) Performance can only be judged on the iPhone (the Simulator stalls even on a plain test page). The phone is on USB now. PR-001 goes next, right after the fwreskip fling test that is running. Timing on the phone was paused project-wide; I read your note as lifting that pause for PR-001 only. Tell me here if you meant otherwise.\n4) The result comes back as PR-001 rev 3: all options with numbers, and the pick with its reason."
+    }
+  ],
+  "reads": {
+    "user": 22,
+    "lead": 22
+  },
+  "history": [
+    {
+      "at": "2026-10-02T11:33:47.101Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

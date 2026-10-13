@@ -1,0 +1,96 @@
+{
+  "id": "T-192",
+  "title": "Hidden Gem: the People still need people title.",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T10:26:42.478Z",
+  "updatedAt": "2026-10-05T11:48:18.168Z",
+  "rev": 23,
+  "assignees": [
+    "lead",
+    "fix-people-word"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T10:26:42.478Z",
+      "by": "user",
+      "text": "the People still need people title. it has animation of people word. so we can see in the desktop breakpoint. but in the iPhone device, the animation already run during this section fade-in.\n\nLet's investigate this cool animation. it's so hidden gem."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T10:27:49.534Z",
+      "by": "lead",
+      "text": "Good find; I've started on it: a helper is reading the page code now to see what starts the word animation.\n- Your report: on desktop the word animation in the title plays where you can see it; on the iPhone it is already over while the section still fades in.\n- First check: what starts the word animation versus what starts the section fade-in, and why they line up differently at phone width.\n- Also checked: whether the live site does the same, or our landed fixes changed it.\n- No phone time needed for this part; I'll reply here with the cause and options, then a Try-it if a change looks right.\nWhat you need to do: nothing for now."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T10:30:19.655Z",
+      "by": "lead",
+      "text": "Found it: the word animation starts when the title is 35 % on screen, but the card is still invisible then; the fade-in starts much later, so on the phone the word finishes unseen.\n- The word: the \"o\" in \"people\" turns into a stack of faces and opens out, about 2.3 s in total (a 1.3 s wait, then 0.5-0.9 s of motion).\n- Its start: a visibility watcher on the title, which ignores that the card is still hidden. The title is 35 % on screen after only about 60 px of scroll.\n- The card fade-in starts when the hero is 72 % scrolled, about 560-670 px later.\n- This is the original site's behaviour; our fixes did not change either trigger (code read, OBSERVED).\n- Desktop: by the code it also starts early there; slow wheel scrolling or scrolling back up (it replays) may be why you saw it.\nWays to show it (each changes timing, so it would be a proposal with a Try-it):\n- A: start the word when the card's fade-in starts (or ends); exact, simple.\n- B: start it later via the watcher (title further on screen); looser, depends on screen size.\n- Either can apply to phones only (desktop unchanged) or to every width.\nWhat you need to do: reply A or B, and phones only or every width, if you want a proposal; or reply \"no\" to leave it.",
+      "ask": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T10:30:48.886Z",
+      "by": "user",
+      "text": "yes, propose me."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-05T10:31:32.135Z",
+      "by": "lead",
+      "text": "On it: fix-people-word is building the proposal now, with a Try-it page for each option.\n- Option A: the word starts when the card's fade-in starts, at every width (my pick).\n- Option A-phone: the same on phones only; desktop stays as it is.\n- Option B only if it adds something A doesn't.\n- The word's own motion, the reduced-motion setting and the rest of the page stay the same.\n- It lands on the Proposals page; try it on the iPhone after the current phone tests (about 1-2 h); I'll tell you when the phone is free.\nWhat you need to do: nothing until the proposal shows up."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-05T11:02:15.007Z",
+      "by": "lead",
+      "text": "The People-word proposal (PR-024, your decision page) is ready on the Proposals page, with a Try-it for each option.\n\n- Cause: the word starts 1.3 s after the title is 35 % on screen, but its card fades in about 560 px further down. At a gentle scroll the word is over before the card shows.\n- Option A (recommended): the word's 1.3 s wait starts when the card starts to fade in, at every screen size. The word's own motion is unchanged.\n- Option A-phone: the same, but only on phone-size screens; desktop keeps today's timing.\n- Extra work for the page: one extra watcher on the card; no added scroll or per-frame work (checked in Chrome).\n- Risk: the word's widening now overlaps the last 0.3 s of the card's fade-in. How smooth that second is on the phone is not measured yet.\n- Both options are today's best build plus this change only; we checked that line by line.\n\nWhat you need to do: try it on the Mac now if you like; on the iPhone after the current phone tests, and I'll tell you here when the phone is free."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-05T11:08:50.626Z",
+      "by": "lead",
+      "text": "Got your change request for the People word (PR-024): fix-people-word is making version 3 now, in about 45-60 min.\n\n- Start: the word animates only once its card has fully faded in (fully visible, no blur), using the browser's \"fade finished\" signal, not a guess from scroll position.\n- Order: the text is fully shown first, then the animation plays. Version 3 says how long it waits after that, and why.\n- Reset: the mirror of the start. When the card starts to fade out, the word resets, so a quick scroll back and forth can't leave it half-played.\n- Checks: today's best build plus this change only; same Mac checks as before; a Try-it for each option.\n- iPhone Try-it: after the current phone tests (about 12:30Z at the earliest); I'll post here when the phone is free.\n\nWhat you need to do: nothing now; I'll tell you here when version 3 is ready."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-05T11:35:40.251Z",
+      "by": "lead",
+      "text": "Version 3 of the People word (PR-024) is ready on the Proposals page, built your way.\n\n- Start: the word opens when the card is fully shown (fade-in ended, blur gone), using the browser's own \"fade finished\" signal.\n- No extra wait: the card's 0.9 s fade-in is the moment you see the text first.\n- Reset: when the card starts to fade out (scrolling back up), the word closes and plays again on the next fade-in.\n- Options: A (recommended, every screen size) or A-phone (phones only; desktop keeps today's timing).\n- Checked in Chrome at phone size: the word starts within 1 ms of the fade-in end, and per-frame work is the same (616 vs 618 callbacks).\n- Not yet measured: how smooth that second is on the iPhone.\n\nWhat you need to do: try it on the Mac now if you like; the iPhone Try-it comes after you write \"phone back\" in the iPhone thread (T-195)."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-05T11:48:14.098Z",
+      "by": "fix-people-word",
+      "text": "Thanks! Option a (the word waits until the card is sharp, then opens; it closes again when the card fades out) is accepted and ready.\n- Next: it goes into the next combined build after the current one (v9.1), so it ships together with the other fixes.\n- The iPhone check comes with that build; nothing to test on your side before then.\n- The other option (phones only) and the older version stay as history only.\nWhat you need to do: nothing now."
+    }
+  ],
+  "reads": {
+    "user": 9,
+    "lead": 8,
+    "fix-people-word": 9
+  },
+  "history": [
+    {
+      "at": "2026-10-05T10:27:49.373Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    },
+    {
+      "at": "2026-10-05T10:31:31.974Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-people-word"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T11:35:40.251Z",
+    "fix-people-word": "2026-10-05T11:48:14.098Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

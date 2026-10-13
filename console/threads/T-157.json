@@ -1,0 +1,83 @@
+{
+  "id": "T-157",
+  "title": "Comment on T-154 #3 \"Join button at the top of the page: still lags a bit (PR-02…\": Catch up the de-v8-double-drive research",
+  "anchor": {
+    "page": "threads",
+    "item": "thread:T-154/msg:3",
+    "label": "Join button at the top of the page: still lags a bit (PR-021 rev 2) #3"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T20:24:59.028Z",
+  "updatedAt": "2026-10-04T23:04:59.255Z",
+  "rev": 18,
+  "assignees": [
+    "fix-double-drive",
+    "lead"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T20:24:59.028Z",
+      "by": "user",
+      "text": "Catch up the de-v8-double-drive research"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T20:25:18.818Z",
+      "by": "lead",
+      "text": "On the phone, no other part of v8 needs the Join button fix (PR-021); only the parts already being fixed had it.\n\n- The trick: an element follows your scroll but also runs its own slow animation, so it trails; switch that animation off while the scroll drives it.\n- Phone, checked in Chrome at phone size: only the top bar (fix-nav-earn, fix-nav-morph) and the end menu (accepted, landing now) have it.\n- Desktop has three more cases; the phone's own styles switch these effects off:\n\n| Where (desktop) | What you'd see | Trail |\n|---|---|---|\n| \"Future\" card, people section | keeps shrinking after you stop | 0.7-1.3 s |\n| Same card, fast scroll up | jumps up to 175 px for 3 frames | one-off |\n| Commission card, scroll up | jumps 20-27 px once | one-off |\n\n- These are Chrome probe numbers (OBSERVED); the Safari check was skipped because the Mac queue was full.\n- I'm not starting desktop fixes, since the goal is the phone; say if you want them.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T20:26:17.338Z",
+      "by": "user",
+      "text": "Mark this research as highest priority.",
+      "forLead": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T20:27:09.373Z",
+      "by": "lead",
+      "text": "Done: the double-drive fixes are now priority 1 on the board, and an agent is fixing them.\n\n- fix-double-drive fixes the cards: the people-section \"future\" card (trails 0.7-1.3 s, jumps up to 175 px) and the commission card (jumps 20-27 px).\n- It also runs the Safari check the sweep skipped, and confirms the phone looks the same at rest.\n- The top-bar tail at the end of the menu close goes to fix-nav-earn, inside its Join button proposal.\n- I move their Mac and phone turns to the front of the queue.\n- You get a proposal with Try-it pages (before and after) to feel it, posted as soon as the pages work.\n\nWhat you need to do: nothing now; review the proposal when it says \"waiting for your review\"."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T21:18:07.750Z",
+      "by": "fix-double-drive",
+      "text": "The double-drive fix is ready to try: proposal PR-022, with A = v8 (best build) and B = v8 + fix.\n- Desktop: the people-section card no longer trails the scroll by 0.7-1.3 s (its own animation restarts: 74 -> 3).\n- Fast scroll up: no card jumps (were up to 270 px on the people card, 31 px on the commission card).\n- At rest: still frames equal v8 in Chrome (desktop, phone) and Safari (Simulator); remaining spots are animation timing that also differs between two loads of v8.\n- Phones: no visible change; a short real-iPhone no-worse check is drafted, not run yet.\n- It is also part 3 of the next best build (v9).\nWhat you need to do: open PR-022, scroll the middle of the page in A and B on desktop, then accept or ask for changes."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T22:18:46.806Z",
+      "by": "fix-double-drive",
+      "text": "Double-drive is fixed in both places: the cards and the top bar. Neither has had a full phone check yet.\n\n| What | Before (v8) | After |\n|---|---|---|\n| People-section card: restarts of its size animation over one page scroll (desktop) | 74 | 3 |\n| Same card: largest jump when you scroll back up | 271 px | 10 px |\n| Commission card: jump at the switch on scroll-up | 31 px | 2 px |\n| Top bar on the phone: properties that restart while the menu closes | 8 | 0 |\n| Same: longest tail after the menu closes | 1.4 s | none |\n\n- 'Double drive' means a CSS animation that the page's script restarts on every frame, so the element trails and jumps.\n- Cards: fix-double-drive. The fix leaves every card exactly where v8 does once you stop scrolling (checked in Chrome and the iOS Simulator). The phone check (P-118) is set up and starts next.\n- Top bar: fix-nav-earn's menu swipe rev 3, already landed on main.\n- These are counts from our probes, not timings.\n\nWhat you need to do: nothing now. If the phone check passes, the card fix goes into the next best build."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T22:56:23.102Z",
+      "by": "lead",
+      "text": "Double-drive fix: no worse than v8 on your iPhone at Serious heat; ops still checks the card.\n\n| part (Xcode Serious) | frames over 50 ms, fix vs v8 | verdict |\n|---|---|---|\n| automatic scroll (H1, H2) | 1 fewer | no worse |\n| finger-like swipes (H3) | 0 in both | no worse |\n\n- All control runs passed; no frame over 100 ms in any run.\n- Two agents scored it on their own (fix-double-drive and iphone-runner) and agree.\n- It is already in the v9 best build, so the next phone test is v9 itself, after its Mac checks (about 23:10Z).\n\nWhat you need to do: nothing. Leave Xcode's Serious setting on."
+    }
+  ],
+  "reads": {
+    "user": 7,
+    "lead": 7,
+    "fix-double-drive": 6
+  },
+  "history": [
+    {
+      "at": "2026-10-04T20:27:09.455Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-double-drive,lead"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T22:56:23.102Z",
+    "fix-double-drive": "2026-10-04T22:18:46.806Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

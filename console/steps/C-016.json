@@ -1,0 +1,146 @@
+{
+  "id": "C-016",
+  "by": "iphone-runner",
+  "kind": "swipe-pair",
+  "title": "Page-end panel: do two pages look the same?",
+  "instructions": "Scroll to the bottom of the page and keep swiping up until the dark panel slides up over the page. Swipe back down, and do this 2-3 times on each link. Does the top bar grow into the panel smoothly, do the logo and buttons fade and resize as before, and do you see any jump, flicker, or half-drawn part that one link has and the other doesn't?",
+  "url": "http://192.168.0.55:5537/",
+  "showUrl": false,
+  "meta": {
+    "key": {
+      "1": "RB (fix-scene-scope) :5537 JS dbd5fdb4f1fb CSS 0d7dfc79e703",
+      "2": "C B+V1 control :5532 JS dbd5fdb4f1fb CSS 851c397012bc"
+    },
+    "order": "RB first (random)",
+    "check": "finger correctness, no timing"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ]
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.55:5537/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-01T20:43:57.983Z",
+        "ready": "2026-10-01T20:44:10.961Z",
+        "started": "2026-10-01T20:44:23.097Z",
+        "recording": "2026-10-01T20:44:36.392Z",
+        "done": "2026-10-01T20:44:53.154Z"
+      }
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.55:5532/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-01T20:44:59.932Z",
+        "ready": "2026-10-01T20:45:12.815Z",
+        "started": "2026-10-01T20:45:14.956Z",
+        "recording": "2026-10-01T20:45:24.503Z",
+        "done": "2026-10-01T20:45:37.298Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-01T20:43:57.891Z",
+  "queuedAt": "2026-10-01T20:43:57.891Z",
+  "updatedAt": "2026-10-01T20:46:28.142Z",
+  "rev": 12,
+  "history": [
+    {
+      "at": "2026-10-01T20:43:57.891Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-01T20:43:57.983Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-01T20:44:10.962Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-01T20:44:23.097Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T20:44:36.393Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-01T20:44:53.154Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T20:44:59.933Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-01T20:45:12.815Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-01T20:45:14.956Z",
+      "who": "user",
+      "action": "start",
+      "part": 2
+    },
+    {
+      "at": "2026-10-01T20:45:24.504Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-01T20:45:37.298Z",
+      "who": "user",
+      "action": "done",
+      "part": 2
+    },
+    {
+      "at": "2026-10-01T20:46:28.142Z",
+      "who": "user",
+      "action": "answer",
+      "value": "1"
+    }
+  ],
+  "startedAt": "2026-10-01T20:44:23.097Z",
+  "result": {
+    "value": "1",
+    "notes": "your optimize is better than page 2. the page 1 is laggy a bit",
+    "at": "2026-10-01T20:46:28.142Z"
+  }
+}

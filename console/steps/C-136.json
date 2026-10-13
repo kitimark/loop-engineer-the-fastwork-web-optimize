@@ -1,0 +1,166 @@
+{
+  "id": "C-136",
+  "by": "fix-scrollcb-g0",
+  "topic": "sticky-walk",
+  "kind": "swipe-pair",
+  "title": "Blind swipe: which page follows your finger better while you drag down toward the end? (pair 2 of 2)",
+  "instructions": "On each page, swipe down from the top all the way to the end with your finger. Then pick the page that follows your finger better, or 'same' if you feel no difference.",
+  "url": "http://192.168.0.57:55446/",
+  "showUrl": false,
+  "meta": {
+    "ticket": "sw-swipe",
+    "pair": "CV",
+    "n": 2,
+    "key": {
+      "1": "C",
+      "2": "V"
+    },
+    "pins": {
+      "C": "g0.0i 9162843e750f/adb875d94c1f",
+      "V": "g0.0j 9162843e750f/bee7fce9ad56"
+    }
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ]
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.57:55446/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-09T03:31:24.954Z",
+        "ready": "2026-10-09T03:31:29.647Z",
+        "started": "2026-10-09T03:31:42.685Z",
+        "recording": "2026-10-09T03:31:42.880Z",
+        "done": "2026-10-09T03:32:33.011Z"
+      },
+      "message": "not recorded; swipe and judge anyway"
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.57:55445/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-09T03:32:33.394Z",
+        "ready": "2026-10-09T03:32:38.079Z",
+        "started": "2026-10-09T03:32:40.962Z",
+        "recording": "2026-10-09T03:32:41.373Z",
+        "done": "2026-10-09T03:33:32.087Z"
+      },
+      "message": "not recorded; swipe and judge anyway"
+    }
+  ],
+  "createdAt": "2026-10-09T03:31:24.847Z",
+  "queuedAt": "2026-10-09T03:31:24.847Z",
+  "updatedAt": "2026-10-09T03:33:33.903Z",
+  "rev": 12,
+  "history": [
+    {
+      "at": "2026-10-09T03:31:24.847Z",
+      "who": "fix-scrollcb-g0",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-09T03:31:24.954Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-09T03:31:29.647Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-09T03:31:42.685Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-09T03:31:42.880Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording",
+      "note": "not recorded; swipe and judge anyway"
+    },
+    {
+      "at": "2026-10-09T03:32:33.011Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-09T03:32:33.394Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-09T03:32:38.079Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-09T03:32:40.962Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-09T03:32:41.373Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording",
+      "note": "not recorded; swipe and judge anyway"
+    },
+    {
+      "at": "2026-10-09T03:33:32.087Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-09T03:33:33.903Z",
+      "who": "user",
+      "action": "answer",
+      "value": "2"
+    }
+  ],
+  "queueSeq": 95,
+  "startedAt": "2026-10-09T03:31:42.685Z",
+  "result": {
+    "value": "2",
+    "at": "2026-10-09T03:33:33.903Z"
+  }
+}

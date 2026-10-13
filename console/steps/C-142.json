@@ -1,0 +1,58 @@
+{
+  "id": "C-142",
+  "by": "cap-worst",
+  "kind": "action",
+  "phone": true,
+  "title": "iPhone: turn on Do Not Disturb or Sleep focus for the screen recordings",
+  "instructions": "Turn on Do Not Disturb or Sleep focus on the iPhone (Control Center, Focus) so no notification can appear, leave Safari open and don't touch the phone. Press Done when it is on; the robot then records the clips (about 15-30 minutes).",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-10T04:02:02.730Z",
+        "done": "2026-10-10T04:02:03.592Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-10T03:58:50.706Z",
+  "queuedAt": "2026-10-10T03:58:50.706Z",
+  "updatedAt": "2026-10-10T04:02:03.592Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-10T03:58:50.706Z",
+      "who": "cap-worst",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-10T04:02:02.730Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-10T04:02:03.592Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 101,
+  "startedAt": "2026-10-10T04:02:02.730Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-10T04:02:03.592Z"
+  }
+}

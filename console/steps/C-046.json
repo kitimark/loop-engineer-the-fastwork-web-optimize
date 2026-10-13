@@ -1,0 +1,105 @@
+{
+  "id": "C-046",
+  "by": "iphone-runner",
+  "kind": "action",
+  "title": "Fast flicks at the end of the page (about 1 min)",
+  "instructions": "One short part: press Start, wait until this page says \"swipe now\", do the flicks, press Done. Then pick the answer that fits and note where you felt lag, if anywhere.",
+  "showUrl": false,
+  "meta": {
+    "job": "T-113",
+    "part": "end re-post",
+    "build": "v7 best (JS 8c90da217745, CSS 308f0da70c3a)",
+    "port": 6139,
+    "by": "iphone-runner"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "I felt lag",
+      "No lag"
+    ]
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Fast flicks at the end of the page",
+      "instructions": "When it says \"swipe now\": flick fast down to the very end of the page, then flick up and down over the last two screens a few times. Then press Done.",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-04T12:53:15.355Z",
+        "ready": "2026-10-04T12:53:23.926Z",
+        "started": "2026-10-04T12:57:35.062Z",
+        "recording": "2026-10-04T12:57:37.380Z",
+        "done": "2026-10-04T12:58:06.194Z"
+      },
+      "message": "Recording: swipe now, then press Done."
+    }
+  ],
+  "createdAt": "2026-10-04T12:53:15.152Z",
+  "queuedAt": "2026-10-04T12:53:15.152Z",
+  "updatedAt": "2026-10-04T12:58:08.604Z",
+  "rev": 7,
+  "history": [
+    {
+      "at": "2026-10-04T12:53:15.152Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-04T12:53:15.355Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading",
+      "note": "Getting the iPhone ready, one moment."
+    },
+    {
+      "at": "2026-10-04T12:53:23.926Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready",
+      "note": "The page is open on the iPhone. Press Start when you are ready."
+    },
+    {
+      "at": "2026-10-04T12:57:35.062Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T12:57:37.380Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording",
+      "note": "Recording: swipe now, then press Done."
+    },
+    {
+      "at": "2026-10-04T12:58:06.194Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T12:58:08.604Z",
+      "who": "user",
+      "action": "answer",
+      "value": "I felt lag"
+    }
+  ],
+  "queueSeq": 5,
+  "startedAt": "2026-10-04T12:57:35.062Z",
+  "result": {
+    "value": "I felt lag",
+    "at": "2026-10-04T12:58:08.604Z"
+  }
+}

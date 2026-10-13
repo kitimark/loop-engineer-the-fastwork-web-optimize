@@ -1,0 +1,253 @@
+{
+  "id": "T-030",
+  "title": "Research the GPU-Accelerated Properties CSS",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-02T23:00:48.599Z",
+  "updatedAt": "2026-10-05T11:41:12.973Z",
+  "rev": 75,
+  "assignees": [
+    "mgmt-ops-10",
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-02T23:00:48.599Z",
+      "by": "user",
+      "text": "Research the GPU-Accelerated Properties CSS. \n\nThere's might useful to use them for optimize the animation."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-02T23:01:03.348Z",
+      "by": "lead",
+      "text": "Good idea, I'm starting it now (agent de-gpu). Short version of what it covers: browsers can run some animations on the GPU compositor without the main thread: mainly transform and opacity (and in Chrome also filter, plus a few newer cases). Animating other properties (top/left, width/height, margins, background-position, box-shadow, clip-path in some engines) makes the main thread lay out or repaint every frame. That is exactly the kind of work behind the slow frames we measured. The research will: (1) collect what Chrome and Safari/WebKit actually put on the GPU, with references to their docs and source, because the two engines differ; (2) go through every animation on the Fastwork page and mark which ones animate a 'slow' property and could be rewritten as transform/opacity with a pixel-identical look; (3) note the costs: every GPU layer uses memory, and too many layers (like the countdown's 80) made WebKit slower before, so 'put everything on the GPU' is not free. Several of our fixes already did this (the countdown faces, the carousel), so it will also say which ideas are already used. I'll post the list here when it's ready."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-02T23:19:19.232Z",
+      "by": "user",
+      "text": "If you found any improvement can improve the fastwork website. let's plan the fixes and make it as highest priority."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-02T23:19:29.260Z",
+      "by": "lead",
+      "text": "Agreed. As soon as de-gpu finishes the list, the top candidates become the highest-priority fixes: I'll start a fix owner on each right away, ahead of the other open topics. Each fix is checked the usual way: counts and Chrome call tree first, pixel-identical screenshots, then a phone check. If a fix needs a phone timing run, I'll ask you here first, because timing tests are still paused except for the ones you allowed. I'll post the plan with the candidates in this thread."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-03T00:06:26.375Z",
+      "by": "lead",
+      "text": "de-gpu's research is done (research/gpu-props). Plain summary:\n- What still lags on the best build (from your last finger run): mostly the top of the page, where the hero fades out and the next section comes in (63 of 81 slow frames), and the moment the menu panel is pinned (its countdown clock repaints every frame).\n- Safari 26.4+ can run scroll-linked animations off the main thread (confirmed in WebKit's blog and source); your phone has 26.6.\nPlan, started now as the highest priority (two new fix owners, both on top of today's best build 'optimize 2'):\n1. Countdown digits as sliding strips (fix-cd-strip): each digit becomes one pre-drawn strip 0-9 that only slides on the GPU, so Safari stops repainting digits in both clocks. Looks identical by construction; it costs about 2 MB of GPU memory per clock, which we will check. It works together with the countdown change you already accepted.\n2. Hero fade-out on Safari's scroll thread (fix-hero-exit-threaded): the hero fade/blur becomes a scroll-driven animation the GPU thread runs, instead of JavaScript every frame. First it explains one slow frame an earlier version caused at the hero's end, then builds.\nHeld back: a rolling-digit version that would look slightly different (your rule: identical looks only; say if you want it tried) and two ideas that save battery/heat but not smoothness.\nEach fix is checked by counts, call tree and pixel-identical screenshots first; phone checks get slots after the countdown test and the menu-fix run already queued."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-03T00:07:18.873Z",
+      "by": "user",
+      "text": "List all de-gpu findings"
+    },
+    {
+      "n": 7,
+      "at": "2026-10-03T00:08:00.184Z",
+      "by": "lead",
+      "text": "All de-gpu findings (full report: research/gpu-props/README.md). CONFIRMED = checked against Chrome/WebKit source, docs or the WebKit blog; OBSERVED = our own measurement only (single runs).\n\nA. What the GPU can animate by itself (no main-thread work per frame), CONFIRMED\n1. Both Chrome and Safari: transform (also translate/scale/rotate), opacity, filter, backdrop-filter.\n2. Exceptions: Chrome keeps blur/drop-shadow animations on the main thread. Safari keeps steps() and linear(...) easings on the main thread (normal 'linear' and cubic-bezier are fine).\n3. Chrome only: background-color and clip-path also run on the GPU. Safari runs them on the main thread.\n4. Always main thread in both: background-position, mask-position, width/height/gap/margins, stroke-dashoffset, colours, custom properties (--x), SMIL SVG animations, and anything JavaScript writes every frame.\n5. Mixed animations: in Chrome one slow property drags the whole animation to the main thread; Safari keeps the fast part on the GPU.\n6. Safari 26.4+ runs scroll-linked CSS animations (animation-timeline: scroll()/view()) on its scroll thread, even with steps()/linear() easings (WebKit blog 17862 + source). Your phone has 26.6.1.\n7. Safari detail: a GPU layer that leaves its clip box loses its picture and must repaint when it comes back; a running GPU animation prevents that.\n\nB. This page\n8. Most of the page's CSS animations already use GPU properties (scroll cue, vinyl, marquees, card entries, carousel on the best build).\n9. Not GPU today: countdown digits (JavaScript every frame), the accent word drawing, the blinking carets/boil (GPU in Chrome, main thread in Safari because of steps()), the 4 \"sweep\" titles, the small glint on the 'secure' picture (SMIL), card entry blurs (Chrome only), a one-time mask wipe on the nav button at load, and some layout transitions (gap, row height, nav width).\n10. About half of the platform-section animation CSS never runs: its HTML isn't on the page (dead CSS, ignored).\n11. At rest on the best build, the page still draws every frame because of: the countdown (top), typing and count-up effects (middle), and in the platform section only the sweep titles + the glint. Pausing those two makes that part fully idle in Chrome (120 frames per 2 s down to 5).\n\nC. Your last finger run on the best build ('optimize 2'), OBSERVED, one run each\n12. The middle and bottom of the page are clean now (17 slow frames between 1000-5000 px vs 45 in the original; 1 vs 21 below 5000 px).\n13. What you still feel: (a) the first ~1000 px, where the hero fades out and the next section comes in: 63 of the 81 slow moving frames; (b) the menu panel at the end while your finger holds it there: 91 slow frames, median frame 20 ms (just under 60 fps).\n14. The Safari toolbar showing/hiding is NOT the main cause: mid-page toolbar changes ran at 13-18 ms frames. Safari does re-lay out fixed/sticky boxes and anything sized with vh/dvh on each toolbar frame (CONFIRMED in WebKit source), but on this page it's small.\n15. One exception: scrolling back up from the end while the menu panel closes gave 84/66/42 ms frames; the panel's height uses 'dvh', so it re-lays out on every toolbar frame (one run; fix-nav-morph is taking this).\n\nD. Ideas checked for the countdown\n16. Pre-drawn digit strip (one image strip 0-9 per digit that only slides): identical by construction, no digit repaints at all, 8 layers per clock instead of 24. Cost: ~2 MB GPU memory per clock. -> fix-cd-strip (started).\n17. Countdown roll as a GPU animation: removes the JavaScript too, but its motion can differ from the original by up to ~0.08 px per frame. Not pixel-identical -> parked, your call.\n18. steps() easing: rejected (changes the look, and Safari runs it on the main thread anyway).\n19. 'contain' / content-visibility on the clock: little value.\n\nE. Ranked fixes\nF1 cd-strip (started, #1): countdown digits as strips; helps the top and the menu pin; identical.\nF2 hero-exit-threaded (started, #2): hero fade-out as a scroll-linked CSS animation on Safari's scroll thread; helps the top ~1000 px; identical as a function of scroll position (measured on the phone earlier); first it must explain an extra ~11 ms frame an earlier version caused at the hero's end.\nF3 cd-roll-ca (parked, your decision): see 17.\nI1 glint-ca and I2 sweep-exact (parked): make the platform part fully idle; saves battery/heat, not lag (almost no slow frames left there).\n\nF. Not recommended\n- Toolbar resize: no identical GPU form (Safari's own work).\n- Avatar carousel's shrinking ellipse (clip-path): no transform/opacity equivalent.\n- Card entry blurs: no identical blur-free form; Safari already uses the GPU for them.\n- Nav button mask wipe and hero entrance: run once at load only.\n- Layout transitions as transforms (FLIP): same geometry but text pixels differ mid-motion -> not identical.\n- Blinking carets/boil: owned by another topic (illusion-boil-ca)."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-03T00:09:07.611Z",
+      "by": "user",
+      "text": "List all fixes of de-gpu findings"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-03T00:09:39.265Z",
+      "by": "lead",
+      "text": "All fixes from de-gpu's findings (5 fix ideas, plus the related work they connect to). All are built on today's best build ('optimize 2') and checked by counts, call tree and pixel-identical screenshots, not by timing tests.\n\nSTARTED (highest priority)\n1. cd-strip: countdown digits as sliding strips. Agent: fix-cd-strip. Status: plan approved, building.\n   - What: each digit becomes one pre-drawn strip \"0 1 2 … 9 0\" that only slides up/down (GPU transform). Today each digit is 10 separate layers that Safari repaints over and over (127-137 times per 4 s at the top).\n   - Helps: the top of the page and the menu panel's clock when your finger holds the end of the page.\n   - Looks: identical by construction (each digit lands on the same pixel); proven with a 0-pixel screenshot check.\n   - Cost: about 2 MB more GPU memory per clock on Safari (checked on the Simulator).\n   - Two versions for the menu panel's clock: (b) safe, the hero clock gains only; (a) also smooths the menu panel, needs the menu-fix owner's OK.\n   - Works together with the countdown change you accepted earlier (the 'pause while hidden' part stays).\n2. hero-exit-threaded: the hero fade-out on Safari's scroll thread. Agent: fix-hero-exit-threaded. Status: researching.\n   - What: today JavaScript recalculates the hero fade/blur on every scroll frame (0-855 px). The fix turns it into 7 scroll-linked CSS animations that Safari 26.4+ runs on its scroll thread, with no JavaScript per frame.\n   - Helps: the first ~1000 px, where 63 of the 81 slow frames in your last finger run were.\n   - Looks: identical at every scroll position (an earlier version matched the original on your phone: copy opacity .901/.501/.03, blur 1.78 vs 1.79 px).\n   - First step: an earlier version made one frame ~11 ms slower where the hero ends (y≈700, Safari only). The agent finds out why before building.\n\nPARKED: needs your decision (not pixel-identical)\n3. cd-roll-ca: the countdown roll as a GPU animation.\n   - What: instead of JavaScript moving digits every frame during each 0.5 s roll, one GPU animation per digit per second.\n   - Helps: the most script work saved at the top and in the menu panel.\n   - Looks: within about 0.08 px of the original's motion, but not frame-for-frame the same (the original itself differs by 3.3 px between 60 and 120 Hz screens). Under your 'identical only' rule it is parked; say 'try cd-roll-ca' if you want it built and shown to you in a blind swipe test.\n\nPARKED: battery/heat only (no lag left where they act)\n4. glint-ca: the small light glint moving along the line on the 'secure' picture.\n   - What: an old SVG animation (SMIL) that forces a repaint every frame becomes a GPU slide of the same gradient, masked by the same line.\n   - Looks: identical by construction.\n   - Helps: battery/heat; the platform part of the page would stop drawing at rest (together with 5).\n5. sweep-exact: the 4 colour 'sweep' titles in the platform section.\n   - What: the moving colour band is redrawn by the main thread every frame; the fix layers the word so the band slides on the GPU.\n   - Looks: identical up to 1/255 colour rounding. It overlaps an older idea (illusion-sweep) that changed one colour slightly; this one doesn't.\n   - Open: works only for titles on one line (to check), and whether Safari keeps the blend on the GPU is unknown (Simulator check).\n   - Helps: battery/heat.\n\nFOLLOW-UP FROM THE FINDINGS (owned by an existing agent)\n6. Menu panel height 'dvh' (fix-nav-morph, after its current phone run): the panel re-lays out on every toolbar frame while open, which gave 84/66/42 ms frames when scrolling back up from the end. It will try a fixed height that stays pixel-identical in both toolbar states.\n\nNOT FIXABLE THE GPU WAY (no identical GPU form)\n- Safari's own toolbar resize work; the avatar carousel's shrinking ellipse; card-entry blurs (Safari already uses the GPU there); the nav button and hero entrance at load (once only); layout transitions (text pixels would differ mid-motion); blinking carets (another topic owns them)."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-03T00:10:54.773Z",
+      "by": "user",
+      "text": "Let's do cd-roll-ca as highest priority as well."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-03T00:11:28.424Z",
+      "by": "lead",
+      "text": "Started: cd-roll-ca is now top priority too (agent fix-cd-roll-ca). It builds on top of the digit strips (cd-strip), since the GPU roll moves the strip; until the strips are ready it prototypes the roll logic. How it will be judged: it stays within a fraction of a pixel of the original's motion (we'll measure and state the exact numbers at 60 and 120 Hz), and since it is not frame-for-frame identical, you get the final say in a blind swipe test on the phone before it goes into a build."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-03T01:10:17.471Z",
+      "by": "lead",
+      "text": "Correction to my lists (#7 and #9): 'Safari repaints the countdown 127-137 times per 4 s at the top' was wrong. That count most likely included repaints caused by our own counting tool (in our setup; found by fix-cd-strip). A cleaner count on the iPhone Simulator gives 13 repaints of the top clock per 4 s. With cd-strip there are none, and it stays pixel-identical. So cd-strip gains less at the top than I said. Its bigger case is the menu panel's clock while your finger holds the end of the page. The fix order is unchanged. cd-strip is now in review before it goes into the next build."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-03T06:35:46.579Z",
+      "by": "user",
+      "text": "What's about the fix progresses ?"
+    },
+    {
+      "n": 14,
+      "at": "2026-10-03T06:36:03.746Z",
+      "by": "lead",
+      "text": "Progress on the GPU fixes, 06:36Z (nothing has landed on the page yet; each needs your decision or a last check first):\n\n1. cd-strip (countdown digits as sliding strips): DONE BUILDING; your decision comes next.\n   - Every check is finished. It is identical everywhere except one spot: during the hero fade-out, while a digit rolls, a few pixels at a digit's edge can be 1 shade (of 255) off for one frame. The unchanged page shows the same kind of difference against itself (6 % of shots vs 12 % with the strip).\n   - Gains: the hero clock uses a third of the graphics memory (0.39 vs 1.18 MB) and repaints about half as much when you scroll back to the top.\n   - Possible small costs: a few more layout passes per second in Chrome; one of two Simulator runs did a bit more work with the menu panel open.\n   - It will appear in the console's Proposals page within minutes as \"land\" vs \"park\", with screenshots. A second review runs at the same time.\n\n2. cd-roll-ca (countdown roll as a GPU animation, your #1 with cd-strip): BUILT, waiting on cd-strip.\n   - Rebuilt to sit on cd-strip's final version. One debug check is left (runs in the next few minutes).\n   - Then the final runs, and a blind look on the phone for you: two pages side by side, you say whether the rolls look the same. It needs cd-strip landed first.\n\n3. hero-exit-threaded (hero fade-out on Safari's scroll thread): FINAL VERSION CONFIRMED on the Simulator.\n   - Every hand-over frame matches the original (0 px).\n   - One open item: just past the hero's end, the new version makes about 20 extra repaints per 5 s. The agent is locating them now (next ~20 min). Then its card with the choices comes to you.\n\n4. glint-ca, sweep-exact (battery/heat only): still parked, as agreed.\n\n5. Menu panel 'dvh' height (fix-nav-morph): parked behind the F3 work (the mid-page hitch fix), which is in its last phone checks: 3 traced runs finished just now, then one warm-phone test, then your swipe test.\n\nLock and tool problems found along the way (2) are fixed and in place."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-03T06:45:12.118Z",
+      "by": "user",
+      "text": "Explain \"glint-ca, sweep-exact (battery/heat only)\" detail ? why it cause battery heat but it not impact the animation performance, doesn't it ?"
+    },
+    {
+      "n": 16,
+      "at": "2026-10-03T06:45:34.165Z",
+      "by": "lead",
+      "text": "Good question. Short answer: they cost energy every frame, but not enough to make a frame late, so you don't see a stutter from them. Their effect on smoothness is indirect (heat), and we haven't measured that part.\n\nWhat they do today:\n- glint-ca: the small light glint on the \"secure\" picture is an old-style SVG animation. Safari redraws that picture area on every frame (60 times a second) while it is on screen, on the main thread.\n- sweep-exact: the 4 colour \"sweep\" titles in the platform section: the moving colour band is redrawn by the main thread on every frame.\n\nWhy \"battery/heat only\":\n- Each redraw is small (a few ms), so it fits inside the frame's time budget (16.7 ms at 60 Hz). The frame is still delivered on time, so the scroll looks smooth.\n- Your last finger run on the best build confirms it: almost no slow frames left in that part of the page (17 slow frames in 1000-5000 px, the platform section included).\n- But the work still burns CPU every frame, even when you are not scrolling: with them, the platform section never goes idle (Chrome: 120 frames per 2 s; without them, 5). That is battery and heat.\n\nWhere it could still touch smoothness (not measured, so I won't claim it):\n- Heat: a hot phone slows itself down. The one bad pin-hold stall we chase (F3) appeared only when the phone was at 40-43 °C. Less constant work means a cooler phone over a long visit, but we have no number for how much these two contribute.\n- Budget sharing: if something else heavy happens in the same frame there (scroll work, layout), the redraw adds to it. Our runs show no such frames there today.\n\nSo they rank below the fixes that remove visible stutter. If you want them built anyway (as identical GPU versions), say so and they go after the current fixes."
+    },
+    {
+      "n": 17,
+      "at": "2026-10-03T06:46:20.898Z",
+      "by": "lead",
+      "text": "Please don't decide on PR-008 (cd-strip) yet: it is being withdrawn. The second review found the card compared against the wrong control (in the same sessions the difference shows 3 of 26 times with the strip vs 1 of 26 without, not 12 % vs 6 %) and a layer difference the card missed (the strip keeps the clock's GPU layers in one scroll band where today's page drops them). The agent fixes the layer part (CSS only), re-checks, and posts a corrected card as a new proposal."
+    },
+    {
+      "n": 18,
+      "at": "2026-10-03T06:53:26.785Z",
+      "by": "lead",
+      "text": "Thanks, I see you accepted PR-008 (land the strips) after my note, so we go ahead with it. The agent applies the small CSS fix the review asked for (it only makes the strip version closer to today: the clock drops its GPU layers in that scroll band, as today's page does), re-checks, and corrects the numbers on the card (same-session rate: 3 of 26 shots with the strip vs 1 of 26 without). If the re-check shows any new visible difference, it comes back to you before anything lands. If you meant to wait for the corrected card, use 'Change my decision' on PR-008."
+    },
+    {
+      "n": 19,
+      "at": "2026-10-03T07:13:56.899Z",
+      "by": "user",
+      "text": "Can you improve the tools can handle the scenarios more proper ?\n\n```\nPlease don't decide on PR-008 (cd-strip) yet: it is being withdrawn. The second review found the card compared against the wrong control (in the same sessions the difference shows 3 of 26 times with the strip vs 1 of 26 without, not 12 % vs 6 %) and a layer difference the card missed (the strip keeps the clock's GPU layers in one scroll band where today's page drops them). The agent fixes the layer part (CSS only), re-checks, and posts a corrected card as a new proposal.\n```\n\n```\nThanks, I see you accepted PR-008 (land the strips) after my note, so we go ahead with it. The agent applies the small CSS fix the review asked for (it only makes the strip version closer to today: the clock drops its GPU layers in that scroll band, as today's page does), re-checks, and corrects the numbers on the card (same-session rate: 3 of 26 shots with the strip vs 1 of 26 without). If the re-check shows any new visible difference, it comes back to you before anything lands. If you meant to wait for the corrected card, use 'Change my decision' on PR-008.\n```"
+    },
+    {
+      "n": 20,
+      "at": "2026-10-03T07:14:35.929Z",
+      "by": "lead",
+      "text": "Yes. You're right that the tool let this go wrong: my \"don't decide yet\" was in this thread, while the Proposals page kept its Accept button live and said nothing. I've started a tools agent on it now:\n\n1. A \"hold\" on a proposal: while an agent or I revise it, the proposal page shows a banner with the reason at the top, and the decide buttons are switched off until the corrected version is up.\n2. When a proposal you already decided is revised with new facts, your decision is marked \"stale, please decide again on the new version\" (kept in history), and nothing can act on it until you decide again.\n3. Agents can't act on a decision that is on hold or stale: the tools refuse.\n\nFor PR-008 right now: one more check found two things its card didn't say (a 1-shade difference in Chrome at 90 % fade, and a possible layout-shift cost in Chrome's Web Vitals). So your \"land\" is on hold on my side: nothing lands. The agent posts a corrected version (rev 2) with every point, and you decide again there. Once the hold feature is in, it will show on the page itself."
+    },
+    {
+      "n": 21,
+      "at": "2026-10-03T07:54:41.570Z",
+      "by": "lead",
+      "text": "The proposal fix you asked for is live (console restarted, please reload the page). PR-008 now shows an orange 'On hold: please don't decide yet' banner, its buttons are off, and your earlier 'land' reads 'under review, not final'. When version 2 is posted, the banner goes away and the page asks you to decide again on the new version. Agents can't act on a decision that is on hold or out of date."
+    },
+    {
+      "n": 22,
+      "at": "2026-10-03T09:36:39.043Z",
+      "by": "user",
+      "text": "Any catch up ?"
+    },
+    {
+      "n": 23,
+      "at": "2026-10-03T09:36:51.983Z",
+      "by": "lead",
+      "text": "Catch-up on the GPU fixes from this research (09:37Z):\n\n1. hero-exit-threaded (the hero fade on Safari's scroll thread; your fix #1): review passed, pixel-identical checks passed. Its phone test is running right now. Next: your finger swipe A/B, then it lands.\n2. cd-strip (countdown digits as sliding strips; your fix #2): you chose the new version strip-tc 15 min ago. Next: final build, a fresh prediction, review, a phone test after fix 1's, your finger test, then it lands.\n3. cd-roll-ca (countdown roll as a GPU animation): rebuilt on strip-tc. Its first frozen-frame checks start after fix 1's phone test. Then review, then your blind 'do the rolls look the same?' test, after cd-strip lands.\n4 + 5. glint-ca + sweep-exact (now one fix, 'platform-idle'): built. Early counts at the page bottom: Chrome style updates 120 -> 8 per 2 s; Simulator repaints of that card about 340 -> 0 per 5 s. Its pre-registered count test is running. It's not pixel-identical (edges up to 64/255 on the glint, the dash edge 17/255 while the glint shows), so a proposal comes to you after the test, with an option that keeps the colour sweep exact.\n6. The menu panel 'dvh' height: parked behind fix 3 (the menu panel hitch). Fix 3's cost card is half done (Chrome: no work removed per pin). The Simulator half runs after fix 1's phone test.\n\nNothing is waiting on you right now."
+    },
+    {
+      "n": 24,
+      "at": "2026-10-03T14:03:37.475Z",
+      "by": "lead",
+      "text": "New proposal PR-011 (hero exit on Safari's own scroll animations) is up on the Proposals page: two small motion-only pixel differences need your decision. It now shows whole-screen pictures at actual phone size first, then the zoomed crops, as you asked in PR-010. There is no Try-it for this one (the new code runs only in Safari at phone width). The phone timing test for it runs after your swipe test C-033."
+    },
+    {
+      "n": 25,
+      "at": "2026-10-03T14:45:38.083Z",
+      "by": "lead",
+      "text": "Got it, PR-011 will get a working Try-it. There's one problem to fix first. Today the Try-it panel can only put the untouched original site on the left, so the right side would also show all our earlier changes, not just the hero fix. That's the same mix-up you spotted on PR-010. A tool fix is underway so the left side can be the current best build and the right side that build plus the hero fix. Then revision 2 of PR-011 comes with Try-it. Note: the new hero code only runs in Safari at phone width; in Chrome both sides look the same."
+    },
+    {
+      "n": 26,
+      "at": "2026-10-04T08:27:00.304Z",
+      "by": "user",
+      "text": "Catch up this progress."
+    },
+    {
+      "n": 27,
+      "at": "2026-10-04T08:28:20.711Z",
+      "by": "mgmt-ops-10",
+      "text": "Catch-up on the GPU fixes, 08:28Z. Three are landed, three are still in testing.\n\n| Fix | Where it is |\n|---|---|\n| 1. Hero fade on Safari's scroll thread | Landed. You preferred it in the blind swipes. It is today's best build (v6). |\n| 2. Countdown as sliding strips | Landed. It goes into the next best build (v7). |\n| 3. Countdown roll on the graphics chip (PR-017) | Waiting for your decision. The countdown freeze you saw in Arc (T-085) gets checked first. Its phone check (P-093) is in line. |\n| 4+5. Platform sweep and glint at rest | Landed. Chrome style updates at rest went from 1200 to 40 per 20 s (fewer is better). |\n| 6. Menu hitch (F3) | Your one blind pair said \"better\". Two more swipe steps come after the phone checks: the same pair in the other order, then a hidden check pair. |\n| End-of-page menu animation on the graphics chip | Version 2 is being tested. Its first frame may be at most 2 ms slower than today's best build. |\n\n- Phone right now: the resting avatar-row check (P-094) is running again. The USB link dropped by itself at 08:20Z and came back when you re-plugged at 08:24Z.\n\nWhat you need to do:\n- Open the two T-085 test pages in Arc.\n- Decide PR-017 once T-085 is answered.\n- Say \"ready\" in T-087 when you can do the F3 swipe steps."
+    },
+    {
+      "n": 28,
+      "at": "2026-10-04T09:30:04.811Z",
+      "by": "user",
+      "text": "Can you cut-off the gpu fix into new best build ? which fix will go ?"
+    },
+    {
+      "n": 29,
+      "at": "2026-10-04T09:30:49.801Z",
+      "by": "mgmt-ops-10",
+      "text": "Yes. The next best build (v7) is that cut. It is being checked now.\n\nGOES INTO v7\n- Hero fade on Safari's scroll thread (graphics chip): already in v6, stays.\n- Countdown roll on the graphics chip (PR-017): landed today, goes in.\n- Countdown as sliding strips: the roll is built on top of them, so they go in too.\n- Resting avatar row (rest-script v4): passed its phone check, goes in.\n\nNOT IN v7 YET\n- End-of-page menu animation on the graphics chip (morph-gpu rev 2): it still needs its two phone checks (P-098, P-099). If both pass, it joins the build after v7.\n\nStatus: v7 is built and all 30 identity checks pass; Chrome and pixel checks are running now. No phone run is needed for v7.\n\nWhat you need to do: nothing for v7. I'll post here when it is ready."
+    },
+    {
+      "n": 30,
+      "at": "2026-10-04T09:42:56.878Z",
+      "by": "user",
+      "text": "Can we apply this \"End-of-page menu animation\" into v7 ?"
+    },
+    {
+      "n": 31,
+      "at": "2026-10-04T09:43:19.377Z",
+      "by": "mgmt-ops-10",
+      "text": "Yes, it can go in, but only after its two phone checks pass. I've asked the lead to decide how.\n\nWhy it isn't in yet:\n- The end-of-page menu animation on the graphics chip (morph-gpu rev 2) has not had its phone checks. P-098 checks the first opening of the menu. P-099 checks a fast flick into the page end.\n- Both are next in the phone queue, after the menu-hitch swipe pair (T-087). Together they take about 50-75 minutes of phone time.\n\nThe two choices:\n- A: v7 waits for those checks, and the menu animation goes in if both pass.\n- B: v7 goes out now without it, and it joins a quick v8 once both pass.\n\nThe lead will answer here.\n\nWhat you need to do: nothing now. If you prefer A or B, say so here."
+    },
+    {
+      "n": 32,
+      "at": "2026-10-04T09:43:56.743Z",
+      "by": "lead",
+      "text": "Yes: A. v7 waits for the end-of-page menu animation and includes it if both phone checks pass.\n\n- Everything else in v7 finishes its checks now, so adding the menu animation is a short last step.\n- The phone checks run next, in this order: first menu opening (P-098), then a fast flick into the page end (P-099). About 50-75 min in total.\n- If a check fails: v7 goes out without it, and I tell you here why.\n\nWhat you need to do: nothing. mgmt-ops-10 posts here when v7 is ready to try."
+    },
+    {
+      "n": 33,
+      "at": "2026-10-04T14:51:10.681Z",
+      "by": "user",
+      "text": "Any update ? is this thread already resolve ?"
+    },
+    {
+      "n": 34,
+      "at": "2026-10-04T14:51:42.862Z",
+      "by": "mgmt-desk-2",
+      "text": "Not resolved yet: the research is done, the GPU fixes are still on the way into v8.\n\n| GPU fix | state at 14:51Z |\n|---|---|\n| Hero fade on Safari's scroll thread | in the best build (v6, v7) |\n| End-of-page menu animation | version 3 (1 CSS line) built, goes into v8; first-open check after 17:20Z |\n| Countdown roll | Chrome checks done, phone checks running now |\n| Hero accent word | your choice 'exact' is being put onto v7 |\n\n- The menu animation missed v7: its phone check showed slower first frames.\n- I will keep this thread open and post here when v8 is ready to try.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 34,
+    "lead": 33,
+    "mgmt-ops-10": 33,
+    "mgmt-desk-2": 34
+  },
+  "history": [
+    {
+      "at": "2026-10-04T08:27:00.304Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T09:43:19.465Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User #30 asks to put morph-gpu rev 2 into v7. It lacks P-098 and P-099 (~50-75 min phone). I offered A: v7 waits and includes it if both pass, or B: v7 now, morph-gpu in a quick v8. Your call; please answer in T-030."
+    },
+    {
+      "at": "2026-10-04T14:04:50.643Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-05T11:41:12.973Z",
+    "lead": "2026-10-04T21:01:08.040Z",
+    "mgmt-desk-2": "2026-10-04T14:51:42.862Z"
+  },
+  "histSeen": {
+    "lead": 3
+  }
+}

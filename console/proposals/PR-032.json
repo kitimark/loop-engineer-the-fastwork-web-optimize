@@ -1,0 +1,205 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-032",
+  "by": "arch-compositor-morph",
+  "title": "End of the page: the Join button leaves on a short timed fade, nothing on it follows your finger",
+  "area": "end",
+  "topic": "compositor-morph",
+  "problem": "Your note on rev 2: the fade should not follow the finger; the top of the page feels smoother because a state starts it.\n- Correction first: today's v11 already starts a timed fade when the menu passes 20 % open. Rev 2 said the button vanishes in one step; that was wrong (I compared resting shots, not frames).\n- What still follows your finger in v11: the button's blur (0 to 10 px between 0 and 20 % open) and a 4 px nudge of the EN pill.\n- The pill's shape change also runs on the page's main work loop on iPhone, not on the graphics side.",
+  "idea": "B = v11 where nothing on the Join button follows your finger.\n- Passing 20 % open starts one timed exit: fade and blur over 0.32 s after 0.12 s, the same transition the button uses to appear at the top of the page.\n- EN slides over in 0.68 s on the same curve as at the top.\n- Coming back: it returns only when the menu is fully closed, with the same timing in reverse.\n- Graphics side only: see-through level, blur and position. The pill keeps its shape; no shape animation.\n- The button sits on its own graphics layer the whole time, so starting a fade creates nothing new.\n- Phones only (up to 640 px wide), like the rest of the end menu.\n\nIn Try-it, A is v11 (today's build) and B is rev 3.",
+  "looksSame": "At rest B looks the same as v11: menu closed, or 20 % or more open. Only the 0.44 s exit and the return differ, by design.",
+  "risk": "It changes how the button leaves, so it needs your eye.\n- The pill fades in place while EN slides over it; v11 narrows the pill as it fades.\n- Small moves around 20 % can't make it blink: once hidden it stays hidden until the menu is fully closed (no change from v11).\n- The timed button animation near the top of the page is unchanged.",
+  "visualDiff": [
+    "During the exit: v11 narrows the dark pill while it fades; B fades it in place, EN slides over it.",
+    "Between 0 and 20 % open: v11 blurs the button with your finger; B keeps it sharp until the timed exit starts.",
+    "Closed, and 20 % or more open (after the exit): B is the same as v11."
+  ],
+  "gain": [
+    {
+      "what": "Follows the finger",
+      "before": "Blur and EN nudge",
+      "after": "Nothing",
+      "tag": "OBSERVED",
+      "how": "Chrome and iPhone Simulator: the button's values read every frame while the menu crosses 20 % and back.\n- v11: blur jumps at 20 % and follows the finger below it.\n- B: blur and fade both run on the timer (+0.13 s to +0.43 s); no frame out of step.",
+      "better": "better"
+    },
+    {
+      "what": "Work on the main loop during the exit",
+      "before": "Shape every frame",
+      "after": "None",
+      "tag": "CONFIRMED",
+      "how": "WebKit source: see-through level, blur and position run on the graphics side; the pill's shape (clip-path) does not.\n- Source/WebCore/css/CSSProperties.json, at today's WebKit source (commit 0a254e20987b): opacity, filter, transform and translate are marked always accelerated; clip-path is not.",
+      "better": "better"
+    },
+    {
+      "what": "Chrome: layout / paints per frame",
+      "before": "0 / 3",
+      "after": "0 / 3",
+      "tag": "OBSERVED",
+      "how": "Chrome, phone size, menu opened and closed in 40 steps, 3 runs per build, counts only.\n- Same layout and paints; one B run had a busier open (5 paints).",
+      "better": "same"
+    },
+    {
+      "what": "iPhone Simulator: paints while opening",
+      "before": "175-193",
+      "after": "122-142",
+      "tag": "OBSERVED",
+      "how": "iPhone Simulator, 3 runs per build, counts only; two v11 runs agree (193, 190).\n- v11 redraws the button about 20 times per open for its blur.\n- Closing: same within noise (v11 86-87, B 82-111).",
+      "better": "better"
+    }
+  ],
+  "live": {
+    "overlay": "fixes/cm-fade3/overlay",
+    "blob": "7b8b3f10cc0e61a9f2c5a7bdbfd16e3f117bd9ad",
+    "base": "site-pretty",
+    "files": [
+      "_app/immutable/assets/2.gBuqKVzi.css",
+      "_app/immutable/nodes/2.DyWL8TcE.js"
+    ],
+    "a": {
+      "overlay": "fixes/cm-v11/overlay",
+      "blob": "e8ee343e5ba46ce18d51381b09b94942131f173f",
+      "base": "site-pretty",
+      "files": [
+        "_app/immutable/assets/2.gBuqKVzi.css",
+        "_app/immutable/nodes/2.DyWL8TcE.js"
+      ]
+    }
+  },
+  "compare": {
+    "a": {
+      "label": "Today's build (v11)"
+    },
+    "b": {
+      "label": "v11 + timed Join button exit (rev 3)"
+    },
+    "view": "side",
+    "shots": [
+      {
+        "caption": "Menu 10 % open, held: v11 blurs the button with your finger; rev 3 keeps it sharp until the timed exit",
+        "a": "r3-a-1.webp",
+        "aSize": [
+          2580,
+          780
+        ],
+        "b": "r3-b-1.webp",
+        "bSize": [
+          2580,
+          780
+        ]
+      },
+      {
+        "caption": "Menu 19 % open, held: the same, just before the exit starts",
+        "a": "r3-a-2.webp",
+        "aSize": [
+          2580,
+          780
+        ],
+        "b": "r3-b-2.webp",
+        "bSize": [
+          2580,
+          780
+        ]
+      }
+    ]
+  },
+  "state": "accepted",
+  "rev": 3,
+  "decision": {
+    "value": "accepted",
+    "at": "2026-10-07T04:44:09.178Z",
+    "who": "user",
+    "rev": 3
+  },
+  "decisions": [
+    {
+      "value": "changes-requested",
+      "notes": "i just thinking about the Join button fades in/out, couldn't follow out finger swipe ? \n\ni'm look back at the start of the page, it transition more smooth cause it's not depends on my finger. it depends on some state instead.\nmy instinct, if we do this button likes the start of the page. it may get the better animation performance. it should do the independent rendering (parallel rendering calculation)",
+      "at": "2026-10-07T03:13:59.848Z",
+      "who": "user",
+      "rev": 2
+    },
+    {
+      "value": "accepted",
+      "at": "2026-10-07T04:44:09.178Z",
+      "who": "user",
+      "rev": 3
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-07T03:06:07.115Z",
+      "by": "arch-compositor-morph",
+      "note": "first version"
+    },
+    {
+      "rev": 2,
+      "at": "2026-10-07T03:10:24.150Z",
+      "by": "arch-compositor-morph",
+      "note": "Simulator row: one run each, repeat runs pending.\n- 3 runs per build and a same-build pair come before any landing.\n- Closing did more work in B in this one run, so the row says worse until the repeats."
+    },
+    {
+      "rev": 3,
+      "at": "2026-10-07T04:23:52.512Z",
+      "by": "arch-compositor-morph",
+      "note": "Rev 3 per your note: no finger-driven fade; the button leaves on a short timer started at 20 % open, like at the top of the page, on the graphics side only"
+    }
+  ],
+  "createdAt": "2026-10-07T03:06:07.115Z",
+  "updatedAt": "2026-10-07T04:44:09.178Z",
+  "proposedAt": "2026-10-07T04:23:52.512Z",
+  "history": [
+    {
+      "at": "2026-10-07T03:06:07.115Z",
+      "who": "arch-compositor-morph",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-07T03:10:24.150Z",
+      "who": "arch-compositor-morph",
+      "action": "revised",
+      "rev": 2,
+      "note": "Simulator row: one run each, repeat runs pending.\n- 3 runs per build and a same-build pair come before any landing.\n- Closing did more work in B in this one run, so the row says worse until the repeats."
+    },
+    {
+      "at": "2026-10-07T03:13:59.848Z",
+      "who": "user",
+      "action": "decided",
+      "value": "changes-requested",
+      "rev": 2,
+      "note": "i just thinking about the Join button fades in/out, couldn't follow out finger swipe ? \n\ni'm look back at the start of the page, it transition more smooth cause it's not depends on my finger. it depends on some state instead.\nmy instinct, if we do this button likes the start of the page. it may get the better animation performance. it should do the independent rendering (parallel rendering calculation)"
+    },
+    {
+      "at": "2026-10-07T03:14:29.890Z",
+      "who": "lead",
+      "action": "revising",
+      "rev": 2,
+      "note": "Rev 3 by arch-compositor-morph: the Join button fades out on a short timed fade (like the top of the page), triggered by the menu state, not following the finger; done on the GPU so it runs alongside the page. Built after its robot-swipe test (P-158) ends.",
+      "eta": "2026-10-07T04:29:29.885Z"
+    },
+    {
+      "at": "2026-10-07T03:56:32.528Z",
+      "who": "arch-compositor-morph",
+      "action": "revising",
+      "rev": 2,
+      "note": "Rev 3 built (timed exit, nothing follows the finger); frame check done in Chrome; counts in Chrome and the Simulator running",
+      "eta": "2026-10-07T04:41:32.524Z"
+    },
+    {
+      "at": "2026-10-07T04:23:52.512Z",
+      "who": "arch-compositor-morph",
+      "action": "revised",
+      "rev": 3,
+      "note": "Rev 3 per your note: no finger-driven fade; the button leaves on a short timer started at 20 % open, like at the top of the page, on the graphics side only"
+    },
+    {
+      "at": "2026-10-07T04:44:09.178Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 3
+    }
+  ]
+}

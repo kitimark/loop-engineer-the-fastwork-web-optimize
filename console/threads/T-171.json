@@ -1,0 +1,53 @@
+{
+  "id": "T-171",
+  "title": "I'd like to use my phone a bit",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T00:40:06.509Z",
+  "updatedAt": "2026-10-05T00:42:20.693Z",
+  "rev": 11,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T00:40:06.509Z",
+      "by": "user",
+      "text": "I'd like to use my phone a bit"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T00:40:33.626Z",
+      "by": "lead",
+      "text": "Yes, go ahead: the phone is yours. Nothing is running on it, and no test needs it right now.\n- I hold the phone for you (30 min), so no agent can open a page or run a test on it.\n- You can unplug it if you like. Plug it back in when you're done.\n- The next phone test (the end-menu fix check) isn't ready yet. If it gets ready first, it waits for you.\nWhat you need to do: reply \"done\" here when you're finished, and I'll release the phone to the team."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T00:41:54.279Z",
+      "by": "user",
+      "text": "done"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T00:42:06.812Z",
+      "by": "lead",
+      "text": "Thanks, the phone is back with the team.\n- It is connected again, and I released it, so the next test can use it.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "lead": 4
+  },
+  "history": [
+    {
+      "at": "2026-10-05T00:42:20.693Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T00:42:06.812Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

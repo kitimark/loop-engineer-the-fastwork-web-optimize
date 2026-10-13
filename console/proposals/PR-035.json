@@ -1,0 +1,155 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-035",
+  "by": "fix-platform-corners",
+  "title": "Clean rounded corners on the 'What do you need help with?' card (Safari)",
+  "area": "middle",
+  "topic": "platform-corners",
+  "thread": "T-240",
+  "problem": "A bug in the original site, which we can fix: in Safari the 2nd platform card shows grey squares in its corners.\n- It is the card 'What do you need help with?'; the grey shows in all four rounded corners.\n- The card has a blurred background picture under its content; Safari cuts it to the square box, not to the rounded corner.\n- The other three cards have no blurred picture, so their corners are clean.\n- A known Safari (WebKit) bug, already fixed in WebKit's newest code; iOS 26.5 still has it.\n- Same on the original site, v14 and today's best build g0.0b; Chrome never shows it.",
+  "idea": "One style line: cut the blurred picture to the card's own rounded shape.\n- In Safari the grey squares go away; the corners then look like the other three cards.\n- Nothing inside the card changes, and Chrome looks the same.\nWhat you need to do: try A and B on the phone, look at the four corners of the second platform card, and pick one.",
+  "looksSame": "Everything inside the card and the rest of the page is pixel-identical (checked in the iOS Simulator and Chrome at phone, tablet and desktop widths).\n- Only the corners outside the rounded edge, and the 1-pixel smoothed edge next to them, change.",
+  "risk": "Low: one style line on one background picture.\n- The Safari bug it works around is CONFIRMED: WebKit bug 312584, fixed in WebKit 313267@main.\n- Once Safari ships that fix, the line simply does nothing extra.",
+  "visualDiff": [
+    "Safari, phone size: the grey squares in the four corners of the second platform card are gone (navy, like the other cards).",
+    "The card's 1-pixel smoothed edge is a touch crisper, like the other cards' edges; you would need to zoom in to see it."
+  ],
+  "gain": [
+    {
+      "what": "Grey pixels outside the rounded corners (Safari)",
+      "before": "1598 of 1598",
+      "after": "0",
+      "tag": "OBSERVED",
+      "how": "iOS Simulator (iPhone 15 Pro Max, iOS 26.5), card 2 at the screen centre.\n- Counted: pixels outside the rounded curve that are not the card's navy.\n- Cards 1, 3 and 4: 0 before and after.",
+      "better": "better"
+    },
+    {
+      "what": "Pixels changed inside the card",
+      "before": "-",
+      "after": "0",
+      "tag": "OBSERVED",
+      "how": "Same page load, animations and timers stopped, shot without and with the line: iOS Simulator (phone and iPad) and Chrome at 430, 768 and 1280 wide.",
+      "better": "same"
+    },
+    {
+      "what": "Extra GPU layers or work per frame",
+      "before": "-",
+      "after": "none",
+      "tag": "OBSERVED",
+      "how": "Layer list from the Simulator's inspector: same count and memory with and without the line.\n- Paints, style and layout counts over 3 s at rest: equal within the card's typing animation.",
+      "better": "same"
+    }
+  ],
+  "live": {
+    "patch": "fixes/platform-corners-g00b/patch.diff",
+    "ref": "HEAD",
+    "blob": "940de7571f6f377fcdddcb6e35beead3e5312867",
+    "base": "site-pretty",
+    "files": [
+      "_app/immutable/assets/2.gBuqKVzi.css",
+      "_app/immutable/nodes/2.DyWL8TcE.js"
+    ],
+    "a": {
+      "patch": "fixes/g0-revert/patch.diff",
+      "ref": "HEAD",
+      "blob": "d193fd5eaa45b64fe87e23ebccf44a476e42d7c3",
+      "base": "site-pretty",
+      "files": [
+        "_app/immutable/assets/2.gBuqKVzi.css",
+        "_app/immutable/nodes/2.DyWL8TcE.js"
+      ]
+    }
+  },
+  "compare": {
+    "a": {
+      "label": "g0.0b, today's best build (corners as today)"
+    },
+    "b": {
+      "label": "g0.0b + the corner fix"
+    },
+    "view": "side",
+    "shots": [
+      {
+        "caption": "Simulator, phone size, card 2 bottom-left corner (3x zoom): left today (grey square), right fixed",
+        "a": "r1-a-1.webp",
+        "aSize": [
+          900,
+          510
+        ],
+        "b": "r1-b-1.webp",
+        "bSize": [
+          900,
+          510
+        ]
+      },
+      {
+        "caption": "Same, top-right corner",
+        "a": "r1-a-2.webp",
+        "aSize": [
+          648,
+          450
+        ],
+        "b": "r1-b-2.webp",
+        "bSize": [
+          648,
+          450
+        ]
+      },
+      {
+        "caption": "The whole card: left today, right fixed (look at the four corners)",
+        "a": "r1-a-3.webp",
+        "aSize": [
+          1266,
+          1029
+        ],
+        "b": "r1-b-3.webp",
+        "bSize": [
+          1266,
+          1029
+        ]
+      }
+    ]
+  },
+  "state": "accepted",
+  "rev": 1,
+  "decision": {
+    "value": "accepted",
+    "at": "2026-10-07T18:59:58.373Z",
+    "who": "user",
+    "rev": 1
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "at": "2026-10-07T18:59:58.373Z",
+      "who": "user",
+      "rev": 1
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-07T18:59:01.169Z",
+      "by": "fix-platform-corners",
+      "note": "first version"
+    }
+  ],
+  "createdAt": "2026-10-07T18:59:01.169Z",
+  "updatedAt": "2026-10-07T18:59:58.373Z",
+  "proposedAt": "2026-10-07T18:59:01.169Z",
+  "history": [
+    {
+      "at": "2026-10-07T18:59:01.169Z",
+      "who": "fix-platform-corners",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-07T18:59:58.373Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 1
+    }
+  ]
+}

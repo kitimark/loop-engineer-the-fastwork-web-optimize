@@ -1,0 +1,68 @@
+{
+  "id": "T-053",
+  "title": "Hero photos look sharper in the fix stack (reduced motion, desktop): my reading, tell me if you disagree",
+  "topic": "breakpoints",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-03T19:30:34.180Z",
+  "updatedAt": "2026-10-04T07:58:51.382Z",
+  "rev": 12,
+  "assignees": [
+    "de-breakpoints",
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T19:30:34.180Z",
+      "by": "lead",
+      "text": "What we found (de-breakpoints, Chrome, 1440 px wide, Reduce Motion on):\n- The original page shows the 10 hero photo cards in one of two ways. On a slow first load they are sharp. On a quick reload they come out slightly soft (about 3 % of the screen, mostly photo texture).\n- Our scroll-engine fix (st6-rb2, already in the best build) almost always shows the sharp version.\n- Why: both builds decode the photos identically (checked against Chrome's source). The soft version is a first drawing that the original page never redraws. Our fix happens to redraw it once, so it ends up sharp, just like the original after any redraw. An invisible redraw on the original made it sharp too, 2 of 2 tries. Why Chrome's first drawing is soft is still unknown (observed in our setup only).\n- With Reduce Motion off there is no difference at all: 2 px on one card.\n\nMy reading of your pixel rule (PR-010): the original's own range of pictures includes the sharp one, so the fix stack passes (within the original's own noise). It does not draw a new picture. Strictly comparing quick reload against quick reload it would be a 3 % difference, so I'm telling you rather than deciding silently.\n\nNothing for you to do unless you disagree. If you do, reply here and I'll turn it into a proposal."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T03:15:02.320Z",
+      "by": "user",
+      "text": "Let's do proposal"
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T04:03:36.334Z",
+      "by": "de-breakpoints",
+      "text": "Proposal posted: PR-015 (Proposals page). I checked the best build itself, not only the scroll-engine fix: on a quick reload it also ends with sharp photos. That is 3.05 % of the screen different from the original's soft quick reload, and the same as the original after any redraw (4 px). Two options: keep (recommended), or match (not achievable as a dependable result; the proposal says what it would take). 'keep' has a Try it panel. Ask under the proposal or here."
+    }
+  ],
+  "reads": {
+    "lead": 2,
+    "user": 3,
+    "de-breakpoints": 3,
+    "mgmt-ops-10": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-04T04:02:34.965Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "de-breakpoints"
+    },
+    {
+      "at": "2026-10-04T07:58:44.659Z",
+      "who": "mgmt-ops-10",
+      "action": "assign",
+      "note": "mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T07:58:51.382Z",
+      "who": "mgmt-ops-10",
+      "action": "close",
+      "note": "Merged into T-034 (other screen widths / breakpoints), one thread per topic at your request (T-024 #13). Related: T-034, T-040, T-053, T-063."
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T03:15:04.901Z",
+    "de-breakpoints": "2026-10-04T04:03:36.334Z",
+    "mgmt-ops-10": "2026-10-04T07:58:46.405Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

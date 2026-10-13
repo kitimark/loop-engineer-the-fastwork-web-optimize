@@ -1,0 +1,193 @@
+{
+  "id": "T-078",
+  "title": "Comment on C-037 \"Top bar and next section: which page follows your finger be…\": i was click start over, it stuck on Getting page 1 ready. let's investigate",
+  "anchor": {
+    "page": "steps",
+    "item": "step:C-037",
+    "label": "Top bar and next section: which page follows your finger better?"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T06:20:40.238Z",
+  "updatedAt": "2026-10-04T10:13:48.435Z",
+  "rev": 41,
+  "assignees": [
+    "fix-nav-morph",
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T06:20:40.238Z",
+      "by": "user",
+      "text": "i was click start over, it stuck on Getting page 1 ready. let's investigate"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T06:26:16.587Z",
+      "by": "lead",
+      "text": "Thanks, found it. Start over worked, but the agent running this test (fix-nav-morph) didn't notice the restart, so page 1 was never reloaded. I've told it to reload page 1 now. Please leave the step open; within a few minutes it should say page 1 is ready, and then you press Start as before. Your first try's swipes were recorded, so nothing is lost."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T06:27:15.574Z",
+      "by": "user",
+      "text": "Let's investigate this issue in the parallel, find workaround and long-term fix",
+      "forLead": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T06:28:19.569Z",
+      "by": "fix-nav-morph",
+      "text": "Sorry, that was my fault: after Start over, my script was not listening for the restart, and then the phone's booking ran out and passed to the next test. I've paused part 1 so nothing is recorded on the wrong page. Page 1 comes back as soon as the phone is free again. The step will say ready, and you press Start as before."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T06:28:54.695Z",
+      "by": "lead",
+      "text": "Update: while fixing this, the iPhone's turn passed to the hero test, which is set up and ready. Order now: 1) the hero steps C-038, C-039, C-040 (page 1 is open on the phone, press Start there); 2) then C-037 comes back by itself, with page 1 reloaded. Ignore C-037 until it says ready. I'm also looking into the cause in parallel and will post the workaround and the long-term fix here."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T06:28:57.558Z",
+      "by": "mgmt-ops-10",
+      "text": "What went wrong, in two parts:\n(1) After you pressed Start over, the agent's script wasn't listening for the restart, so it never reloaded page 1.\n(2) While it sat there, the agent's booking of the test phone ran out, and the phone passed to the next test, the hero swipe test.\n\nWorkaround now: the phone is on the hero test (the 'Hero swipe' step), and its page 1 is ready, so you can do that one first if you like. I've asked the lead to put the menu test (this step) next on the phone right after it, ahead of the two machine-only checks, so you aren't kept waiting.\n\nLong-term fix: I've logged it as I-122 for the lead to hand to a tools agent. The plan: a phone booking can't run out while one of your steps is in progress, and every test script listens for Start over by itself. I'll post here when it's fixed."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T06:30:27.858Z",
+      "by": "lead",
+      "text": "Sorry, that was a mess on our side. While I was fixing the stuck step, the agents' messages crossed and the phone switched tests under you. Thanks for skipping; that was the right call. What went wrong: the agent for C-037 didn't notice your Start over for about 10 minutes, its phone turn ran out in the meantime, and the next agent took the phone while your step was still open. Workaround from now on: an agent that runs a step on the phone must renew its turn 2 minutes before it ends and must watch for Start over from the first moment. Long-term fix (incident I-123): the phone turn can't run out or pass to someone else while a step you started is open, and a step stuck on 'Getting ready' for more than 2 minutes warns me. Both swipe tests (top bar C-037 and hero C-038-040) are still owed. Meanwhile two short automatic phone checks run that don't need you. When do you want the swipe tests back? Reply 'now', or tell me a time; I'll repost them fresh, one at a time, top bar first.",
+      "ask": true
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T06:30:43.521Z",
+      "by": "user",
+      "text": "Leader, you could organize this better than this. there have many conflict during we working on your steps. many your steps was request and blocking the another process.",
+      "forLead": true
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T06:30:53.813Z",
+      "by": "user",
+      "text": "Leader, you could organize this better than this. there have many conflict during we working on your steps. many your steps was request and blocking the another process.",
+      "forLead": true
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T06:30:59.727Z",
+      "by": "mgmt-ops-10",
+      "text": "You're right. This morning several agents posted steps for the same phone at the same time: the menu test, three hero steps and the checks behind them. They also waited on each other, so you were left sorting it out. I've passed this to the lead as a request for one clear rule: only one step on the phone at a time, the next one appears only when the last is finished, and one person decides the order. The lead will answer here with the plan."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T06:32:10.499Z",
+      "by": "lead",
+      "text": "You're right, and that's on me: I let several agents post phone steps on their own. The plan, starting now:\n\n1. One phone step at a time. Only the agent that has the phone may post a phone step, and only after the previous step is answered or skipped. Until the tool enforces this, I'll check it myself before any step goes up.\n2. One person decides the order: me. Agents ask me; they don't post on their own. I'll give you the order up front (\"next: top bar test, then hero test, about 15 min in all\").\n3. You decide when. Before a phone session I ask you here (\"ready now?\"). Nothing appears in Your steps until you say yes. Automatic phone checks run only while you have no step open, and they never take the phone from you.\n4. The phone stays reserved while your step is open. The agent's phone turn can't run out or pass to someone else mid-step, and if a step sits on \"Getting ready\" for more than 2 minutes, I get an alarm.\n\nPoints 1 and 4 also become tool checks (incident I-123, being built now), so it won't depend on agents remembering.\n\nStill owed from you: the top bar swipe test, then the hero swipe test, about 15 min together. Reply \"ready\" when you want them, and nothing will appear before that.",
+      "ask": true
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T06:37:29.394Z",
+      "by": "user",
+      "text": "ready."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T06:39:14.250Z",
+      "by": "mgmt-ops-10",
+      "text": "Thanks, noted. The lead now decides the order of phone steps and has been told you're ready. One short machine check is on the phone right now and will finish soon. Then the first step will show up in Your steps, one at a time, and the lead will tell you here which one it is."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T06:39:53.529Z",
+      "by": "lead",
+      "text": "Thanks, starting now. Order: 1) top bar swipe test (one step), 2) hero swipe test (three short steps, one at a time). About 15-20 min in all. The automatic check that's on the phone stops after its current run, so the first step appears in Your steps in about 2-3 minutes, when page 1 is loaded. Each next step appears only after you answer the one before."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-04T06:44:24.472Z",
+      "by": "lead",
+      "text": "Small change of order to avoid keeping you waiting: the hero swipe test goes first (its agent already has the phone, and page 1 is loading now: C-038, then C-039, then C-040). The top bar test follows right after. Each step appears when the one before is answered."
+    }
+  ],
+  "reads": {
+    "user": 15,
+    "fix-nav-morph": 12,
+    "lead": 15,
+    "mgmt-ops-10": 13
+  },
+  "history": [
+    {
+      "at": "2026-10-04T06:20:40.238Z",
+      "who": "router",
+      "action": "assign",
+      "note": "fix-nav-morph (author of C-037)"
+    },
+    {
+      "at": "2026-10-04T06:26:16.687Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-nav-morph"
+    },
+    {
+      "at": "2026-10-04T06:27:15.574Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T06:28:53.321Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User #3: investigate in parallel, workaround + long-term fix. I-122 opened (lease expired mid user step; REDO missed). Workaround needs you: move fix-nav-morph from iphone #3 to #1 (user-steps-first; C-037 is active). Long-term: toolsmith?"
+    },
+    {
+      "at": "2026-10-04T06:30:59.636Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User #8 to the lead: too many conflicting/blocking steps ('your steps requested and blocked other processes'). Needs your plan: one step at a time on the phone, no new step while one is active, step order owned by one person (you or desk)."
+    },
+    {
+      "at": "2026-10-04T06:39:14.180Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User #12 (06:37Z): 'ready.' Per the one-phone-step rule you set the order and cue the first phone step. Phone now: fix-rest-script P-094 automatic (lease to ~06:48Z), cd-roll-ca next; user steps C-037 menu / hero swipe wait on you."
+    },
+    {
+      "at": "2026-10-04T07:54:48.080Z",
+      "who": "mgmt-ops-10",
+      "action": "close",
+      "note": "Merged into T-087 (Start over is slow or stuck), one thread per topic at your request (T-024 #13). Related: T-078, T-087."
+    },
+    {
+      "at": "2026-10-04T10:13:48.435Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "into T-087: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    }
+  ],
+  "readsAt": {
+    "fix-nav-morph": "2026-10-04T06:37:32.394Z",
+    "lead": "2026-10-04T06:44:24.472Z",
+    "mgmt-ops-10": "2026-10-04T06:39:14.250Z"
+  },
+  "histSeen": {
+    "lead": 6
+  },
+  "merged": {
+    "into": "T-087",
+    "at": "2026-10-04T10:13:48.435Z",
+    "by": "mgmt-ops-10",
+    "closed": false
+  },
+  "related": [
+    {
+      "id": "T-087",
+      "kind": "merged-into",
+      "at": "2026-10-04T10:13:48.435Z",
+      "by": "mgmt-ops-10"
+    }
+  ]
+}

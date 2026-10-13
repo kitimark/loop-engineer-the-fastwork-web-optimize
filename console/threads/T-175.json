@@ -1,0 +1,65 @@
+{
+  "id": "T-175",
+  "title": "Blind swipe test: end-of-page menu rev 7c vs 7d",
+  "status": "open",
+  "createdBy": "lead",
+  "createdAt": "2026-10-05T02:42:49.227Z",
+  "updatedAt": "2026-10-05T03:29:13.950Z",
+  "rev": 10,
+  "assignees": [
+    "fix-hero-exit-threaded"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T02:42:49.227Z",
+      "by": "lead",
+      "text": "Ready for a short blind swipe test on the iPhone (about 5 min)? It decides whether the newest end-of-page menu fix can land.\n- What it is: two pages, A and B, one with the current fix (rev 7c) and one with the new one (rev 7d). You don't know which is which.\n- You swipe the end-of-page menu open and closed on each, then pick which feels smoother, or \"same\".\n- The phone's machine check already passed: on the new version, quick flicks now finish the open on all 3 tries; the old one pulled them back on 3 of 3.\n- Who runs it: fix-hero-exit-threaded. It goes first, ahead of other phone work.\nWhat you need to do:\n- Reply \"ready\" here when you can hold the phone for 5 minutes. Then the step shows up under Your steps.\n- No rush: finish Medium first if you like.",
+      "ask": true
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T02:43:18.210Z",
+      "by": "lead",
+      "text": "Correction to my line about the machine check: I mixed up the columns.\n- Quick flicks out of the menu: the old version (7c) held the menu on 3 of 3; the new one (7d) lets go on 3 of 3. Nothing was pulled back on either.\n- Every other check was the same on both versions. Your swipe decides which one feels better.\nWhat you need to do: nothing new; reply \"ready\" when you can."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T03:23:35.494Z",
+      "by": "user",
+      "text": "need me to decided ? is it change it behavior ? if yes, do proposal for ask me to review instead"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T03:24:51.940Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "Yes, the new version (rev 7d) changes behaviour, so I'll turn it into a proposal for you to review. No swipe test now.\n- What changes: at the end of the page, with the menu open, a long or fast swipe back up now keeps scrolling up out of the end screen in one swipe.\n- The accepted version (rev 7c) stops that swipe at the closed menu, so you need a second swipe to leave the end.\n- Everything else is the same on both: opening, slow swipes, and short closes up to about 255 px (the length of your own closes so far).\n- The proposal comes with Try-it pages A (rev 7c) and B (rev 7d) on the iPhone, so you can swipe both whenever you like.\nWhat you need to do:\n- Nothing now. Review the proposal on the Proposals page when it appears; I'll post the link here."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-05T03:29:11.029Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "The proposal is up: PR-023 (the end-of-page menu, long swipe up), on the Proposals page.\n- Try it on the iPhone: A = the accepted version (rev 7c), B = the new one (rev 7d); the page shows both phone links.\n- To feel the difference: open the menu at the end of the page, then swipe up long and fast. A stops at the closed menu; B scrolls on up the page.\n- Short swipes behave the same on both.\nWhat you need to do:\n- Swipe A and B when you have time, then accept or reject PR-023 on the Proposals page."
+    }
+  ],
+  "reads": {
+    "lead": 2,
+    "user": 5,
+    "fix-hero-exit-threaded": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-05T02:42:49.227Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-hero-exit-threaded"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T02:43:18.210Z",
+    "fix-hero-exit-threaded": "2026-10-05T03:29:11.029Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "id": "T-211",
+  "title": "Clips from the real iPhone screen for the article",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-06T04:16:52.542Z",
+  "updatedAt": "2026-10-06T05:13:30.140Z",
+  "rev": 19,
+  "assignees": [
+    "arch-article-clips"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-06T04:16:52.542Z",
+      "by": "user",
+      "text": "I'd like to ask about the Clips from the real iPhone screen for the article.\n\nSo, we the new best build v10, i think we achieve all our goal. \n\nI'm like to do the Clips from the real iPhone screen.\nThat i'll scroll on the the real phone with original version for getting where is laggy in my visual then you capture my gesture and reproduce the both of original and the v10 best build. \n\nHere's topic that i know\n\nHighlight.\n- Cards of hero section (full screen) (need my gesture)\n- The end of page morph (full screen) (need my gesture)\n- The People still need people title (full screen) (need my gesture)\n- Hero carousel (crop) \n- Join waitlist button animation (crop) (fade-in/out x top/end page)\n\nAnything. that you found are welcome (for example; you found the blink of elements in somewhere)"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-06T04:17:34.486Z",
+      "by": "user",
+      "text": "Plan to do it after, we success the v10 best build."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-06T04:17:40.821Z",
+      "by": "lead",
+      "text": "Yes, we'll make the clips: you scroll the original by finger, we replay your exact gesture by robot finger on the original and on v10, and record the iPhone screen.\n- A planner (arch-article-clips) now writes the plan: how we capture your gesture, the five highlights, crops, and other glitches we found (blinks and jumps).\n- v10 = today's best build + fix A + option B (+ the Join waitlist fix you pick); fix A and B land first after their iPhone checks.\n- Recording comes after those two checks; the clips stay on this Mac as MP4 files, and only you view them.\nWhat you need to do: nothing now; I post the plan here and then your finger steps in the console, one at a time."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-06T04:28:09.337Z",
+      "by": "lead",
+      "text": "The clips plan is ready; recording starts after v10 is built, as you asked.\n- Your gesture: a tool is being built now to record your finger path and replay it exactly by robot finger (incident I-218).\n- Clips: 3 full-screen scenes (hero cards, People still need people, end-of-page morph) plus crops (carousel, Join waitlist), original vs v10.\n- Heat: normal room heat with Xcode's heat setting off, so clips show everyday use.\n- Extras found: logo jump and button smudge at the end menu (already fixed in v10), late top-bar colour flips, one slow frame near the countdown.\n- Time: about 15 min of your scrolling, about 1 h of robot runs, then a 15 min review of MP4s on the Mac.\n| Your step | What you do |\n|---|---|\n| 1 | Focus mode on, other Safari tabs closed |\n| 2-4 | Scroll each scene once by finger on the original |\n| 5 | Review the clips |\nWhat you need to do: one question for later: by \"hero carousel\" do you mean the moving card deck, or the cycling accent word?"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-06T05:02:59.196Z",
+      "by": "lead",
+      "text": "One question for the clips plan: which part do you mean by \"hero carousel\"?\n- (a) The small profile photos in the pill that change about every second (you called it the \"user carousel\" in the v8 round).\n- (b) The cards at the top that spread out and fade as you scroll.\n- (c) The highlighted word in the headline that changes every few seconds.\n- The plan is ready and stays as you asked: clips start after v10 is done, at normal room heat with the Xcode condition off.\nWhat you need to do: reply with a, b or c (or several).",
+      "ask": true
+    },
+    {
+      "n": 6,
+      "at": "2026-10-06T05:11:40.224Z",
+      "by": "user",
+      "text": "\"hero carousel\", i miss typing, i mean \"user carousel\""
+    },
+    {
+      "n": 7,
+      "at": "2026-10-06T05:13:30.015Z",
+      "by": "lead",
+      "text": "Got it: the clip is the user carousel, the small profile photos in the pill that change about every second.\n- It becomes a cropped clip of that pill, original and v10 side by side, as planned.\n- The clips still start after v10 is done, at normal room heat with the Xcode condition off.\nWhat you need to do: nothing now."
+    }
+  ],
+  "reads": {
+    "user": 7,
+    "lead": 7
+  },
+  "history": [
+    {
+      "at": "2026-10-06T04:17:40.660Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "arch-article-clips"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-06T05:13:30.015Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

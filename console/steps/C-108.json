@@ -1,0 +1,43 @@
+{
+  "id": "C-108",
+  "by": "arch-end-fresh",
+  "topic": "end-of-page-fresh",
+  "kind": "action",
+  "phone": true,
+  "title": "P-163: get the iPhone ready for the test",
+  "instructions": "Unlock the iPhone and close any message on screen. In Settings > Developer, check that Enable UI Automation is on. Leave Safari open, then press Done.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "cancelled",
+  "cur": 0,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "waiting",
+      "at": {}
+    }
+  ],
+  "createdAt": "2026-10-07T14:05:15.929Z",
+  "queuedAt": "2026-10-07T14:05:15.929Z",
+  "updatedAt": "2026-10-07T15:05:32.288Z",
+  "rev": 2,
+  "history": [
+    {
+      "at": "2026-10-07T14:05:15.929Z",
+      "who": "arch-end-fresh",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-07T15:05:32.288Z",
+      "who": "arch-end-fresh",
+      "action": "cancel",
+      "note": "P-163 not started: user away; the block's kit posts the get-ready step itself on resume"
+    }
+  ],
+  "queueSeq": 67
+}

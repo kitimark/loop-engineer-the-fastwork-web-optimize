@@ -1,0 +1,88 @@
+{
+  "id": "T-148",
+  "title": "What's fixes after best build v8",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T18:23:24.704Z",
+  "updatedAt": "2026-10-04T20:49:49.223Z",
+  "rev": 24,
+  "assignees": [
+    "fix-nav-earn"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T18:23:24.704Z",
+      "by": "user",
+      "text": "What's fixes after best build v8. do we have a part that still lag after v8 fixes to consider them ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T18:24:10.540Z",
+      "by": "lead",
+      "text": "Yes: fast flicks at the top (hero) still lag on v8; that is the biggest part left.\n\n| Part still lagging on v8 | Measured | Fix in progress |\n|---|---|---|\n| Fast flick at the hero | 7-9 frames over 50 ms per robot-flick run (v7: 7-10) | The fast-flick test (P-105) finds where they come from, done tonight |\n| Fast flick while the toolbar shrinks | Found in the showcase section (P-110, a probe) | toolbar-resize: its next Simulator check (P-115) right after v8's check |\n| End menu on fast short swipes | Your report | End-menu rev 7 (PR-018, the menu follows your finger), on the iPhone next |\n| Top bar colour change | Leftover stutter at the menu edge | Top bar fix (fix-nav-morph), restarted on v8 |\n| Scroll handlers on the phone | Extra work per scroll event | scroll-cb: 3 Simulator checks left |\n\n- Next after v8: the parts above that pass become build v9; the fast-flick test decides which comes first.\n- The \"People still need people\" text and the nav buttons: the answer is coming in your catch-up thread (T-098).\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T18:26:35.741Z",
+      "by": "user",
+      "text": "I found the display bug from original fastwork website. when the end page section appear. the Join waitlist button of the top nav will disappear. \n\nI saw the padding is invalid compare with before the end page section appear. can you investigate it for me ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T18:26:54.868Z",
+      "by": "lead",
+      "text": "Yes, I'm on it: a code-reading helper traces it now; the answer comes here in about 15 min.\n\n- It looks at what the top bar does when the end-of-page section appears: which code hides the Join waitlist button and changes the bar's padding, and why.\n- It also checks whether our builds (v7, v8) change that part, and whether the end-menu work (PR-018) touches it.\n- If a screen check is needed, it runs in Chrome at the iPhone's size, with no phone time from you.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T18:30:17.631Z",
+      "by": "lead",
+      "text": "Found it (code reading; not yet confirmed on screen): the button is meant to hide, but it collapses late, and that leaves the odd right-side gap you saw.\n\n- When the end section starts, the top bar morphs into the end menu. The Join waitlist button is told to fade and shrink to zero width.\n- The fade is fast, but the width and padding shrink over 0.68 s with their own animation. For about half a second an invisible, still-wide button keeps the right side open, then the language button slides right.\n- The bar's other parts switch that animation off while morphing; the Join button was missed. That is the original site's behaviour, also in v7 and v8 (we don't change it).\n- A second, smaller jump: the logo moves about 15 px right in the first frame of the morph on phones.\n- Fix idea: switch the button's own animation off while morphing (like its neighbours), so it collapses with the morph, and keep the logo anchored.\n\nIt changes what you see, so it would come as a proposal with A/B Try-it pages, after a Chrome check at the iPhone's size confirms the cause.\n\nWhat you need to do: reply \"fix it\" if you want that proposal, or \"leave it\".",
+      "ask": true
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T18:30:57.679Z",
+      "by": "user",
+      "text": "fix it"
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T18:31:54.640Z",
+      "by": "lead",
+      "text": "Started: fix-nav-earn (a new agent) builds the fix for the Join waitlist button.\n\n- First it confirms the late collapse and the logo jump on screen (Chrome at the iPhone's size, and the Simulator); no phone time from you.\n- Then a proposal with A (v8) and B (v8 + fix) Try-it pages and before/after stills; you decide there.\n\nWhat you need to do: nothing until the proposal appears."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T19:37:12.683Z",
+      "by": "fix-nav-earn",
+      "text": "The fix is ready for your decision: proposal PR-021 on the Proposals page (http://localhost:5559/proposals#PR-021).\n\n- Confirmed on screen: the button stays wide about 0.6 s after it should be gone, so a blurred dark smudge sits on the right and EN is pushed left. Same in the original site.\n- The phone logo jump is real too: about 15 px in one frame at the start, and a snap back when the panel closes.\n- The fix is two small style rules on top of v8 (the best build). At rest the page looks the same.\n\n| Check | v8 now | v8 + fix |\n|---|---|---|\n| Button gone after it should be (phone, desktop, Safari) | 0.61-0.62 s late | on time |\n| EN from the right edge, early in the grow | 118 px | 8 px |\n| Phone logo, first frame | jumps 24 px | slides 5 px |\n\n- Try it on the iPhone: A http://lan:6403/ and B http://lan:6404/ (also on the Proposals page). Scroll to the very end and pull a little further to open the panel.\n\nWhat you need to do: open PR-021, try A and B, then accept or ask for changes there."
+    }
+  ],
+  "reads": {
+    "user": 8,
+    "lead": 7,
+    "fix-nav-earn": 8
+  },
+  "history": [
+    {
+      "at": "2026-10-04T18:31:54.544Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-nav-earn"
+    },
+    {
+      "at": "2026-10-04T20:49:49.223Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T18:31:54.640Z",
+    "fix-nav-earn": "2026-10-04T19:37:12.683Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

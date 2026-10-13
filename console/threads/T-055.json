@@ -1,0 +1,131 @@
+{
+  "id": "T-055",
+  "title": "Countdown swipe test: you picked the original. One more try with the order swapped?",
+  "topic": "cd-strip",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T02:50:52.719Z",
+  "updatedAt": "2026-10-04T11:14:49.584Z",
+  "rev": 30,
+  "assignees": [
+    "iphone-runner",
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T02:50:52.719Z",
+      "by": "lead",
+      "text": "Thanks for the countdown swipe test (C-035). You picked page 1. Page 1 was the original countdown, page 2 was the cd-strip fix. So for now the cd-strip fix does NOT land: it needs your finger test to come out \"same\" or better.\n\nBefore I treat this as final, one thing could have tipped it: in both of your tries, the fix was always the second page. A phone that has been swiped for a minute can feel warmer and slower, and your note says page 2 felt a bit warmer and maybe laggy, but you weren't sure if that was bias.\n\nWhat the phone recorded while you swiped (one swipe session per page, so this is a rough read, not a clean test): frames slower than 50 ms, original vs fix: try 1: 8 vs 21; try 2: 6 vs 10. The fix page had more slow frames both times, which agrees with your feeling, but the order was the same both times.\n\nPlease choose:\nA) One more blind try with the order swapped (fix page first), about 5 minutes, now or whenever you like. If you pick the original again, cd-strip is dropped. (My recommendation, because it separates \"the fix\" from \"the second page\".)\nB) Take your answer as final now: cd-strip is dropped, and the two countdown fixes built on top of it (cd-roll-ca and countdown-faces) get rebuilt on the original countdown.",
+      "ask": true
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T02:53:25.991Z",
+      "by": "user",
+      "text": "i think the count down timer it quite hard to distinguish which one is better. cause it already smooth both. \n\nin my perspective, we could pick the implementation the use our resource to less re-calulation . no need to do A/B ."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T02:53:41.084Z",
+      "by": "iphone-runner",
+      "text": "Thanks. Noted: no more swipe test, and choose the version that does less work. I've passed this to the lead, who will decide using the cost numbers from the two builds and reply here."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T02:54:01.873Z",
+      "by": "lead",
+      "text": "Got it: no more swipe A/B for the countdown. Both feel smooth to you, so we keep the version that makes the phone do less work. That is the cd-strip fix, so it goes ahead and lands.\n\nWhat it saves, measured against the current version (counts, not timing):\n- When the clock scrolls back into view, the digits are repainted about 21 times instead of about 53.5.\n- The clock keeps 16 GPU layers instead of 48, so it uses less GPU memory.\n- Style and layout recalculation: unchanged.\n- One count goes up: while the clock is off screen, the page writes small style updates more often (22-31 per second instead of 6-11, in Chrome). These are cheap, and recalculation stays the same.\n- The phone check (P-079) found scrolling no worse at the top of the page and where the countdown stays in place.\n\nNext: cd-strip lands on main, then the two countdown fixes built on it (cd-roll-ca, then countdown-faces) go through the same \"less work, looks identical\" check. I'll tell you when each one lands."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T03:08:39.995Z",
+      "by": "user",
+      "text": "I was see the fix label \"waiting for: you: T-055 answer\". What you do need me to answer ?"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T03:08:57.641Z",
+      "by": "iphone-runner",
+      "text": "Nothing more is needed from you. Your answer in #2 settled it, and the lead decided in #4 that the countdown fix lands because it does less work. The 'waiting for: you: T-055 answer' label on two countdown rows (countdown-faces and cd-roll-ca) is out of date. It was set before your answer, and I've asked the lead to clear it."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T03:10:04.231Z",
+      "by": "lead",
+      "text": "The countdown fix (cd-strip) has landed. With reduced motion on, it looks exactly the same as before: 0 differing pictures in Chrome and on the iPhone Simulator. Next, cd-roll-ca is rebuilt on top of it, then countdown-faces. I'll post here when each lands. Nothing is needed from you."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T03:12:23.680Z",
+      "by": "user",
+      "text": "\"Your reply goes to: iphone-runner (listening); the lead if no answer in 10 min\" what it means ? What do you need me to do ?"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T03:12:34.159Z",
+      "by": "iphone-runner",
+      "text": "That line only says who will read what you type in this box: me (iphone-runner) first, and if I haven't answered within 10 minutes, the lead. It isn't a request. There's nothing you need to do on this thread, and the countdown question is closed."
+    }
+  ],
+  "reads": {
+    "lead": 8,
+    "user": 9,
+    "iphone-runner": 9,
+    "mgmt-ops-10": 8
+  },
+  "history": [
+    {
+      "at": "2026-10-04T02:53:25.991Z",
+      "who": "router",
+      "action": "assign",
+      "note": "iphone-runner (topic cd-strip, set by the lead)"
+    },
+    {
+      "at": "2026-10-04T02:53:41.015Z",
+      "who": "iphone-runner",
+      "action": "escalate",
+      "note": "User answer to the lead's A/B question: no more swipe A/B; both look smooth; pick the build that does less recalculation (cost-based). Decision is the lead's (land strip-tc on cost counts vs drop it)."
+    },
+    {
+      "at": "2026-10-04T07:54:05.715Z",
+      "who": "mgmt-ops-10",
+      "action": "assign",
+      "note": "mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T07:54:11.695Z",
+      "who": "mgmt-ops-10",
+      "action": "close",
+      "note": "Merged into T-024 (countdown), one thread per topic at your request (T-024 #13). Related: T-024, T-057, T-077, T-085."
+    },
+    {
+      "at": "2026-10-04T10:13:43.617Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "into T-024: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T11:14:49.584Z",
+    "iphone-runner": "2026-10-04T03:12:34.159Z",
+    "mgmt-ops-10": "2026-10-04T07:55:14.069Z"
+  },
+  "histSeen": {
+    "lead": 5
+  },
+  "merged": {
+    "into": "T-024",
+    "at": "2026-10-04T10:13:43.617Z",
+    "by": "mgmt-ops-10",
+    "closed": false
+  },
+  "related": [
+    {
+      "id": "T-024",
+      "kind": "merged-into",
+      "at": "2026-10-04T10:13:43.617Z",
+      "by": "mgmt-ops-10"
+    }
+  ]
+}

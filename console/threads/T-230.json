@@ -1,0 +1,41 @@
+{
+  "id": "T-230",
+  "title": "Comment on T-229 #2 \"Comment on T-228 #16 \"Comment on the Best build page \"Today…\": I saw you many time. why you print table like this ? we already adopt to us…",
+  "anchor": {
+    "page": "threads",
+    "item": "thread:T-229/msg:2",
+    "quote": "| Step | State | | Restart tool built and landed (main ce6f1f62) | done 01:57Z | | Tests on a fake phone | 2420 of 2420 pass | | First real use: robot-swipe test (P-158) | next, about 02:50Z |",
+    "label": "Comment on T-228 #16 \"Comment on the Best build page \"Today’s best build\": Did yo…\": Catch up this, do you still try it…"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-07T02:16:45.343Z",
+  "updatedAt": "2026-10-07T02:17:21.812Z",
+  "rev": 5,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-07T02:16:45.343Z",
+      "by": "user",
+      "text": "I saw you many time. why you print table like this ? we already adopt to use table markdown format, doesn't it ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-07T02:17:21.331Z",
+      "by": "lead",
+      "text": "You are right: my tables left out the |---| line under the header, so the console showed them as raw text; my mistake, fixed from now on.\n| Step | State |\n|---|---|\n| Restart tool built and landed | done 01:57Z |\n| Tests on a fake phone | 2420 of 2420 pass |\n| First real use: robot-swipe test (P-158) | next, about 02:50Z |\n- The table above is the one from my reply about the heat tool (T-229), now rendered properly.\n- So it cannot happen again for any agent, the format checker will refuse a table without that line.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "lead": 2
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-07T02:17:21.331Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

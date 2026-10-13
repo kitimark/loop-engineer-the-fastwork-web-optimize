@@ -1,0 +1,164 @@
+{
+  "id": "C-019",
+  "by": "wi-stack",
+  "kind": "swipe-pair",
+  "title": "Stack test: which page feels smoother?",
+  "instructions": "Swipe the page up from the top to the bottom at your normal pace, then do the same on page 2. Pick the one that follows your finger better, or same.",
+  "url": "http://192.168.0.55:55550/",
+  "showUrl": false,
+  "meta": {
+    "ticket": "stack5-S1-F",
+    "page1": "V",
+    "page2": "C",
+    "C": "RB dbd5fdb4f1fb/0d7dfc79e703",
+    "V": "stack5 59b23b3f57fd/6e09b2c708fa",
+    "coin": "crypto.randomInt(2)=1 -> page1=V"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ],
+    "scale": {
+      "min": 1,
+      "max": 5,
+      "label": "How different did they feel?"
+    }
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.55:55550/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-02T08:11:19.015Z",
+        "ready": "2026-10-02T08:31:49.932Z",
+        "started": "2026-10-02T08:31:58.169Z",
+        "recording": "2026-10-02T08:32:04.567Z",
+        "done": "2026-10-02T08:32:54.817Z"
+      }
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.55:55529/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "ready": "2026-10-02T08:32:55.064Z",
+        "started": "2026-10-02T08:32:58.484Z",
+        "recording": "2026-10-02T08:33:02.565Z",
+        "done": "2026-10-02T08:33:40.229Z"
+      },
+      "message": "both recordings saved; please pick 1, 2 or same"
+    }
+  ],
+  "createdAt": "2026-10-02T08:08:31.810Z",
+  "queuedAt": "2026-10-02T08:08:31.810Z",
+  "updatedAt": "2026-10-02T08:34:26.798Z",
+  "rev": 13,
+  "history": [
+    {
+      "at": "2026-10-02T08:08:31.810Z",
+      "who": "wi-stack",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-02T08:09:54.204Z",
+      "who": "wi-stack",
+      "action": "ack",
+      "part": 1,
+      "state": "loading",
+      "note": "waiting for the lead: S1 block 2 may run first"
+    },
+    {
+      "at": "2026-10-02T08:10:51.726Z",
+      "who": "wi-stack",
+      "action": "ack",
+      "part": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-02T08:11:19.016Z",
+      "who": "wi-stack",
+      "action": "ack",
+      "part": 1,
+      "state": "loading",
+      "note": "S1 block 2 runs first (~08:17-08:37Z); this pair follows"
+    },
+    {
+      "at": "2026-10-02T08:31:49.932Z",
+      "who": "wi-stack",
+      "action": "ack",
+      "part": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-02T08:31:58.169Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-02T08:32:04.567Z",
+      "who": "wi-stack",
+      "action": "ack",
+      "part": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-02T08:32:54.817Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    },
+    {
+      "at": "2026-10-02T08:32:55.064Z",
+      "who": "wi-stack",
+      "action": "ack",
+      "part": 2,
+      "state": "ready",
+      "note": "page 2 ready on the phone: press Start, then swipe when it says so"
+    },
+    {
+      "at": "2026-10-02T08:32:58.484Z",
+      "who": "user",
+      "action": "start",
+      "part": 2
+    },
+    {
+      "at": "2026-10-02T08:33:02.565Z",
+      "who": "wi-stack",
+      "action": "ack",
+      "part": 2,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-02T08:33:40.230Z",
+      "who": "wi-stack",
+      "action": "ack",
+      "part": 2,
+      "state": "done",
+      "note": "both recordings saved; please pick 1, 2 or same"
+    },
+    {
+      "at": "2026-10-02T08:34:26.798Z",
+      "who": "user",
+      "action": "answer",
+      "value": "1"
+    }
+  ],
+  "startedAt": "2026-10-02T08:31:58.169Z",
+  "result": {
+    "value": "1",
+    "notes": "Page 1 from your optimize is better, but it's still laggy a bit, can we improve this ?",
+    "scale": 3,
+    "at": "2026-10-02T08:34:26.798Z"
+  }
+}

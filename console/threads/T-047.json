@@ -1,0 +1,54 @@
+{
+  "id": "T-047",
+  "title": "I'd like to disconnect the iphone device",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-03T15:00:40.722Z",
+  "updatedAt": "2026-10-04T08:34:06.918Z",
+  "rev": 11,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T15:00:40.722Z",
+      "by": "user",
+      "text": "I'd like to disconnect the iphone device"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T15:00:55.218Z",
+      "by": "lead",
+      "text": "Yes, go ahead. Nothing is using the iPhone right now: it has been off USB since 14:46Z, no agent holds it, and no test is running. While it's away, all phone steps pause: the hero check P-081, the morph check P-085 and your cd-strip finger test. Work on the Mac and in the iPhone Simulator keeps going: the best build, the slider fix, the hero rebuild and the morph GPU research. When you reconnect it, plug in by USB, unlock and tap Trust, and write 'back' here. Then the hero check runs first."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-03T15:45:53.798Z",
+      "by": "user",
+      "text": "iPhone is back, continue the work."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-03T15:45:58.718Z",
+      "by": "lead",
+      "text": "I see the iPhone connected again (15:45Z, USB, no page open). Before anything runs on it: may the phone tests resume? They run in this order: P-081 (hero timing, phone warm at thermal Serious, about 30-40 min, no touching during it), then P-085 (touch fix), then C-033 (your swipe test, which I'd post in Your steps). Reply 'resume' and I start P-081. Reply 'not yet' if you're still using the phone.",
+      "ask": true
+    },
+    {
+      "n": 5,
+      "at": "2026-10-03T15:46:09.465Z",
+      "by": "lead",
+      "text": "Our messages crossed: you'd already written 'continue the work'. Ignore my question. The phone tests resume now, starting with P-081 (hero timing, about 30-40 min). Please don't touch the phone while it runs. When your swipe test (C-033) is ready, it will show up in Your steps."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "lead": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-04T08:34:06.918Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

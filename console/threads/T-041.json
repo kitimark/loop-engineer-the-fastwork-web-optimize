@@ -1,0 +1,35 @@
+{
+  "id": "T-041",
+  "title": "Catch up I-088",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-03T10:21:36.451Z",
+  "updatedAt": "2026-10-04T03:03:47.424Z",
+  "rev": 5,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T10:21:36.451Z",
+      "by": "user",
+      "text": "Catch up I-088, what's the problem ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T10:21:51.305Z",
+      "by": "lead",
+      "text": "I-088 in short: a small timing clash in our Simulator tool. Nothing is broken, and no work was lost.\n\nWhat happened: only one agent can use the iPhone Simulator at a time; they take turns. At 10:03:23.9Z platform-idle finished its turn, and the tool began shutting the Simulator down. Half a second later cd-roll-ca's turn started. The Simulator was still mid-shutdown, so the tool saw it as \"switched on but nobody using it\" and refused to start, to be safe: it can't tell a shutdown in progress from a Simulator someone forgot to switch off.\n\nWhy it looked serious: cd-roll-ca reported it as blocking, because the tool's own advice was a \"--fix\" that switches the Simulator off. It rightly didn't run that, since someone might still have been using it.\n\nWhat I did: checked it a few seconds later. The Simulator was off and clean. I told cd-roll-ca to queue again, which it did. It's running its check now.\n\nThe real fix: the tool waits up to about 30 seconds for a shutdown in progress before calling it a problem. The tool specialist (ts-ipad-sim) is adding that, with a test, right after the iPad Simulator support you asked for in T-040, since both changes are in the same tool. Until then, the workaround is simply to queue again."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "lead": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-04T03:03:47.424Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "id": "C-050",
+  "by": "lead",
+  "kind": "action",
+  "title": "iPhone: plug the USB cable back in and unlock the phone",
+  "instructions": "The Mac lost the iPhone's cable link at about 19:15Z (Wi-Fi only now), so tests can't reach Safari. Plug the cable in, unlock the phone, tap Trust if asked, then press Done.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-04T19:16:54.802Z",
+        "done": "2026-10-04T19:16:59.081Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-04T19:16:34.768Z",
+  "queuedAt": "2026-10-04T19:16:34.768Z",
+  "updatedAt": "2026-10-04T19:16:59.081Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-04T19:16:34.768Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-04T19:16:54.802Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T19:16:59.081Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 9,
+  "startedAt": "2026-10-04T19:16:54.802Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-04T19:16:59.081Z"
+  }
+}

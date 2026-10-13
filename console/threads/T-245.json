@@ -1,0 +1,64 @@
+{
+  "id": "T-245",
+  "title": "Check fastwork icon during end-of-page disappear",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-07T19:50:36.609Z",
+  "updatedAt": "2026-10-08T03:05:32.933Z",
+  "rev": 12,
+  "assignees": [
+    "fix-logo-close"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-07T19:50:36.609Z",
+      "by": "user",
+      "text": "I found the fastwork icon during move to left side when end-of-page disappear. \nthe animation doesn't move to start on the left side, it move and then it have a bit wrap to start on the left side."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-07T19:51:22.459Z",
+      "by": "lead",
+      "text": "Got it: a new agent, fix-logo-close, is tracing the logo's jump at the end of its move to the left; cause in about 45 min.\n- What I read from your note: as the end-of-page menu closes, the logo slides left but snaps the last bit instead of arriving smoothly.\n- It tracks the logo's position frame by frame on the original page, v14 and today's best (g0.0c) in the Simulator and Chrome, to find the jump and whether the original has it too.\n- A likely suspect: Safari skipping an animation on one CSS property (the same kind of cause as the Join button's width snap); not confirmed yet.\n- Then the smallest fix, shown to you as a Try-it proposal (A today, B fixed).\n\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-07T19:53:56.511Z",
+      "by": "lead",
+      "text": "Cause found: the logo jumps about 15 px in one frame at the end of the close; the original site has the same jump, and our rollback brought it back.\n- On phones the logo is drawn at 3/4 size: while the menu moves it shrinks around its centre, at rest around its left edge.\n- When the menu finishes closing, that anchor flips in one frame, so the logo jumps left; on the first frame of opening it jumps right.\n- v14 had already fixed this (the anchor slides along with the menu); rolling the end of the page back to the original (g0.0) undid it. My miss.\n- Fix: restore that one CSS line on today's best. Not a Safari bug; computers are not affected (no shrink there).\n- Next (fix-logo-close): a frame-by-frame check that the jump is gone, then a Try-it proposal (A today, B fixed), about 30 min.\n\nWhat you need to do: nothing now; you'll get the proposal to try."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-07T20:23:29.277Z",
+      "by": "lead",
+      "text": "The logo fix is ready for you to try: proposal PR-037 (Proposals page), A = today's best, B = with the fix.\n\n| Logo step, phone width | Today | With fix |\n|---|---|---|\n| Last frame of the close | jumps 15.4 px left | 0.15 px (smooth) |\n| First frame of the open | jumps 19.5 px right | 4.8 px (a normal motion step) |\n\n- One CSS line, the one v14 already had; no extra work, the rest of the page unchanged.\n- Computers are not affected. It stacks with the Join fix (PR-036) in either order.\n- Try it on the phone over Wi-Fi with the Try-it phone links, or in a browser.\n\nWhat you need to do: open PR-037, close the end-of-page menu on A and B, then accept or request changes."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-08T03:04:08.235Z",
+      "by": "lead",
+      "text": "Landed: your accepted fix is now in the best build g0.0e (fixes/BEST_BUILDS.md), together with the other end-of-page fix you accepted.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "lead": 5,
+    "fix-logo-close": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-07T19:51:22.234Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-logo-close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-08T03:04:08.235Z",
+    "fix-logo-close": "2026-10-07T19:51:32.235Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

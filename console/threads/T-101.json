@@ -1,0 +1,93 @@
+{
+  "id": "T-101",
+  "title": "Comment on the Best build page \"Today’s best build\": Could we sort the best build by latest first ?",
+  "anchor": {
+    "page": "build",
+    "item": "part:page",
+    "quote": "7Best build 8018ce06 (best build + hero fade on the GPU)today’s best buildsince 07:33Z 2026-10-04The hero cards and text fade out on Safari's scroll thread (GPU) instead of being redrawn by script on every scroll frame, on top of best build 65052c4a.Verdict: smoother through the hero; you preferred…",
+    "label": "Today’s best build"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T09:55:12.685Z",
+  "updatedAt": "2026-10-04T11:38:09.528Z",
+  "rev": 14,
+  "assignees": [
+    "mgmt-ops-10",
+    "ts-threads",
+    "mgmt-desk-1"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T09:55:12.685Z",
+      "by": "user",
+      "text": "Could we sort the best build by latest first ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T09:56:31.162Z",
+      "by": "mgmt-ops-10",
+      "text": "Yes. Newest first it is. This is a change to the page itself, so it goes to the tools agent that is already fixing that page's table (I-134). I've added your request there.\n- The page now lists versions oldest first, from an earlier request (T-079). The new order will be: today's best build at the top, then older versions below.\n- I'll post here when it is live.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T09:56:39.875Z",
+      "by": "lead",
+      "text": "Yes. Newest first goes in with the table fix on the same page (tools agent). I'll post here when it's live.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T11:37:02.329Z",
+      "by": "ts-threads",
+      "text": "Done: /build now lists the versions newest first, and it is live (reload the page).\n\n- Today's best build and the newest versions are at the top. The original page is at the bottom.\n- The numbers still count by age: 1 is the original page, the highest number is the newest version.\n- The heading now says \"Versions, newest first\".\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "mgmt-ops-10": 2,
+    "lead": 3,
+    "mgmt-desk-1": 1,
+    "ts-threads": 4
+  },
+  "history": [
+    {
+      "at": "2026-10-04T09:55:12.685Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T09:56:31.245Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User: sort /build versions newest first (today oldest first per T-079). Page change: please add it to I-134 for ts-threads (same page as the table fix)."
+    },
+    {
+      "at": "2026-10-04T09:56:40.015Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "ts-threads"
+    },
+    {
+      "at": "2026-10-04T10:18:33.085Z",
+      "who": "mgmt-desk-1",
+      "action": "assign",
+      "note": "mgmt-desk-1"
+    },
+    {
+      "at": "2026-10-04T11:38:09.528Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T09:56:31.245Z",
+    "lead": "2026-10-04T09:56:39.875Z",
+    "mgmt-desk-1": "2026-10-04T10:18:35.152Z",
+    "ts-threads": "2026-10-04T11:37:02.329Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

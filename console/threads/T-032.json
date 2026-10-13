@@ -1,0 +1,78 @@
+{
+  "id": "T-032",
+  "title": "Check agents",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-03T00:01:41.858Z",
+  "updatedAt": "2026-10-03T06:34:59.987Z",
+  "rev": 19,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T00:01:41.858Z",
+      "by": "user",
+      "text": "Check agents, why i saw the \"general-purpose\" ? \nYou could name them following our convention."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T00:02:13.960Z",
+      "by": "lead",
+      "text": "You're right, that's my slip. After my context was compacted I stopped passing the agent's name when starting new agents. Three recent agents went out unnamed: the test-speed toolsmith (done), the new ops hub, and the toolsmith for the Safari 'open after park' problem. Why it matters: other agents can't message an unnamed agent by name, so messages route through me.\nWhy 'general-purpose': the project's own agent roles (toolsmith, fix-owner, reviewer…) only load when a session starts. Mid-session I start each one as a general-purpose agent and tell it to read its role file first. The role is the same; only the label differs. A fresh session shows the real role names.\nFix now:\n- the ops hub is replaced by a named one, mgmt-ops-9, so peers can reach it;\n- the toolsmith keeps working (it only talks to me) and is not restarted;\n- every new agent gets a name again (I've re-read my note on this)."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-03T00:02:55.964Z",
+      "by": "user",
+      "text": "FYI: Move all memory into our project. if they doesn't have where to store. let's investigate and re-structure our project for support them memory."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-03T00:05:52.071Z",
+      "by": "lead",
+      "text": "Understood. Today the lead's memory (15 short notes: your rules like no camera, user steps first, pixel-identical illusions, console habits) lives outside the repo in Claude Code's per-user folder, so other agents and other machines never see it. Plan:\n1. A named architecture agent, arch-memory, investigates first and moves nothing: where each note belongs (an existing rule file, CLAUDE.md, an agent role file, or a new project memory folder), what other memory exists (Serena memories, the findings board, ops handover, agent notes), and how every agent will load it.\n2. It scrubs personal data (no email, LAN address, device names; Hard rule 12) and proposes one structure, with the enforcement-layer edits (if any) needing your OK.\n3. I post its proposal here; after your OK it moves the notes, and the old folder keeps only a pointer to the project.\nI'll report back in this thread."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-03T00:13:24.904Z",
+      "by": "lead",
+      "text": "The investigation is done (research/architecture/memory-structure.md). Short version:\n- Today my 15 memory notes (your rules: no camera, user steps first, Simulator for non-timing jobs, identical-looking fixes only, …) sit outside the project and only I see them; the agents that must follow those rules never load them.\n- Proposal: a new top-level memory/ folder in the project: one note per rule (personal data removed: no names, emails, LAN addresses, device names; your words paraphrased) plus a short index. CLAUDE.md imports the index, so every agent loads it at start (~3 KB more each). Only I add or edit notes; agents send me what should be remembered.\n- Stays on this machine only: Claude Code's own memory folder (becomes a 3-line pointer to memory/), the console/usage/status stores (your words, LAN links), session logs.\n- Not chosen: per-agent memory folders (would give read-only reviewers write access and trip the tooling guard; the findings board already shares lessons).\n- Also found: two outdated Serena notes (they still say the snapshot is not in git) and a broken link between notes.\nTwo OKs needed from you (reply e.g. 'OK both' or 'OK 1 only'):\n1. Add the memory/ folder and the one-line import + short section in CLAUDE.md, then move the notes.\n2. Replace the two outdated Serena notes with a pointer to CLAUDE.md (Serena is read-only by our rules, so this is your call).",
+      "ask": true
+    },
+    {
+      "n": 6,
+      "at": "2026-10-03T00:13:55.788Z",
+      "by": "user",
+      "text": "OK"
+    },
+    {
+      "n": 7,
+      "at": "2026-10-03T00:14:04.125Z",
+      "by": "user",
+      "text": "OK both"
+    },
+    {
+      "n": 8,
+      "at": "2026-10-03T00:14:53.578Z",
+      "by": "lead",
+      "text": "Thanks. I'm reading your OK as both (1 the memory/ folder + CLAUDE.md import, 2 the two Serena notes). If you meant only 1, say 'only 1' and I'll drop the Serena part before it lands. arch-memory now writes the notes; I land them, check every agent loads the index, then empty the old outside folder down to a pointer. I'll confirm here when done."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-03T00:20:25.498Z",
+      "by": "lead",
+      "text": "Done (a286d37): memory/ is in the project with the index and the 15 notes, CLAUDE.md imports it, and the two Serena notes point to CLAUDE.md. One catch I checked: agents started in this running session still get the CLAUDE.md from when the session began, so the import takes effect from the next fresh session. Until then I've told the running agents to read memory/README.md directly. The old outside folder now starts with a pointer to the project; I'll empty it once a fresh session confirms the import loads (so nothing is lost in between)."
+    }
+  ],
+  "reads": {
+    "user": 9,
+    "lead": 9
+  },
+  "history": [
+    {
+      "at": "2026-10-03T06:34:59.987Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

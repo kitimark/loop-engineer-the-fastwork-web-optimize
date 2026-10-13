@@ -1,0 +1,70 @@
+{
+  "id": "T-139",
+  "title": "Comment on status illusion-proposals \"Cheaper look-alike effects (user priority 2)\": This fix will not used ? why ? is it not make better performance ?",
+  "anchor": {
+    "page": "status",
+    "item": "status:illusion-proposals",
+    "quote": "finished (nothing to land)",
+    "label": "Cheaper look-alike effects (user priority 2)"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T14:59:54.154Z",
+  "updatedAt": "2026-10-04T21:01:08.051Z",
+  "rev": 11,
+  "assignees": [
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T14:59:54.154Z",
+      "by": "user",
+      "text": "This fix will not used ? why ? is it not make better performance ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T15:00:20.759Z",
+      "by": "mgmt-desk-2",
+      "text": "Not used, because it did not make the page faster on the phone. It was a search for cheaper look-alike effects.\n\n- The accent word 'you' was the one candidate. 5 image or video ways to draw it did not beat today's drawing on the iPhone.\n- Drawn alone, the word had 0 slow frames. The slow frames come from the rest of the page, so changing the word would gain nothing.\n- Other look-alike swaps from this search were taken as their own fixes: the countdown, the avatar slider, the end-of-page morph and the Platform glint.\n- The 'finished (nothing to land)' label is the board's wording for a closed topic. The lead's label fix (T-124) will say 'closed, no change kept'.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T15:01:35.330Z",
+      "by": "user",
+      "text": "Can we put the reason into the status and any that related ? \nit'll make me catch up easier ? let's investigate."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T15:02:02.805Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes, we can, and I am sending it to the toolsmith now (ts-board, who already builds the label fix).\n\n- The reason already exists on the Progress page: each item has 'in a build: yes/no' and a 'why not' sentence. The Status rows do not show it.\n- 43 Status rows say done. Only 4 link to a Progress item (this one, style-recalc, rest-script, best-stack). The other 39 are tool and review jobs with no build to land.\n- The plan: a done row shows 'in best build' or 'not used, because ...' from Progress, and a closed job without a build says 'finished, no build'.\n- Not decided yet: the wording. I will post it here when ts-board answers.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T15:02:17.156Z",
+      "by": "mgmt-desk-2",
+      "text": "Update from the toolsmith (ts-board): the new row labels are being built and tested now.\n\n- Parked rows show one clear label: 'done, waits for build v8', 'unfinished, paused until ...' or 'standing by'. A row with no reason shows a red 'needs review'.\n- A Status row that disagrees with the Progress page shows a red 'does not match' line. 7 such rows exist today and are being fixed.\n- Your ask (the reason on done rows) goes in the same change.\n- Time: about 30-40 min to land if the test queue is short. The comment-badge fix (T-137) comes right after.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "mgmt-desk-2": 5,
+    "lead": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-04T14:59:54.154Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-2": "2026-10-04T15:02:17.156Z",
+    "lead": "2026-10-04T21:01:08.051Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

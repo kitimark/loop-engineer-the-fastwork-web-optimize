@@ -1,0 +1,418 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-018",
+  "by": "fix-hero-exit-threaded",
+  "title": "End-of-page menu morph follows your scroll instead of locking it (phones)",
+  "area": "end",
+  "topic": "morph-scroll",
+  "problem": "At the end of the page, on a phone, the page takes over your scroll: once you reach the bottom, it cancels your finger's moves, pins the page in place every frame, and plays a 680 ms spring that grows the small nav pill into the dark panel (the 'morph'). Your finger stops scrolling the page for that moment.",
+  "idea": "On touch phones only, the page gets one extra screen of scroll after the last section. The last section (#platform) stays put while that screen scrolls in, and the panel opens exactly as far as that screen has scrolled in, so it follows your finger. When you let go part open, it glides to open or closed in about a third of a second (rev 6).\n\nRev 7 answers your rev 6 review (fast short swipes were hard to open and close):\n(1) I recorded your own swipes on the phone (the two-page test): almost all were under 0.15 s, and only 18 of 51 ended where you aimed. Three causes: when your finger lifts, the iPhone has not moved the page yet (it scrolls on its own a few ms later), so the old rule saw a page at rest and could send a close back to open; Safari's bottom bar shifts the ends by 40 px; and the direction came from a single frame.\n(2) Now the page reads your finger's speed while it moves. A finger still moving when it lifts decides the direction, and the page keeps that decision for 1.5 s even if the bottom bar moves the page.\n(3) Built on v8 (the current best build), which already has the GPU team's repaint fix. You asked whether v8 alone fixes it: in your blind two-page test on v8 you picked rev 7c, and your recorded swipes agree: rev 7c reached the end you aimed for in 42 of 42 swipes, v8 with rev 7 alone in 64 of 85 (12 turned back, 9 stopped part open).\n\nBuilds: A = v8 (the best build); B = v8 + rev 7c (file versions in the fix's README).",
+  "looksSame": "No. The motion is new: the panel follows your finger instead of a fixed spring, and when you let go part open it glides to open or closed in about a third of a second. Still frames at the same opening match the base in the iOS Simulator while the panel covers the last section (only the running countdown differs, in base vs base too). Where the last section shows, Safari draws its text about 1 device pixel higher (T3, below). In Chrome only the EN language label differs. The pictures are from rev 2's build on v7: revs 4-7 change only motion (no snapping, the settle), not still frames.",
+  "risk": "A motion change: you decide whether the end-of-page panel should follow the finger and settle by itself.\n- Rev 7 adds a passive finger-speed reader at the end of the page; it never blocks scrolling.\n- Still a bit laggy on hard short swipes, on both pages (your note).\n- Most slow frames come 0.1-0.3 s after you lift, while the panel opens or closes; plain scrolling had far fewer.\n- That is the panel's repaint, the GPU team's area (they have a one-line candidate for the close). Not timed on the phone.\n- Seen once per build: a swipe up out of the end glided away and came back to open by itself (cause unknown).\n- In Safari the last section is drawn 1 device px higher wherever it shows.\n- Not run: reduced motion in Safari, iPad, a reload while scrolled into the extra screen. It reuses fix-nav-morph's setter and gate.",
+  "visualDiff": [
+    "Motion: the panel follows your scroll position, not a 680 ms spring. Scroll halfway and it is halfway open.",
+    "New in rev 7: a fast short swipe goes the way your finger was moving when it lifted, also when the bottom bar moves. Rev 6: let go part open and the page decides at once, then glides to open or closed in about 0.33 s.",
+    "Since rev 4: no CSS snapping anywhere, so flicks on the whole page coast as far as today (measured below).",
+    "Safari only, T3 (over the wide rule by share, not by shade): wherever the last section (#platform) is on screen, its text and edges sit about 1 device pixel (1/3 CSS px) higher. Closed at the end: 0.89 % of the screen over 8 shades, max 77. One screen before: 0.57 %, max 78. Base vs base: 0.",
+    "Why (Safari): the box position is identical to 1/64 px. WebKit gives every sticky box its own GPU layer (WebKit source, CONFIRMED); that this layer causes the 1 px shift is OBSERVED, cause unknown.",
+    "Safari, panel covering the section (m 0.25 to 1): equal to the base apart from the countdown, which also differs base vs base (max shade 224 in both).",
+    "Chrome: the EN language label at the top right differs at every morph value, about 600 device px (0.02 %), max shade 187; everything else equals the base. OBSERVED, cause unknown.",
+    "The page is one screen longer on phones.",
+    "Nothing changes on desktop, tablets or with reduced motion."
+  ],
+  "gain": [
+    {
+      "what": "Robot fast short flicks reaching their end",
+      "before": "24/24, 4 turned back (rev 7)",
+      "after": "12/12, none turned back",
+      "tag": "OBSERVED",
+      "how": "Robot finger on the iPhone, 12 flicks per run at the end (60-200 px in 50-90 ms, open and close), both on v8. Before = rev 7 on v8 with no change (your idea).",
+      "better": "better"
+    },
+    {
+      "what": "Time from lift-off to open or closed",
+      "before": "0.34 s, up to 3 s (rev 7)",
+      "after": "0.32-0.34 s",
+      "tag": "OBSERVED",
+      "how": "Same robot runs. Rev 7b (the step between) took 0.85 s on every close; fixed in 7c.",
+      "better": "better"
+    },
+    {
+      "what": "Your own fast short swipes hitting the end",
+      "before": "64 of 85 (rev 7 on v8)",
+      "after": "42 of 42",
+      "tag": "OBSERVED",
+      "how": "Your blind two-page test on v8; you picked rev 7c.\n- Done twice (you started over once); swipes counted from the page's own scroll record.\n- Rev 7 on v8: 12 turned back, 9 stopped part open. Rev 7c: none.",
+      "better": "better"
+    },
+    {
+      "what": "Glide after a flick mid-page, up / down",
+      "before": "1015 / 1063 px (v7)",
+      "after": "1048 / 1019 px",
+      "tag": "OBSERVED",
+      "how": "Rev 6c robot runs; rev 7 does not change mid-page code.",
+      "better": "same"
+    },
+    {
+      "what": "Touch moves blocked at the end of the page",
+      "before": "yes",
+      "after": "no",
+      "tag": "OBSERVED",
+      "how": "No non-passive listener under the phone gate.",
+      "better": "better"
+    }
+  ],
+  "live": {
+    "patch": "fixes/morph-scroll/patch.diff",
+    "ref": "HEAD",
+    "blob": "702267f240c89f8c6fa50fb9ddebbc560e24d6db",
+    "base": "site-pretty",
+    "files": [
+      "_app/immutable/assets/2.gBuqKVzi.css",
+      "_app/immutable/nodes/2.DyWL8TcE.js"
+    ],
+    "a": {
+      "patch": "fixes/v8-best/patch.diff",
+      "ref": "HEAD",
+      "blob": "a220797b973dec7cd2b55edee4150b492b5b5509",
+      "base": "site-pretty",
+      "files": [
+        "_app/immutable/assets/2.gBuqKVzi.css",
+        "_app/immutable/nodes/2.DyWL8TcE.js"
+      ]
+    }
+  },
+  "compare": {
+    "a": {
+      "label": "Best build (v8)"
+    },
+    "b": {
+      "label": "Morph follows the scroll, reads your flick (rev 7c)"
+    },
+    "view": "side",
+    "shots": [
+      {
+        "caption": "iOS Simulator, closed at the end (m 0): last section 1 device px higher in B (T3)",
+        "a": "r7-a-1.webp",
+        "aSize": [
+          430,
+          932
+        ],
+        "b": "r7-b-1.webp",
+        "bSize": [
+          430,
+          932
+        ]
+      },
+      {
+        "caption": "iOS Simulator, halfway (m 0.5)",
+        "a": "r7-a-2.webp",
+        "aSize": [
+          430,
+          932
+        ],
+        "b": "r7-b-2.webp",
+        "bSize": [
+          430,
+          932
+        ]
+      },
+      {
+        "caption": "iOS Simulator, open (m 1)",
+        "a": "r7-a-3.webp",
+        "aSize": [
+          430,
+          932
+        ],
+        "b": "r7-b-3.webp",
+        "bSize": [
+          430,
+          932
+        ]
+      },
+      {
+        "caption": "iOS Simulator, one screen before the end",
+        "a": "r7-a-4.webp",
+        "aSize": [
+          430,
+          932
+        ],
+        "b": "r7-b-4.webp",
+        "bSize": [
+          430,
+          932
+        ]
+      },
+      {
+        "caption": "Where they differ, m 0 (red: shade > 8, yellow: 1-8; the clock in the status bar always differs)",
+        "a": "r7-a-5.webp",
+        "aSize": [
+          430,
+          932
+        ],
+        "b": "r7-b-5.webp",
+        "bSize": [
+          430,
+          932
+        ]
+      },
+      {
+        "caption": "Noise only: base vs base, m 0",
+        "a": "r7-a-6.webp",
+        "aSize": [
+          430,
+          932
+        ],
+        "b": "r7-b-6.webp",
+        "bSize": [
+          430,
+          932
+        ]
+      },
+      {
+        "caption": "Where they differ, one screen before the end",
+        "a": "r7-a-7.webp",
+        "aSize": [
+          430,
+          932
+        ],
+        "b": "r7-b-7.webp",
+        "bSize": [
+          430,
+          932
+        ]
+      },
+      {
+        "caption": "Where they differ, m 1 (countdown only)",
+        "a": "r7-a-8.webp",
+        "aSize": [
+          430,
+          932
+        ],
+        "b": "r7-b-8.webp",
+        "bSize": [
+          430,
+          932
+        ]
+      },
+      {
+        "caption": "Noise only: base vs base, m 1 (countdown)",
+        "a": "r7-a-9.webp",
+        "aSize": [
+          430,
+          932
+        ],
+        "b": "r7-b-9.webp",
+        "bSize": [
+          430,
+          932
+        ]
+      },
+      {
+        "caption": "Chrome 430x932, halfway (m 0.5)",
+        "a": "r7-a-10.webp",
+        "aSize": [
+          430,
+          932
+        ],
+        "b": "r7-b-10.webp",
+        "bSize": [
+          430,
+          932
+        ]
+      },
+      {
+        "caption": "Chrome, where they differ at m 0: only the EN language label (top right)",
+        "a": "r7-a-11.webp",
+        "aSize": [
+          430,
+          932
+        ],
+        "b": "r7-b-11.webp",
+        "bSize": [
+          430,
+          932
+        ]
+      }
+    ]
+  },
+  "state": "accepted",
+  "rev": 7,
+  "decision": {
+    "value": "accepted",
+    "at": "2026-10-04T20:12:50.838Z",
+    "who": "user",
+    "rev": 7
+  },
+  "decisions": [
+    {
+      "value": "changes-requested",
+      "notes": "this proposal, it make overall scroll is lack of velocity during we swipe and stop swipe. the scroll will almost stop immediately. normal scroll will have velocity left and scroll a bit after i stop swipe. (i'd like to know did you measure this before do this proposal)\n\nand second thing is when i go to the end of page then stop in the middle the end section will be stop and stuck if i not scroll until end section display full of content. i think the website should decide to show or not. it should not stop and stuck in the middle.\n\none thing i'd love is the end section will expand following my finger. i'd love it.\n\ni'd like to ask you research more can we do this better.",
+      "at": "2026-10-04T13:17:51.214Z",
+      "who": "user",
+      "rev": 3
+    },
+    {
+      "value": "changes-requested",
+      "notes": "When i do slow swipe, the slow scroll. the end of section will take around 3-5 sec for decide to expand or not. i think it quite too slow for decide. \n\nAnd the section is quite laggy. i think it may we didn't adopt this section to gpu. can you ask the team who do gpu adaptation of this section. you may have to integrate them for make it smoother.\n\nSo your work is good idea for make it follow the user finger. keep doing good progress.",
+      "at": "2026-10-04T14:18:15.816Z",
+      "who": "user",
+      "rev": 5
+    },
+    {
+      "value": "changes-requested",
+      "notes": "The proposal is more smooth than before. i'd love it. it already resolve all of my comments.\n\none thing, i'd suggest. when i do fast and short swipe with high acceleration. it hard to open and close.\ni'd like to ask you researching this and you can capture my gesture for more information.",
+      "at": "2026-10-04T18:02:44.676Z",
+      "who": "user",
+      "rev": 6
+    },
+    {
+      "value": "accepted",
+      "at": "2026-10-04T20:12:50.838Z",
+      "who": "user",
+      "rev": 7
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-04T11:09:09.251Z",
+      "by": "fix-hero-exit-threaded",
+      "note": "first version"
+    },
+    {
+      "rev": 2,
+      "at": "2026-10-04T12:43:08.199Z",
+      "by": "fix-hero-exit-threaded",
+      "note": "Rev 2: rebuilt on the best build v7 without the morph-on-GPU change (measured slower on the phone, P-098) and its layer prep. Try-it A is now v7. Simulator: same as rev 1. Chrome: only the EN language label differs. New risk: each scroll frame in the extra screen repaints the panel (cost not measure"
+    },
+    {
+      "rev": 3,
+      "at": "2026-10-04T13:12:02.711Z",
+      "by": "fix-hero-exit-threaded",
+      "note": "Rev 3, text only; the pages are the same build. Corrected the repaint risk: one big repaint (about 1.6 million pixels) each time the menu leaves closed or returns to it, a snap back included; only small repaints in between (fix-morph-gpu's Simulator counts, F-223, OBSERVED). Rev 2 wrongly said every"
+    },
+    {
+      "rev": 4,
+      "at": "2026-10-04T14:06:52.842Z",
+      "by": "fix-hero-exit-threaded",
+      "note": "Rev 4, your 4 points: (1) Momentum: CSS snapping made Safari brake every flick on the whole page; rev 4 has no snap. Robot-finger test on the iPhone, same flick: rev 4 glides 1087-1174 px for 2.7 s, like today's best build (1058-1077 px); rev 3 only 164-299 px. (2) Did we measure it before? No: rev "
+    },
+    {
+      "rev": 5,
+      "at": "2026-10-04T14:09:56.449Z",
+      "by": "fix-hero-exit-threaded",
+      "note": "Same build as rev 4. Only 'What it saves' is rewritten as short rows: what, before (v7), after (rev 4), better/same/worse. The rev 3 vs rev 4 glide numbers moved to 'The idea'."
+    },
+    {
+      "rev": 6,
+      "at": "2026-10-04T15:30:45.514Z",
+      "by": "fix-hero-exit-threaded",
+      "note": "Rev 6: answers both points of your rev 5 note. (1) The panel now decides open or closed the moment you lift your finger: 0.31-0.35 s on the iPhone with a robot finger, 16 of 16 swipes (rev 4: 1.3-2.8 s). Glide mid-page still equal to v7. (2) GPU: fix-morph-gpu's newest change halves the open-start r"
+    },
+    {
+      "rev": 7,
+      "at": "2026-10-04T20:10:40.431Z",
+      "by": "fix-hero-exit-threaded",
+      "note": "Rev 7c answers your rev 6 note: fast short swipes were hard to open and close.\n- I recorded your swipes. The iPhone moves the page only after your finger lifts, and the bottom bar shifts the ends.\n- So the old rule often turned back. Rev 7c reads your finger's speed while it moves and keeps that dir"
+    }
+  ],
+  "createdAt": "2026-10-04T11:09:09.251Z",
+  "updatedAt": "2026-10-04T20:12:50.838Z",
+  "proposedAt": "2026-10-04T20:10:40.431Z",
+  "history": [
+    {
+      "at": "2026-10-04T11:09:09.251Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-04T11:18:38.005Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "held",
+      "rev": 1,
+      "note": "On hold: version B includes a GPU change to the menu that measured slower on the iPhone (P-098). I'm rebuilding B without it. Please decide once the new version is posted. You don't need to do anything now."
+    },
+    {
+      "at": "2026-10-04T12:43:08.199Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revised",
+      "rev": 2,
+      "note": "Rev 2: rebuilt on the best build v7 without the morph-on-GPU change (measured slower on the phone, P-098) and its layer prep. Try-it A is now v7. Simulator: same as rev 1. Chrome: only the EN language label differs. New risk: each scroll frame in the extra screen repaints the panel (cost not measure"
+    },
+    {
+      "at": "2026-10-04T12:43:08.199Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "unheld",
+      "rev": 2,
+      "note": "released by the revision"
+    },
+    {
+      "at": "2026-10-04T13:12:02.711Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revised",
+      "rev": 3,
+      "note": "Rev 3, text only; the pages are the same build. Corrected the repaint risk: one big repaint (about 1.6 million pixels) each time the menu leaves closed or returns to it, a snap back included; only small repaints in between (fix-morph-gpu's Simulator counts, F-223, OBSERVED). Rev 2 wrongly said every"
+    },
+    {
+      "at": "2026-10-04T13:17:51.214Z",
+      "who": "user",
+      "action": "decided",
+      "value": "changes-requested",
+      "rev": 3,
+      "note": "this proposal, it make overall scroll is lack of velocity during we swipe and stop swipe. the scroll will almost stop immediately. normal scroll will have velocity left and scroll a bit after i stop swipe. (i'd like to know did you measure this before do this proposal)\n\nand second thing is when i go to the end of page then stop in the middle the end section will be stop and stuck if i not scroll until end section display full of content. i think the website should decide to show or not. it should not stop and stuck in the middle.\n\none thing i'd love is the end section will expand following my finger. i'd love it.\n\ni'd like to ask you research more can we do this better."
+    },
+    {
+      "at": "2026-10-04T14:06:52.842Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revised",
+      "rev": 4,
+      "note": "Rev 4, your 4 points: (1) Momentum: CSS snapping made Safari brake every flick on the whole page; rev 4 has no snap. Robot-finger test on the iPhone, same flick: rev 4 glides 1087-1174 px for 2.7 s, like today's best build (1058-1077 px); rev 3 only 164-299 px. (2) Did we measure it before? No: rev "
+    },
+    {
+      "at": "2026-10-04T14:09:56.449Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revised",
+      "rev": 5,
+      "note": "Same build as rev 4. Only 'What it saves' is rewritten as short rows: what, before (v7), after (rev 4), better/same/worse. The rev 3 vs rev 4 glide numbers moved to 'The idea'."
+    },
+    {
+      "at": "2026-10-04T14:18:15.816Z",
+      "who": "user",
+      "action": "decided",
+      "value": "changes-requested",
+      "rev": 5,
+      "note": "When i do slow swipe, the slow scroll. the end of section will take around 3-5 sec for decide to expand or not. i think it quite too slow for decide. \n\nAnd the section is quite laggy. i think it may we didn't adopt this section to gpu. can you ask the team who do gpu adaptation of this section. you may have to integrate them for make it smoother.\n\nSo your work is good idea for make it follow the user finger. keep doing good progress."
+    },
+    {
+      "at": "2026-10-04T15:30:45.514Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revised",
+      "rev": 6,
+      "note": "Rev 6: answers both points of your rev 5 note. (1) The panel now decides open or closed the moment you lift your finger: 0.31-0.35 s on the iPhone with a robot finger, 16 of 16 swipes (rev 4: 1.3-2.8 s). Glide mid-page still equal to v7. (2) GPU: fix-morph-gpu's newest change halves the open-start r"
+    },
+    {
+      "at": "2026-10-04T18:02:44.676Z",
+      "who": "user",
+      "action": "decided",
+      "value": "changes-requested",
+      "rev": 6,
+      "note": "The proposal is more smooth than before. i'd love it. it already resolve all of my comments.\n\none thing, i'd suggest. when i do fast and short swipe with high acceleration. it hard to open and close.\ni'd like to ask you researching this and you can capture my gesture for more information."
+    },
+    {
+      "at": "2026-10-04T20:10:40.431Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revised",
+      "rev": 7,
+      "note": "Rev 7c answers your rev 6 note: fast short swipes were hard to open and close.\n- I recorded your swipes. The iPhone moves the page only after your finger lifts, and the bottom bar shifts the ends.\n- So the old rule often turned back. Rev 7c reads your finger's speed while it moves and keeps that dir"
+    },
+    {
+      "at": "2026-10-04T20:12:50.838Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 7
+    }
+  ]
+}

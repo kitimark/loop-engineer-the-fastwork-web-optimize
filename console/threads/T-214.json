@@ -1,0 +1,91 @@
+{
+  "id": "T-214",
+  "title": "I'd like to use iphone a bit, can you rush for me ?",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-06T08:43:53.275Z",
+  "updatedAt": "2026-10-06T10:13:18.110Z",
+  "rev": 28,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-06T08:43:53.275Z",
+      "by": "user",
+      "text": "I'd like to use iphone a bit, can you rush for me ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-06T08:47:56.300Z",
+      "by": "lead",
+      "text": "Yes: the iPhone is yours in about 3 min (around 08:51Z). The last robot test run is finishing now, and I stopped everything after it.\n- Reserved for you: I queued a 20-min phone hold in your name, so no agent can touch the phone while you use it.\n- Heat setting: the Xcode heat setting (Serious) may still be on, so the phone can feel slower than usual. That's expected.\n- Results: all counted test runs for fix A were already done, so this stop costs nothing.\nWhat you need to do: use the phone after about 08:51Z, and reply \"done\" here when you finish, so the tests can go on."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-06T08:49:53.240Z",
+      "by": "lead",
+      "text": "The iPhone is yours now (since 08:49Z), 2 min earlier than I said. The robot test ended and Safari is closed.\n- Your hold: 20 min, until about 09:09Z. I'll extend it if you still need the phone then.\n- No agent can use the phone while you hold it.\nWhat you need to do: use the phone, then reply \"done\" here."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-06T08:51:18.534Z",
+      "by": "user",
+      "text": "done, thanks"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-06T08:51:35.602Z",
+      "by": "lead",
+      "text": "Thanks: I released your phone hold, so the agents can use the iPhone again.\n- Next on the phone: nothing right now. Fix A's results are read without it, and fix B's follow-up needs Mac timing first.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-06T10:10:43.852Z",
+      "by": "lead",
+      "text": "The Mac still sees no USB device at all after your re-plug, so the iPhone tests are stopped; can you tell me what you see?\n- On the phone: does it show it is charging (the lightning bolt on the battery)?\n- On the Mac: does Finder's sidebar list the iPhone under Locations?\n- If it charges but Finder doesn't list it: the cable may be charge-only or the port may be bad; please try another cable.\n- If neither works: restart the iPhone, then turn the Xcode heat setting back on as before.\n- Nothing is lost: no counted run was cut; the test resumes once the phone is back.\nWhat you need to do: reply with what you see (charging yes/no, Finder yes/no).",
+      "ask": true
+    },
+    {
+      "n": 7,
+      "at": "2026-10-06T10:11:17.944Z",
+      "by": "user",
+      "text": "try to check again"
+    },
+    {
+      "n": 8,
+      "at": "2026-10-06T10:12:03.238Z",
+      "by": "user",
+      "text": "try to check again, i plug in the same type-c input"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-06T10:12:18.895Z",
+      "by": "user",
+      "text": "i was change the type-c input during i re-plug"
+    },
+    {
+      "n": 10,
+      "at": "2026-10-06T10:12:28.091Z",
+      "by": "lead",
+      "text": "Checked again at 10:11Z: the Mac's USB ports show no device at all, so the iPhone's cable is still not carrying data to this Mac.\n- What the Mac sees: 3 USB buses, all empty; the iPhone tools list no phone.\n- So it's the cable or the port, not the phone's settings: Trust and unlocking only matter once a device appears.\n- Most likely: a charge-only cable, or a hub, dock or display in between.\nWhat you need to do: try a different cable (ideally Apple's) straight into the Mac, then tell me if the phone shows it is charging and whether Finder lists it.",
+      "ask": true
+    },
+    {
+      "n": 11,
+      "at": "2026-10-06T10:13:17.696Z",
+      "by": "lead",
+      "text": "It works now: since 10:12Z the Mac sees the iPhone over the cable again, on the other Type-C port.\n- So the first port was the problem, not the phone or the cable.\n- The phone test restarts now; keep the cable on this port.\nWhat you need to do: nothing; please keep off the phone while the test runs (about 1.5 h)."
+    }
+  ],
+  "reads": {
+    "user": 11,
+    "lead": 11
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-06T10:13:17.696Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

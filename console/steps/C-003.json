@@ -1,0 +1,57 @@
+{
+  "id": "C-003",
+  "by": "iphone-runner",
+  "kind": "action",
+  "title": "iPhone lost its connection to the Mac: please unlock it and leave Safari as is",
+  "instructions": "Unlock the iPhone and leave Safari open on the 'Done, thank you' page; don't reload it, because the test result is saved on that page. If the cable came loose, plug it back in. Then tap Done here.",
+  "showUrl": true,
+  "meta": {
+    "why": "iwdp device list empty and WDA unreachable at 15:59Z, right after F-v3 answered; fv3 result not yet saved"
+  },
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-01T16:02:12.799Z",
+        "done": "2026-10-01T16:02:26.924Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-01T16:01:51.962Z",
+  "queuedAt": "2026-10-01T16:01:51.962Z",
+  "updatedAt": "2026-10-01T16:02:26.924Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-01T16:01:51.962Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-01T16:02:12.799Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T16:02:26.924Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    }
+  ],
+  "startedAt": "2026-10-01T16:02:12.799Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-01T16:02:26.924Z"
+  }
+}

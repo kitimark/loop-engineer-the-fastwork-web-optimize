@@ -1,0 +1,58 @@
+{
+  "id": "C-141",
+  "by": "lead",
+  "kind": "action",
+  "title": "Type one line in Claude Code (Day 8 article recording)",
+  "instructions": "In the Claude Code window (the lead's chat, input box at the bottom), paste this line and press Enter: Allow pictures from article recordings (out/iphone-screen/*-ar-*), recorded with Do Not Disturb or Sleep on. Then press Done here. Skip it if you do not want the Day 8 menu GIF.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-10T03:54:35.322Z",
+        "done": "2026-10-10T03:54:57.810Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-10T03:54:09.466Z",
+  "queuedAt": "2026-10-10T03:54:09.466Z",
+  "updatedAt": "2026-10-10T03:54:57.810Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-10T03:54:09.466Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-10T03:54:35.322Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-10T03:54:57.810Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 100,
+  "startedAt": "2026-10-10T03:54:35.322Z",
+  "result": {
+    "value": "done",
+    "notes": "let's put on your responsibility",
+    "at": "2026-10-10T03:54:57.810Z"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "id": "T-040",
+  "title": "WebKit check at 980 px wide (Simulator).",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-03T09:58:43.967Z",
+  "updatedAt": "2026-10-04T07:58:51.290Z",
+  "rev": 7,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T09:58:43.967Z",
+      "by": "user",
+      "text": "From WebKit check at 980 px wide (Simulator), hero-exit vs control, pixels only, at most 3 min left\n\nWhy you don't test it on the real ipad simulator that related or maybe Safari on desktop ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T09:59:32.278Z",
+      "by": "lead",
+      "text": "Good question. The 980 px check is a stopgap, not the real tablet test.\n\nWhy the iPhone Simulator: our Simulator tool drives only one device, the iPhone \"fw-sim\", and it can't rotate it. Telling the page to lay out 980 px wide on that iPhone was the quickest way to make hero-exit's wide-screen code run in WebKit and check that its pixels match the original. That check is useful, but it isn't a real tablet.\n\niPad Simulator: you're right, this is the real case: a real tablet width (820 or 1024 px), iPadOS Safari, touch. It needs a small change so the Simulator tool can pick the device. I don't expect an extra download, but I'll confirm that before anything is installed.\n\nSafari on the Mac: also worth checking. It runs the same WebKit engine. Whether the hero-exit fix even switches on there depends on whether Mac Safari has the touch-gesture marker the fix checks for. We haven't confirmed that yet; I'll have it checked against Apple's and WebKit's docs, not guessed. If it does switch on, Mac Safari users get the fix too and it must be checked there.\n\nPlan: the breakpoints agent plans both checks (pixels only, no timing), and a tool specialist makes the Simulator change. They run after the phone tests for fix 1 and fix 2, so they don't delay them. I'll post the results in this thread. Driving Safari on the Mac may need one setting from you (allowing remote automation); if so, it comes to \"Your steps\" with exact instructions."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "lead": 2,
+    "mgmt-ops-10": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T07:58:44.557Z",
+      "who": "mgmt-ops-10",
+      "action": "assign",
+      "note": "mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T07:58:51.290Z",
+      "who": "mgmt-ops-10",
+      "action": "close",
+      "note": "Merged into T-034 (other screen widths / breakpoints), one thread per topic at your request (T-024 #13). Related: T-034, T-040, T-053, T-063."
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T07:58:46.405Z"
+  }
+}

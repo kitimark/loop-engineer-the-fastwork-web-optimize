@@ -1,0 +1,54 @@
+{
+  "id": "T-023",
+  "title": "IDEA: use Webkit of Safari mac for simulate iphone device.",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-02T11:55:23.204Z",
+  "updatedAt": "2026-10-02T15:05:49.626Z",
+  "rev": 12,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-02T11:55:23.204Z",
+      "by": "user",
+      "text": "I wonder about can we use Safari on this mac for doing testing that simulate to iPhone device. \n\nAsk team to research how possible of this."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-02T11:56:44.192Z",
+      "by": "lead",
+      "text": "Good idea, on it. I'm asking a researcher to check how close Safari on this Mac comes to Safari on the iPhone for our scroll and animation tests: what it can stand in for, what it can't (touch, the toolbar, iPhone GPU and display timing), and how we'd drive it from scripts. It's desk research first, with sources cited and no camera. I'll ping you here with the answer and a recommendation."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-02T12:11:10.306Z",
+      "by": "lead",
+      "text": "The research is in. It's desk work: WebKit source, Apple docs and the man pages, with nothing run.\n\nShort answer: Safari on this Mac can't stand in for the iPhone on smoothness or timing. It can help with one narrower job.\n\nWhy not timing:\n- Safari has no CPU slow-down setting, so we can't make the Mac's speed match the phone's.\n- Scrolling on the Mac runs through different code (the wheel and trackpad path) than the iPhone's touch scrolling.\n- The Mac has no touch, no collapsing toolbar and no phone viewport.\n- Safari on the Mac is on version 26.2; the phone is on 26.6.1.\nSo Mac numbers wouldn't tell us how the phone feels.\n\nWhat it can do: show which parts of the page WebKit recalculates, lays out and repaints for each change, and catch a fix that breaks in WebKit. Safari on the Mac and on the iPhone share that part of the engine (confirmed in the WebKit source).\n\nTwo ways to use it:\n- A) Real Safari, driven by Apple's safaridriver. It needs one step from you: run `sudo safaridriver --enable` once, which asks for your admin password. A Safari window would open on screen during each check. It uses a separate test profile, so your own Safari history and logins aren't touched, and it can't use the camera.\n- B) The WebKit build already on this Mac from Playwright (a browser-testing tool). It needs nothing from you and opens no window. It can pretend to be a 430-wide screen at the iPhone's pixel density and record WebKit's timeline. It's a test build, not Safari itself, so how closely it matches is still open.\n\nMy recommendation: try B as a small experiment for those \"what did WebKit recalculate\" counts only, next to the iPhone Simulator we already use, and keep all timing on the real phone. I'd skip A unless B falls short. The Simulator is also being fixed so it doesn't restart from scratch for every check.\n\nShould I go ahead with B? (yes / no / try A too)",
+      "ask": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-02T15:05:28.668Z",
+      "by": "user",
+      "text": "no, thanks"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-02T15:05:37.433Z",
+      "by": "lead",
+      "text": "Understood: no Playwright WebKit experiment. The research stays on file in the T-023 notes. Phone timing stays on the real iPhone, and mechanism and count checks stay on the Simulator, as before. Nothing else changes."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "lead": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-02T15:05:49.626Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

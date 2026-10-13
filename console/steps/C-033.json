@@ -1,0 +1,239 @@
+{
+  "id": "C-033",
+  "by": "iphone-runner",
+  "kind": "swipe-pair",
+  "title": "Countdown: which page follows your finger better?",
+  "instructions": "Swipe up and down through the countdown and the section below it on both pages, then say which follows your finger better, or \"same\".",
+  "url": "http://192.168.0.56:55926/",
+  "showUrl": false,
+  "meta": {
+    "block": "cd-strip finger swipe A/B (fix 2)",
+    "key": {
+      "1": "V",
+      "2": "C"
+    },
+    "arms": {
+      "C": "st6-rb2 (JS 7bf7c4657d21, CSS f523598b2a24)",
+      "V": "strip-tc (JS 6fa0e1e8a221, CSS 982a747d9263)"
+    },
+    "by": "iphone-runner"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ]
+  },
+  "status": "skipped",
+  "cur": 0,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.56:55926/",
+      "record": true,
+      "gate": true,
+      "state": "loading",
+      "at": {
+        "loading": "2026-10-03T14:50:11.802Z"
+      },
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-03T13:58:31.897Z",
+            "ready": "2026-10-03T13:58:42.326Z",
+            "started": "2026-10-03T14:45:31.837Z",
+            "recording": "2026-10-03T14:45:34.473Z",
+            "done": "2026-10-03T14:46:07.439Z"
+          },
+          "ended": "redo",
+          "by": "iphone-runner",
+          "endedAt": "2026-10-03T14:48:48.165Z"
+        }
+      ],
+      "attempt": 2
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.56:55922/",
+      "record": true,
+      "gate": true,
+      "state": "waiting",
+      "at": {},
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-03T14:46:18.555Z",
+            "ready": "2026-10-03T14:48:09.810Z",
+            "started": "2026-10-03T14:48:18.601Z",
+            "recording": "2026-10-03T14:48:20.986Z"
+          },
+          "ended": "redo",
+          "by": "iphone-runner",
+          "endedAt": "2026-10-03T14:48:48.165Z"
+        }
+      ],
+      "attempt": 2
+    }
+  ],
+  "createdAt": "2026-10-03T12:27:18.800Z",
+  "queuedAt": "2026-10-03T12:27:18.800Z",
+  "updatedAt": "2026-10-03T14:50:18.348Z",
+  "rev": 19,
+  "history": [
+    {
+      "at": "2026-10-03T12:27:18.800Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-03T12:27:25.149Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-03T12:27:40.142Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-03T13:28:06.864Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-03T13:28:17.307Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-03T13:50:05.786Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading",
+      "note": "One minute: a quick check on the phone first."
+    },
+    {
+      "at": "2026-10-03T13:52:29.405Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-03T13:58:31.897Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-03T13:58:42.326Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-03T14:45:31.837Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-03T14:45:34.473Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-03T14:46:07.439Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-03T14:46:18.555Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-03T14:48:09.810Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-03T14:48:18.601Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-03T14:48:20.986Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-03T14:48:48.165Z",
+      "who": "iphone-runner",
+      "action": "redo",
+      "part": 1,
+      "epoch": 1,
+      "attempts": [
+        2,
+        2
+      ],
+      "note": "The Mac lost the iPhone connection, so neither page was recorded. Please check the cable, unlock the phone (tap Trust if asked), and wait here: page 1 will load again."
+    },
+    {
+      "at": "2026-10-03T14:50:11.802Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-03T14:50:18.348Z",
+      "who": "user",
+      "action": "skip"
+    }
+  ],
+  "startedAt": "2026-10-03T14:45:31.837Z",
+  "epoch": 1,
+  "skippedAt": "2026-10-03T14:50:18.348Z"
+}

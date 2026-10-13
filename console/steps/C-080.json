@@ -1,0 +1,58 @@
+{
+  "id": "C-080",
+  "by": "lead",
+  "kind": "action",
+  "title": "Test the private demo site on this Mac",
+  "instructions": "Open http://localhost:5731/ in a Mac browser (not the iPhone, which is mid-test). Without the password you should see only a sign-in box; any user name works, with the test password test-cce6e2c6bfcc (local only, it changes on every restart). Scroll the page to the end and back, then press Done and note anything that looks different from v10.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-06T07:38:22.139Z",
+        "done": "2026-10-06T07:38:27.036Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-06T07:37:26.624Z",
+  "queuedAt": "2026-10-06T07:37:26.624Z",
+  "updatedAt": "2026-10-06T07:38:27.036Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-06T07:37:26.624Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-06T07:38:22.139Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-06T07:38:27.036Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 39,
+  "startedAt": "2026-10-06T07:38:22.139Z",
+  "result": {
+    "value": "done",
+    "notes": "Look good",
+    "at": "2026-10-06T07:38:27.036Z"
+  }
+}

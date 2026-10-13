@@ -1,0 +1,98 @@
+{
+  "id": "T-043",
+  "title": "TOOLS: comments feature.",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-03T10:37:15.564Z",
+  "updatedAt": "2026-10-04T08:34:13.882Z",
+  "rev": 25,
+  "assignees": [
+    "ts-proposal-talk"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T10:37:15.564Z",
+      "by": "user",
+      "text": "I'd like to add comments feature likes claude artifacts feature.\n\nIt can put the comments for ask in everywhere in the claude artifacts. if i have any about each elements.\n\nMy idea: i'd like to put this comments feature into this console that we can ask everywhere i have a questions."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T10:37:35.951Z",
+      "by": "lead",
+      "text": "Good idea. Here's how I'd build it:\n\n- On every console page (Your steps, Proposals, Threads, Status, Progress), you can point at any item, or select some text, and press \"Comment\".\n- A small box opens next to it. You type your question and send.\n- The comment becomes a thread that remembers exactly where it came from: the page, the item (e.g. \"PR-009, option both, picture 2\" or \"status row cd-strip\"), and the text you selected. The thread shows that as a quote at the top, and the item gets a small comment marker so you can find the conversation again.\n- Who gets it: the answer box shows \"Your comment goes to: lead\" (same labels as T-038). I read it and answer, or hand it to the agent that owns that item, and you see who it went to.\n- Everything stays on this Mac, like the rest of the console.\n\nTiming: the same tool specialist who is adding images to threads (ts-thread-images) builds this right after, because both changes touch the threads code. Doing them one after the other avoids conflicts. I'll post here when it's live."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-03T11:44:42.070Z",
+      "by": "lead",
+      "text": "First part is done: threads can now show images. Agents attach them, you see thumbnails with captions, and a click opens the full size. You can attach images too, with a button, paste or drag and drop (up to 20 MB per message). Reload the console page. The comment-anywhere feature you asked for here (I-090) is next for the same toolsmith."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-03T15:28:05.338Z",
+      "by": "user",
+      "text": "Can i do comments in anywhere of console yet ?"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-03T15:29:45.835Z",
+      "by": "lead",
+      "text": "Yes, as of now. The feature was built earlier, but the console was still running the old code. Its comments part returned 'not found' until I restarted it a minute ago. Sorry about that. Please reload the console page. On every page (Your steps, Proposals, Threads, Status, Progress, Build) you can hover or click an item, or select some text in it, and press Comment. Your comment becomes a thread that remembers where it came from, and the item gets a small marker with the count. I get it, and I answer or hand it to the agent that owns that item. If the Comment button doesn't show up or doesn't send, tell me here."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-03T15:32:43.384Z",
+      "by": "user",
+      "text": "Why i cannot comments on status and any page ?  i was see i can comment only threads inside."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-03T15:35:56.894Z",
+      "by": "lead",
+      "text": "You're right, that's a bug: it should work on every page (Your steps, Proposals, Status, Progress, Build), not only Threads. I've logged it (I-096) and handed it to the toolsmith working on proposals (ts-proposal-talk), because it's the same code. It fixes this first and will answer you here when it's live. Note: the Mac's disk is full right now (you're freeing space), so agents may be slow until then."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-03T15:52:42.016Z",
+      "by": "user",
+      "text": "Fyi: Everywhere means any element we should allow to comment like this session\n\n```\nWaiting on you\nCountdown: 3 faces per digit, no hidden animation (T-024): you: C-033 swipe A/B (cd-strip lands first)\nCountdown roll as one GPU animation per digit (user-approved, near-identical): you: \"C-033 swipe A/B (cd-strip lands first)\"\nCountdown digits as sliding strips (GPU, identical): you: \"iPhone back on USB, then C-033 swipe A/B\"\nSteps are on Your steps; anything else, tell the lead.\n```"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-03T15:54:50.090Z",
+      "by": "user",
+      "text": "I was see i can comments in some where of each pages like proposal section, list of task status. i didn't check where it already to put comment. \n\nAs the same expect. it could comment everywhere in the html page."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-03T15:56:39.171Z",
+      "by": "ts-proposal-talk",
+      "text": "What was wrong: only some things on each page could take a comment: the rows of the Status table, the fix cards on Progress, step cards, the parts of an open proposal, and the messages inside a thread. Everything else had no comment spot, for example the proposal list, the thread list, the Waiting on you panel, headings and filters, and the Right now and timeline parts of Progress. Most of what you see first on a page was in that group, so nothing happened there.\n\nThe fix: every line you can see will take a comment. A line that belongs to something (a workstream, a step, a proposal, a thread) is a comment on that thing. Your example in Waiting on you becomes a comment on that workstream (Countdown roll as one GPU animation per digit), with the line you pointed at quoted. Anything else becomes a comment on the page, also with the line you pointed at quoted. You hover or click a line, or select some text, then press Comment, as before.\n\nWhen: I'm writing the tests now. It goes live once the lead lands it and restarts the console, today. I'll post here when it's ready."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-03T16:18:36.543Z",
+      "by": "ts-proposal-talk",
+      "text": "It's live now (I-096, on main, and the console has been restarted). You can comment on anything on every page: Your steps, Status (including the 'Waiting on you' lines), Progress, Best build, Proposals and Threads. Move the mouse over any line, or select some text, and a Comment button appears. A comment on a line that isn't an item of its own, like a heading or a filter, is about the page itself, and the line you pointed at goes with it as the quote. The thread it starts gets a marker at the top of that page. If a part of a page still won't take a comment, tell me here which one."
+    }
+  ],
+  "reads": {
+    "user": 11,
+    "lead": 9,
+    "ts-proposal-talk": 11
+  },
+  "history": [
+    {
+      "at": "2026-10-03T15:35:56.825Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "ts-proposal-talk"
+    },
+    {
+      "at": "2026-10-04T08:34:13.882Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "id": "T-226",
+  "title": "Comment on C-088 \"Unlock the iPhone and allow UI Automation\": I didn't open the safari before.",
+  "anchor": {
+    "page": "steps",
+    "item": "step:C-088",
+    "label": "Unlock the iPhone and allow UI Automation"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-06T16:44:46.281Z",
+  "updatedAt": "2026-10-06T16:46:24.059Z",
+  "rev": 5,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-06T16:44:46.281Z",
+      "by": "user",
+      "text": "I didn't open the safari before."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-06T16:46:10.780Z",
+      "by": "lead",
+      "text": "Thanks; you did nothing wrong, and our tools did not open that page either: no log of ours has the fastwork.com/selling address.\n- Likely cause (not proven): when the test tool restarted Safari after the re-plug, Safari brought back an older tab from its own history.\n- Effect: with two tabs open the tool could not tell which one to drive, so the test stopped; closing the tab fixed it, and the test is restarting now.\n- Long-term: int-v8 makes the test check the tab count before it starts and ask you once, clearly, if there is an extra tab.\nWhat you need to do: nothing; leave the phone unlocked and plugged in for about an hour."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "lead": 2
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-06T16:46:10.780Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

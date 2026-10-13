@@ -1,0 +1,65 @@
+{
+  "id": "T-158",
+  "title": "Comment on the Proposals page \"Proposals\": Oh i got it. you wiring the button depend on scroll velocity. The original do like this ? i'm not sure. let's invest…",
+  "anchor": {
+    "page": "proposals",
+    "item": "part:page",
+    "quote": "Your decisionChange requested 2026-10-04 20:31Z · revision 2I found the animation lost during the end-of-page is appearing. so the original they have transition animation to hidden the Join waitlist button on top of nav bar. And the start of the page is not optimize but gpu yet ? i still see lag of…",
+    "label": "Proposals"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T20:34:05.921Z",
+  "updatedAt": "2026-10-04T20:37:13.318Z",
+  "rev": 11,
+  "assignees": [
+    "fix-nav-earn",
+    "lead"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T20:34:05.921Z",
+      "by": "user",
+      "text": "Oh i got it. you wiring the button depend on scroll velocity. \n\nThe original do like this ? i'm not sure. let's investigate and report me on this thread then."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T20:34:46.287Z",
+      "by": "lead",
+      "text": "No: the original does not follow the scroll. Rev 2 changed that, and it missed both points in your note.\n\n| | original site | rev 2 |\n|---|---|---|\n| top of page | starts at 72 % of the hero, then runs on a timer (about 0.7 s, text sweep to 1.5 s) | follows the scroll position from 58 % to 72 %, so a fast scroll reveals it fast |\n| end of page | timed hide (width 0.68 s, fade 0.32 s) | timer switched off, so it vanishes with the first 20 % of the morph |\n\n- Cause of the lag: in both versions the page's script changes the button's width, and every frame then needs a layout pass on the main thread, not the GPU.\n- Which cases: top of page, hero to people and back (lag); end of page, scrolling into the footer (hide animation lost).\n- Workaround, done now: the Join button proposal (PR-021) shows \"rev 3 in progress\", and your note is rev 3's spec (owner fix-nav-earn).\n- Long-term fix, rev 3:\n  1. Bring back the original timers at both places, so the look matches the live site.\n  2. Move the work to the GPU: reserve the button's width, and animate only fade, clip and mask.\n  3. Check hero to people and back, plus the end of page, on the iPhone numbers before it comes back to you.\nWhat you need to do: nothing now. Rev 3 comes back as a new revision of the same proposal."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T20:35:16.298Z",
+      "by": "user",
+      "text": "I think it could not depends on scroll velocity. when i scroll too fast it feel like laggy animation."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T20:37:13.029Z",
+      "by": "lead",
+      "text": "Agreed: rev 3 won't follow the scroll speed. It goes back to the original timer.\n- Cause of \"laggy when I scroll fast\": in rev 2 the button's growth is tied to the scroll position. A fast scroll crosses its 58-72 % band in a few frames, and the page's script can't keep up.\n- Rev 3 starts the original timed animation at the original point (72 % of the hero), then plays at the same speed however fast you scroll, on the GPU.\n- I've sent your note to the rev 3 owner (fix-nav-earn) as a fixed requirement, so there's no scroll-linked option to choose from.\nWhat you need to do: nothing now."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "lead": 4,
+    "fix-nav-earn": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-04T20:34:46.364Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-nav-earn,lead"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T20:37:13.029Z",
+    "fix-nav-earn": "2026-10-04T20:35:18.832Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

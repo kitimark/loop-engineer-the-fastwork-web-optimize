@@ -1,0 +1,112 @@
+{
+  "id": "T-096",
+  "title": "PR-017 accepted: landing and what to research next",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T09:12:01.080Z",
+  "updatedAt": "2026-10-04T20:22:36.774Z",
+  "rev": 26,
+  "assignees": [
+    "mgmt-ops-10",
+    "fix-cd-roll-ca",
+    "arch-gpu-lessons"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T09:12:01.080Z",
+      "by": "lead",
+      "text": "Thanks: PR-017 (countdown roll on the graphics chip) is accepted to land.\nHow it lands:\n- The countdown phone check (P-093) passed all 3 blocks. Scoring and a second read are running now.\n- If they pass, I land it, and it goes into the next best build (v7) with the countdown strips and the script-at-rest fix.\nResearch we propose next (ops and the countdown agent fill this in here):\n1. Why it's smoother: a frame trace of the old and new countdown while digits roll.\n2. Where else the same graphics-chip approach could help: the hero, the top-bar morph, the end-of-page morph.\n3. Your Arc and Try-it stale pages: the cache fix (I-131) is under way.\nWhat you need to do: if you meant a different research question, write it here in one line. Otherwise nothing."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T09:12:39.647Z",
+      "by": "mgmt-ops-10",
+      "text": "Proposed research card: why does the new countdown make the page feel much smoother?\n- The puzzle: our counts say the countdown's own script work fell a lot (23-26 calls per roll down to 1), but the whole page's work on the iPhone Simulator barely changed. So we need to find what you actually felt.\n- Owner: fix-cd-roll-ca, after PR-017 lands. Ops (me) checks the results.\n- Step 1, rule out a mix-up: confirm that pages A (5422) and B (5423) served exactly the builds we think, file by file. This covers the stale-file problem (I-131).\n- Step 2, Chrome: on those same two pages, count what runs in each frame while the digits roll and while you scroll. That means script calls, style and layout work, and frames that wait for script.\n- Step 3, iPhone Simulator: the same counts, from Safari's rendering records.\n- Not included: no new speed (timing) tests. We only count work, per the standing rule.\n- Result: one plain list of what changed per frame. If one thing stands out, it decides which other animations (hero, top-bar morph, end-of-page morph) could use the same trick. That becomes item 2.\n- Cost: about 1 hour of agent time, a few short shared Chrome and Simulator slots, and no iPhone time.\nWhat you need to do: one line, please. Did you feel it on the Mac (in Arc) or on the iPhone, and while scrolling or while just watching the clock?"
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T09:13:07.879Z",
+      "by": "mgmt-ops-10",
+      "text": "The lead approved the research card in #2, with one addition to step 2.\n- Step 2 now also counts the frames where the countdown's digits move on the graphics chip without any script running that frame.\n- That's our best guess for why it feels smoother. It stays a guess until those frames are counted.\n- It starts after PR-017 lands. It needs no iPhone time, so it doesn't wait in the phone queue.\nWhat you need to do: the one-line answer from #2 when you have a moment (Mac or iPhone, scrolling or watching the clock)."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T09:13:40.735Z",
+      "by": "user",
+      "text": "Can you try to research more about the significant fix that we was found. there're breakthrough that i think we could use our lesson learn to apply more smoother.",
+      "forLead": true
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T09:14:02.934Z",
+      "by": "mgmt-ops-10",
+      "text": "Yes. We'll use what we learned here on the rest of the page, in two parts.\n- Part 1 is the card in #2: find exactly why the new countdown feels smoother. It starts after PR-017 lands.\n- Part 2 starts now and runs in parallel: a code read listing every animation on the page that still moves things from script on every frame, the way the old countdown did. Candidates include the hero, the top-bar morph and the end-of-page morph.\n  - For each one: how often it runs, whether the graphics chip could do it instead, and what might change on screen.\n  - It only reads code, so it costs no Chrome or iPhone time.\n- Part 1's answer then ranks Part 2's list, and the top items become fixes. Any visible change comes to you as a proposal with Try-it pages first.\nWhat you need to do: nothing now. If you still remember where you felt it (Mac or iPhone, scrolling or watching the clock), one line here helps Part 1."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T09:14:25.209Z",
+      "by": "lead",
+      "text": "Yes. I started a dedicated research agent (arch-gpu-lessons) for this.\n- Step 1, why it works: what the countdown change moved off the page's main work and onto the graphics chip, checked against browser docs, not only our tests.\n- Step 2, where else: a list of every animation on the page (hero, top-bar morph, end-of-page morph, carousels and the rest), ranked by how much the same trick could help.\n- Step 3, the next fixes: the top 2-3 candidates become new fixes, each with a cost note, and keeping the look pixel-identical.\n- No phone time is needed for this; it uses quick counts on the Mac.\n- It reports here in plain lists. The first results (the 'why') come after the countdown change lands.\nWhat you need to do: nothing. Your one-line answer above (Mac/Arc or iPhone; scrolling or watching the clock) still helps."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T09:20:45.749Z",
+      "by": "mgmt-ops-10",
+      "text": "A small update to #5. Part 2 (the list of other animations) now belongs to a new architecture agent, arch-gpu-lessons. The lead started it at 09:1x UTC.\n- It explains why the countdown change worked, ranks every animation on the page by how much the graphics chip could take over, and picks the top 2-3 as new fixes, each with a cost estimate.\n- fix-cd-roll-ca still does the counting from #2 after PR-017 lands, so nothing is done twice.\n- Counts and code reading only, no iPhone time.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T09:26:31.520Z",
+      "by": "lead",
+      "text": "PR-017 has landed (your decision). One honest note from the iPhone check:\n- On the phone, each run of the new countdown had 1-2 slow frames (over 50 ms) near the top of the page; the old one had 0. 4 of 4 runs vs 0 of 4.\n- That passed our agreed limit (up to +2), so it lands. But our goal is zero slow frames, so the countdown agent traces that frame next. Best guess, not proven: the first frame of each digit roll on Safari.\n- If it finds a cheap fix, it comes back to you as a small proposal that keeps the look identical.\n- The next best build (v7: the current best + countdown strips + less script work at rest + this change) is being built now. Checks on the Mac only.\nWhat you need to do: nothing. If you'd rather park PR-017 until that frame is fixed, say 'park' here."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T09:50:32.960Z",
+      "by": "arch-gpu-lessons",
+      "text": "First results on why the new countdown feels smoother, and where else it helps.\n- Why: each digit roll is now handed to the graphics chip as one finished animation, so no page script runs while it moves. Chrome and Safari both work this way; their own source code confirms it.\n- The likely big one, if you felt it on the iPhone: Safari draws page script updates about 60 times a second, but it asks for 80-120 frames a second for animations handed to the graphics chip. So the new roll can be drawn up to twice as often. This is confirmed in Safari's source code but not yet seen on our phone. Apple says heat or Low Power Mode turn the faster rate off.\n- On the Mac with the page at rest, the old roll was never held up, so there the gain is less work, not fewer stalls.\n- The cost: on the iPhone, each roll's start and end costs one extra layer update. That matches the 1-2 extra slow frames per run in the phone check.\n- Already moved to the graphics chip: the hero fade-out, the countdown, the platform glint and sweeps.\n- Next candidates, in order:\n  1. The hand-drawn accent word in the headline and its flicker. It's the last animation in the hero still run by the page itself. Older look-alike drafts exist; they would come to you as proposals with Try-it pages.\n  2. The second clock in the end panel. It's already planned, the same change as the countdown.\n  3. The end-of-page morph: the biggest moving area, but on hold. Its rounded corners can't be handed to the graphics chip in Safari today.\n- Details: research/gpu-lessons/README.md.\nWhat you need to do: nothing now. If you remember whether you felt it on the iPhone or the Mac, one line here decides the next check."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T09:54:39.510Z",
+      "by": "fix-cd-roll-ca",
+      "text": "We found where the new countdown's extra slow frames come from. It's the moment a digit starts to roll, not the roll itself.\n- On the iPhone, each slow frame (over 50 ms) landed on the exact frame where the top clock's digits start a new roll.\n  - It's worst when two digits change at once and the last digit spins all the way from 0 to 9, which happens every 10 seconds.\n  - Those frames were slow every time on the new countdown (3 of 3) and never on the old one (0 of 3).\n- The rest of each roll is fine. The frames after the start are as smooth as the old countdown.\n- Why the start is heavy (seen in the iPhone simulator; the cause is checked against Safari's source code):\n  - At the start, Safari gets the whole movement path up front for every digit tile. That's up to 6,000 small steps on a 10-second tick, and Safari prepares each one before the roll can begin.\n  - It also draws all the tiles of a spinning digit in that one frame, where the old countdown drew 1-2 per frame.\n- Possible cheap fix, not built yet: describe the same path with far fewer steps (about 5 times fewer), with the exact same look.\n- Next: one short iPhone check, to see which of the two costs is bigger. Also a separate check of whether the new roll is drawn at up to 120 frames per second on the iPhone, which may be why it feels smoother. Both wait for the iPhone after the current tests.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "lead": 8,
+    "user": 10,
+    "mgmt-ops-10": 7,
+    "fix-cd-roll-ca": 10,
+    "arch-gpu-lessons": 9
+  },
+  "history": [
+    {
+      "at": "2026-10-04T09:12:01.080Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-ops-10,fix-cd-roll-ca"
+    },
+    {
+      "at": "2026-10-04T09:14:25.133Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "arch-gpu-lessons"
+    },
+    {
+      "at": "2026-10-04T20:22:36.774Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T09:26:31.520Z",
+    "mgmt-ops-10": "2026-10-04T09:20:45.749Z",
+    "fix-cd-roll-ca": "2026-10-04T09:54:39.510Z",
+    "arch-gpu-lessons": "2026-10-04T09:50:32.960Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

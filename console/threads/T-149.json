@@ -1,0 +1,132 @@
+{
+  "id": "T-149",
+  "title": "Comment on the Progress page \"Fix progress\": I see the iphone device is not using for test longer time. what's the problem ?",
+  "anchor": {
+    "page": "progress",
+    "item": "part:page",
+    "quote": "On the phonePR-018 rev 7: fast short flicks at the end of the page (robot finger), then the user's gesture captureRun by fix-hero-exit-threaded for fix-hero-exit-threaded, since 18:28Z.Next: phone: robot flicks rev 6 vs rev 7, then the user's swipe capture",
+    "label": "Fix progress"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T18:33:52.830Z",
+  "updatedAt": "2026-10-04T19:51:34.336Z",
+  "rev": 39,
+  "assignees": [
+    "mgmt-devices"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T18:33:52.830Z",
+      "by": "user",
+      "text": "I see the iphone device is not using for test longer time. what's the problem ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T18:34:29.428Z",
+      "by": "lead",
+      "text": "A wrong wait command: the agent got the iPhone at 18:28Z but its wait kept running, so the phone sat idle; it starts by about 18:38Z.\n\n- fix-hero-exit-threaded (the end-menu rev 7 work, PR-018) asked to wait \"until the phone is mine, for 570 s\". That option means \"stay mine for 570 s\", so the wait only ends at 18:37:48Z.\n- I can't stop another agent's process; I've told it to start at once when the wait ends.\n- The idle alarm stayed quiet because the phone was held (its limit counts a held phone as busy).\n- Tool fix (incident I-165): the lock tool will refuse that option combination, and the alarm will flag a holder that only waits. The lock toolsmith takes it.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T18:35:45.698Z",
+      "by": "user",
+      "text": "Why do didn't find this incident before ? What's the problem ? \n\nI'd expect you could find this before me to ask. cause i was saw a lot of message trigger iphone device was idle a lot."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T18:36:41.148Z",
+      "by": "lead",
+      "text": "You're right: I should have found it first. I saw the phone held and unused at 18:32Z, but I only messaged the agent instead of checking what it was running.\n\n- The cause sat in the process list: its wait command was still running after it got the phone (incident I-165).\n- Bigger miss: the idle alarm fired 15 times today (threads T-090 to T-150). Each closed by itself when the phone was taken, and I answered them one by one instead of asking why the phone keeps going idle.\n- From now on, at every phone check: if the phone is held with no run for 2 min, I read the holder's processes and fix it at once.\n- From the 3rd idle alarm in a day, I review them together (cause, minutes lost) and fix the commonest cause.\n- Saved as a standing rule (memory note \"idle alarms are a pattern\").\n- Next: a helper reviews today's 15 idle periods now; I post the causes and minutes lost here.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T18:37:48.051Z",
+      "by": "user",
+      "text": "You could adjust your responsibility for handle these thing ? or you have a lot of work ? Should we delegate this ?"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T18:40:22.875Z",
+      "by": "lead",
+      "text": "Yes, delegated: watching the iPhone and the Mac test lock is now one helper's only job.\n\n- New helper mgmt-devices (light, cheap model) started 18:38Z. It checks every minute.\n- iPhone held 2 min with no test run: it looks at what the holder is really running and tells it what to do. No reaction in 3 min: it asks me to move or free the lock.\n- From the 3rd idle in a day it sends me the common cause and one fix.\n- I keep: landing work, decisions, tool bugs, and answering you.\n- Today's 15 idle alarms: a second helper is sorting them by cause and minutes lost. I post that here when done.\n- Right now: fix-hero-exit-threaded started its phone runs (PR-018 rev 7, the end menu) after the wrong wait ended.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T18:40:38.330Z",
+      "by": "lead",
+      "text": "Today's idle-phone review: 18 alarms, 204 min. The biggest fixable cause is an agent holding the phone without running anything.\n\n| cause | alarms | min |\n|---|---|---|\n| holder not running anything (took it too early, or gap between its own runs) | 8 | 72 |\n| phone waiting for you to press Start, or your own hand test | 7 | 79 |\n| paused by me for the usage limit | 1 | 25 |\n| free on purpose for Simulator jobs | 1 | 18 |\n| wrong wait command (I-165) | 1 | 10 |\n\n- Fix 1 (the 72 min): mgmt-devices now pushes the holder after 2 idle minutes. Tool fix I-155 (in progress) lets an agent queue as \"not ready\", so it can't take the phone before it is.\n- Fix 2 (the 79 min): mostly your own pace, not waste. The alarm should not ping while a step waits for your Start; added to the same tool fix.\n- 5 of the 8 \"holder idle\" causes are inferred from thread text, not logs.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T18:46:45.289Z",
+      "by": "user",
+      "text": "You could harden with tools more proper. what's the issue that lead this problem ? \n\nTools is not better enough ? instruction for agent is not better enough ? or anything are better enough ?\n\nmgmt-devices agent can spawn for this workaround but for the long-term you could do more proper way. investigate it."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T18:47:40.643Z",
+      "by": "lead",
+      "text": "Mostly the tools: the phone lock lets an agent keep the iPhone while it runs nothing, and nothing takes it back. The instructions only ask agents not to.\n\n- Tool gap 1: the phone is \"leased\" for minutes, not tied to a running test. Between runs, or while the agent waits, it stays taken.\n- Tool gap 2: the agent takes the phone first, then waits for its Mac turn. That was today's 15-min idle (T-150).\n- Tool gap 3: the idle alarm only posts a thread to you; it never frees the phone or wakes the agent.\n- Instruction gap: \"never hold the phone while idle\" is a written rule in a very long guide, with no check.\n- Lead gap: I was the only watcher and reacted after you did.\n- Proper fix (to design now): the phone is held only while a test command runs; it takes the phone and the Mac turn together; an idle phone goes back to the queue by itself. mgmt-devices stays only as a backstop.\n- An investigator (arch-phone-hold) checks this against today's lock logs and writes the design. Then a tool-builder implements it with tests.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T18:48:52.815Z",
+      "by": "user",
+      "text": "Yeah, the lead, you could do like this. let's update your roles responsibility."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T18:51:23.513Z",
+      "by": "lead",
+      "text": "Done: the roles guide now gives the phone and Mac-lock watching to mgmt-devices, and makes the lead own the tool fix.\n\n- mgmt-devices checks every minute. A holder that's idle 2 min gets one exact message. After 3 more min with no reaction, it moves the queue or frees the phone itself and tells me.\n- It never runs tests, never touches the phone, never posts to you.\n- Lead: from the 3rd idle period in a day, I treat it as a tool problem. That means a design and a tool-builder, not more nudges.\n- The design (arch-phone-hold) is in progress; I post it here.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T18:57:03.569Z",
+      "by": "user",
+      "text": "I think maybe you could give the responsibility to mgmt-devices for investigate, find the long-term improvement and delegate to team for fix it.\n\nThen you measure the issues both lead and mgmt-devices. if it better till lead can manage without the bottleneck. we can gracefully stop the mgmt-devices agent.",
+      "forLead": true
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T18:59:25.121Z",
+      "by": "lead",
+      "text": "Done as you said: mgmt-devices now owns the phone problem end to end (finding causes, planning, handing fixes to tool-builders). I only measure it.\n\n- Design is in (arch-phone-hold): 41 % of today's idle phone time came from the phone being booked, not tied to a running test. Waiting for your Start was 62 min.\n- Fix order: lock fixes now in test, then a phone log + daily report, then \"phone held only while a test runs\". Those two remove about 86 of 106 avoidable min per day (estimate).\n- One option is yours later: give the phone back if a step's Start isn't pressed in 5 min. It stays off until you decide.\n- How I measure: idle-phone minutes while others wait, per 3 hours, and how often I had to step in.\n- Exit: two 3-hour windows in a row at 2 min or less, with no lead action. Then mgmt-devices stops and the tools carry it.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T19:00:06.991Z",
+      "by": "user",
+      "text": "You could have responsibility likes this. update your roles",
+      "forLead": true
+    },
+    {
+      "n": 15,
+      "at": "2026-10-04T19:01:55.284Z",
+      "by": "lead",
+      "text": "Updated: this is now the lead's general rule, in the roles guide and project memory (7a3dc7e8).\n\n- Any problem that repeats in one area gets an owner agent: it finds the cause, owns the long-term fix, and hands work to the team.\n- I only measure the area: one or two numbers and a target, and I tell you the trend.\n- When the target holds, the owner stops and the tools carry it; if it slips, the owner comes back.\n- First area: the phone and Mac lock (mgmt-devices).\n- Next candidate: answering your threads on time. I take it on at its 3rd slip in a day.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 15,
+    "lead": 15,
+    "mgmt-devices": 14
+  },
+  "history": [
+    {
+      "at": "2026-10-04T18:59:25.255Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-devices"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T19:01:55.284Z",
+    "mgmt-devices": "2026-10-04T19:51:34.336Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

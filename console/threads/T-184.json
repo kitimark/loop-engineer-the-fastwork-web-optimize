@@ -1,0 +1,54 @@
+{
+  "id": "T-184",
+  "title": "For reading raw.githubusercontent.com, could use `gh` cli",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T05:57:48.567Z",
+  "updatedAt": "2026-10-05T06:17:06.835Z",
+  "rev": 11,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T05:57:48.567Z",
+      "by": "user",
+      "text": "For reading raw.githubusercontent.com, could use `gh` cli"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T05:58:16.537Z",
+      "by": "lead",
+      "text": "Yes: GitHub files, raw.githubusercontent.com included, are read with the gh CLI; that is already a standing rule (memory note github-via-gh, from T-071).\n- gh is logged in on this Mac, so agents get the higher rate limit; read-only only.\n- The two agents reading WebKit source right now (fix-nav-fade, fix-scroll-cb) got the reminder with the exact command.\n- If you just saw a permission prompt for raw.githubusercontent.com, deny it; the agent then uses gh.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T05:58:52.130Z",
+      "by": "user",
+      "text": "i was some agents request me to read them. let's investigate and do more harden them.",
+      "forLead": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T06:04:15.550Z",
+      "by": "lead",
+      "text": "Found it: our own guard was set to \"ask\" for GitHub, so every agent that forgot the gh rule landed on you as a permission prompt.\n\n- Who: since your gh rule (T-071, 4 Oct), only one agent slipped: a helper of fix-nav-fade, 2 reads of WebKit source at 05:56Z today. Before the rule, ~60 agents made ~100 direct GitHub reads.\n- Why you saw it: an earlier guard fix (the curl rate-limit incident, I-115) made plain web reads (WebFetch) and curl to GitHub \"ask the user\" instead of \"refuse\".\n- Workaround now: I reminded fix-nav-fade and its helper to use gh. If a GitHub prompt appears, press No; the agent then switches to gh.\n- Long-term (incident I-200, the \"refuse, point to gh\" fix; owner ts-i200):\n  - GitHub reads outside gh get refused at once, with a message telling the agent the gh command.\n  - A rule line goes into the 3 agent types that can browse.\n  - Tests cover it. Docs sites (w3c.github.io etc.) stay open.\n- After it lands you should see no more GitHub read prompts.\n\nWhat you need to do\n- Approve the edit prompts for .claude/settings.json and the guard hook when ts-i200 asks (that is this change)."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "lead": 4
+  },
+  "history": [
+    {
+      "at": "2026-10-05T06:17:06.835Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T06:04:15.550Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

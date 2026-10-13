@@ -1,0 +1,318 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-008",
+  "by": "fix-cd-strip",
+  "title": "Countdown as sliding strips (rev 2): a second build without layout shifts, and a 1-shade difference in Chrome too",
+  "area": "hero",
+  "topic": "cd-strip",
+  "problem": "Each countdown digit is 10 stacked faces, each its own graphics layer. In Safari a face that rolls out of view loses its stored image and is painted again when it rolls back in. The hero clock keeps 48 such stored images (1.18 MB in the iOS Simulator), and when you scroll back up to it, it repaints about 54 times in the first second. The fix replaces the 10 faces with one static strip of digits per digit that slides. Why rev 2: (1) after your OK, review found that the build you accepted moves an invisible wrapper with a layout property, which Chrome reports as a small layout shift; a second build, strip-tc, avoids that and is now the recommended option. (2) Rev 1 said Chrome shows no difference. That was wrong: Chrome also shows a 1-shade difference, at the very end of the hero fade (clock at 10 % opacity). Both builds have it, at the same rate. Your earlier choice (land-strip) is on hold until you decide again.",
+  "idea": "One strip of 11 cells (0-9 and a second 0) per digit, moved by one transform; each visible cell keeps its own small layer so the glyphs rasterize like the faces. The two builds differ only in how the whole-cell offset is carried: strip-rw moves an invisible wrapper by its 'top' (a layout move), strip-tc moves each cell by its own transform, the same way the faces move today. It is also the base the countdown-roll-on-GPU fix (cd-roll-ca) builds on.",
+  "looksSame": "Frozen frames (the countdown's clocks and frames stepped by hand, every version identically), always against the unchanged page compared with itself (A/A) in the same session. Details per option below.",
+  "risk": "Counts only, no frame timing measured (timing runs are deferred). The phone run of wave 2 would check that no new slow frames appear.",
+  "visualDiff": [],
+  "gain": [],
+  "compare": {
+    "a": {
+      "label": "Today (10 faces per digit)"
+    },
+    "shots": []
+  },
+  "options": [
+    {
+      "name": "land-strip-tc",
+      "label": "Land the strips, cells moved by transform (strip-tc)",
+      "idea": "Ship strip-tc (on top of countdown fix #1): the wrapper never moves; when the digit passes a whole cell, each of the 11 cells gets its own translateY, like each face does today. It includes the same CSS fix found in review as strip-rw (the clock's layers are dropped while the hero scene is paused, as the faces' are).",
+      "looksSame": "Chrome, phone width 430: 0 differences on 428 frozen frames of the hero and the morph panel (today against itself: 0), and on 63 frames of the panel's in-between states (a quarter, half and three quarters into the morph); hero fade at 25 % and 50 %: 0; at 75 % only the page's own paragraph fade-in, which differs as much against itself. iOS Simulator: 0 differences at rest (17 frames), at the 90 % fade (5) and in the panel (6); at the 50 % fade only the 1-shade spots below. Widths: Chrome, hero frozen frames. Width 375 (pixel ratio 3, 259 frames): identical to today's second run; today's first run differs from both by 1 shade on 34 frames. Width 412 (ratio 2.625, 259 frames): 1 frame differs, and today differs on that same frame against itself. After resizing the page from 430: width 768 (ratio 2) and 1536 (ratio 1.25), 21 frames each: 0 differences. Width 1440 (ratio 1), 21 frames: a 1-shade, 1-pixel-wide line along a card's edge in 5 frames; today shows the same line against itself in 13. A fresh load at 768 or wider is not comparable: today differs from itself there too (the whole clock lands a fraction of a pixel apart between loads), so those widths are compared after a resize.",
+      "risk": "Counts only, no frame timing. Layout shifts: 0 from the clock in Chrome (3 windows of 5 s at the top; 6 more windows at the top and 11 mid-page and at the end pin in a second session, all 0 from the clock). The page's own heading rotator shifts in every build, today's included (0.0011 per 5 s). Layouts per second (Chrome, idle, 5 s windows): at the top 1.8-2.2 vs today 1.6-2.2 (9 and 8 windows over two sessions); mid-page 1 vs 1 and at the end pin 0 vs 0 (6 and 5 windows each). strip-rw: 3.8-5.4, 2.8-3 and 1. Style recalculations per second: the same as today at every spot. One count goes up, off-screen: inline style writes per second (Chrome, idle, same session). At the top 50-76 vs today 58-78 (6 and 5 windows); mid-page 22-26 vs 6-11 and at the end pin 22-31 vs 6-7 (6 and 5 windows). Why: when a digit passes a whole cell, strip-tc writes 11 cell transforms where the faces write about 1; with the clock off-screen, today's clock jumps every tick, so this happens every second. Style recalculations (mid 26-32 vs 24-33, end 60 vs 60) and layouts stay the same. strip-rw writes fewer there (2-2.8) but pays 1-2 extra layouts per second instead. Layers: more layers in total, fewer with stored images. Chrome: 137-142 layers on the page vs 126 today (8 strips + 88 cells instead of 80 faces). iOS Simulator: hero clock 96 layers vs 80, but 16 stored images vs 48 (0.39 vs 1.18 MB); page 143-147 vs 131. No strip-sized repaints (0 in the Simulator). Morph panel at m = 1 (Simulator, same session as strip-rw): 1.32-1.34 layouts per frame, strip-rw 1.32-1.37: the same; not re-run against today (strip-rw's earlier run had 1 of 2 holds above today's range). Fractional pixel ratios: Chrome at ratio 1.25 (1536 wide, both builds: 0 differences) and 2.625 (412 wide, strip-tc: the same 1 frame as today against itself). Not checked in Safari at a fractional ratio (iPhones use 2 and 3). Changes the code shape cd-roll-ca builds on: it has a version for strip-tc ready.",
+      "visualDiff": [
+        "Chrome, at the very end of the hero fade (clock at 10 % opacity): 1 shade (of 255) off on a few pixels, the same in both strip builds. Same session, each version measured twice, interleaved: each strip build differs from today in 8-11 of 21 frozen frames; today against itself in 2-4 of 21.",
+        "Where (Chrome, 10 % opacity): up to 83 pixels on the days and hours digits, 7-13 on the minutes digits, 23 on a card's top edge (7-119 per frame). Today against itself: one 8-pixel spot on the minutes digits.",
+        "Rev 1 said Chrome shows nothing. That was wrong: the 90 % fade step was not in the rev 1 checks, so this difference is new to you, not part of what you accepted.",
+        "iOS Simulator (WebKit, Safari's engine), hero at about 50 % fade, seconds digit mid-roll, one frame at a time (8-17 ms): same session, strip-tc differs from today in 2 of 13 frames (26 and 4 pixels on the digit's edge, 1 shade); today against itself in 3 of 13, at the same spots.",
+        "Simulator, a second session: 2 of 13 vs 1 of 13. Pooled over every Simulator session: today vs itself 8 of 91 frames (9 %), strip-tc 4 of 26 (15 %), strip-rw 3 of 26 (12 %); too few frames to tell apart.",
+        "Both are a 1-shade difference that the unchanged page also shows against itself (the spots differ in Chrome, they are the same in the Simulator). Not byte-identical: under your \"identical only\" rule, your call."
+      ],
+      "gain": [
+        {
+          "what": "Graphics memory of the hero clock (iOS Simulator)",
+          "before": "1.18 MB (48 stored layer images)",
+          "after": "0.39 MB (16)",
+          "tag": "OBSERVED",
+          "how": "Web Inspector LayerTree, 3 sessions (S2, S3, S5); the same as strip-rw",
+          "needsPhone": true
+        },
+        {
+          "what": "Clock repaints in the first second after scrolling back to the top (iOS Simulator)",
+          "before": "55 (54-55 over 5 sessions)",
+          "after": "23 (strip-rw 31 in the same session, 21-23 in earlier ones)",
+          "tag": "OBSERVED",
+          "how": "Timeline Paint records, one session with all three builds (S5). The painted area is the same (4.10 vs 4.11 Mpx): fewer, smaller records, not less paint.",
+          "needsPhone": true
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "Strips, cells by transform (strip-tc)"
+        },
+        "shots": [
+          {
+            "caption": "Hero at ~50 % fade, seconds mid-roll (Simulator, frame 14): 26 pixels on the digit's edge 1 shade off",
+            "a": "r2-o1-a-1.webp",
+            "aSize": [
+              1152,
+              288
+            ],
+            "b": "r2-o1-b-1.webp",
+            "bSize": [
+              1152,
+              288
+            ]
+          },
+          {
+            "caption": "Same pair, the 26 differing pixels painted magenta",
+            "a": "r2-o1-a-2.webp",
+            "aSize": [
+              1152,
+              288
+            ],
+            "b": "r2-o1-b-2.webp",
+            "bSize": [
+              1152,
+              288
+            ]
+          },
+          {
+            "caption": "Same frame, today vs today (a second run, same session): the same 26 pixels differ, painted magenta",
+            "a": "r2-o1-a-3.webp",
+            "aSize": [
+              1152,
+              288
+            ],
+            "b": "r2-o1-b-3.webp",
+            "bSize": [
+              1152,
+              288
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "land-strip",
+      "label": "Land strip-rw, as accepted before (small layout shifts)",
+      "idea": "Ship strip-rw (on top of countdown fix #1): the build of rev 1, plus a CSS-only fix found in review (the clock's layers are now dropped while the hero scene is paused, as the faces' are).",
+      "looksSame": "As rev 1: Chrome 0 differences on the hero and the panel (512 + 428 frozen frames over 3 runs, today against itself 0), except the end of the hero fade (below); iOS Simulator 0 at rest, at the 90 % fade and in the panel; at the 50 % fade only the 1-shade spots below. Widths: Chrome, hero frozen frames. Width 375 (259 frames): identical to today's second run. After resizing the page from 430: 768 (ratio 2), 1440 (ratio 1) and 1536 (ratio 1.25), 21 frames each: 0 differences. Not run at 412 (ratio 2.625).",
+      "risk": "Counts only, no frame timing. Layout shifts (Chrome): the invisible wrapper's \"top\" move is reported as a layout shift. Its own score: 0.000006 to 0.000355 per 5 s window at the top (6 of 8 windows above 0, over 3 runs); today 0 from the clock. An earlier run counted 4-5 layout-shift reports per window for strip-rw vs 2 for today, before the tool recorded their sources; it is not used for the scores. Far below the 0.1 \"good\" line, but not 0. The heading rotator shifts in every build (0.0011 per 5 s). Layouts per second (Chrome): top 3.8-5.4 vs today 1.6-2.4; mid-page 2.8-3 vs 1; end pin 1 vs 0 (small bases). Layers: as strip-tc (Chrome 137-142 vs 126 in total; Simulator 16 stored images vs 48). Morph panel (Simulator): 1 of 2 holds at m = 1 had 8 more layouts than today's range (n = 2, not separable). Fractional pixel ratios: Chrome at ratio 1.25 (1536 wide, both builds: 0 differences) and 2.625 (412 wide, strip-tc: the same 1 frame as today against itself). Not checked in Safari at a fractional ratio (iPhones use 2 and 3).",
+      "visualDiff": [
+        "Chrome, at the very end of the hero fade (clock at 10 % opacity): 1 shade (of 255) off on a few pixels, the same in both strip builds. Same session, each version measured twice, interleaved: each strip build differs from today in 8-11 of 21 frozen frames; today against itself in 2-4 of 21.",
+        "Where (Chrome, 10 % opacity): up to 83 pixels on the days and hours digits, 7-13 on the minutes digits, 23 on a card's top edge (7-119 per frame). Today against itself: one 8-pixel spot on the minutes digits.",
+        "Rev 1 said Chrome shows nothing. That was wrong: the 90 % fade step was not in the rev 1 checks, so this difference is new to you, not part of what you accepted.",
+        "iOS Simulator (WebKit, Safari's engine), hero at about 50 % fade, seconds digit mid-roll, one frame at a time (8-17 ms): same sessions, strip-rw differs from today in 3 of 26 frames (11-47 pixels on the digit's edge, 1 shade); today against itself in 1 of 26.",
+        "Simulator, pooled: today vs itself 8 of 91 (9 %), strip-rw 3 of 26 (12 %). One frame (\"two changes\", frame 30) showed it only with strips (1 of 2 sessions).",
+        "Not byte-identical: under your \"identical only\" rule, your call."
+      ],
+      "gain": [
+        {
+          "what": "Graphics memory of the hero clock (iOS Simulator)",
+          "before": "1.18 MB (48 stored layer images)",
+          "after": "0.39 MB (16)",
+          "tag": "OBSERVED",
+          "how": "Web Inspector LayerTree, 4 sessions",
+          "needsPhone": true
+        },
+        {
+          "what": "Clock repaints in the first second after scrolling back to the top (iOS Simulator)",
+          "before": "54-55",
+          "after": "21-31 (31 in the session with strip-tc)",
+          "tag": "OBSERVED",
+          "how": "Timeline Paint records; the painted area is the same (4.1 Mpx)",
+          "needsPhone": true
+        },
+        {
+          "what": "Inline style writes per second while idle (Chrome)",
+          "before": "top 58-90, mid-page 6-7, end pin 7-11",
+          "after": "top 39-75, mid-page 2-2.8, end pin 2-2.2",
+          "tag": "OBSERVED",
+          "how": "idle counts, headless Chrome, 2-3 windows in 3 runs"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "Strips, wrapper by top (strip-rw)"
+        },
+        "shots": [
+          {
+            "caption": "Hero at ~50 % fade, seconds mid-roll (Simulator, frame 30, rev 1): 47 pixels on the 9's edge 1 shade off",
+            "a": "r2-o2-a-1.webp",
+            "aSize": [
+              1152,
+              288
+            ],
+            "b": "r2-o2-b-1.webp",
+            "bSize": [
+              1152,
+              288
+            ]
+          },
+          {
+            "caption": "Same pair; the 47 differing pixels painted magenta",
+            "a": "r2-o2-a-2.webp",
+            "aSize": [
+              1152,
+              288
+            ],
+            "b": "r2-o2-b-2.webp",
+            "bSize": [
+              1152,
+              288
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "park",
+      "label": "Park the strips, keep the 10 faces",
+      "idea": "Do not land cd-strip; the clock keeps today's faces (countdown fix #1 stays).",
+      "looksSame": "Identical: nothing changes.",
+      "risk": "The countdown-roll-on-GPU fix (cd-roll-ca) is built on the strips. Without them it must drive the 10 faces per digit with Web Animations instead: about half a day of code, then re-running everything it has measured, a restack on fix #1 and new snapshots. Driving the faces may bring its own small difference (not measured).",
+      "visualDiff": [
+        "None."
+      ],
+      "gain": [
+        {
+          "what": "Hero clock memory, scroll-back repaints, idle style writes",
+          "before": "as today",
+          "after": "as today (none of the strip gains)",
+          "tag": "estimate",
+          "how": "nothing changes"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "Today (unchanged)"
+        },
+        "shots": [
+          {
+            "caption": "Same frame, today vs today (a second run): identical, 0 px differ",
+            "a": "r2-o3-a-1.webp",
+            "aSize": [
+              1152,
+              288
+            ],
+            "b": "r2-o3-b-1.webp",
+            "bSize": [
+              1152,
+              288
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "recommended": {
+    "option": "land-strip-tc",
+    "why": "Same gains as strip-rw (clock memory 1.18 to 0.39 MB, scroll-back repaints 55 to 23) and the same 1-shade fade spots, without strip-rw's layout shifts and extra layouts. One cost: more style writes while the clock is off-screen (layouts unchanged). Not byte-identical: your call."
+  },
+  "state": "accepted",
+  "rev": 2,
+  "decision": {
+    "value": "accepted",
+    "at": "2026-10-03T09:31:49.142Z",
+    "who": "user",
+    "rev": 2,
+    "option": "land-strip-tc"
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "at": "2026-10-03T06:52:53.470Z",
+      "who": "user",
+      "rev": 1,
+      "option": "land-strip",
+      "staleAt": "2026-10-03T09:24:55.728Z",
+      "staleOnRev": 2
+    },
+    {
+      "value": "accepted",
+      "at": "2026-10-03T09:31:49.142Z",
+      "who": "user",
+      "rev": 2,
+      "option": "land-strip-tc"
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-03T06:44:51.105Z",
+      "by": "fix-cd-strip",
+      "note": "first version"
+    },
+    {
+      "rev": 2,
+      "at": "2026-10-03T09:24:55.728Z",
+      "by": "fix-cd-strip",
+      "note": "1. A second build that moves each digit cell by transform has no layout shifts; it is now the recommended option (land-strip-tc). 2. Rev 1 said Chrome shows no difference; that was wrong: at the very end of the hero fade Chrome shows a 1-shade difference on a few pixels of the digits, in both strip "
+    }
+  ],
+  "createdAt": "2026-10-03T06:44:51.105Z",
+  "updatedAt": "2026-10-03T09:31:49.142Z",
+  "proposedAt": "2026-10-03T09:24:55.728Z",
+  "history": [
+    {
+      "at": "2026-10-03T06:44:51.105Z",
+      "who": "fix-cd-strip",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-03T06:52:53.470Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 1,
+      "option": "land-strip"
+    },
+    {
+      "at": "2026-10-03T07:54:30.981Z",
+      "who": "lead",
+      "action": "held",
+      "rev": 1,
+      "note": "Checks after the card found things it didn't state (a faint 1-shade difference in Chrome at 90 % fade, and layout-shift reports). A corrected version 2, possibly with a better option, follows. Please don't decide yet.",
+      "decision": "accepted",
+      "option": "land-strip"
+    },
+    {
+      "at": "2026-10-03T09:24:55.728Z",
+      "who": "fix-cd-strip",
+      "action": "revised",
+      "rev": 2,
+      "note": "1. A second build that moves each digit cell by transform has no layout shifts; it is now the recommended option (land-strip-tc). 2. Rev 1 said Chrome shows no difference; that was wrong: at the very end of the hero fade Chrome shows a 1-shade difference on a few pixels of the digits, in both strip "
+    },
+    {
+      "at": "2026-10-03T09:24:55.728Z",
+      "who": "fix-cd-strip",
+      "action": "decision-stale",
+      "rev": 2,
+      "was": "accepted",
+      "wasRev": 1,
+      "wasOption": "land-strip",
+      "note": "1. A second build that moves each digit cell by transform has no layout shifts; it is now the recommended option (land-strip-tc). 2. Rev 1 said Chrome shows no difference; that was wrong: at the very end of the hero fade Chrome shows a 1-shade difference on a few pixels of the digits, in both strip "
+    },
+    {
+      "at": "2026-10-03T09:24:55.728Z",
+      "who": "fix-cd-strip",
+      "action": "unheld",
+      "rev": 2,
+      "note": "released by the revision"
+    },
+    {
+      "at": "2026-10-03T09:31:49.142Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 2,
+      "option": "land-strip-tc"
+    }
+  ]
+}

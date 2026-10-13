@@ -1,0 +1,57 @@
+{
+  "id": "T-081",
+  "title": "iPhone held by iphone-runner, unused for 5 min while 4 jobs wait",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T06:48:46.071Z",
+  "updatedAt": "2026-10-04T08:51:00.626Z",
+  "rev": 4,
+  "assignees": [
+    "mgmt-ops-10",
+    "iphone-runner",
+    "fix-rest-script",
+    "cd-roll-ca",
+    "fix-cd-roll-ca",
+    "fix-hero-exit-threaded"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T06:48:46.071Z",
+      "by": "lead",
+      "text": "iphone-runner has held the iPhone lease for 5 min without a phone run (iphone.mjs run, scroll, record or gesture; since 06:42Z, lease taken by iphone-runner). The limit is 5 min.\nQueued for it: fix-rest-script, cd-roll-ca.\nWaiting on the status board: cd-roll-ca (owner fix-cd-roll-ca; waits on the phone); hero-exit-threaded (owner fix-hero-exit-threaded; its note names the phone).\niphone-runner: run your phone part now, or release the lease (node tools/lock.mjs release iphone --owner iphone-runner) so the next one can start, or say here why it waits. Desk (mgmt-ops-10): please make sure the phone is used.\nOne message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T06:52:44.899Z",
+      "by": "mgmt-ops-10",
+      "text": "The phone is not idle: it's waiting for you.\n\n- The hero swipe test (step C-038) is loaded on the iPhone and ready.\n- No phone run shows yet because the test starts when you press Start.\n- The other jobs wait their turn after it (lead's order).\n\nWhat you need to do: open \"Your steps\", press Start on C-038 and swipe as it says. If you'd rather do it later, say so here and the queued checks will go first."
+    }
+  ],
+  "reads": {
+    "lead": 1,
+    "mgmt-ops-10": 2,
+    "user": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-04T06:48:46.071Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-ops-10,iphone-runner,fix-rest-script,cd-roll-ca,fix-cd-roll-ca,fix-hero-exit-threaded"
+    },
+    {
+      "at": "2026-10-04T07:10:47.006Z",
+      "who": "lead",
+      "action": "close",
+      "note": "iphone-runner used the phone again"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T06:48:46.071Z",
+    "mgmt-ops-10": "2026-10-04T06:52:44.899Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

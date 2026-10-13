@@ -1,0 +1,50 @@
+{
+  "id": "T-167",
+  "title": "iPhone held by iphone-runner, unused for 6 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T22:34:21.002Z",
+  "updatedAt": "2026-10-04T22:35:21.032Z",
+  "rev": 6,
+  "assignees": [
+    "iphone-runner"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T22:34:21.002Z",
+      "by": "lead",
+      "text": "iphone-runner has held the iPhone lease for 6 min without a phone run (iphone.mjs run, scroll, record or gesture; since 22:27Z, last phone run of iphone-runner). The limit is 5 min.\nWaiting on the status board: double-drive-fix (owner lead; its note names the phone).\niphone-runner: run your phone part now, or release the lease (node tools/lock.mjs release iphone --owner iphone-runner) so the next one can start, or say here why it waits.\nOne message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T22:35:10.573Z",
+      "by": "lead",
+      "text": "Lead: false alarm, no action for iphone-runner. The only phone waiter was my own double-drive-fix row, which waits on this same P-118 block; I set it to measuring. Keep the lease between H1 and H2 (marked --between). Rule gap goes to mgmt-devices as an incident."
+    }
+  ],
+  "reads": {
+    "lead": 2,
+    "user": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-04T22:34:21.002Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "iphone-runner"
+    },
+    {
+      "at": "2026-10-04T22:35:21.032Z",
+      "who": "lead",
+      "action": "close",
+      "note": "iphone-runner used the phone again"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T22:35:10.573Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

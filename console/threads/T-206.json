@@ -1,0 +1,40 @@
+{
+  "id": "T-206",
+  "title": "Comment on C-070 \"v9.2 check: which page follows your finger better?\": I'm focusing on the end of morph. i'm not sure which one is better",
+  "anchor": {
+    "page": "steps",
+    "item": "step:C-070",
+    "label": "v9.2 check: which page follows your finger better?"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T22:14:58.510Z",
+  "updatedAt": "2026-10-05T22:16:46.515Z",
+  "rev": 5,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T22:14:58.510Z",
+      "by": "user",
+      "text": "I'm focusing on the end of morph. i'm not sure which one is better"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T22:16:44.071Z",
+      "by": "lead",
+      "text": "That's fine: I've recorded the v9.2 swipe as \"no pick\", not \"same\", so it neither helps nor hurts v9.2.\n- The robot iPhone runs (9 of 9 valid) scored v9.2 slightly worse than v9 on flings: 3 frames over 50 ms in 4 runs, and some nav blinks.\n- That score is not final: a reviewer checks it first, because the two builds' flings took different paths down the page.\n- Until then, v9 stays today's best build (your T-205 question); I'll confirm in T-205 after the review.\n- For the end of the morph: fix A (same look, far fewer repaints in Chrome) and fix B (the clip reveal you accepted in PR-012) are being checked now.\n- When they pass, you'll get a swipe step that tells you to judge only the end of the morph.\nWhat you need to do: nothing now; the next iPhone tests run by themselves."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "lead": 2
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-05T22:16:44.071Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

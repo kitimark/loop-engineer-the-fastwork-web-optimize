@@ -1,0 +1,47 @@
+{
+  "id": "T-007",
+  "title": "Investigate \"Change my decision\" is working properly ?",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-01T21:20:45.859Z",
+  "updatedAt": "2026-10-02T09:15:02.331Z",
+  "rev": 9,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-01T21:20:45.859Z",
+      "by": "user",
+      "text": "From PR-001, i was changed my decision . but i didn't see any catch up"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-01T21:21:45.607Z",
+      "by": "lead",
+      "text": "You're right, it did not work properly. Thank you for checking.\nWhat happened: when you first decided 'rejected' (04:02), the agent that made PR-001 was waiting for a decision. It took that first decision and stopped waiting. Your change to 'changes requested' (04:04) was saved correctly, but no one was waiting any more, and my own wait only covers threads, not proposals. I learned of the change only because you told me in T-005.\nYour request is in work now: de-illusion-style started the image-frames / video version at 04:20 (see T-006).\nFix: I opened incident I-045 and sent a toolsmith. My standing wait will also wake on every proposal decision, including a changed or undone one, and agents can keep waiting after a first decision. Until it lands, I check the Proposals page by hand each time I wake."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-02T09:14:11.358Z",
+      "by": "user",
+      "text": "Catch up this progress."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-02T09:14:37.241Z",
+      "by": "lead",
+      "text": "Catch-up: fixed and working.\n- The fix landed yesterday at 22:54Z (incident I-045). Every decision event on a proposal now wakes everyone waiting: a first decision, an undo, and a changed decision. My standing wait wakes on them too, not only on threads.\n- Proof from today: you accepted PR-003 (option A) at 09:12:55Z, and my wait woke within a second with your full note. The work was planned within two minutes: A is applied first and B is researched alongside it.\n- PR-001 and PR-002 also have their own background waits for a changed decision, and they're still armed.\n- If you change any decision now, the owner and I see it at once. I'll treat the change as the new spec, as with PR-001 rev 2.\nNothing is open on this, so I'll leave the thread for you to close."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "lead": 4
+  },
+  "history": [
+    {
+      "at": "2026-10-02T09:15:02.331Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

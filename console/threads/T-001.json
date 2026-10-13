@@ -1,0 +1,199 @@
+{
+  "id": "T-001",
+  "title": "DIRECTION: Investigate reduce complexity of Style recalculation",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-01T20:22:02.872Z",
+  "updatedAt": "2026-10-03T00:16:25.005Z",
+  "rev": 59,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-01T20:22:02.872Z",
+      "by": "user",
+      "text": "What's about the findings and the next action ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-01T20:22:22.816Z",
+      "by": "lead",
+      "text": "Style recalculation: findings and next action (03:23 +07). All phone numbers are our own recordings on your iPhone (OBSERVED).\n\nWhere the cost was: each time a page section \"switches\" on or off while you scroll, one broad CSS rule made Safari restyle the whole section (about 345 elements at the platform section). Safari's source confirms this.\n\nWhat we changed and what it did:\n1. Narrowing that rule. Chrome counts: the platform switch restyles 23-99 elements instead of 345. No visual change, nothing broken.\n2. iPhone test 1: the switch's style work fell from about 3 ms to under 1 ms, and its extra layout passes from 2 to 1. But the big 14-18 ms layout stayed, and the next step down the page (about 2990 px) got slower. In total there was no gain yet: the cost moved.\n3. iPhone test 2: a second fix took the switch's extra layout passes to 0, and its window dropped from about 50-61 ms to about 41-52 ms. But the step at 2990 px kept its extra layout, so that fix did not work there.\n4. iPhone test 3 (the end-of-page panel's slide-in): Chrome showed restyled elements falling from 397 to 124. On the phone, three of its four predictions failed, so that fix doesn't help much in Safari. The agent is scoring it now.\n\nWhat we learned: restyling fewer elements is real and confirmed, but the slow frames on the phone are dominated by layout, not style. Two layout sources are still unexplained:\n- a 12-18 ms whole-page layout at the platform switch. Leading suspect: a CSS rule turns \"will-change\" back on for the platform cards at that moment, and that changes how they are laid out. Not yet confirmed.\n- the step at 2990 px, where the hero-track section switches its rendering on or off. It holds 14 size boxes, and Safari does an extra whole-page layout for those.\n\nNext action (no phone time until these are in):\n1. A Safari source read: does turning will-change back on force a layout? (in progress)\n2. Simulator recordings that name what triggers each layout and where it starts, for both suspects.\n3. If the will-change suspect holds: a fix that keeps will-change steady on those cards, then one iPhone test to confirm.\n\nYour call is welcome on one point: should this work focus on the layout at these two spots now, rather than on restyle counts? That is my recommendation.",
+      "ask": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-01T20:24:27.446Z",
+      "by": "user",
+      "text": "Set the \"slow frames on the phone are dominated by layout\" tasks as highest priority"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-01T20:24:45.626Z",
+      "by": "lead",
+      "text": "Done (03:25 +07). Layout-dominated slow frames are now the top priority. The four spots, in order: (1) the 12-18 ms whole-page layout at the platform switch, (2) the extra layout at the step about 2990 px down (the hero-track section), (3) the 2 extra layouts when the end-of-page panel starts its slide-in, (4) the page-wide layout when each rotator slide starts. For each, the agents first find what triggers the layout and where it starts, using Safari's source and the Simulator, then build a fix and confirm it with one iPhone test. Restyle counting is finished. I'll post results here as they come in."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-01T20:26:01.279Z",
+      "by": "user",
+      "text": "Can we run iphone simulator instead of real device for measure the Style recalculation in safari on iphone ?"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-01T20:26:42.321Z",
+      "by": "lead",
+      "text": "Partly yes, and that is the plan. The Simulator runs Safari's engine on the Mac, so it can show which style and layout steps happen, how many, and where each layout starts. That is exactly what the layout hunt needs, and the agents will use it first. It cannot give trustworthy times: it uses the Mac's processor and graphics, so its milliseconds say nothing about the phone. One caveat: Safari has no 'number of restyled elements' counter on either device (confirmed in its source); both only show style and layout steps and their times. Whether the Simulator's steps match the phone's is being checked right now by the Simulator agent. Its first run at 03:24 recorded nothing because the script crashed, and it is retrying. Until that check passes we treat the Simulator as unproven. If it passes, each fix gets one confirming iPhone test instead of several. I'll post the verdict here."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-01T20:29:06.706Z",
+      "by": "user",
+      "text": "I'd like to know about any fixed that related to Style recalculation"
+    },
+    {
+      "n": 8,
+      "at": "2026-10-01T20:29:50.595Z",
+      "by": "lead",
+      "text": "Fixes related to style recalculation (03:33 +07). Chrome numbers are counts; phone numbers are our own recordings (OBSERVED).\n\nBuilt for style recalculation (the current work):\n1. Platform section switch (scene-scope): narrows one broad CSS rule. Chrome: 23-99 restyled elements instead of 345. Phone: style work about 3 ms -> under 1 ms, extra layout passes 2 -> 0, switch window about 50-61 ms -> 41-52 ms. Open: the 12-18 ms whole-page layout there (now top priority).\n2. End-of-page panel slide-in (r4-v3): Chrome 397 -> 124 restyled elements. Phone: style per animation step 0.5-0.7 -> 0.1-0.2 ms, but 3 of 4 predictions missed: the 2 extra layouts at its start remain.\n3. Typing text effect (illusion-typing-chunks, a look-alike proposal): writes the text in chunks, so half the restyle + layout passes (Chrome layouts 226 -> 97). Not phone-tested yet; it changes the look slightly, so it goes to you as a proposal.\n\nEarlier fixes that cut style recalculation as part of a broader change (each targets a forced or repeated restyle; their phone results are in their own write-ups, not repeated here):\n4. Scroll engine batching (scroll-engine): reads first, writes after, so scrolling no longer forces a restyle in the middle of each frame.\n5. Commission counter (commission-forced-layout): stopped forcing restyle + layout inside every animation step.\n6. People section shrink (phone-invisible-shrink): stopped a whole-section restyle while cards shrink.\n7. Nav hit test (nav-hit-test): one hit test instead of a forced restyle + hit test.\n8. Countdown at rest (countdown-idle-raf): small, about 26 ms of style work saved per 6 s.\n\nAll of these are experiments on our local copy: nothing changes fastwork.com itself."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-01T20:32:31.404Z",
+      "by": "lead",
+      "text": "First layout win at a top-priority spot (03:38 +07; our own iPhone recordings, 3 runs per version, OBSERVED). During the slide-in of the panel at the page end, each animation step made the phone do 30-44 ms of extra layout. A fix that stops one CSS variable from being inherited across the whole panel brings that down to 1-3 ms, and style work per step falls from about 0.6 to 0.15 ms. The page looks the same: in Chrome the pixel difference is at the noise floor. Still open: the panel's first frame keeps its 2 extra layouts, cause not found yet. Before it can land, the fix needs one finger check on your phone; I'll post that to the console when it is ready."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-01T20:37:32.836Z",
+      "by": "lead",
+      "text": "Simulator check, first answer (03:42 +07; our own recordings, 2 runs per version, OBSERVED). The Simulator reproduces your iPhone's layout pattern. At the top of the page at rest, both show 15 whole-page layouts in 6 s on the current page, and 0 with a rotator fix. Where layouts start (whole page or one section) and how many extra layout passes happen also match at three spots further down. It does not yet match at the platform switch, most likely because the Simulator test jumped 250 px at a time instead of scrolling smoothly. A smooth-scroll rerun on the Simulator is running now. If that matches too, the layout hunt moves to the Simulator, and your phone is only needed to confirm each fix. Its times are never used."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-01T20:43:19.729Z",
+      "by": "lead",
+      "text": "Simulator verdict (03:50 +07; 2 Simulator runs vs 3 iPhone runs per version, same smooth-scroll test, OBSERVED): yes for finding layouts. At all four spots we checked, including the platform switch and the hero-track step at 2990 px, the Simulator shows the same layouts as your iPhone: whether there is an extra layout, how many, and whether it covers the whole page. It must scroll smoothly; jumping 250 px at a time misses them. What the Simulator can't do: any time in ms, frame rates, and one at-rest count that it gets about half as high as the phone (the direction still matches). So from now on, finding out what causes a layout runs on the Simulator, and your phone is used to confirm fixes and for finger checks."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-01T21:58:05.038Z",
+      "by": "user",
+      "text": "How about this ? Are you resolve this issue yet ?"
+    },
+    {
+      "n": 13,
+      "at": "2026-10-01T21:58:20.919Z",
+      "by": "lead",
+      "text": "Partly resolved. Where it stands (05:00 +07; phone numbers are our own recordings, OBSERVED):\nDONE (landed, b43443b):\n- The broad rule that made Safari restyle a whole section at each switch is narrowed. At the platform switch, Chrome restyles 23-99 elements instead of 345.\n- The page-end panel's slide-in: on your iPhone, its style-driven layout per animation step fell from 30-44 ms to 1-3 ms. You picked it as better in the blind swipe (C-016).\nNOT DONE: what's left on the phone is mostly layout, not style:\n1. the platform switch: one 12-18 ms whole-page layout per switch;\n2. the step at about 2990 px: one 14-20 ms layout;\n3. the page-end panel's FIRST slide-in only: about 15-20 ms of style work (later ones about 2 ms).\n1 and 2 are your new picks in T-005 (fix-scene-scope, started now); 3 is with fix-scroll-engine. I'll post here when each is fixed or explained."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-01T21:59:51.375Z",
+      "by": "user",
+      "text": "Mark the \"3. the page-end panel's FIRST slide-in only: about 15-20 ms of style work (later ones about 2 ms).\" fix after we done the one of active fixes"
+    },
+    {
+      "n": 15,
+      "at": "2026-10-01T22:00:14.278Z",
+      "by": "lead",
+      "text": "Done: the first-slide-in fix (item 3) is paused and marked to start as soon as one of the active fixes is finished. Its findings so far are saved, so nothing is lost.\nThat frees its agent (fix-scroll-engine), so your two picks now run side by side instead of one after the other:\n- the platform switch (item 1): fix-scene-scope;\n- the step at 2990 px (item 2): fix-scroll-engine, which knows that part of the hero strip from today's hero hunt."
+    },
+    {
+      "n": 16,
+      "at": "2026-10-02T03:27:38.667Z",
+      "by": "lead",
+      "text": "Style-recalc (your idea) status: review #2 says NEEDS-WORK, and I agree with its main point. The narrower cut (RBi40p) is correct and changes no other section. But on its own it is a stepping stone, not a gain: the platform-section switch still costs the same (~18 ms of layout just moves a step later), and the number of style recalcs over a scroll is unchanged. It won't land alone. The tests did locate what drives that remaining ~18 ms: 4 row-title animations in the platform section. Next build = this cut plus those 4. Those titles animate forever, so the risk is pixels. First we build a frozen-clock comparison that makes the original match itself frame by frame, then we check the new build against it byte for byte. Nothing visible may change."
+    },
+    {
+      "n": 17,
+      "at": "2026-10-02T06:36:40.241Z",
+      "by": "lead",
+      "text": "Style recalc (scene-scope), a pixel decision for you. The candidate cuts the style-recalc work at the platform switch; it is measured but not landed.\nPixels, Chrome, frozen clock, frame by frame:\n- Phone width (430): every frame of the new build matches, byte for byte, a frame of the current build. The only differences we saw also appear between two loads of the current build: one digit's edge, 1 shade; a photo decoded differently on a first load.\n- Desktop width (1440): in one early run, one frame near y 7500 differed in 1 load of the new build: 259 pixels, at most 3 shades out of 255, on the network rings and the edge of the 'Join waitlist' button. Nothing in the change touches those.\n- Since then, repeated exactly as that run did it: 0 of 10 loads of the new build and 0 of 10 of the current build show it. A shorter path: 0 of 22 each. Two copies of the current build also differ from each other at y 6600-7400 by 1 shade, equally often in both builds.\n- One difference remains: that first run happened with the Mac's display off, the repeat with it on.\nSo the single frame was never reproduced, in either build. Your bar is byte-identical, so I'm not waiving it. Choose:\n(a) accept: treat the unreproduced frame as noise; the build then needs only the final review (running now) and a phone check;\n(b) one more run of 10+10 with the display off, to match that first run, then decide;\n(c) reject the candidate.",
+      "ask": true
+    },
+    {
+      "n": 18,
+      "at": "2026-10-02T06:40:35.999Z",
+      "by": "user",
+      "text": "Can you do proposal for explain more detail ?"
+    },
+    {
+      "n": 19,
+      "at": "2026-10-02T06:41:04.938Z",
+      "by": "lead",
+      "text": "Yes. fix-scene-scope is writing it as a console proposal now. It will show side-by-side shots at the platform switch (phone and desktop width) and the one 1440 frame. It explains in plain words what the change does, why it should look the same, all the pixel numbers, what is still unknown on Safari, and the counts it removes (no speed claim, timing is paused). You decide there: Accept = (a) treat the frame as noise; Change with a note = (b) the display-off rerun first, or anything else; Reject = (c). I'll post the link here when it is up."
+    },
+    {
+      "n": 20,
+      "at": "2026-10-02T06:50:48.995Z",
+      "by": "lead",
+      "text": "The detailed proposal you asked for in #18 is up: PR-002 on the Proposals page. It explains the platform-section change: what it costs today, the three edits, what looks the same with screenshots, the gains with their evidence status, and the risks. It also carries the open question from #17 (the one desktop frame) as its decision: Accept = treat that frame as noise and go on to the phone check. Change with a note = e.g. 'rerun first' (one more check with the Mac display off and quiet). Reject = keep today's version. Please decide on the proposal page."
+    },
+    {
+      "n": 21,
+      "at": "2026-10-02T07:00:51.896Z",
+      "by": "lead",
+      "text": "PR-002: got your note (changes requested): does the platform section still animate exactly like the fastwork.com version, and if anything differs, can almost no user detect it? We'll investigate and verify, then post rev 2 of the same proposal:\n1) For every animation in that section: is it the same set, playing or paused at the same moments, at the same point in its cycle, compared with today's build, scrolling down and back up.\n2) Moving frames, not frozen ones: the row titles and rings stepped every 50 ms through a full cycle, both builds, plus today's build against itself to show normal noise.\n3) A short side-by-side clip for your own eye (Chrome).\nIf anything differs beyond that noise, rev 2 offers a blind swipe test on the iPhone for you to try, which is how we check 'can a user tell'."
+    },
+    {
+      "n": 22,
+      "at": "2026-10-02T08:01:43.895Z",
+      "by": "lead",
+      "text": "PR-002 rev 2 is up on the Proposals page, answering your note. Short version: in Chrome every animation in the platform section plays, pauses and starts at the same moments as today, within the differences we see between two loads of today's own build; the frames draw the same. Our pass rule written before the data was strictly missed twice, each time by a difference that today's build also shows; the proposal names both. Safari on the iPhone is not checked yet (T-011). Your options: Accept, Change: blind swipe test on the iPhone first (about 5 min of your time), or Reject."
+    },
+    {
+      "n": 23,
+      "at": "2026-10-02T08:08:41.224Z",
+      "by": "lead",
+      "text": "Thanks, PR-002 accepted. Next for the platform-section fix: a check on the real iPhone with Safari's own timeline (T-011), queued after the stack test, PR-001 and the fwreskip fling test; then a final review and it lands."
+    },
+    {
+      "n": 24,
+      "at": "2026-10-02T09:15:16.824Z",
+      "by": "user",
+      "text": "Catch up this progress"
+    },
+    {
+      "n": 25,
+      "at": "2026-10-02T09:15:50.271Z",
+      "by": "lead",
+      "text": "Catch-up, style recalculation (09:15Z):\n\n1. Platform section fix (PR-002, which you accepted at 08:07Z). It cuts style work at the moment the platform section switches on. In Chrome it is checked to animate and draw like today's build. On the real iPhone we confirmed the cost it targets: two nested layouts at that switch. Still to do: one iPhone check with Safari's own timeline (T-011), then a final review, then it lands. It is 4th in the phone queue:\n   (1) PR-001 block B, running now;\n   (2) the PR-003 check of your pick, option A;\n   (3) the fling test for the page-middle fix below;\n   (4) T-011.\n   Rough estimate: it starts in about 1.5-2 hours.\n2. The middle of the page (y about 2990). Earlier phone checks showed that cutting the platform switch alone moves part of its cost to the next big frame, around y 2990. The page-middle fix (fwreskip) addresses that: the \"people\" section is set aside while it can't be seen and redrawn after you pause, not mid-fling. Simulator checks are running now, and its phone fling test is (3) above. Note: since recordings stopped (T-018), that test can no longer check one thing on the phone, whether the people section shows up late during a fast fling. It will say so in its result.\n3. All figures so far are observations from our own tests. Timing claims stay paused, except for the tests you allowed.\nNothing is waiting on you here. I'll post in this thread when T-011 starts and when it has a result."
+    },
+    {
+      "n": 26,
+      "at": "2026-10-02T10:09:34.956Z",
+      "by": "lead",
+      "text": "Progress: PR-003 option A (drop the card blur) is confirmed on the iPhone and is now part of our best build. As the cards appear, the worst frame drops from 74 ms back to 44 ms, about the same as today's page (42 ms), so the blur's extra cost is gone. Our earlier fixes keep their gain at rest: 0 frames over 34 ms while the page sits still (today's page: 2-4), with scrolling unchanged. 9 phone runs, all valid. Option B (keep the blur, hide the off-screen cards), which you asked to research, passed its pixel check and gets its Simulator test next. I'll report its performance to you when it's done."
+    },
+    {
+      "n": 27,
+      "at": "2026-10-02T10:22:19.497Z",
+      "by": "lead",
+      "text": "Option B result (you asked about it in PR-003). B keeps the card blur but hides the 4 off-screen profile cards for the 1 second the card animates. On screen nothing changes: every frame of that second was compared at phone and desktop widths. In the Simulator it makes the reveal cheaper (about 63 ms of drawing work vs 110 ms with the blur), but still not as cheap as option A, which you already have (about 50 ms). So A stays; we don't pursue B as such.\nA useful side result: the same 'hide the off-screen cards' trick removes a second, smaller hitch further down, when that section starts shrinking (a ~40 ms frame, still in today's build). It works on top of A and needs no blur. Next: wi-stack builds 'A + shrink hold', runs the same strict pixel check, then a phone test as part of the stack test. All of this is Simulator evidence so far; the phone decides."
+    },
+    {
+      "n": 28,
+      "at": "2026-10-02T10:43:50.516Z",
+      "by": "lead",
+      "text": "The style-recalc phone test (T-011) started at 10:43Z. It compares the current page with the style fix over 8 runs, using only the page's own frame loggers (no screen or camera capture). It takes about 25-30 min. Next on the phone is 'A + shrink hold' (C1), which removes the ~40 ms frame when the profile cards shrink. Its prediction is already recorded on main."
+    },
+    {
+      "n": 29,
+      "at": "2026-10-02T10:59:40.301Z",
+      "by": "lead",
+      "text": "The style-recalc phone test (T-011) finished at 10:58Z, and both control checks passed. A first quick read looks like a hit: with the style fix the extra whole-page layout at the section switch is gone in every run, while the current page still has it in 4 of 4 runs. This is a quick read; fix-scene-scope is doing the full scoring now, then a reviewer checks it before anything lands. Next on the phone is 'A + shrink hold' (C1)."
+    }
+  ],
+  "reads": {
+    "user": 29,
+    "lead": 29
+  },
+  "history": [
+    {
+      "at": "2026-10-03T00:16:25.005Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

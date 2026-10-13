@@ -1,0 +1,74 @@
+{
+  "id": "T-092",
+  "title": "Notification bar is hard to read.",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T08:31:20.879Z",
+  "updatedAt": "2026-10-04T11:14:49.593Z",
+  "rev": 10,
+  "assignees": [
+    "mgmt-ops-10",
+    "ts-i130"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T08:31:20.879Z",
+      "by": "user",
+      "text": "Notification bar is hard to read. check about the css. the menu tabs on top pages already too longer. that impact about this notification display.",
+      "images": [
+        {
+          "name": "m1-1.png",
+          "w": 1728,
+          "h": 312,
+          "bytes": 70400
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T08:31:47.670Z",
+      "by": "mgmt-ops-10",
+      "text": "You're right, it's a layout bug in the console. The menu bar is too long for one row, so 'Alerts' wraps to a second row. The notification bar is set to sit just under a one-row menu, so the second row covers its first line. The fix: put the notification under the real height of the menu (and maybe make the menu shorter). It's logged as I-130 for a tools agent, together with I-129 (tables shown as raw '|' text).\n\nWhat you need to do: nothing now. Until it's fixed, a slightly wider window (all menu buttons on one row) shows the whole notification."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T09:07:45.037Z",
+      "by": "ts-i130",
+      "text": "Fixed: the notification bar now always sits below the menu, on every console page.\n- The bar now follows the menu's real height, so when the menu wraps on a narrow window it moves down with it.\n- The menu is shorter: all 8 buttons fit on one row from about 900 px wide (before, Alerts wrapped even on a wide screen).\n- The red count badges now sit on the corner of their button, so a count no longer makes the menu longer.\n- Checked in Chrome on all 7 pages at 8 widths (375 to 1440 px): bar fully visible each time (before: covered each time).\n\nWhat you need to do: reload the console tab (Cmd+R) to get the new layout."
+    }
+  ],
+  "reads": {
+    "user": 3,
+    "mgmt-ops-10": 2,
+    "ts-i130": 3,
+    "lead": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T08:31:20.879Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T09:07:36.549Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "ts-i130"
+    },
+    {
+      "at": "2026-10-04T09:11:55.074Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T08:31:47.670Z",
+    "ts-i130": "2026-10-04T09:07:45.037Z",
+    "lead": "2026-10-04T11:14:49.593Z"
+  },
+  "histSeen": {
+    "lead": 3
+  }
+}

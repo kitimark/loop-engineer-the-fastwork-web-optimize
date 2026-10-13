@@ -1,0 +1,67 @@
+{
+  "id": "C-025",
+  "by": "lead",
+  "kind": "action",
+  "title": "Screen recorder first run: watch the Mac's camera light",
+  "instructions": "Unlock the iPhone and keep it on. Press Start: macOS asks whether 'ioscap' may use the camera. Allow it. ioscap records only the iPhone's screen for 20 s; the Mac's green camera light must stay OFF the whole time. Then answer: did the light stay off?",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Allow the prompt; watch the light for 20 s",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "ready": "2026-10-02T21:30:23.000Z",
+        "started": "2026-10-02T21:30:34.966Z",
+        "done": "2026-10-02T21:31:54.349Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-02T21:29:59.266Z",
+  "queuedAt": "2026-10-02T21:29:59.266Z",
+  "updatedAt": "2026-10-02T21:31:54.349Z",
+  "rev": 4,
+  "history": [
+    {
+      "at": "2026-10-02T21:29:59.266Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-02T21:30:23.000Z",
+      "who": "lead",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready",
+      "note": "Ready. Note: the menu bar may show a 'camera in use' icon for ioscap (it uses the camera permission to read the iPhone screen); that is expected. The green light next to the Mac's own camera must stay off."
+    },
+    {
+      "at": "2026-10-02T21:30:34.966Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-02T21:31:54.349Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "startedAt": "2026-10-02T21:30:34.966Z",
+  "result": {
+    "value": "done",
+    "notes": "No, any request permission, and light stay OFF.",
+    "at": "2026-10-02T21:31:54.349Z"
+  }
+}

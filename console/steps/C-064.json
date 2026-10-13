@@ -1,0 +1,47 @@
+{
+  "id": "C-064",
+  "by": "art-worst-cases",
+  "kind": "choice",
+  "title": "Review three iPhone screen clips: hero fade, countdown, whole page (original vs v8)",
+  "instructions": "Open the link on the Mac and watch the three clips (left original, right v8; the robot finger gives both the same input), then answer OK or not OK, with a note for anything wrong. Clips 1 and 2 carry a clock note: their timing strip was lined up by a check chosen after the first numbers.",
+  "url": "http://127.0.0.1:5871/review2.html",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "OK",
+      "not OK"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-05T07:42:37.596Z",
+  "queuedAt": "2026-10-05T07:42:37.596Z",
+  "updatedAt": "2026-10-05T07:47:02.692Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-05T07:42:37.596Z",
+      "who": "art-worst-cases",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-05T07:46:55.308Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-05T07:47:02.692Z",
+      "who": "user",
+      "action": "answer",
+      "value": "OK"
+    }
+  ],
+  "queueSeq": 23,
+  "startedAt": "2026-10-05T07:46:55.308Z",
+  "result": {
+    "value": "OK",
+    "at": "2026-10-05T07:47:02.692Z"
+  }
+}

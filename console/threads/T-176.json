@@ -1,0 +1,42 @@
+{
+  "id": "T-176",
+  "title": "iPhone free for 10 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-05T02:50:40.304Z",
+  "updatedAt": "2026-10-05T04:13:42.929Z",
+  "rev": 4,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T02:50:40.304Z",
+      "by": "lead",
+      "text": "The iPhone has had no holder for 10 min (since 02:39Z; released by fix-hero-exit-threaded). The limit is 5 min.\nWaiting on the status board: ops (owner mgmt-ops-10; its next step names the phone (unmarked)).\nWhat unblocks it: the next of mgmt-ops-10 takes it (node tools/lock.mjs acquire iphone --owner <you> ...).\nNo steward on duty (mgmt-devices is parked): the lead handles this thread (I-175).\nOne message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T02:55:03.291Z",
+      "by": "lead",
+      "text": "False alarm: no agent is waiting for the iPhone. Only your swipe test (T-175) needs it, and it starts when you say \"ready\".\n- Cause: ops' board row still listed \"read the menu fix's phone result (P-124)\" as a next step. That read is already done and landed (8cbb54d4), but the word \"phone\" made the watcher count it as phone work.\n- Fixed: I removed the stale step from ops' row, so the alarm clears.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "lead": 2,
+    "user": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-05T04:13:42.929Z",
+      "who": "lead",
+      "action": "close",
+      "note": "taken by user"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T02:55:03.291Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

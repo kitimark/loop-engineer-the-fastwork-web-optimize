@@ -1,0 +1,41 @@
+{
+  "id": "C-137",
+  "by": "lead",
+  "kind": "action",
+  "title": "Re-plug the iPhone's USB cable",
+  "instructions": "The Mac sees no iPhone on USB (the cable is out, or it lost contact). Plug the cable into the iPhone (if it looks plugged in: unplug it, wait 3 s, plug it back in), unlock the phone, then press Done. This step closes by itself when the link is back.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "cancelled",
+  "cur": 0,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "waiting",
+      "at": {}
+    }
+  ],
+  "createdAt": "2026-10-09T08:13:17.446Z",
+  "queuedAt": "2026-10-09T08:13:17.446Z",
+  "updatedAt": "2026-10-09T08:48:33.585Z",
+  "rev": 2,
+  "history": [
+    {
+      "at": "2026-10-09T08:13:17.446Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-09T08:48:33.585Z",
+      "who": "lead",
+      "action": "cancel",
+      "note": "the USB link is back (usblink.mjs: ok)"
+    }
+  ],
+  "queueSeq": 96
+}

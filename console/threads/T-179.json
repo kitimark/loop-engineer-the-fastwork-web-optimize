@@ -1,0 +1,180 @@
+{
+  "id": "T-179",
+  "title": "Comment on C-055 \"Xcode: stop the iPhone's thermal condition (test profile fa…\": Catch up this.",
+  "anchor": {
+    "page": "steps",
+    "item": "step:C-055",
+    "label": "Xcode: stop the iPhone's thermal condition (test profile fair)"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T04:29:47.493Z",
+  "updatedAt": "2026-10-05T04:50:42.824Z",
+  "rev": 55,
+  "assignees": [
+    "lead"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T04:29:47.493Z",
+      "by": "user",
+      "text": "Catch up this."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T04:30:46.564Z",
+      "by": "user",
+      "text": "Lead, catch up this.",
+      "forLead": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T04:31:20.336Z",
+      "by": "lead",
+      "text": "Caught up: I withdrew this step (C-055, \"stop the heat mode\"); keep Xcode's heat mode on, you don't need to do anything in Xcode.\n- Why it appeared: the heat check at 04:28Z found the heat mode on and the tool asked for it to be stopped, because the clip plan said \"heat off\".\n- Why that was wrong: your tests run with the heat mode on (your rule, T-162), you found the lag that way, and you asked us to make it smooth in that mode (T-178).\n- So the real-iPhone clips are recorded with the heat mode on, labelled \"Xcode heat mode: Serious\", original vs v8.\n- This matches what you felt; arch-serious-heat works on making exactly this case smooth.\n- Still to come: one step asking for Do Not Disturb on the iPhone during the clips.\nWhat you need to do: nothing now; leave the heat mode on."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T04:31:20.960Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "Handed to the lead, as you asked.\n- C-055 came from my heat check at 04:28 (heat mode was on); my tool posts that step by itself.\n- My proposal (PR-023) does not need it; the lead decides if and when heat mode goes off.\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-05T04:32:12.918Z",
+      "by": "user",
+      "text": "Lead, can we adopt tools for adjusting the thermal state or not ?",
+      "forLead": true
+    },
+    {
+      "n": 6,
+      "at": "2026-10-05T04:32:16.182Z",
+      "by": "lead",
+      "text": "Your note on C-055 (the heat-mode step): our tools read and check the heat mode, but none can switch it; only Xcode's window can.\n- Read: every phone run reads the heat state at its start and end (iphone.mjs profile, about 25 s, no screen use).\n- Check: a run refuses if the phone is not in its heat setting and posts one step like C-055 for you.\n- Switch: Apple offers no command for it (research/thermal-condition-cli, CONFIRMED from Apple's help and Xcode's tools).\n- A third-party tool (pymobiledevice3) could switch it, but it is not allowed today; that would be your decision.\n- Plan now: the clips run with the heat mode ON (your test rule); if you pressed Stop, the clip run's first read sees it and asks you to Start it again.\n| tool | reads heat mode | switches it |\n|---|---|---|\n| iphone.mjs profile (ours) | yes | no |\n| Xcode Device Conditions | yes | yes (by hand) |\nWhat you need to do: nothing, unless a step asks you to Start Serious again in Xcode."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-05T04:32:45.819Z",
+      "by": "user",
+      "text": "Do we have any cli for adjust the thermal state ?",
+      "forLead": true
+    },
+    {
+      "n": 8,
+      "at": "2026-10-05T04:33:08.500Z",
+      "by": "lead",
+      "text": "Answer to #5 and #7: Apple has no command for it, but a free third-party tool can, and we can adopt it if you say yes.\n- Apple: none. Xcode's window is the only official switch (CONFIRMED, research/thermal-condition-cli).\n- Third party: pymobiledevice3 has \"developer dvt condition set / clear\" (CONFIRMED in its source); it is a Python package we would install.\n- On a Mac it can use Apple's own connection to the phone (\"--native\"), with no admin password (CONFIRMED in its iOS 17 tunnel guide).\n- Catch: a condition it sets lasts only while its program runs (like Xcode's), so our tool keeps it running during a test.\n| | Xcode by hand (today) | pymobiledevice3 (proposed) |\n|---|---|---|\n| who switches | you | the agents, inside a phone slot |\n| install | nothing | one Python package, kept in out/ |\n| your steps | each time | none after setup |\n- If yes: a toolsmith wraps it as tools/thermal.mjs (status, set serious, clear), with tests, and the heat check uses it instead of posting steps like C-055.\nWhat you need to do: reply \"yes, adopt pymobiledevice3\" or \"no\".",
+      "ask": true
+    },
+    {
+      "n": 9,
+      "at": "2026-10-05T04:33:56.117Z",
+      "by": "user",
+      "text": "The opensource can do, it means we can write my own ?",
+      "forLead": true
+    },
+    {
+      "n": 10,
+      "at": "2026-10-05T04:34:40.394Z",
+      "by": "lead",
+      "text": "Yes, we could write our own, but it is days of work; calling the open-source tool as a separate program is the quick, clean route.\n- The phone part is small: Apple's Instruments service \"ConditionInducer\" takes 3 messages: list, enable (condition + profile), disable (CONFIRMED in pymobiledevice3's condition_inducer.py, read with gh).\n- The hard part is the connection: Apple's developer tunnel and its \"DTX\" message format, not documented by Apple; pymobiledevice3 has thousands of lines for it.\n- License: pymobiledevice3 is GPL-3.0. Copying its code into our tool would make our tool GPL when you publish the source (T-177, your GitHub push).\n- Running it as its own program (installed in out/, not committed) keeps our code separate; that is the usual reading of GPL, not legal advice.\n| route | effort | license effect on our code |\n|---|---|---|\n| call pymobiledevice3 (installed, not committed) | about 1 hour + tests | none, usually |\n| write our own from scratch | days, protocol undocumented | none |\n| copy its code into ours | hours | our tool becomes GPL-3.0 |\nWhat you need to do: reply \"yes, call pymobiledevice3\", \"write our own\", or \"no\".",
+      "ask": true
+    },
+    {
+      "n": 11,
+      "at": "2026-10-05T04:35:13.947Z",
+      "by": "user",
+      "text": "Can you investigate the opensource. what they do. Delegate to team for research them first.",
+      "forLead": true
+    },
+    {
+      "n": 12,
+      "at": "2026-10-05T04:37:43.146Z",
+      "by": "lead",
+      "text": "Yes. A research helper (de-thermal-oss) is now studying the open-source heat-mode tools; results in about 20-30 min, then I post them here.\n- Tools it covers: pymobiledevice3, go-ios, tidevice, libimobiledevice, and any others it finds.\n- Per tool it answers: what it does on the phone, how heat mode is cleared, what happens if it crashes mid-heat, what it needs (root, Developer Mode, Xcode), whether it talks to the internet, license, how active it is, and iOS 26 support.\n- It reads source only (GitHub through gh). It installs nothing and does not touch the phone.\n- Nothing changes until you pick a route after reading the results.\nWhat you need to do: nothing now; read the results here when they arrive."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-05T04:40:55.080Z",
+      "by": "lead",
+      "text": "Research done. The best open-source tool is pymobiledevice3: it can switch heat mode on and off from the command line, with no admin rights and no Xcode.\n| tool | what it can do | license | active? |\n|---|---|---|---|\n| pymobiledevice3 (best) | list, set, clear heat mode | GPL-3.0 | yes, updated 2026-10-04 |\n| go-ios | list, set (clear only in code) | MIT | yes, but tunnel bugs open |\n| idevice (Rust) | list, set, clear | MIT | yes, smaller |\n| libimobiledevice, tidevice | none | - | - |\n- They all call the same Apple service that Xcode uses, so the phone heats the same way.\n- Heat mode stays on only while the tool keeps running. When it stops, the phone drops heat mode itself (per go-ios's code; not yet checked on your phone).\n- Not checked yet: iOS 26 support, and what happens if Xcode sets heat mode at the same time. One short test on the phone answers both.\n- No tracking or upload code found. It may download Apple's developer disk image once; we skip that because Xcode already put it on the phone.\n- Full notes: research/thermal-condition-cli/oss-survey.md.\nWhat you need to do: reply \"yes, call pymobiledevice3\" to get a tool that sets and clears heat mode by itself, or \"no\".",
+      "ask": true
+    },
+    {
+      "n": 14,
+      "at": "2026-10-05T04:42:07.641Z",
+      "by": "user",
+      "text": "can we writing the own one ?"
+    },
+    {
+      "n": 15,
+      "at": "2026-10-05T04:42:37.970Z",
+      "by": "lead",
+      "text": "Yes, we can write our own, and the research makes it easier than I said before. Two tools under permissive licenses show how it works, and we may copy from them.\n- go-ios (MIT) and idevice (MIT) do the same job. Their licenses let us reuse code if we keep their notice, so our tool stays free of GPL.\n- appium-ios (Apache-2.0) already has this in TypeScript, the language our tools use. That is the shortest path to a tool of our own.\n- The hard part is still the connection to the phone (Apple's developer tunnel). The phone part is 3 messages: list, set, clear.\n| route | effort | risk |\n|---|---|---|\n| our own tool, built on appium-ios code | about 1 day + tests | its tunnel on iOS 26 is untested |\n| our own tool from scratch | several days | the protocol is undocumented |\n| call pymobiledevice3 | about 1 hour + tests | GPL, kept outside our code |\n- With any route, one short phone test first: set heat mode, read it back, clear it, and check that it clears if the tool crashes.\nWhat you need to do: reply \"write our own\" (built on appium-ios code) or \"call pymobiledevice3\".",
+      "ask": true
+    },
+    {
+      "n": 16,
+      "at": "2026-10-05T04:42:49.950Z",
+      "by": "user",
+      "text": "write our own"
+    },
+    {
+      "n": 17,
+      "at": "2026-10-05T04:43:44.567Z",
+      "by": "lead",
+      "text": "Started: a tool builder (ts-thermal-own) is writing our own heat-mode tool, tracked as I-199 (the heat tool task).\n| stage | what | ETA |\n|---|---|---|\n| 1 | read appium-ios code; check it needs no admin rights and no downloads | ~45 min |\n| 2 | build tools/thermal.mjs (list, set, clear) with tests | ~1 day if stage 1 says go |\n| 3 | short phone test: set, read back, clear, crash check | after v9 frees the phone |\n- It reuses code from appium-ios (Apache-2.0), go-ios and idevice (MIT), with their notices kept. No GPL code.\n- v9 keeps priority on the phone, so stage 3 waits for a free slot.\nWhat you need to do: nothing now; I post here after stage 1."
+    },
+    {
+      "n": 18,
+      "at": "2026-10-05T04:50:40.175Z",
+      "by": "lead",
+      "text": "Stage 1 says go, on an even simpler route: macOS already has the hard part built in.\n- appium-ios needs admin rights (sudo) and a native add-on for its phone connection, so we don't use that part.\n- Instead we use Apple's own remotectl, already on your Mac, which opens the developer connection without admin rights. It already sees your iPhone.\n- We write only the message part (about 1,200 lines), with code adapted from appium-ios and go-ios with their notices. No downloads, no extra packages.\n- If our tool crashes, the phone should drop heat mode by itself (from go-ios's code). The phone test checks this.\n| stage | state | ETA |\n|---|---|---|\n| 2 build + tests | started | ~3-4 h |\n| early 1-min phone connect check | after the clip recording | in the next free phone slot |\n| 3 phone test: set, read, clear, crash | after my go | after v9 frees the phone |\nWhat you need to do: nothing now."
+    }
+  ],
+  "reads": {
+    "user": 18,
+    "fix-hero-exit-threaded": 11,
+    "lead": 18
+  },
+  "history": [
+    {
+      "at": "2026-10-05T04:29:47.493Z",
+      "who": "router",
+      "action": "assign",
+      "note": "fix-hero-exit-threaded (author of C-055)"
+    },
+    {
+      "at": "2026-10-05T04:31:26.435Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "escalate",
+      "note": "User asks the lead to pick up C-055 (stop Xcode Serious on the iPhone), auto-posted by my 04:28 thermal read. PR-023 does not need it; if and when to drop heat mode is your call (phone order; arch-serious-heat may want Serious kept)."
+    },
+    {
+      "at": "2026-10-05T04:34:40.248Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    },
+    {
+      "at": "2026-10-05T04:36:52.814Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    },
+    {
+      "at": "2026-10-05T04:37:42.994Z",
+      "who": "lead",
+      "action": "unassign",
+      "note": "fix-hero-exit-threaded"
+    }
+  ],
+  "readsAt": {
+    "fix-hero-exit-threaded": "2026-10-05T04:35:15.991Z",
+    "lead": "2026-10-05T04:50:40.175Z"
+  },
+  "histSeen": {
+    "lead": 5
+  }
+}

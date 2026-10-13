@@ -1,0 +1,55 @@
+{
+  "id": "C-013",
+  "by": "lead",
+  "kind": "action",
+  "title": "Your own render test on the iPhone: original (A) vs best build (B)",
+  "instructions": "The phone is locked for you until 01:54 +07 (no agent will touch it). A = original Fastwork: http://192.168.0.55:5611/ . B = best build so far (wave-1 fixes + nav-morph pin + countdown repaint + card reveal + mid-page F3): http://192.168.0.55:5647/ . Open each in Safari and scroll/swipe however you like. When finished press Done and write in the notes what you felt (which is smoother, where it still lags: hero, people card, mid-page, end of page).",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-01T17:54:21.564Z",
+        "done": "2026-10-01T18:30:46.669Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-01T17:54:13.423Z",
+  "queuedAt": "2026-10-01T17:54:13.423Z",
+  "updatedAt": "2026-10-01T18:30:46.669Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-01T17:54:13.423Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-01T17:54:21.564Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T18:30:46.669Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    }
+  ],
+  "startedAt": "2026-10-01T17:54:21.564Z",
+  "result": {
+    "value": "done",
+    "notes": "i was test on the hero section and the end of page, the B quite smoother.\ni was see the style recalculation was took around ~19-20ms sometime. so there cause the lag.\n\nfor example we render on 60hz , so perfectly we have a budget each frame is 1s/60 = 0.016 s per frame = 16ms. more than that it will be lag.\n\ni suspect 2 things\n- nested css, they will be cause from query the complex from dom. nested css will raise more complexity to find the element.\n- image size. render trigger. for example image have to rotate, i'm not sure resize or not. the engine have to calculate every frame that change. \n   * can we reduce the image size ? \n   * can we reduce trigger of render cap in 60 frame. maybe use native css for direct engine use optimized logic for handle them",
+    "at": "2026-10-01T18:30:46.669Z"
+  }
+}

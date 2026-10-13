@@ -1,0 +1,263 @@
+{
+  "id": "T-105",
+  "title": "Team bottleneck report (measured)",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T10:20:06.532Z",
+  "updatedAt": "2026-10-05T11:41:12.979Z",
+  "rev": 78,
+  "assignees": [
+    "mgmt-ops-10",
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T10:20:06.532Z",
+      "by": "lead",
+      "text": "The team's main bottleneck is the Chrome test slot, not mgmt-ops-10: 61 % of all waiting is for it. Measured 08:20-10:20Z from the status board, lock log and thread log.\n\n**Where the agents' time went (agent-minutes, all agents together)**\n\n| state | minutes |\n|---|---|\n| waiting | 410 |\n| testing | 243 |\n| researching | 133 |\n| coordinating | 121 |\n| designing / measuring / building | 185 |\n| ready to land (waiting for me) | 30 |\n\n**What they waited for**\n\n| waiting for | minutes | share |\n|---|---|---|\n| Chrome test slot | 249 | 61 % |\n| iPhone | 79 | 19 % |\n| a tool problem | 41 | 10 % |\n| you | 30 | 7 % |\n| another agent or me | 11 | 3 % |\n\n**Bottlenecks and fixes**\n- **Chrome slot (#1):** busy only 71 % of the time, but jobs ran one at a time whenever a phone test waited. Fix: a tools agent now changes the queue so short jobs ahead run together, and phone tests go first automatically (incident I-136). Until then I move phone tests to the front by hand (done at 10:15Z).\n- **iPhone (#2):** mostly the swipe test waiting for your \"ready\", which was expected, plus 15 min of the phone idling behind Chrome jobs. Same fix.\n- **Tool problems (#3):** two flaky tests, one fixed and landed at 10:00Z; the cached-files tool fix has waited 58 min with 2 failed runs, and I'm asking why.\n- **mgmt-ops-10:** replies fast (median 1 min) but is the busiest agent. The desk moved to mgmt-desk-1 at 10:20Z, and a small tool for editing the progress pages is next.\n- **Me:** 30 min \"ready to land\", mostly one branch I sent back for clean-up.\n\nI measure again at about 11:15Z and post the same tables here.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T10:21:14.886Z",
+      "by": "user",
+      "text": "Can we improve the automate testing more faster ?",
+      "forLead": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T10:21:39.243Z",
+      "by": "user",
+      "text": "Like parallel testing in the functionality test.",
+      "forLead": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T10:21:49.718Z",
+      "by": "mgmt-desk-1",
+      "text": "Yes. Three ways to make the automated tests faster; the first is already under way, the other two need the lead's go.\n\n| change | gain | state |\n|---|---|---|\n| 1. Short test jobs share the Chrome slot; phone tests go first | less queue time (the 61 % above) | a tools agent is on it (I-136, the queue fix) |\n| 2. Tool fixes run only the tests for the changed part first; the full suite (about 4.5 min) once, before landing | a few min per tool fix, and less load on the Mac | idea, needs the lead |\n| 3. Two timed Chrome tests at once instead of one | up to 2x for timed tests | not proven safe: an earlier study (2026-10-01) saw 3 at once give false results; 2 needs one clean check first (about 30 min of the slot) |\n\n- Most Chrome jobs today are count-only checks, which already run together; item 1 fixes the cases where they still run one at a time.\n- I've asked the lead to decide on 2 and 3; the answer comes here.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T10:21:59.117Z",
+      "by": "lead",
+      "text": "Yes. Two agents speed it up: one makes the test suite faster, the other makes the test queue run jobs together.\n\n**Where the testing time goes now (Chrome slot, 08:20-10:20Z)**\n\n| user of the slot | minutes |\n|---|---|\n| phone tests (GPU fix, countdown) | 36 |\n| Simulator and Chrome checks (hero, v7) | 25 |\n| full tool test suites | 15 |\n| other checks | 14 |\n\n**What changes**\n- **Tool test suite:** 1,776 tests take 4.8 min, and the 10 slowest spend most of it waiting on real-time timers. A new tools agent shortens those waits in tests only (same checks, same strictness), runs waiting tests in parallel, and adds a quick \"changed files only\" run for work in progress. Goal: 4.8 min to 2.5 min or less.\n- **Queue:** short checks will run together instead of one by one (incident I-136, already in progress). The slot was idle 29 % of the time while jobs waited.\n- **Phone tests stay as they are:** their length is set by the test rules (warm phone, repeated runs), so shortening them would make the results less trustworthy.\n\nWhat you need to do: nothing. I'll post the before/after numbers here."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T10:22:05.389Z",
+      "by": "mgmt-desk-1",
+      "text": "On your #3 (parallel functional tests): yes, they already run in parallel, but with two limits we can loosen.\n\n- Functional checks (no timing) share the Chrome slot, up to 3 small jobs at once; the full tool test suite counts as 2 of those 3.\n- Limit 1: when a timed or phone test waits, new functional jobs stop joining and run one by one. The queue fix (I-136) changes that.\n- Limit 2: the cap of 3 itself. A higher cap (say 5) is possible when no timed test runs; the lead decides, after checking Mac load.\n\nWhat you need to do: nothing; the lead answers here on the cap."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T10:22:10.778Z",
+      "by": "lead",
+      "text": "Correction to my last reply: the 10 slowest tests aren't 'most' of the 4.8 minutes. They're about 3 minutes of waiting, spread across the parallel runs, and they decide when the suite can finish. The goal (2.5 min or less) stays."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T10:22:43.558Z",
+      "by": "lead",
+      "text": "Decisions on parallel testing (your #3):\n\n- **More jobs at once:** yes. The Chrome slot already runs up to 4 small jobs at once; the tool won't allow more today. The queue fix (I-136) also lifts that limit to 6, and I raise it when the fix lands. These jobs never run beside a phone or timing test, so they can't disturb those results.\n- **Testing only the changed part first:** yes, that's part of the test speed-up already under way.\n- **Two timing tests at once:** not now. We haven't proven that two timing tests side by side give trustworthy numbers, and we're not running timing tests at the moment anyway.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T11:22:57.365Z",
+      "by": "lead",
+      "text": "The queue fix (I-136) is in, and the Chrome slot now takes up to 6 small jobs at once (was 4).\n\n| | before | now |\n|---|---|---|\n| light jobs at once | up to 4 units | up to 6 units |\n| light job queued ahead of a big one | had to wait | joins the running group |\n| <device-name>| could wait behind later light jobs | goes first |\n\n- All 1791 automated tests passed before it went in.\n- A job still joins only while the Mac is not overloaded, so timing tests stay clean.\n- Agents on older copies keep the old, stricter limit until they update between steps.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T11:23:11.034Z",
+      "by": "lead",
+      "text": "Fix for row 3 of the table above (the privacy filter hid it by mistake): a phone test's hold on the Mac used to wait behind later light jobs; now it goes first."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T11:29:10.793Z",
+      "by": "user",
+      "text": "Can you measure them, can we scale the unit more than 6 compare with our usage resource."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T11:29:55.059Z",
+      "by": "user",
+      "text": "You may interval the resource usage, and decide to scale up later if my resource has capacity lefts."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T11:29:59.389Z",
+      "by": "lead",
+      "text": "No: going past 6 would not help now, and the Mac is already full at about 4. Measured 07:20-11:30Z (250 min):\n\n| Chrome slot state | time |\n|---|---|\n| one timing test (runs alone) | 81 min (32 %) |\n| light jobs sharing, 1-2 units | 68 min (27 %) |\n| light jobs sharing, 3-4 units | 42 min (17 %) |\n| free (mostly the usage pause) | 59 min (24 %) |\n\n- The shared group never went above 4 units (the old limit), and it sat at 4 only 7 % of the time. The limit was not what made jobs wait.\n- The Mac has 8 cores. At 11:22Z, with only 4 units running (a Simulator check plus one small job), the CPU was 93 % busy. More units would slow every job down, not finish more.\n- A job also joins only while the Mac is not overloaded, so a limit above 6 would mostly never be reached.\n- The real wait is the timing tests, which must run alone: 32 % of the time. Speeding up the test suite (work under way) and moving checks to the Simulator help more.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T11:30:35.029Z",
+      "by": "lead",
+      "text": "Agreed, I'm doing that now. A small recorder notes every minute how many light jobs share the Chrome slot and how busy the Mac is. It keeps the data on this Mac only.\n\n- First reading (11:30Z): 3 units running (a Simulator check), Mac 53 % busy.\n- I review it after the agents restart at 12:20Z. If the Mac stays under about 70 % busy at 4-6 units, I raise the limit step by step and tell you here.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-04T12:36:41.896Z",
+      "by": "lead",
+      "text": "Decision: the shared limit stays at 5 units, not higher. I measured it (once a minute, 11:30-12:35Z).\n\n| Shared work at once | Mac busy (median / max) | Load (max) | Memory |\n|---|---|---|---|\n| up to 5 units | 33-66 % / 95 % | 14 | normal |\n| 6 units (two Simulator jobs) | 71 % / 83 % | 130 | warning |\n\n- Up to 5 units the Mac has room. At 6, two Simulator jobs together overload it (load 80-130, memory warning).\n- So I lowered the limit from 6 to 5. That keeps one Simulator job plus small checks running side by side.\n- More than 6 would need a second Simulator machine; this Mac doesn't have the room.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 16,
+      "at": "2026-10-04T13:33:54.494Z",
+      "by": "user",
+      "text": "Catch up this progress"
+    },
+    {
+      "n": 17,
+      "at": "2026-10-04T13:35:30.495Z",
+      "by": "lead",
+      "text": "**Since 12:36Z the team runs without lock jams; two slips were mine and a fix is being planned.**\n\n| what | done |\n|---|---|\n| Light jobs waited behind heavy Simulator jobs | moved ahead 3 times; a tool fix is in the team plan |\n| Robot phone runs reserved a quiet Mac (6 jobs waited) | robot runs now share the Mac; only your finger tests get a quiet Mac |\n| Stuck Start button, lost finger recordings | a tools helper is fixing both (T-118) |\n| I missed your PR-019 choice and a paused helper (servers, T-106) | listener fixed; both resumed |\n\n- The shared limit stays at 5 units (load stays under 16).\n- Long-term fix: the team plan you asked for in T-122 (automatic status updates, role changes) comes as a proposal in about an hour.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 18,
+      "at": "2026-10-04T13:37:07.407Z",
+      "by": "user",
+      "text": "You're bottleneck, you know ? when i ask catch up progress in the a lot of threads, you slower"
+    },
+    {
+      "n": 19,
+      "at": "2026-10-04T13:41:03.309Z",
+      "by": "lead",
+      "text": "**Yes, you're right: answering every thread myself made me the bottleneck.** Fixed now:\n\n- A desk agent (mgmt-desk-2) answers your threads from now on: catch-ups, \"what does this mean\", progress. It runs beside me, so answers no longer queue behind my landing and lock work.\n- It reads the status board, progress page, proposals and logs, and hands me only what needs a decision.\n- Your 3 open questions (T-074, T-075, T-034) are already with it.\n- The longer-term fix (status updates by the tools, not agents) is in the team plan (T-122).\n\nWhat you need to do: nothing; ask in any thread as before."
+    },
+    {
+      "n": 20,
+      "at": "2026-10-04T13:42:36.134Z",
+      "by": "user",
+      "text": "Can you improve this to delegate to agents, if no reply message just idle the agent. then when i ask i'd expect agent should wake up. \n\nIs it token efficient for this way ?"
+    },
+    {
+      "n": 21,
+      "at": "2026-10-04T13:54:55.815Z",
+      "by": "lead",
+      "text": "**Yes. From now on, an agent with no work goes idle and costs nothing. When you write in its thread, it gets woken.** This is the cheapest setup.\n\nHow it works:\n- **Idle agents** stop completely: no listener and no re-checks, so they use no tokens.\n- **One small listener, the desk** (mgmt-desk-2, a cheaper model), watches every thread for you.\n- **Your message** goes to its owner if that owner is still working. If the owner is idle, the desk answers easy questions itself (catch-up, \"what does this mean\") or wakes the owner for real questions about a fix.\n- **I'm only involved** when something needs a decision from me.\n\nWhy it saves tokens:\n\n| setup | cost while idle | cost when you ask |\n|---|---|---|\n| every agent keeps its own listener | each one re-checks about every hour, ~12 agents | that agent |\n| one desk wakes the owner (new) | only the desk re-checks | desk + that agent |\n| me answering everything (before) | none | my context, the largest, and slower |\n\n- A wake re-reads the agent's memory from cache, which is about 10× cheaper than a fresh read. The desk's last wake re-read about 105k tokens and wrote 229.\n\nWhat you need to do: nothing; keep asking in any thread."
+    },
+    {
+      "n": 22,
+      "at": "2026-10-04T13:58:43.434Z",
+      "by": "user",
+      "text": "Can we do likes this ? spawn agents and run the listener. i'm not sure how it going if they are no work. but listener still running on this agent. \n\nlet's investigate, research and try to do some poc."
+    },
+    {
+      "n": 23,
+      "at": "2026-10-04T14:02:54.085Z",
+      "by": "user",
+      "text": "Lead, your bottleneck again. you know ?",
+      "forLead": true
+    },
+    {
+      "n": 24,
+      "at": "2026-10-04T14:03:53.106Z",
+      "by": "lead",
+      "text": "**Yes, sorry: #22 waited on me for 4 min. Fixed now: I'm off all your threads, and the desk answers them first.**\n\n- **Why it happened:** T-105 was still assigned to me, and my listener only wakes for an unanswered message after 10 min. The desk is now the first owner of T-105, T-100 and T-104, and I only get decisions.\n\n**#22, idle agents with a listener: this already works.** The desk is a working test of exactly this:\n- When it has no work, it stops with a listener running in the background, which costs no tokens.\n- When you write, the listener wakes it. That happened about 10 times in the last 30 min, each within about a minute.\n\n| in this 5 h window | messages | cost (weighted units) |\n|---|---|---|\n| desk (smaller model) | 61 | 0.76 M |\n| me (lead) | 282 | 6.35 M |\n\n- Each wake re-reads the agent's memory from cache, about 110-130k tokens for the desk. Fix agents have 2-3× more, so one listener each would cost 2-3× per wake.\n- So: one cheap desk listens and wakes the fix agent only when your question needs it.\n- If you want, I can also test one fix agent keeping its own listener for an hour, after 17:20Z (usage limit).\n\nWhat you need to do: nothing; reply \"test it\" if you want that test."
+    },
+    {
+      "n": 25,
+      "at": "2026-10-04T14:03:55.334Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes, what you describe in #22 is already running: this desk is the one listener, and agents with no work stay idle.\n\n- Right now: the desk (mgmt-desk-2) listens on all threads. Idle agents run nothing and cost nothing.\n- Today it already answered your 8 latest threads within about 2 min each.\n- Still unproven: how many tokens the desk spends per hour while it waits, and what happens when many owners are woken at once.\n- I sent #22 and #23 to the lead: the research and the proof-of-concept plan are the lead's call.\n\nWhat you need to do: nothing; the lead answers here."
+    },
+    {
+      "n": 26,
+      "at": "2026-10-04T14:04:06.251Z",
+      "by": "mgmt-desk-2",
+      "text": "Correction to #25: the desk has answered 5 threads since 13:40Z (T-074, T-075, T-034, T-123 to T-125), not 8. I did not measure the time per answer.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 27,
+      "at": "2026-10-04T14:06:01.873Z",
+      "by": "user",
+      "text": "I'm not sure. claude has cache in 1hr. maybe we can spawn within less then 1hr. if the agents has no work almost 1hr. just terminate them. can we?"
+    },
+    {
+      "n": 28,
+      "at": "2026-10-04T14:06:20.104Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes, that can work; it is a policy choice, so the lead decides.\n\n- The idea: an agent idle for about 1 h loses its cheap memory cache. Waking it then re-reads its whole context at full price.\n- Instead: end it, and when you ask again, start a fresh agent with a short hand-over note from its README and thread.\n- Trade-off: a fresh agent is cheaper to start than a long old one, but it loses what the old one remembered.\n- Not verified: how long our cache really lasts (I believe 5 min by default, 1 h if extended). I asked the lead to check.\n\nWhat you need to do: nothing; the lead answers here."
+    },
+    {
+      "n": 29,
+      "at": "2026-10-04T14:06:51.423Z",
+      "by": "lead",
+      "text": "**Yes, and the cut-off is shorter than 1 h. Our logs show helper agents keep their cache for only 5 min (the 1 h cache is for my session only). So, new rule: a helper agent idle over 5 min is not woken for new work. A fresh one starts from its hand-over note.**\n\n- **Idle agents already cost nothing.** A finished agent has no process running, so there's nothing to terminate. The cost comes only when it's woken.\n- **Waking after 5 min** re-loads its whole memory at full price: 150-270k tokens for a fix agent.\n- **A fresh agent** starts at about 30-50k tokens (rules + hand-over note + the files it needs).\n\n| case | what we do |\n|---|---|\n| question within 5 min of its last step | wake the same agent (cheap) |\n| catch-up or \"what does this mean\" | the desk answers from notes, no wake |\n| new work after 5 min | fresh agent + hand-over note (README + status row) |\n| the desk itself | stays; small and woken often, so its cache stays warm |\n\n- Each agent already writes its README and status row at every step. I'll make \"hand-over note up to date\" part of finishing a step.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 30,
+      "at": "2026-10-04T14:07:19.832Z",
+      "by": "user",
+      "text": "You could set the role that fresh agent could understand each topics that they got. right ?"
+    },
+    {
+      "n": 31,
+      "at": "2026-10-04T14:07:38.342Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes. A fresh agent gets its role and its topic when it starts.\n\n- Role: the agent type (fix owner, toolsmith, reviewer, ...) sets its rules and tools.\n- Topic: the spawn prompt names the topic, plus the hand-over note (the topic's README, its status row and thread).\n- Shared rules and findings: every agent loads CLAUDE.md and project memory automatically.\n- Gap: the hand-over note must be current at every step. The lead (#29) will make that part of finishing a step.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "lead": 30,
+    "user": 31,
+    "mgmt-desk-1": 6,
+    "mgmt-ops-10": 30,
+    "mgmt-desk-2": 31
+  },
+  "history": [
+    {
+      "at": "2026-10-04T10:20:06.532Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead,mgmt-ops-10,mgmt-desk-1"
+    },
+    {
+      "at": "2026-10-04T10:21:56.471Z",
+      "who": "mgmt-desk-1",
+      "action": "escalate",
+      "note": "User: make automated tests faster. Desk #4 lists (1) I-136 queue fix, in progress; (2) affected tests first, full npm test once before landing (toolsmith + LEAD.md rule); (3) N=2 Chrome slots, unproven per measurement-parallelism (needs clean A/A). Decide 2 and 3."
+    },
+    {
+      "at": "2026-10-04T14:03:23.424Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    },
+    {
+      "at": "2026-10-04T14:03:39.030Z",
+      "who": "lead",
+      "action": "unassign",
+      "note": "lead,mgmt-desk-1"
+    },
+    {
+      "at": "2026-10-04T14:03:55.418Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User #22: research + PoC of one-listener desk with idle agents (#23: 'lead bottleneck again', #22 unanswered ~4 min). Please reply in T-105; need token cost per hour of desk wait + load test of waking many owners."
+    },
+    {
+      "at": "2026-10-04T14:06:20.537Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User #27: end agents idle ~1h (prompt cache gone) and spawn fresh with a hand-over note on demand? Please decide policy; verify our cache TTL (5 min default / 1 h?). Answer in T-105."
+    },
+    {
+      "at": "2026-10-04T22:24:32.968Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T21:01:08.043Z",
+    "mgmt-desk-1": "2026-10-04T10:22:05.389Z",
+    "mgmt-ops-10": "2026-10-05T11:41:12.979Z",
+    "mgmt-desk-2": "2026-10-04T14:07:38.342Z"
+  },
+  "histSeen": {
+    "lead": 6
+  }
+}

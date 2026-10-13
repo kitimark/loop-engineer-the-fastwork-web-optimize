@@ -1,0 +1,215 @@
+{
+  "id": "C-038",
+  "by": "iphone-runner",
+  "topic": "hero-exit-threaded",
+  "kind": "swipe-pair",
+  "title": "Hero swipe: which page follows your finger better?",
+  "instructions": "Swipe up and down through the top of the page and the section below it on both pages, then say which follows your finger better, or \"same\".",
+  "url": "http://192.168.0.56:63835/",
+  "showUrl": false,
+  "meta": {
+    "block": "hero-swipe",
+    "pair": "pair1",
+    "page1": "A",
+    "page2": "B",
+    "A": "best-A-65052c4a3902",
+    "B": "best-BR2-8018ce062d30",
+    "keyDrawnAt": "2026-10-04T03:29:16.093Z",
+    "residual": "P-095 (b): V paints P 4-6 on the first frame ~330 ms after a rest and slightly more at the first move after a rest (C 0-1); touchToScrollMs C 286 / V 283",
+    "by": "iphone-runner"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ]
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.56:63835/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-04T06:46:17.126Z",
+        "ready": "2026-10-04T06:46:42.251Z",
+        "started": "2026-10-04T07:10:15.420Z",
+        "recording": "2026-10-04T07:10:17.837Z",
+        "done": "2026-10-04T07:10:59.935Z"
+      },
+      "message": "Recording: swipe now, then press Done."
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.56:63841/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-04T07:11:01.780Z",
+        "ready": "2026-10-04T07:11:12.763Z",
+        "started": "2026-10-04T07:11:15.004Z",
+        "recording": "2026-10-04T07:11:17.543Z",
+        "done": "2026-10-04T07:11:53.545Z"
+      },
+      "message": "Recording: swipe now, then press Done."
+    }
+  ],
+  "createdAt": "2026-10-04T06:28:02.119Z",
+  "queuedAt": "2026-10-04T06:46:09.292Z",
+  "updatedAt": "2026-10-04T07:13:15.811Z",
+  "rev": 18,
+  "history": [
+    {
+      "at": "2026-10-04T06:28:02.119Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-04T06:28:16.928Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading",
+      "note": "Loading page 1 on the iPhone, one moment."
+    },
+    {
+      "at": "2026-10-04T06:28:28.034Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready",
+      "note": "Page 1 is open on the iPhone. Press Start when you are ready."
+    },
+    {
+      "at": "2026-10-04T06:28:43.809Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading",
+      "note": "Please finish the previous swipe test first; this one loads after it."
+    },
+    {
+      "at": "2026-10-04T06:29:21.790Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading",
+      "note": "Loading page 1 on the iPhone, one moment."
+    },
+    {
+      "at": "2026-10-04T06:29:31.163Z",
+      "who": "user",
+      "action": "skip"
+    },
+    {
+      "at": "2026-10-04T06:46:09.292Z",
+      "who": "iphone-runner",
+      "action": "reopen"
+    },
+    {
+      "at": "2026-10-04T06:46:17.126Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading",
+      "note": "Loading page 1 on the iPhone, one moment."
+    },
+    {
+      "at": "2026-10-04T06:46:42.251Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready",
+      "note": "Page 1 is open on the iPhone. Press Start when you are ready."
+    },
+    {
+      "at": "2026-10-04T07:10:15.420Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T07:10:17.837Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording",
+      "note": "Recording: swipe now, then press Done."
+    },
+    {
+      "at": "2026-10-04T07:10:59.935Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T07:11:01.780Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "loading",
+      "note": "Loading page 2 on the iPhone, one moment."
+    },
+    {
+      "at": "2026-10-04T07:11:12.763Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready",
+      "note": "Page 2 is open on the iPhone. Press Start when you are ready."
+    },
+    {
+      "at": "2026-10-04T07:11:15.004Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T07:11:17.543Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording",
+      "note": "Recording: swipe now, then press Done."
+    },
+    {
+      "at": "2026-10-04T07:11:53.545Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T07:13:15.811Z",
+      "who": "user",
+      "action": "answer",
+      "value": "2"
+    }
+  ],
+  "skippedAt": "2026-10-04T06:29:31.163Z",
+  "startedAt": "2026-10-04T07:10:15.420Z",
+  "result": {
+    "value": "2",
+    "notes": "The cards on hero section animation are so smooth in page 2. \n\nThis is breakthrough of animation performance optimization. let's investigate how we can adopt this into another elements. \n\nCreate new thread for catch up this.",
+    "at": "2026-10-04T07:13:15.811Z"
+  }
+}

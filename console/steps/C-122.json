@@ -1,0 +1,58 @@
+{
+  "id": "C-122",
+  "by": "lead",
+  "kind": "action",
+  "title": "Unlock the iPhone so the phone test can start",
+  "instructions": "After the re-plug, Xcode needs the iPhone unlocked before the test tool can connect. Unlock the phone, leave it on the home screen plugged in, then press Done. Don't touch it after that.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-08T11:42:09.036Z",
+        "done": "2026-10-08T11:42:25.281Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-08T11:41:58.288Z",
+  "queuedAt": "2026-10-08T11:41:58.288Z",
+  "updatedAt": "2026-10-08T11:42:25.281Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-08T11:41:58.288Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-08T11:42:09.036Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-08T11:42:25.281Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 81,
+  "startedAt": "2026-10-08T11:42:09.036Z",
+  "result": {
+    "value": "done",
+    "notes": "I always unlock my iphone, what's the problem ?",
+    "at": "2026-10-08T11:42:25.281Z"
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-037",
+  "by": "fix-logo-close",
+  "title": "Fastwork logo: no jump at the end of the menu's close (phone)",
+  "area": "end",
+  "topic": "logo-close",
+  "thread": "T-245",
+  "problem": "Your report in T-245: when the end-of-page menu closes, the logo slides left and then jumps the last bit.\n- Traced: in its last frame the logo jumps 15 pixels left in one step. It happens on phones only (screens up to 640 wide).\n- Cause: on phones the logo is drawn at 75 % size. While the menu moves, it shrinks around its centre; at rest, around its left edge.\n- When the menu has almost stopped, the page switches between the two in one frame, so the logo jumps.\n- The original site does the same (also at the start of the opening: a 15-pixel jump to the right).\n- v14 had fixed it; today's best build g0.0c brought back the original's end of the page, and this jump with it.",
+  "idea": "One style line: the point the logo shrinks around moves smoothly from its left edge (menu closed) to its centre (menu open), together with the menu.\n- The logo then takes one smooth path; the last frame moves it a tenth of a pixel instead of 15.\n- Open menu, closed bar, tablet and desktop look exactly as today.\nWhat you need to do: open A and B on the phone, scroll to the end, open and close the menu a few times, watch the logo top-left, and pick one.",
+  "looksSame": "Unchanged: the closed bar, the open menu, tablet and desktop widths, and reduced-motion mode.\n- Only while the menu moves on a phone does the logo sit up to 15 pixels further left than today, so its path has no jump.\n- Everything else on the screen matched at every checked moment of the open and the close (Chrome at phone sizes and the iOS Simulator).",
+  "risk": "Low: one style line on the logo, only while the menu moves on phones.\n- It is the rule v14 already had (from the Join button work, PR-021).\n- No extra work per frame and no new layers: the logo already moves with the menu every frame.\n- Stacks cleanly with the Join fix and the nav-box work in progress (both owners checked).",
+  "visualDiff": [
+    "Phone, menu closing: the logo glides all the way to its place; the 15-pixel jump in the last frame is gone.",
+    "Phone, menu opening: the logo starts its move smoothly instead of jumping 15 pixels right in the first frame.",
+    "While the menu moves, the logo is up to 15 pixels left of where it is today (the same path the open/close takes without the jump)."
+  ],
+  "gain": [
+    {
+      "what": "Logo jump, last frame of the close",
+      "before": "15.4 px",
+      "after": "0.1 px",
+      "tag": "OBSERVED",
+      "how": "The menu animation stepped frame by frame (120 per second), logo position read each frame.\n- Same in Chrome at phone size and in the iOS Simulator (iPhone 15 Pro Max).\n- The frames next to it move 0.1 px, so the last frame now matches the curve.",
+      "better": "better"
+    },
+    {
+      "what": "Logo jump, first frame of the open",
+      "before": "15.4 px",
+      "after": "0.1 px",
+      "tag": "OBSERVED",
+      "how": "Same method; the first frame now moves 4.8 px, like the next ones (4.7 px).",
+      "better": "better"
+    },
+    {
+      "what": "Rest of the screen during open and close",
+      "before": "-",
+      "after": "same",
+      "tag": "OBSERVED",
+      "how": "Screenshots at 33-51 moments of the open and the close, A against B: outside the logo's row only load-to-load noise, the same as A against A.\n- Chrome at 430 (two heights), 768 and 1280 wide, reduced motion, and the iOS Simulator.",
+      "better": "same"
+    },
+    {
+      "what": "Extra work per frame or GPU layers",
+      "before": "-",
+      "after": "none",
+      "tag": "OBSERVED",
+      "how": "iOS Simulator: style, layout and paint counts per frame during the open and the close; B sits inside A's own run-to-run range.",
+      "better": "same"
+    }
+  ],
+  "live": {
+    "patch": "fixes/logo-close-g00c/patch.diff",
+    "ref": "HEAD",
+    "blob": "e4c4a2af9d5f9c54d7b30f8b55070718ff13221b",
+    "base": "site-pretty",
+    "files": [
+      "_app/immutable/assets/2.gBuqKVzi.css",
+      "_app/immutable/nodes/2.DyWL8TcE.js"
+    ],
+    "a": {
+      "patch": "fixes/platform-corners-g00b/patch.diff",
+      "ref": "HEAD",
+      "blob": "940de7571f6f377fcdddcb6e35beead3e5312867",
+      "base": "site-pretty",
+      "files": [
+        "_app/immutable/assets/2.gBuqKVzi.css",
+        "_app/immutable/nodes/2.DyWL8TcE.js"
+      ]
+    }
+  },
+  "compare": {
+    "a": {
+      "label": "g0.0c, today's best build (logo jumps at the end)"
+    },
+    "b": {
+      "label": "g0.0c + the logo fix"
+    },
+    "view": "side",
+    "shots": [
+      {
+        "caption": "Phone size, nav left half, menu closing at 520/560/600 ms, then rest. A: 15 px off at 600 ms, then jumps",
+        "a": "r1-a-1.webp",
+        "aSize": [
+          2625,
+          168
+        ],
+        "b": "r1-b-1.webp",
+        "bSize": [
+          2625,
+          168
+        ]
+      },
+      {
+        "caption": "Logo x per frame (grid 10 px). Left: opening's first 120 ms. Right: closing's last 200 ms",
+        "a": "r1-a-2.webp",
+        "aSize": [
+          1050,
+          420
+        ],
+        "b": "r1-b-2.webp",
+        "bSize": [
+          1050,
+          420
+        ]
+      }
+    ]
+  },
+  "state": "accepted",
+  "rev": 1,
+  "decision": {
+    "value": "accepted",
+    "at": "2026-10-08T03:02:30.972Z",
+    "who": "user",
+    "rev": 1
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "at": "2026-10-08T03:02:30.972Z",
+      "who": "user",
+      "rev": 1
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-07T20:22:10.293Z",
+      "by": "fix-logo-close",
+      "note": "first version"
+    }
+  ],
+  "createdAt": "2026-10-07T20:22:10.293Z",
+  "updatedAt": "2026-10-08T03:02:30.972Z",
+  "proposedAt": "2026-10-07T20:22:10.293Z",
+  "history": [
+    {
+      "at": "2026-10-07T20:22:10.293Z",
+      "who": "fix-logo-close",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-08T03:02:30.972Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 1
+    }
+  ]
+}

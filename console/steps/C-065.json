@@ -1,0 +1,57 @@
+{
+  "id": "C-065",
+  "by": "lead",
+  "kind": "action",
+  "title": "Xcode: restart the Serious heat condition on the iPhone",
+  "instructions": "In Xcode's Devices window, press Stop on the iPhone's condition (it may still show Serious), wait about 10 seconds, then Start Thermal State: Serious. Our heat-tool test switched it off; this puts it back for the next phone test.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-05T09:40:40.876Z",
+        "done": "2026-10-05T09:41:22.865Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-05T09:09:37.599Z",
+  "queuedAt": "2026-10-05T09:09:37.599Z",
+  "updatedAt": "2026-10-05T09:41:22.865Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-05T09:09:37.599Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-05T09:40:40.876Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-05T09:41:22.865Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 24,
+  "startedAt": "2026-10-05T09:40:40.876Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-05T09:41:22.865Z"
+  }
+}

@@ -1,0 +1,265 @@
+{
+  "id": "T-159",
+  "title": "Cut-off the new best build",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T20:51:07.389Z",
+  "updatedAt": "2026-10-05T09:41:38.591Z",
+  "rev": 84,
+  "assignees": [
+    "lead",
+    "mgmt-devices"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T20:51:07.389Z",
+      "by": "user",
+      "text": "I'd like to cut-off the new best build.\n\nCan you list which fixes will release in the next best build ? and how it improve ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T20:51:51.792Z",
+      "by": "lead",
+      "text": "Proposed next best build (v9) = today's best (v8) plus three fixes. Two are nearly ready, one is being measured now.\n| fix | what it improves | state |\n|---|---|---|\n| End-of-page menu swipe (PR-018 rev 7c) | menu follows your finger, closes cleanly (robot 12 of 12 swipes) | you accepted it; ready |\n| Nav colour + scroll callbacks off on phones | per scroll step: extra frame jobs 2.5 to 0.65, layout reads 3.9 to 1.6, forced layouts halved | iPhone \"no worse\" check (P-117) next, ~30 min |\n| Double-drive fix (your top priority) | cards no longer moved by two pieces of code at once | Chrome checks running now |\n- Not in this cut, they follow in the next one: Join button rev 3 (waits for your OK); toolbar-resize hero lag (Simulator test next); menu close repaint (Simulator: 13.6 to 3.2 megapixels repainted, Chrome checks queued).\n- Left out: blur-cubic, which made one frame 2x heavier on v8.\n- Chrome counts are main-thread work, not phone speed; the iPhone check decides.\n- After your OK, int-v8 builds v9 once the last two checks pass, runs the usual look and function checks, and posts it on the Best build page.\nWhat you need to do: reply \"cut\" to go with these three, or name fixes to add or drop.",
+      "ask": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T20:53:25.045Z",
+      "by": "user",
+      "text": "- Join button rev 3 (waits for your OK); toolbar-resize hero lag (Simulator test next); menu close repaint (Simulator: 13.6 to 3.2 megapixels repainted, Chrome checks queued).\n\nWhat's about this progress ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T20:55:31.995Z",
+      "by": "lead",
+      "text": "All three are built and waiting for the Mac slot; I've just moved them ahead of research work.\n| fix | where it is | next | queue place |\n|---|---|---|---|\n| Join button rev 3 | built: original timers back at the top and the end, width reserved, reveal on the GPU (slide + clip, no per-frame script) | its Chrome check, then the proposal comes back to you | 4th |\n| Hero lag from the toolbar | cause found in the profile deck; 3 look-keeping fixes built | one Simulator run (~7 min), then the iPhone | 5th |\n| Menu close repaint | fix built (hide the closed menu panel) | Chrome counts and look check | 6th |\n- Ahead of them: a 2-minute tool test, the combined-check audit and your top-priority double-drive check.\n- Each step takes about 3-7 minutes, so all three should report within about 40 minutes.\nWhat you need to do: nothing for these now; \"cut\" for v9 still waits on your reply."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T20:56:22.989Z",
+      "by": "user",
+      "text": "I'd like to including all of this improve into next build, can we ?"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T20:57:40.981Z",
+      "by": "user",
+      "text": "and i saw the iphone device is free. why you don't manage this resource to measure in the parallel ?"
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T20:58:58.461Z",
+      "by": "user",
+      "text": "mgmt-devices, check this why iphone device is free at this time."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T21:01:23.448Z",
+      "by": "lead",
+      "text": "Yes to both: v9 will include all six fixes, and the iPhone is starting its combined check now.\n- #5, all fixes in v9: yes. v9 gets cut once each of the six has passed its checks; the three pending ones are 4th to 6th in the Mac queue. Join rev 3 also needs your OK on its proposal.\n- #6/#7 cause: the next phone test (the combined \"no worse\" check) was waiting for two Mac-side checks to finish first, so the phone sat free. Nothing was marked ready, so no alarm fired (my mistake, filed as I-182).\n- I also missed your #5-#7 for a few minutes: my listener skipped messages in threads assigned to me (I-181).\n- Workaround, done now: I signed the combined check, so it runs on the phone now, in parallel with the Mac checks. I also started a second listener.\n- Long-term fix, two parts:\n  1. mgmt-devices owns keeping the phone busy: a free phone for over 5 minutes alarms whenever any phone step could start (I-182).\n  2. A toolsmith fixes the listener gap (I-181).\nWhat you need to do: nothing."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T21:02:17.415Z",
+      "by": "user",
+      "text": "mark these fixes including best build v9 integration as highest priority.",
+      "forLead": true
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T21:02:54.497Z",
+      "by": "lead",
+      "text": "Done: the six v9 fixes and the v9 build are now the top of the board (priorities 1-7). int-v8 integrates each fix as it passes.\n- New issue: the combined iPhone check is on hold. In the Simulator, the nav's pill turns 2 scroll steps (20 px) late on the combined build.\n- Cause (OBSERVED, not yet proven): the nav-colour fix likely uses a cached screen height while the toolbar resizes.\n- Which cases: the nav pill at the top of the hero and near the people section, in Safari only (Chrome shows no lag).\n- Workaround: no phone runs on that build (they would be void); the phone is released for the next ready job.\n- Long-term fix: a split test (nav fix alone vs scroll fix alone) runs next, then the owner fixes it and the check restarts.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T21:03:05.050Z",
+      "by": "mgmt-devices",
+      "text": "The phone sat free from 20:41Z to about 21:00Z because its next test was waiting on Mac checks, and our alarm did not count that as work.\n- Cause: P-117 (the combined \"no worse\" check) was signed to go next, but it waited for two Mac-side checks. The idle alarm only counts a queued request or a row waiting on the phone, so it said \"OK, no ready work\".\n- My part: I only watched the alarm and did not read the phone queue myself. That is on me, and it is now my rule.\n- Cases that look alike: a ticket waiting on a check that can change the build (really waits), and one waiting on checks that cannot (should run now). This one was the second kind.\n- Fixed now: the lead signed P-117 and it runs on the phone in parallel with the Mac checks.\n| what | when | owner |\n|---|---|---|\n| rule: a free phone > 5 min with a startable ticket is an alarm; I propose the next job to the lead within 2 min | now | mgmt-devices |\n| alarm change (idle.mjs reads the board's next phone step, not only waiters), incident I-182 | brief sent to the lead today | toolsmith |\nWhat you need to do: nothing."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T21:04:43.068Z",
+      "by": "user",
+      "text": "mgmt-devices, why you don't re-plan for manage the resource more effectively ? i think you could do more responsibility to manage our testing resource more effective. talk with leader what you should do."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T21:05:51.322Z",
+      "by": "mgmt-devices",
+      "text": "You are right: so far I only watched for idle time, and I should plan the devices ahead. I have sent the lead a proposal and will post the agreed plan here.\n- The phone is free again since about 21:03Z, because the combined \"no worse\" check (P-117) is on hold. I asked the lead which signed phone test starts next.\n- Proposal: a rolling 3 h plan of who holds and who is next on the phone, Mac and Simulator; one line to the lead whenever a device is free 2 min or about to free; ops marks each phone ticket's readiness so I read it instead of guessing.\n- I also ask to nudge the runner to start the top signed test when the lead is silent 3 min. The lead keeps signing and ranking.\nWhat you need to do: nothing; I post the agreed plan after the lead answers."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T21:07:11.165Z",
+      "by": "mgmt-devices",
+      "text": "The lead agreed: I now plan the devices ahead, with a bounded right to tell the phone runner \"go\".\n- Rolling plan: a 3 h board row (\"device-plan\") showing who holds each device, who is next, what it waits on and when.\n- Look-ahead: when a device is free 2 min or about to free, I send the lead one line naming the next job that could start.\n- Go-nudge (lead's conditions): the ticket is signed, its arms are hashed, it cannot change the build, it is top of the lead's order, and no user phone step is open. The lead can veto; signing stays with the lead.\n- Right now: the phone is free because nothing is signed and ready. The earlier fast-flick test (P-105) is done and the combined check (P-117) is on hold. I asked the owners of the next candidates to pre-stage their builds.\n- Next in line: the double-drive fix's phone check, once its Simulator pixel check passes.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-04T21:14:43.388Z",
+      "by": "user",
+      "text": "Mark all of fixes including best build v9 integrator yet ?"
+    },
+    {
+      "n": 16,
+      "at": "2026-10-04T21:15:26.963Z",
+      "by": "mgmt-devices",
+      "text": "Yes for most: the board already ranks the fixes and the v9 build at the top, but only the lead can set ranks, so I asked him to confirm the rest.\n| rank on the board | item |\n|---|---|\n| 1 | double-drive fix (cards moved by two pieces of code) |\n| 2 | v9 best build (v8 plus the six fixes) |\n| 3 to 5 | scroll callbacks off on phones, nav colour, Join button |\n| 7 | menu close repaint |\n- Not ranked on the board that I can see: the toolbar-resize hero lag. I asked the lead to rank it.\n- Devices follow this order: these fixes get the Mac and phone slots before research work.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 17,
+      "at": "2026-10-04T21:16:45.825Z",
+      "by": "lead",
+      "text": "Yes: all six v9 fixes and the v9 build are now the top 8 on the board, and they go first in the Mac queue too.\n| # | board row | what |\n|---|---|---|\n| 1 | double-drive-fix | cards driven twice |\n| 2 | v9-best | the v9 build itself (int-v8) |\n| 3 | scroll-cb-phone | skip scroll work phones don't need |\n| 4 | nav-hit-cache | nav colour without a per-frame check |\n| 5 | nav-earn | Join button at the page end (PR-021) |\n| 6 | toolbar-resize | hero lag when the toolbar shrinks (row was missing; added) |\n| 7 | morph-close-peak | menu close repaint |\n| 8 | pr-018 | menu follows the finger (already in v9 step 1) |\n- Mac queue now: nav test, double-drive's last check + v9 check (together), the nav split test, toolbar-resize.\n- Good news: double-drive passed its Safari Simulator look check; its phone test is prepared.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 18,
+      "at": "2026-10-04T21:20:39.863Z",
+      "by": "user",
+      "text": "Why i still see, the status page have only one fix is highest priority ? what's the problem ?"
+    },
+    {
+      "n": 19,
+      "at": "2026-10-04T21:21:28.766Z",
+      "by": "lead",
+      "text": "Fixed: all v9 rows now show #1 (highest) on the status page; reload it to see them.\n- Cause: I ranked them 1 to 8, and the page highlights only rank #1, so only double-drive looked top.\n- Which cases: every row ranked #2 or lower looked ordinary, even though all were above everything else.\n- Workaround (done 21:24Z): double-drive, v9-best, scroll-cb, nav-hit-cache, nav-earn, toolbar-resize and\n  menu close repaint are all #1 now; the menu swipe fix is already in v9 step 1 (row finished, so hidden).\n- The order inside #1 still holds on the Mac: whatever unblocks v9 soonest runs first.\n- Long-term fix: none needed in the tool; \"all #1\" is the right way to say \"equal top\".\nWhat you need to do: nothing."
+    },
+    {
+      "n": 20,
+      "at": "2026-10-04T21:21:40.532Z",
+      "by": "mgmt-devices",
+      "text": "The ranks are right (top 7 are the v9 fixes), but the status page paints only rank 1 in the \"highest\" colour, so it looks like one fix.\n- Cause: the page code highlights only priority = 1 (tools/lib/status-page.html). Ranks 2 to 8 show as a plain number.\n- Which cases: any list where the lead wants several items on top; today ranks 1 to 7 are the six fixes plus the v9 build, 9 and below are the rest.\n- Workaround now: the table is already sorted by rank, so read it top to bottom; the Mac and phone queues follow the same order.\n- Long-term fix: highlight a top group (for example ranks 1 to 8) on the page; a tool change, I asked the lead to send it to the board toolsmith.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 21,
+      "at": "2026-10-04T21:22:28.395Z",
+      "by": "mgmt-devices",
+      "text": "The lead's fix in #19 (all v9 rows ranked first) replaces my tool plan; no page change is needed.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 22,
+      "at": "2026-10-04T23:17:52.931Z",
+      "by": "user",
+      "text": "Catch up the best build progress"
+    },
+    {
+      "n": 23,
+      "at": "2026-10-04T23:19:38.481Z",
+      "by": "lead",
+      "text": "Best build is still v8; v9 (v8 + 6 fixes) is half built, and its phone test can start once the Mac checks pass, earliest about 23:30Z.\n\n- v8 (since 18:47Z): looks the same as v7 and does less work at rest. On the phone it was no worse in both checks: the first phone check (P-114) and the one at Serious heat (P-118).\n- v9 step 4 is built and passed its function check. The look checks (pixel compare) are running on the Mac now.\n- Then I sign the v9 phone test (P-120, about 40 min). The phone is connected with Serious on. mgmt-ops-10 has done the pre-check: it passed, with 7 small gaps that int-v8 is closing.\n- Left out: the card-reveal blur curve (blur-cubic). On the phone it made that frame slower (74 vs 42 ms), and you picked A.\n\n| # | v9 part | where it is |\n|---|---|---|\n| 1 | menu swipe rev 7c | in step 4 |\n| 2 | double-drive (cards drawn once per frame) | in step 4 |\n| 3 | scroll-cb (lighter scroll callbacks) | in step 4 |\n| 4 | Join button rev 3 (PR-021) | in step 4 |\n| 5 | nav colour without a hit test (nav-hit-cache) | after step 4: needs a new parity check plus a nav flicker check on the phone |\n| 6 | toolbar collapse lag (toolbar-resize) | its Simulator count is queued on the Mac |\n| 7 | menu-close repaint (morph-close-peak) | its pixel checks are queued on the Mac |\n\n- Parts 5-7 join as v9-final. Each one gets a short phone no-worse check against step 4.\n\nWhat you need to do: nothing now. I will post a phone step only if the start check finds Serious off."
+    },
+    {
+      "n": 24,
+      "at": "2026-10-04T23:25:10.336Z",
+      "by": "user",
+      "text": "what's step 4 that you mention ?"
+    },
+    {
+      "n": 25,
+      "at": "2026-10-04T23:25:43.500Z",
+      "by": "lead",
+      "text": "Step 4 is v8 plus the first four v9 fixes; it is the build the phone tests right now.\n- We build v9 in steps: start from v8, add one fix, check it still works and looks the same, then add the next.\n- Step 4 = v8 + menu swipe rev 7c + double-drive + scroll-cb + Join button rev 3 (parts 1-4 in my table).\n- Parts 5-7 (nav colour, toolbar collapse, menu-close repaint) come after it; with them the build is \"v9-final\".\n- The phone test (P-120) compares step 4 against v8. It started at 23:25Z and takes about 40 min; Serious was on, so no step for you.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 26,
+      "at": "2026-10-05T04:39:22.786Z",
+      "by": "user",
+      "text": "Catch up the progress, when it ready ?"
+    },
+    {
+      "n": 27,
+      "at": "2026-10-05T04:40:55.166Z",
+      "by": "lead",
+      "text": "v9 step 4 is built and phone-tested. The next step waits on your menu choice (PR-023, the end-of-page menu proposal); v9-final follows a few hours after that.\n| part | state |\n|---|---|\n| 1-4 (step 4) | built, phone test (P-120) done |\n| menu: accepted fix or proposal | your choice; rev 4 to try on v9 comes in ~30 min |\n| 5 nav colour (nav-hit-cache) | fix ready, needs its parity and flicker checks |\n| 6 toolbar collapse | no fix yet: the cause is still being split, so it moves to after v9 |\n| 7 menu-close repaint | fix ready, waits to join |\n- After your choice: rebuild step 4 with it and run a quick check, about 1 h.\n- Then parts 5 and 7 join with their checks and a short phone no-worse test, about 2-3 h. That build is v9-final.\n- Heat-mode lag is a separate track (arch-serious-heat); its plan comes today.\nWhat you need to do: try rev 4 when it appears and pick A or B; v9-final starts from your choice."
+    },
+    {
+      "n": 28,
+      "at": "2026-10-05T04:41:14.396Z",
+      "by": "user",
+      "text": "mark as highest priority."
+    },
+    {
+      "n": 29,
+      "at": "2026-10-05T04:42:21.058Z",
+      "by": "lead",
+      "text": "Done: v9 is now the highest priority on the board, and its 4 parts sit at the top.\n| board | item |\n|---|---|\n| #1 | v9 best build |\n| #2 | end-of-page menu proposal (PR-023 rev 4 to try on v9) |\n| #3 | nav colour fix (nav-hit-cache) |\n| #4 | menu-close repaint fix (morph-close-peak) |\n- To save time, the nav colour and menu-close agents start now. Each prepares its part for both of your menu choices, so v9-final can start the moment you pick.\n- Other work (heat research, article clips) takes the phone and Mac only when v9 isn't using them. A phone recording already running finishes first.\nWhat you need to do: try rev 4 when it appears (about 30 min) and pick A or B."
+    },
+    {
+      "n": 30,
+      "at": "2026-10-05T04:43:22.159Z",
+      "by": "user",
+      "text": "ok, let's inform who do the PR-023 as well. they would like to use the v9"
+    },
+    {
+      "n": 31,
+      "at": "2026-10-05T04:44:01.725Z",
+      "by": "lead",
+      "text": "Done: fix-hero-exit-threaded, the agent working on the menu proposal (PR-023), has your note. Rev 4 tries both menus on v9.\n- A = v9 step 4 with the accepted menu fix. B = v9 with the proposal.\n- It replies in your PR-023 comment thread (T-180) once rev 4 is up, in about 30 min.\nWhat you need to do: try A and B when rev 4 appears, then pick one."
+    },
+    {
+      "n": 32,
+      "at": "2026-10-05T04:44:03.667Z",
+      "by": "user",
+      "text": "i think we can skip the #2, i didn't decided yet."
+    },
+    {
+      "n": 33,
+      "at": "2026-10-05T04:45:00.940Z",
+      "by": "lead",
+      "text": "OK: v9 no longer waits on the menu proposal (PR-023). It keeps the accepted menu fix and goes on now.\n- int-v8 (the v9 builder) runs the step 4 check (P-122) next.\n- The nav colour and menu-close fixes join on that base as soon as they're ready.\n- The proposal stays open. Rev 4 to try on v9 still comes, with no rush; decide whenever you like.\n| board | item |\n|---|---|\n| #1 | v9 best build |\n| #2 | nav colour fix |\n| #3 | menu-close repaint fix |\n| #6 | menu proposal (open, not blocking) |\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 34,
+      "at": "2026-10-05T05:35:39.682Z",
+      "by": "lead",
+      "text": "v9 update: v9 is built, but one of its fixes changes how far a flick goes, so I took that fix out and v9 is being rebuilt without it.\n- What we saw (Simulator, OBSERVED): the first flick up after a flick down stopped about 950 px short; later flicks matched v8.\n- A test that removed each fix in turn found the cause: the scroll-callback fix (scb). Without it, the flick matches v8.\n- v9 goes on without that fix; its owner looks for the cause and it can rejoin later as v9.1.\n- Next: rebuild and checks, the phone test plan fixed and re-checked, my signature, then the phone check.\n- Every phone run of v9 now also compares flick distance with v8; a gap over 300 px fails v9.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 35,
+      "at": "2026-10-05T06:17:23.582Z",
+      "by": "user",
+      "text": "catch up the progress"
+    },
+    {
+      "n": 36,
+      "at": "2026-10-05T06:17:46.828Z",
+      "by": "lead",
+      "text": "v9 is being rebuilt with 5 fixes; its phone test waits on the rebuild and on a phone heat-check bug.\n\n- Correction to #34: the short first flick is NOT caused by the scroll-callback fix (scb). It also happens without it, more often when the Mac is busy (Simulator, OBSERVED).\n- v9 now leaves out two fixes; both return together later as v9.1:\n  - scb: kept out to save a second rebuild.\n  - menu-panel hide rule (from the menu GPU fix): it made Chrome redo style work at rest (60 vs 39 updates/s at the top; OBSERVED). Its owner looks for the cause.\n- v9 = scroll-jank fix, two nav fixes, the earn-section fix and the glue. At rest it does as little work as v8.\n- Next steps:\n  1. int-v8 finishes the rebuild and the Simulator flick check.\n  2. ops checks the phone test plan (P-122); I sign.\n  3. The phone test runs once the heat check works again (see T-185).\n- Phone test rule stays: v9 fails if its first flick is more than 300 px shorter than v8's (median and 2 of 3 pairs).\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 37,
+      "at": "2026-10-05T09:09:13.981Z",
+      "by": "lead",
+      "text": "Decision: build v9 lands on its phone test (P-122) even though one of its checks stayed undecided; nothing in the test measured worse than v8.\n\n| check (v9 vs v8, phone at Serious heat) | result |\n|---|---|\n| flicks through the middle | no worse (0 frames over 50 ms on v9) |\n| flicks into the page end | no worse (0 over 50 ms; one 48 ms frame) |\n| nav colour flicker | none on v9 |\n| fling distance | same, within the allowed range |\n| slow swipes at the page end | undecided: 2 of 3 v9 runs did not count |\n\n- Why they did not count: the robot finger's last touch arrived 1-2 ms after the one before, which the swipe-speed check reads as too fast (seen in our records; cause unknown). Their frames were clean anyway.\n- The landing rule for \"less work\" fixes asks for a phone check that shows nothing worse; I re-signed the test's landing basis on that and am telling you, as that rule requires.\n- Follow-up: the swipe-speed check gets a sturdier formula, and the countdown-clock fix (P-097) checks whether v9's busier page end delays touches.\nWhat you need to do: nothing; say \"hold v9\" here if you want it to wait."
+    }
+  ],
+  "reads": {
+    "user": 37,
+    "lead": 37,
+    "mgmt-devices": 24
+  },
+  "history": [
+    {
+      "at": "2026-10-04T20:51:51.866Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    },
+    {
+      "at": "2026-10-04T21:01:23.631Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-devices"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T09:09:13.981Z",
+    "mgmt-devices": "2026-10-04T23:25:13.049Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "id": "T-153",
+  "title": "Comment on progress blur-cubic \"Card reveal blur with a standard easing curve (PoC 2)\": Which elements that this fix will resolve ?",
+  "anchor": {
+    "page": "progress",
+    "item": "progress:blur-cubic",
+    "label": "Card reveal blur with a standard easing curve (PoC 2)"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T19:25:45.374Z",
+  "updatedAt": "2026-10-04T23:15:22.816Z",
+  "rev": 22,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T19:25:45.374Z",
+      "by": "user",
+      "text": "Which elements that this fix will resolve ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T19:27:47.937Z",
+      "by": "lead",
+      "text": "One element only: the blur fade of the people cards in the \"#people\" section.\n\n- Which cards: the ones that go from blurry to sharp as you scroll into that section (`.start-selling-future-card`).\n- What it changes: the easing curve of that card's blur, nothing else (CSS only). The new curve keeps moving on the iPhone while the page is busy; the old one can freeze (CONFIRMED by WebKit's own notes, F-080).\n- It is NOT in v8. On the phone it made the frame where those cards appear slower:\n\n| | worst reveal frame |\n|---|---|\n| without it (v8 today) | 42 ms |\n| with it | 74 ms |\n\n- Why (OBSERVED, cause not proven): the new curve hands the whole blur to the iPhone's animation engine in one go, so that first frame gets heavier.\n- Its phone test (P-038) is parked; nothing is running for it.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T19:30:32.173Z",
+      "by": "user",
+      "text": "Is it fix conflict with v8 change ? \n\ni guess if we apply both of v8 and this fix. it'll be better than 42ms ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T19:31:09.592Z",
+      "by": "lead",
+      "text": "No code conflict, but adding it to v8 would most likely make that frame slower, not faster.\n\n- Conflict: none. v8 still has the old blur curve on those cards, so the change fits on top of it.\n- Why it would not beat 42 ms: the slowdown comes from the fix itself, not from what it was combined with.\n  - The new curve lets the iPhone hand all of the card's moves (blur, fade, slide up) to its animation engine at once.\n  - Starting all three costs one heavy frame when the cards appear (OBSERVED, cause not proven).\n  - v8 does not change those card moves, so the same heavy frame should come back.\n- Its gentler variant (B, \"prepare the layer early\") was cheaper than the plain fix in the Simulator, but still not cheaper than without it.\n\n| build (phone, frame when the cards appear) | ms |\n|---|---|\n| without the fix (as in v8) | 42 |\n| with the fix | 74 |\n\n- If you want proof on v8: a Simulator-only test of v8 vs v8 + fix, about one 5-min slot. No phone time.\n\nWhat you need to do: reply \"test\" if you want that check; otherwise nothing.",
+      "ask": true
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T19:32:06.146Z",
+      "by": "user",
+      "text": "test"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T19:32:52.681Z",
+      "by": "lead",
+      "text": "Test started; no phone time needed.\n\n- Agent fix-blur-cubic-v8 builds two pages: v8, and v8 + the blur fix.\n- It compares the frame where the people cards appear, in the Simulator.\n- I post the result here when it is in.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T20:40:21.961Z",
+      "by": "lead",
+      "text": "Result: the blur easing change (blur-cubic) makes the frame where the \"people\" section appears about 2x heavier on the newest build (v8). So it stays out of v8.\n\n| build | GPU compose time (median, Simulator ms) | whole frame (median) |\n|---|---|---|\n| v8 | 55 | 90 |\n| v8 + blur-cubic | 111 | 147 |\n\n- 7 runs on v8 and 6 with blur-cubic. No overlap (worst v8 run 68 vs best blur-cubic run 101). The frame before it is unchanged.\n- Simulator times show which build does more work, not the real phone speed.\n- Cause: the cards' slide animation then needs an extra GPU layer.\n- Long-term: the agent is comparing those layers now. Blur-cubic comes back only with a fix for that layer, owned by fix-blur-cubic-v8.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T20:40:38.056Z",
+      "by": "lead",
+      "text": "Correction to my last message: the extra GPU layer is the likely cause, not yet proven. The layer comparison running now decides it, and I'll post the result here.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T20:55:46.327Z",
+      "by": "lead",
+      "text": "Layer check done: with blur-cubic, 4 off-screen profile cards get GPU layers (~48 MB more) in the heavy frame; without it they get none.\n- That fits the extra-layer cause, but it's still a match, not proof: the decisive test (blur-cubic with those layers blocked) is for a later try.\n- Blur-cubic stays out of the next build.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T23:13:51.087Z",
+      "by": "lead",
+      "text": "Final: blur-cubic still makes the people-cards frame about twice as heavy on today's best build (v8), so it stays out.\n\n| Simulator, heavy frame after the cards appear | v8 | v8 + blur-cubic |\n|---|---|---|\n| Composite time, median (runs) | 55 ms (7) | 111 ms (6) |\n| range | 37-68 ms | 101-117 ms |\n\n- The ranges don't overlap. Simulator numbers show structure only, not your phone's gain (OBSERVED in our setup).\n- Same likely cause as before: the eased slide gives 4 off-screen cards GPU layers, about 48 MB more.\n- No errors, page unchanged in the check. The write-up is on main (4ae4dff9); a later try would first block those layers.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 10,
+    "lead": 10
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-04T23:13:51.087Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

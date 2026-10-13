@@ -1,0 +1,148 @@
+{
+  "id": "C-001",
+  "by": "iphone-runner",
+  "kind": "swipe-pair",
+  "title": "Swipe pair 3: which page feels smoother?",
+  "instructions": "On the iPhone, scroll the page from top to bottom with your finger and push past the end a few times, at your normal pace. Do the same on page 2, then pick the smoother one (or same).",
+  "url": "http://192.168.0.55:5537/",
+  "showUrl": false,
+  "meta": {
+    "pair": 3,
+    "redo": "pair 3 page 1 not captured earlier (I-037); full redo, both pages",
+    "key": {
+      "page1": "C mw10e-g :5537 (CSS c6aad94b455f)",
+      "page2": "V mw10e-g-cdwc :5529 (CSS 5dc6e8e37388)"
+    },
+    "owner": "iphone-runner",
+    "for": "fix-nav-morph (cdwc README)"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ]
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.55:5537/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-01T15:32:39.924Z",
+        "ready": "2026-10-01T15:32:51.547Z",
+        "started": "2026-10-01T15:44:36.387Z",
+        "recording": "2026-10-01T15:44:55.482Z",
+        "done": "2026-10-01T15:45:40.146Z"
+      }
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.55:5529/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-01T15:45:47.632Z",
+        "ready": "2026-10-01T15:46:30.895Z",
+        "started": "2026-10-01T15:46:38.584Z",
+        "recording": "2026-10-01T15:46:49.682Z",
+        "done": "2026-10-01T15:47:26.550Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-01T15:32:27.972Z",
+  "queuedAt": "2026-10-01T15:32:27.972Z",
+  "updatedAt": "2026-10-01T15:48:00.679Z",
+  "rev": 12,
+  "history": [
+    {
+      "at": "2026-10-01T15:32:27.972Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-01T15:32:39.924Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-01T15:32:51.547Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-01T15:44:36.387Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T15:44:55.482Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-01T15:45:40.146Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T15:45:47.632Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-01T15:46:30.895Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-01T15:46:38.584Z",
+      "who": "user",
+      "action": "start",
+      "part": 2
+    },
+    {
+      "at": "2026-10-01T15:46:49.683Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-01T15:47:26.550Z",
+      "who": "user",
+      "action": "done",
+      "part": 2
+    },
+    {
+      "at": "2026-10-01T15:48:00.679Z",
+      "who": "user",
+      "action": "answer",
+      "value": "same"
+    }
+  ],
+  "startedAt": "2026-10-01T15:44:36.387Z",
+  "result": {
+    "value": "same",
+    "notes": "hero quite smoother a little bit on page 2, overall, i think they're same",
+    "at": "2026-10-01T15:48:00.679Z"
+  }
+}

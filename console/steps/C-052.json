@@ -1,0 +1,275 @@
+{
+  "id": "C-052",
+  "by": "fix-hero-exit-threaded",
+  "kind": "swipe-pair",
+  "title": "End menu on v8: fast short swipes, two pages",
+  "instructions": "Do your fast short swipes to open and close the end menu, about 8 each way, on each page. At the end, pick the page where opening and closing was easier.",
+  "url": "http://192.168.0.56:56887/",
+  "showUrl": false,
+  "meta": {
+    "key": {
+      "1": "R7C ms-428961bda278 (v8 + rev 7c)",
+      "2": "R7V8 ms-be590dd3766d (v8 + rev 7)"
+    }
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ]
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.56:56887/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-04T20:03:03.366Z",
+        "ready": "2026-10-04T20:03:16.215Z",
+        "started": "2026-10-04T20:03:20.373Z",
+        "recording": "2026-10-04T20:03:29.076Z",
+        "done": "2026-10-04T20:03:46.590Z"
+      },
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-04T19:57:20.105Z",
+            "ready": "2026-10-04T19:57:35.807Z",
+            "started": "2026-10-04T19:57:52.731Z",
+            "recording": "2026-10-04T19:58:55.899Z",
+            "done": "2026-10-04T19:59:21.435Z"
+          },
+          "ended": "restart",
+          "by": "user",
+          "endedAt": "2026-10-04T20:01:54.731Z"
+        }
+      ],
+      "attempt": 2
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.56:56884/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-04T20:03:57.293Z",
+        "ready": "2026-10-04T20:04:07.071Z",
+        "started": "2026-10-04T20:04:11.448Z",
+        "recording": "2026-10-04T20:04:16.732Z",
+        "done": "2026-10-04T20:04:48.096Z"
+      },
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-04T19:59:27.416Z",
+            "ready": "2026-10-04T19:59:42.937Z",
+            "started": "2026-10-04T19:59:45.515Z",
+            "recording": "2026-10-04T20:01:06.528Z",
+            "done": "2026-10-04T20:01:42.955Z"
+          },
+          "ended": "restart",
+          "by": "user",
+          "endedAt": "2026-10-04T20:01:54.731Z"
+        }
+      ],
+      "attempt": 2
+    }
+  ],
+  "createdAt": "2026-10-04T19:57:09.354Z",
+  "queuedAt": "2026-10-04T19:57:09.354Z",
+  "updatedAt": "2026-10-04T20:06:46.090Z",
+  "rev": 23,
+  "history": [
+    {
+      "at": "2026-10-04T19:57:09.354Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-04T19:57:20.105Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-04T19:57:35.807Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-04T19:57:52.731Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T19:58:55.899Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-04T19:59:21.435Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T19:59:27.416Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-04T19:59:42.937Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-04T19:59:45.515Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T20:01:06.528Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-04T20:01:42.955Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T20:01:54.731Z",
+      "who": "user",
+      "action": "restart",
+      "part": 1,
+      "epoch": 1,
+      "attempts": [
+        2,
+        2
+      ]
+    },
+    {
+      "at": "2026-10-04T20:03:03.366Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-04T20:03:16.215Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-04T20:03:20.373Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-04T20:03:29.076Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-04T20:03:46.590Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-04T20:03:57.293Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-04T20:04:07.071Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-04T20:04:11.448Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-04T20:04:16.732Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-04T20:04:48.096Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-04T20:06:46.090Z",
+      "who": "user",
+      "action": "answer",
+      "value": "1"
+    }
+  ],
+  "queueSeq": 11,
+  "startedAt": "2026-10-04T19:57:52.731Z",
+  "epoch": 1,
+  "result": {
+    "value": "1",
+    "notes": "Both page have lag when i do so hard short swipes. but i feel page 2 is worst than page 1.\n\ni'm not sure i bias or not. so you already probe my gestures. i'd like to ask you investigate and report me with the new thread for catch up.",
+    "at": "2026-10-04T20:06:46.090Z"
+  }
+}

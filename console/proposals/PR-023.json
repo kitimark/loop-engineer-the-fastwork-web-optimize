@@ -1,0 +1,277 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-023",
+  "by": "fix-hero-exit-threaded",
+  "title": "End-of-page menu: a long swipe back up leaves the end in one go (rev 7d, phones)",
+  "area": "end",
+  "topic": "morph-scroll",
+  "problem": "With the accepted menu fix, a long swipe back up from the open menu stops at the closed menu.\n- Accepted fix: the end-of-page menu fix you accepted (PR-018 rev 7c).\n- You need a second swipe to leave the end of the page.\n- On the best build without that fix (v8) the same swipe carries on up the page.\n- Our combined test build (v9 step 4) showed this as a regression.",
+  "idea": "One extra rule when your finger lifts: a long or fast swipe back up keeps its own momentum.\n- Long: your finger moved 300 px or more. Fast: 5 px per ms or more.\n- It then scrolls on like a normal page. If it slows down while still at the end, it settles to closed as before.\n- Opening, slow swipes and short closes behave exactly like rev 7c.\n- Your own recorded closes were 74-255 px long and at most about 4 px per ms, so both lines sit above them.\n- Builds (rev 5, on the final v9 as you asked): A = final v9 as it ships (with rev 7c); B = the same final v9 with rev 7d.\n- A and B differ only in this lift-off rule (the same 15 lines as from rev 7c to rev 7d).\n- Both have the nav colour fix; the menu-close repaint fix was left out of v9 (planned for v9.1). Heat mode (Serious) is on.",
+  "looksSame": "Yes in still frames; only the motion of long or fast swipes up from the open menu differs.\n- The change is in the rule that runs when your finger lifts.\n- The styles are byte-identical in A and B (final v9 CSS file e1359ab9994a).",
+  "risk": "A motion change: you decide whether a long swipe up from the open menu should leave the end in one go.\n- On this iPhone only the length rule (300 px) let the robot swipes go; the speed rule never fired.\n- The page read at most 3.6 px per ms on a 560 px swipe in 0.14 s, under the 5 px per ms line (in our setup, cause unknown).\n- Margin: your closes so far were at most 255 px; a robot swipe of 280 px still stopped at the closed menu.\n- So a close of about 300 px or more is now let go, even a slow one if it is long.\n- One robot run per build for each check: counts, not rates.\n- Unchanged on both builds, cause still unknown: now and then a swipe up out of the end glides away and comes back to open.\n- Not run yet: your own finger on this build.\nWhy A and B both felt laggy to you (rev 3, your change request):\n- Your phone was in Xcode's heat mode (Serious) during your try: read at 04:28, right after it. That slows every page on purpose.\n- The lag is shared: A and B differ only in long swipes up. In our robot runs both had the same slow frames, most of them above the menu.\n- Where you felt it, after letting go: in your own swipes on A (4 Oct, normal heat), 13 of 21 slow frames came 0.19-0.22 s after the lift, one or two missed frames each (cause not known yet).\n- Making it smooth in heat mode is a research job (the heat-mode agent); a fix would come to you as its own proposal.\n- Update: the menu-close repaint fix was left out of the final v9; it is planned for v9.1.\n- Workaround now: stop the heat mode (step C-055) to feel the page at normal heat. Choosing A or B does not depend on it.",
+  "visualDiff": [
+    "Motion only: from the open menu, a long or fast swipe back up keeps scrolling up out of the end screen (B). In A it stops at the closed menu.",
+    "Short closes, slow lifts and opens: identical in A and B (robot checks below).",
+    "Still frames: identical (same styles; the change is in the lift-off rule only).",
+    "Nothing changes on desktop, tablets or with reduced motion.",
+    "The chart and the robot counts below come from the v8 builds; on v9 the rule's code is the same.",
+    "The chart: across, 0-3 s after the finger lands (a tick every 0.5 s); down, the page position. Dashed top line = end of page, grey line = closed menu."
+  ],
+  "gain": [
+    {
+      "what": "Long fast swipe up from the open menu",
+      "before": "stopped at closed menu, 3 of 3",
+      "after": "left the end in one go, 3 of 3",
+      "tag": "OBSERVED",
+      "how": "Robot finger on the iPhone (thermal Serious), on v8 builds: 3 swipes of 560 px in 0.14 s per build. One run per build: counts, not rates.",
+      "better": "better"
+    },
+    {
+      "what": "Medium swipe up (250 and 280 px)",
+      "before": "stopped at closed menu, 6 of 6",
+      "after": "stopped at closed menu, 6 of 6",
+      "tag": "OBSERVED",
+      "how": "Robot, 3 x 250 px and 3 x 280 px in 0.12 s: just under the 300 px line, so both builds behave the same.",
+      "better": "same"
+    },
+    {
+      "what": "Fast short flicks at the end (open and close)",
+      "before": "12 of 12 reached their end",
+      "after": "12 of 12 reached their end",
+      "tag": "OBSERVED",
+      "how": "Robot, 12 flicks of 60-200 px in 50-90 ms, the same set as the accepted fix used.",
+      "better": "same"
+    },
+    {
+      "what": "Mixed end-of-page sequence (4 strokes)",
+      "before": "1 came back to open",
+      "after": "1 came back to open",
+      "tag": "OBSERVED",
+      "how": "Robot; the same small-hold miss on both builds (cause still unknown).",
+      "better": "same"
+    }
+  ],
+  "live": {
+    "patch": "fixes/morph-scroll-v9try/patch.diff",
+    "ref": "f387675d",
+    "blob": "c53656376fb3c49ac1029ef84a02b2b1cf1920b7",
+    "base": "site-pretty",
+    "files": [
+      "_app/immutable/assets/2.gBuqKVzi.css",
+      "_app/immutable/nodes/2.DyWL8TcE.js"
+    ],
+    "a": {
+      "patch": "fixes/v9-best/patch.diff",
+      "ref": "fd2ac7dd",
+      "blob": "3cae54bb8254317e774612bb1cf74a8c5408e537",
+      "base": "site-pretty",
+      "files": [
+        "_app/immutable/nodes/2.DyWL8TcE.js",
+        "_app/immutable/assets/2.gBuqKVzi.css"
+      ]
+    }
+  },
+  "compare": {
+    "a": {
+      "label": "Final v9 as it ships (menu rev 7c)"
+    },
+    "b": {
+      "label": "Final v9, long swipe up leaves the end (rev 7d)"
+    },
+    "view": "side",
+    "shots": [
+      {
+        "caption": "iPhone robot, 3 long fast swipes up from the open menu: A stops at the closed menu, B scrolls on 4 screens",
+        "a": "r2-a-1.webp",
+        "aSize": [
+          860,
+          620
+        ],
+        "b": "r2-b-1.webp",
+        "bSize": [
+          860,
+          620
+        ]
+      }
+    ]
+  },
+  "state": "accepted",
+  "rev": 5,
+  "decision": {
+    "value": "accepted",
+    "at": "2026-10-05T10:15:50.685Z",
+    "who": "user",
+    "rev": 5
+  },
+  "decisions": [
+    {
+      "value": "changes-requested",
+      "notes": "I was try to play on phone device. both of Accepted menu fix and proposal are laggy. let's investigate. what's the problem.",
+      "at": "2026-10-05T04:15:01.334Z",
+      "who": "user",
+      "rev": 2
+    },
+    {
+      "value": "changes-requested",
+      "notes": "waiting v9 has landed, then try to build with v9",
+      "at": "2026-10-05T04:45:41.577Z",
+      "who": "user",
+      "rev": 4
+    },
+    {
+      "value": "accepted",
+      "at": "2026-10-05T10:15:50.685Z",
+      "who": "user",
+      "rev": 5
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-05T03:26:17.802Z",
+      "by": "fix-hero-exit-threaded",
+      "note": "first version"
+    },
+    {
+      "rev": 2,
+      "at": "2026-10-05T03:28:37.867Z",
+      "by": "fix-hero-exit-threaded",
+      "note": "Added the robot-swipe chart (page position over time, A and B)."
+    },
+    {
+      "rev": 3,
+      "at": "2026-10-05T04:31:43.760Z",
+      "by": "fix-hero-exit-threaded",
+      "note": "Rev 3: why both felt laggy, answered under Risk.\n- Your phone was in heat mode (Serious) during your try (read 04:28).\n- The lag is shared by A and B; the after-lift stutter is under research.\n- Builds A and B unchanged."
+    },
+    {
+      "rev": 4,
+      "at": "2026-10-05T04:44:53.706Z",
+      "by": "fix-hero-exit-threaded",
+      "note": "Rev 4: Try-it now on v9, as you asked.\n- A = v9 with the accepted menu fix (rev 7c); B = the same v9 with rev 7d.\n- A and B differ only in the lift-off rule; checked, no errors.\n- Neither has the nav colour fix or the menu-close repaint fix yet; heat mode is on."
+    },
+    {
+      "rev": 5,
+      "at": "2026-10-05T09:25:58.962Z",
+      "by": "fix-hero-exit-threaded",
+      "note": "Rev 5: Try-it on the final v9, as you asked.\n- A = final v9 as it ships (menu rev 7c); B = the same final v9 with rev 7d.\n- A and B differ only in the lift-off rule; checked, no errors.\n- Both have the nav colour fix; the menu-close repaint fix is not in v9. Heat mode is on."
+    }
+  ],
+  "createdAt": "2026-10-05T03:26:17.802Z",
+  "updatedAt": "2026-10-05T10:15:50.685Z",
+  "history": [
+    {
+      "at": "2026-10-05T03:26:17.802Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "drafted",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-05T03:28:37.867Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revised",
+      "rev": 2,
+      "note": "Added the robot-swipe chart (page position over time, A and B)."
+    },
+    {
+      "at": "2026-10-05T04:15:01.334Z",
+      "who": "user",
+      "action": "decided",
+      "value": "changes-requested",
+      "rev": 2,
+      "note": "I was try to play on phone device. both of Accepted menu fix and proposal are laggy. let's investigate. what's the problem."
+    },
+    {
+      "at": "2026-10-05T04:15:19.200Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revising",
+      "rev": 2,
+      "note": "Looking for the cause of the lag you felt on both A and B, from our recordings and the phone's state; then I post what I find and a fix plan",
+      "eta": "2026-10-05T05:15:19.198Z"
+    },
+    {
+      "at": "2026-10-05T04:19:32.314Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revising",
+      "rev": 2,
+      "note": "First answer posted under the proposal: the lag is mostly shared by A and B (page above the menu, phone heat setting). Waiting for where you felt it, then rev 3",
+      "eta": "2026-10-05T05:49:32.311Z"
+    },
+    {
+      "at": "2026-10-05T04:25:51.575Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revising",
+      "rev": 2,
+      "note": "Finding what makes the menu stutter about 0.2 s after you let go, with the heat mode on: what runs in that frame (Chrome), then Safari's paint records; then a GPU-style fix",
+      "eta": "2026-10-05T06:25:51.570Z"
+    },
+    {
+      "at": "2026-10-05T04:31:43.760Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revised",
+      "rev": 3,
+      "note": "Rev 3: why both felt laggy, answered under Risk.\n- Your phone was in heat mode (Serious) during your try (read 04:28).\n- The lag is shared by A and B; the after-lift stutter is under research.\n- Builds A and B unchanged."
+    },
+    {
+      "at": "2026-10-05T04:44:53.706Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revised",
+      "rev": 4,
+      "note": "Rev 4: Try-it now on v9, as you asked.\n- A = v9 with the accepted menu fix (rev 7c); B = the same v9 with rev 7d.\n- A and B differ only in the lift-off rule; checked, no errors.\n- Neither has the nav colour fix or the menu-close repaint fix yet; heat mode is on."
+    },
+    {
+      "at": "2026-10-05T04:45:41.577Z",
+      "who": "user",
+      "action": "decided",
+      "value": "changes-requested",
+      "rev": 4,
+      "note": "waiting v9 has landed, then try to build with v9"
+    },
+    {
+      "at": "2026-10-05T04:45:59.781Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revising",
+      "rev": 4,
+      "note": "Rev 5 waits for v9 to land, as you asked; then I rebuild A and B on the landed v9 and post Try-it"
+    },
+    {
+      "at": "2026-10-05T04:46:17.901Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revising",
+      "rev": 4,
+      "note": "Rev 5 by fix-hero-exit-threaded: starts when the final v9 lands (about 3-4 h); A = final v9, B = final v9 + rev 7d",
+      "eta": "2026-10-05T08:46:17.898Z"
+    },
+    {
+      "at": "2026-10-05T08:55:00.358Z",
+      "who": "lead",
+      "action": "revising",
+      "rev": 4,
+      "note": "Rev 5 by fix-hero-exit-threaded starts when v9-final lands; v9's phone test passed its runs at 08:41Z and is being scored now (A = final v9, B = final v9 + rev 7d)",
+      "eta": "2026-10-05T10:55:00.354Z"
+    },
+    {
+      "at": "2026-10-05T09:21:47.691Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revising",
+      "rev": 4,
+      "note": "Rev 5 by fix-hero-exit-threaded: v9 has landed; building B = final v9 with rev 7d, then Try-it",
+      "eta": "2026-10-05T09:51:47.688Z"
+    },
+    {
+      "at": "2026-10-05T09:25:58.962Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "revised",
+      "rev": 5,
+      "note": "Rev 5: Try-it on the final v9, as you asked.\n- A = final v9 as it ships (menu rev 7c); B = the same final v9 with rev 7d.\n- A and B differ only in the lift-off rule; checked, no errors.\n- Both have the nav colour fix; the menu-close repaint fix is not in v9. Heat mode is on."
+    },
+    {
+      "at": "2026-10-05T10:15:50.685Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 5
+    }
+  ],
+  "proposedAt": "2026-10-05T09:25:58.962Z"
+}

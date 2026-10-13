@@ -1,0 +1,275 @@
+{
+  "id": "T-029",
+  "title": "iphone was heat cause fastwork website ?",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-02T22:15:15.146Z",
+  "updatedAt": "2026-10-04T20:23:26.787Z",
+  "rev": 83,
+  "assignees": [
+    "mgmt-ops-10",
+    "mgmt-desk-1",
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-02T22:15:15.146Z",
+      "by": "user",
+      "text": "iphone was heat cause fastwork website ?\n\ni'm not sure. if we try to cooldown them and try to scroll on apple.com with the expensive render page. they'll heat or not ?\n\nif apple.com is not heat. it means the fastwork website may took a lot of computation that raise the heat up. can you investigate it ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-02T22:15:56.278Z",
+      "by": "lead",
+      "text": "Good question. Yes, we can test it, and your apple.com idea is the right control. Today our tests have needed cooling breaks between blocks, but we don't yet know if that is the page or simply \"the phone scrolling for 15 minutes\".\n\nOne thing we already know from the code: the original Fastwork page keeps working even when you don't touch it. The countdown runs an animation every frame (about 0.4-0.6 s of CPU work every 3 s in Chrome), and the hero carousel swaps images every second. That kind of constant work is a typical cause of heat. The countdown fix you just accepted (PR-007) removes most of it.\n\nThe plan (an agent \"de-heat\" writes it down before any data, so the result can't be bent afterwards):\n1. Cool the phone to the same start temperature each time.\n2. Run the same 10-minute routine on each page: rest at the top, then scripted scrolling, again and again. Same brightness, same Wi-Fi, no touching.\n3. Pages:\n   - an almost empty page (the heat floor);\n   - apple.com, a heavy product page with scroll animations;\n   - the original Fastwork page;\n   - the Fastwork page with our accepted fixes.\n4. Measure the battery temperature every 30 s (the same sensor we use for cooling), and if the phone reports it, the battery's power draw.\n5. Compare how fast each page heats the phone.\n\nTwo caveats:\n- The phone is on USB, so it also charges, and charging adds heat. Every page gets the same conditions, so the comparison stays fair, but the absolute numbers are higher than in your hand.\n- apple.com is loaded live from the internet; the Fastwork pages come from our local copy.\n\nIt needs the phone for about an hour including cooling. Right now the phone queue is: the word-alone test (P-065), then the carousel timing test, then the robot-finger menu test. I'll put the heat test after those. If you want it sooner, tell me here and I'll move it first."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-02T22:16:06.290Z",
+      "by": "lead",
+      "text": "Correction to my last message: the 0.4-0.6 s of countdown work per 3 s was measured in Chrome with the CPU slowed 6x, to match the iPhone's scroll jank. On a real phone it is less. It still runs on every frame while the page is open, and that is the point. The heat test will show how much it matters on the phone."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-02T22:18:21.308Z",
+      "by": "user",
+      "text": "If my assumption is yet. there might be our goal that we need to optimize until it less computation. in the other hand, the iphone should cooler than existing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-02T22:18:36.152Z",
+      "by": "lead",
+      "text": "Agreed. If the test shows Fastwork heats the phone more than apple.com, then 'less work, cooler phone' becomes a goal next to 'smooth'. In practice:\n(1) The heat test gets a target, set before any data: the fixed Fastwork page should heat the phone no faster than apple.com, and as close to the empty page as we can get.\n(2) For every fix we already count the main-thread work while the page sits still (the countdown fix cut it the most). From now on that number is reported as 'work at rest' on each fix, so you can see which fixes also cool the phone.\n(3) The biggest remaining always-on work after the countdown is the hero carousel's image swap every second. The carousel test (S7) is next in the phone queue.\nI'll show you the first heat result here when it's in."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-02T22:42:39.488Z",
+      "by": "lead",
+      "text": "Update: the heat test plan is written down before any data (prediction P-068). Pages: an almost empty local page; a live apple.com product page with a lot of scroll animation, inline video and sticky parts (MacBook Pro); the original Fastwork page; and Fastwork with the fixes landed so far (the countdown fix isn't in this one yet, it needs merging first). Each page gets 3 minutes resting at the top, then repeated scrolling, with the battery temperature read every 30 s. To make the comparison fair (same start temperature, order reversed in the second half), it now takes two sessions of about 1 h each instead of one. It runs after the carousel test (running now) and the robot-finger menu test. A second reviewer checks the plan first."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-02T22:48:28.302Z",
+      "by": "lead",
+      "text": "A small question for the heat test (no hurry): the phone sits on the cable at 80 % and doesn't charge further, so it looks like the iPhone's charging limit is on (Settings > Battery > Charging: 80 % limit, or Optimized Battery Charging). Can you tell me which one it is? Please leave it as it is during the test. 'Held at 80 %, not charging' is the best state for a fair heat comparison, and the test checks it before every segment."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-02T22:49:15.528Z",
+      "by": "user",
+      "text": "Held at 80 %, not charging"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-02T22:49:24.289Z",
+      "by": "lead",
+      "text": "Thanks. Then the test runs every page in that state (held at 80 %, not charging), and checks it before each segment."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-02T23:52:41.157Z",
+      "by": "user",
+      "text": "What's about the progress ?"
+    },
+    {
+      "n": 11,
+      "at": "2026-10-02T23:52:54.004Z",
+      "by": "lead",
+      "text": "Progress on the heat question (does Fastwork heat the phone more than apple.com?):\n- The test is fully planned and ready. It compares 4 pages on the phone: a nearly empty page (the floor), <device-name>(live), the original Fastwork page, and today's best build.\n- How: each page gets 6 min (3 min resting, then scrolling), and the phone's battery temperature is read every 30 s. Two sessions of about 1 h each, the second in reverse order, so warming over time cancels out. The phone stays on the cable, held at 80 % (not charging), as you confirmed.\n- Your phone settings (C-027) are done, thanks.\n- When: the phone is busy with two short tests first: the countdown fix (running now, about 25 min), then the menu fix F3 (about 30 min). Then the heat test starts. First results in roughly 2.5-3 h, the full answer after the second session.\nIf Fastwork turns out to heat the phone more than apple.com, 'less work at rest' becomes part of the goal, as you said."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-02T23:53:12.194Z",
+      "by": "lead",
+      "text": "Small fix: the console's privacy filter hid part of my message. '<device-name>' above means apple.com's laptop product page, the one with lots of scroll animation."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-03T07:18:29.373Z",
+      "by": "user",
+      "text": "What's about this progress ?"
+    },
+    {
+      "n": 14,
+      "at": "2026-10-03T07:19:10.101Z",
+      "by": "lead",
+      "text": "Sorry, I owed you this answer: the heat test finished this morning (both 1-hour sessions, 01:33-03:34Z), and I didn't post it here.\n\nAnswer: yes, your guess was right. The Fastwork page heats the iPhone much more than apple.com, and our fixes already cool it noticeably.\n\nHow fast the phone warmed (battery temperature, °C per minute, same start temperature, two sessions):\n- nearly empty page (the floor): -0.09 / -0.11 (it cools slightly)\n- apple.com MacBook Pro page (heavy scroll animations, video): +0.06 / -0.01, barely above the empty page\n- original Fastwork page: +0.62 / +0.40\n- Fastwork with our fixes so far: +0.19 / +0.24\n\nAbove the empty page, the original Fastwork page warms the phone about 5 times as much as apple.com. Most of that is work the page does while nobody touches it: during the 3 minutes resting at the top, Fastwork heated the phone and apple.com didn't. Our fixes remove about a third to two thirds of the extra heat (32 % and 61 % in the two sessions). This build did NOT yet have the countdown fixes.\n\nBoth verdicts (\"Fastwork heats more\", \"the fixes cool the phone\") passed the rules written down before the test, in both sessions.\n\nLimits: one iPhone, on the cable held at 80 %; apple.com was the live site.\n\nWhat we do with it: as you said, \"less work at rest, cooler phone\" is now a goal next to \"smooth\". The biggest remaining always-on work is the countdown (the strips, the GPU roll and the 3-face fixes now in progress), then the hero carousel, then the glint/sweep in the platform section. Once the countdown fixes land, I'd like to repeat a shorter heat test (original vs the new build vs apple.com) to show you how much cooler it gets."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-03T07:20:22.342Z",
+      "by": "user",
+      "text": "Do you have any propose to improve this better ?"
+    },
+    {
+      "n": 16,
+      "at": "2026-10-03T07:20:45.908Z",
+      "by": "user",
+      "text": "Maybe measurement protocol ?"
+    },
+    {
+      "n": 17,
+      "at": "2026-10-03T07:21:59.570Z",
+      "by": "lead",
+      "text": "Yes. Here is the plan to make the phone cooler, all with the same look (pixel-identical, your rule). The idea: the page should do almost no work while nobody touches it.\n\nWhat still runs while the page sits still (from our \"work at rest\" count on today's best build, by section):\n- Top: the countdown (every frame) and the carousel tick (already made cheaper).\n- Middle (#people, the typing text and the count-up numbers, \"agents typing\"): JavaScript asks for a new frame very often even when the text only changes a few times per second.\n- Platform section at the end: the colour \"sweep\" titles and the small light glint redraw every frame.\n\nProposals:\n1. Countdown (in progress, 3 fixes): digit strips, the roll on the GPU, and the 3-face version that stops when nobody can see it. This is the biggest part at the top.\n2. Glint + sweep (started now, agent fix-platform-idle): move both to the GPU with the same pixels. Our count showed this makes the whole end section idle (120 redraws per 2 s down to 5). I had parked these as \"battery only\"; with your heat result they are now worth doing.\n3. Middle-section effects (started now, a code-mapping agent): find which typing / count-up loops ask for frames every frame although the visible text changes only a few times per second, and whether they keep running off-screen or in a background tab. Then fix them so each change happens at exactly the same moment, just without the idle frames in between.\n4. Then the proof: repeat the heat test (shorter: original vs the new build vs apple.com) once 1-3 land, so you see the real difference on your phone, not just our counts.\n\nNothing here changes how the page looks; anything that can't be made identical comes back to you as a proposal first."
+    },
+    {
+      "n": 18,
+      "at": "2026-10-03T07:26:36.959Z",
+      "by": "user",
+      "text": "I wonder when we test on iphone device and simulator with full page render. they will raise up the battery heat and hard to measure about each fix propose.\n\ni think we could revise the measurement plan or not ? \n\nMy idea, measure with specific element that each fixed focus. maybe sometime including related elements for focus only animation performance. i'd expect this specific test will not get the noise from iphone battery heat.\n\nAsk team to research, investigate, distinguish and plan. what we have to do more measurement proper."
+    },
+    {
+      "n": 19,
+      "at": "2026-10-03T07:27:40.394Z",
+      "by": "lead",
+      "text": "Good point, and yes, we'll revise it. I've started a planning agent (arch-isolated-measure) on exactly your question.\n\nWhat we already do against heat: since yesterday most checks are counts (how many times Safari re-lays out, repaints, how many GPU layers), not milliseconds, and counts barely change when the phone is warm. Phone timing tests use a fixed start temperature band (e.g. 40-41 °C), a \"sentinel\" run that must still be smooth, and cooling breaks. That works, but it costs a lot of phone time, as you saw.\n\nWhat the agent plans:\n1. Which numbers the heat actually disturbs (milliseconds, fps) and which it doesn't (counts of layouts/repaints/layers, idle frames).\n2. Your idea: a test page with only the element a fix touches (e.g. just the countdown, or the hero with its neighbours), measured alone on the phone and the Simulator. That isolates each fix and heats the phone much less.\n3. One catch it must check: on this page much of the cost is \"the whole page has to be redrawn because one small thing moved\". An isolated element can hide that. So the plan pairs isolated tests (to see what a fix does) with a short full-page check (to confirm the page gains the same), and tests that on one fix first (the countdown) before it becomes the rule.\nI'll show you the plan here before we switch."
+    },
+    {
+      "n": 20,
+      "at": "2026-10-03T07:44:05.139Z",
+      "by": "user",
+      "text": "Which agents doing this plan ?"
+    },
+    {
+      "n": 21,
+      "at": "2026-10-03T07:44:20.406Z",
+      "by": "lead",
+      "text": "The agents on the heat plan (you can follow each on the console's Status page under these names):\n- arch-isolated-measure: the measurement plan you asked for (heat-proof tests, testing one element alone). Status: checking its ideas against Apple/WebKit documentation; then the written plan, which I'll show you here.\n- fix-platform-idle: glint + colour sweep in the platform section on the GPU, same pixels. Status: researching (first checks on Chrome and the Simulator).\n- fix-rest-script: the people-section avatars stop working while off screen, plus small count-up savings, all pixel-identical. Status: just started.\n- map-rest-script: the code map that found those loops. Done.\n- The countdown agents (fix-cd-strip, fix-cd-roll-ca, de-countdown): the countdown is the biggest always-on work; they cut heat as well as lag.\n- de-heat ran the heat test (P-068) and will run the repeat test once these land."
+    },
+    {
+      "n": 22,
+      "at": "2026-10-03T07:52:25.222Z",
+      "by": "lead",
+      "text": "The measurement plan you asked for is ready (agent arch-isolated-measure). In short:\n\nWhat we learned\n1. Heat disturbs our numbers less than feared: in 179 phone runs between 34 and 42 °C, results for the same build did not change with temperature; all 67 control checks passed; no run dropped to half speed. What heat really costs us is waiting time for cooling, plus a risk of behaviour that only appears when hot.\n2. Your idea works for \"how much work does this element cause\": pause everything else on the real page and measure just the countdown (or any element). In a first Chrome check the countdown's style-work saving came out the same (826-862) in all four ways we tried. No phone needed.\n3. Its limit: it can't tell whether the page FEELS smoother, because on this page the cost of each frame is mostly the whole page's. So smoothness stays a full-page test.\n4. One trap we avoid: heavier pages heat the phone themselves, so we match the temperature at the START of each run, never at the end (that would hide a fix's cooling benefit).\n\nNew order (proposal)\n- Element alone (rest of the page paused) in Chrome + Simulator -> full page in Chrome + Simulator -> one short warm phone check per question (20-40 min). Finger tests and hot-only checks stay on the phone.\n- For you: fewer and shorter phone sessions. First a pilot on the countdown (about 15 min of Mac time, no phone); the plan is dropped if the element-alone numbers don't predict the full-page numbers.\n\nFive questions for you (answer any; my suggestion in brackets):\n1. When a fix's benefit is \"the page does less work\", is it enough to land it with: fewer work counts on the full page (Chrome + Simulator) + one short phone check that it still feels smooth? Or do you want a measured smoothness win on the phone for every fix? [the first; smoothness wins stay for the big fixes 1-3]\n2. Phone checks warm (38-40 °C, like everyday use of this page) or cool? [warm: no difference seen, and no cooling waits]\n3. May we try Xcode's \"pretend the phone is hot\" setting once (~10 min) to test hot-only behaviour without real heat? [yes]\n4. Low Power Mode: Safari draws at half speed there, a different page rather than a slower one. Test it as its own question, or leave it out? [leave out for now]\n5. For the countdown: is a test page with ONLY the countdown (looking exactly the same, never shipped) fine as a test tool, or only \"pause the rest of the real page\"? [pause the rest by default; the alone-page only if needed]",
+      "ask": true
+    },
+    {
+      "n": 23,
+      "at": "2026-10-03T07:59:05.890Z",
+      "by": "user",
+      "text": "My propose is if we try to focus on how to optimize at the best each elements, they'll not facing about phone heat and waiting for cooling.\n\nSo, the animation performance optimization measurement. they could not just test on full-page. they could measure from the real complexity rendering analysis\n\nIt doesn't means we will not test on full-page. full-page still need to test but less. \n\nLet's investigate, our measurement can do better than this ?"
+    },
+    {
+      "n": 24,
+      "at": "2026-10-03T08:00:50.342Z",
+      "by": "lead",
+      "text": "Yes, we agree, and most of it is already being built. Here is where it stands and what we'll add.\n\nALREADY DONE OR RUNNING (agent: arch-isolated-measure, plan saved in research/architecture/isolated-measurement/)\n- Each fix gets measured on its own element, with the rest of the page frozen (still drawn, nothing moving). These numbers don't depend on how hot the phone is: how many times the element's code runs, how much layout and repaint it causes per countdown tick, how many GPU layers it uses, and whether it keeps the page drawing when nothing should move.\n- These run in Chrome and the iPhone Simulator, so no real phone and no heat.\n- A pilot is running now on the 3 countdown fixes. It checks one thing: does \"element alone\" predict \"element on the full page\"? If yes, element-only becomes the default way to judge a fix. If no, we'll tell you which numbers don't carry over.\n\nWHAT WE'LL ADD (your idea of \"real rendering complexity\")\n- A rendering cost card for each fix. It's one short report per animated element, before and after the fix:\n  1. which thread runs it (GPU by itself, or script/main thread every frame);\n  2. how many layers it uses and how much GPU memory;\n  3. how much area it repaints, and how often;\n  4. how much layout it causes per frame or per tick;\n  5. how much script it runs per frame or per tick.\n- All of it comes from Chrome and the Simulator, with no phone and no heat. It shows the cost itself, not just \"smooth or not\".\n\nTHE FULL PAGE AND THE REAL PHONE: LESS, NOT ZERO\n- The real phone is used only at the end: one short check per fix (about 20-40 min) to confirm it holds on the device and feels smooth to your finger.\n- No more long phone sessions that heat it up and then wait for cooling.\n- Heat-free measurements now come first.\n\nOne thing I still need from you: the 5 short questions in my previous message (#22). Your answers set the final rules. If you'd rather not decide, I'll use my recommended answer for each."
+    },
+    {
+      "n": 25,
+      "at": "2026-10-03T08:02:54.226Z",
+      "by": "user",
+      "text": "Maybe we might use Safari Webkit on macbook pro for doing measurement of \"real rendering complexity\" on the safari desktop engine. it may give some hint."
+    },
+    {
+      "n": 26,
+      "at": "2026-10-03T08:03:18.731Z",
+      "by": "lead",
+      "text": "Good idea. I've asked the measurement planning agent (arch-isolated-measure) to check it as one more heat-free step, beside Chrome and the iPhone Simulator.\n\nWHY IT COULD HELP\n- Safari on the Mac uses the same engine family as the iPhone (WebKit). Chrome uses a different one. So it could show WebKit-side costs that Chrome can't, for example how many layers WebKit makes and what it repaints.\n- It runs on the Mac with no phone, so there's no battery heat and no waiting for cooling.\n\nWHAT MUST BE CHECKED FIRST (not known yet, so I won't claim it)\n1. How close is Mac Safari to iPhone Safari for these numbers? The engine is shared, but scrolling, touch, the screen and the GPU differ. We'll compare its counts with the Simulator's on the same build. If they agree, it's a useful extra source.\n2. Can we read the numbers automatically, without someone clicking in the Web Inspector? Options to check: Safari's own automation driver, Safari Technology Preview, or an open-source WebKit build. The agent will find out which one gives layer, paint and layout counts.\n3. The page must look like the phone's (430 px wide, retina). Safari's Responsive Design Mode or a window of that size should do it. To be verified.\n\nSafari runs on the Mac's own processor, so these runs will take turns with the Chrome measurements, the same way as now. No camera and no screen recording are involved.\n\nI'll tell you the result in this thread: yes, use it (and for what), or no (and why)."
+    },
+    {
+      "n": 27,
+      "at": "2026-10-03T08:48:27.962Z",
+      "by": "lead",
+      "text": "Results of the heat-free measurement trial, plus the Mac Safari answer.\n\n1. CAN WE MEASURE ONE ELEMENT ALONE INSTEAD OF THE FULL PAGE? Mostly yes.\nTrial on the 3 countdown fixes: the rest of the page is frozen and only the countdown runs, then the result is compared with the full page.\n- Style, layout and repaint work: the frozen page predicted the full-page change for all 3 fixes, in Chrome and in the iPhone Simulator.\n- Script work: the first try failed because we counted per 4-second window, and some windows catch more digit rolls than others. A second test, written down before any data, counted per countdown second instead and passed for all 3 fixes.\n- One limit: work that depends on frames (how many frames get drawn) must still come from the full page. Other animations keep drawing frames there, and a frozen page can't show that.\nSo for each fix: element-alone numbers for the element's own work, full-page numbers for frames, and one short phone check at the end.\n\n2. THE RENDERING COST REPORT YOU ASKED FOR\n- Its design is finished (5 fields: GPU or main thread, layers and memory, repaint area and how often, layout, script).\n- A tool agent (ts-costcard) is now building it as one shared command, so every fix gets the same report.\n- Fix 3 is the first fix to get one, with a separate entry for the very first pin on a freshly opened page.\n\n3. MAC SAFARI: NO\n- Its engine takes different paths for layers and tiles on Mac than on iPhone, so its numbers wouldn't stand for the iPhone (checked against WebKit's own source).\n- Without installing anything, there is no way to read its numbers without a person clicking in the Web Inspector.\n- The iPhone Simulator already gives us the same kinds of numbers (layers and timeline), from the iPhone's own engine.\n- My recommendation: install nothing for this, and keep using the Simulator. Tell me if you'd still like to try it.\n\nStill open from #22: the 5 short questions. If you don't answer them, I'll use my recommended answer for each."
+    },
+    {
+      "n": 28,
+      "at": "2026-10-03T08:50:49.701Z",
+      "by": "user",
+      "text": "Can you recap 5 short questions and what's the recommend ?"
+    },
+    {
+      "n": 29,
+      "at": "2026-10-03T08:51:19.898Z",
+      "by": "lead",
+      "text": "The 5 questions, each with my recommendation. A short reply like \"1 yes, 2 warm, 3 yes, 4 leave out, 5 no\" is enough. If you say nothing, I'll go with these.\n\n1. LANDING RULE. When a fix's benefit is \"the page does less work\", is that enough to land it? Proof = fewer work counts (from the new cost report, Chrome and Simulator), plus one short phone check that it doesn't feel worse. Or do you want a measured smoothness win on the phone for every fix?\n   Recommend: YES for heat and \"less work\" fixes. For the 3 smoothness fixes you rank highest (hero fade-out, countdown strips, F3), still a phone check plus your own finger test, because \"feels smoother\" is their whole point.\n\n2. WARM OR COOL PHONE? Should phone checks start warm (38-40 °C, like everyday use, since this page warms the phone) or cool?\n   Recommend: WARM. Our runs show no smoothness change between 34 and 42 °C, and starting warm saves most of the cooling waits.\n\n3. XCODE'S \"PRETEND THE PHONE IS HOT\" SETTING. May we try it once, about 10 minutes? Xcode can tell the phone it's hot without real heat. It might let us test hot-only behaviour without heating the phone. Whether Safari really slows down under it is unknown; the trial would show that.\n   Recommend: YES, one 10-minute trial. The setting is switched off again at the end, and the result is reported to you.\n\n4. LOW POWER MODE. It makes Safari draw at half speed, so it's a different page, not just a slower one. Test it as its own question, or leave it out?\n   Recommend: LEAVE IT OUT for now. We already record whether it's on and drop those runs. We can add it later if you want the page checked for people who use it.\n\n5. COUNTDOWN-ONLY TEST PAGE. Is a page showing only the countdown, looking exactly the same, fine as a test tool? It would never ship.\n   Recommend: NO, not needed anymore. This morning's trial showed that freezing the rest of the real page works for the countdown, which is cheaper and closer to the real thing.",
+      "ask": true
+    },
+    {
+      "n": 30,
+      "at": "2026-10-03T08:52:48.638Z",
+      "by": "user",
+      "text": "Ok. go with your recommendation."
+    },
+    {
+      "n": 31,
+      "at": "2026-10-03T08:53:52.160Z",
+      "by": "lead",
+      "text": "Done. Your decisions are saved as standing rules for every agent:\n1. 'Does less work' fixes can land on the work counts plus a short phone check that nothing feels worse. Hero fade-out, countdown strips and F3 still get a phone check and your finger test.\n2. Phone checks now start warm (38-40 °C), with no more cooling to a cold start.\n3. The phone runner is planning the one 10-minute Xcode 'pretend hot' trial. If it can only be switched in Xcode's window, I'll post it to you as a console step. It runs when the phone is free, not during the hero fade-out test, and the setting is switched off again afterwards.\n4. Low Power Mode is left out.\n5. No countdown-only test page."
+    },
+    {
+      "n": 32,
+      "at": "2026-10-03T09:13:48.383Z",
+      "by": "lead",
+      "text": "Thermal trial result (the 10-min Xcode 'Serious' test you approved in #30):\n\nXcode's simulated 'Serious' heat setting changed nothing measurable on this page. Every run started warm (about 38 °C) and scrolled the original page the same way:\n- Normal, before: 53.5 fps while scrolling, 6 frames slower than 50 ms; bottom 60 fps.\n- Serious, run 1: 52.3 fps, 5 slow frames; bottom 60 fps.\n- Serious, run 2: 52.4 fps, 5 slow frames; bottom 60 fps.\n- Normal, after: 52.6 fps, 7 slow frames; bottom 60 fps.\nSafari's frame loop stayed at 59 Hz throughout (it did not drop to 30).\n\nWhat it means:\n- The simulated setting is no stand-in for a really hot phone, so we won't use it to save cooling time.\n- We can't prove the setting reached Safari: no command line can read it (that answers your C-028 note). The only proof is your Xcode panel.\n- WebKit's code has a 'halve the frame rate when hot' switch, but only for its strongest heat level. Whether iOS Safari turns it on is unknown.\nAll of this is our own observation from 2 runs each way.\n\nNothing changes in the plan: phone checks keep starting warm at 38-40 °C."
+    },
+    {
+      "n": 33,
+      "at": "2026-10-03T13:41:48.786Z",
+      "by": "lead",
+      "text": "Heat fix 'script work at rest' (rest-script) is parked. Its last version cut the work while the image slider is out of view by about half in Chrome (main-thread frames 31 to 17 and paints 34 to 0-3 per 2 s) and passed every pixel check in Chrome. On the iPhone Simulator, though, one avatar in the slider comes out slightly sharper than on the current site (5,131 px, invisible to the eye, cause unknown). Our rule is pixel-identical, so it stops here. If your decision on the pixel tolerance proposal (PR-010) accepts this kind of tiny difference, we can pick it up again; otherwise it stays parked. The other heat fix (platform-idle) is finishing its review fixes."
+    },
+    {
+      "n": 34,
+      "at": "2026-10-04T07:58:58.548Z",
+      "by": "mgmt-ops-10",
+      "text": "This is now the one thread for phone heat (your request in T-024 #13).\n- Merged here and closed: T-039 (Xcode 'Serious' heat setting and reading it from a command). You can still read it or reopen it.\nWhat you need to do: nothing. Ask here about heat."
+    },
+    {
+      "n": 35,
+      "at": "2026-10-04T10:57:35.795Z",
+      "by": "user",
+      "text": "Catch up this progress"
+    },
+    {
+      "n": 36,
+      "at": "2026-10-04T11:05:27.292Z",
+      "by": "mgmt-desk-1",
+      "text": "Catch-up on phone heat: both heat fixes are done; the heat test itself (milestone 2) starts after the top-3 smoothness fixes.\n\n| heat fix | state |\n|---|---|\n| Shimmering security panel on the GPU (platform-idle) | landed, in today's best build; phone check: no worse |\n| Script work at rest (rest-script) | revived after your pixel rule (PR-010); phone check passed (no new slow frames); goes into the next best build, v7 |\n| Countdown that stops its hidden work | being built (no hidden animation, timers pause off screen) |\n\n- All phone checks now run on a warm phone (real \"Serious\" heat level), as you decided.\n- Milestone 2 (stay smooth from a 42-44 °C start and under Xcode's Serious setting) starts once hero, countdown and the mid-page hitch (F3) are smooth; F3 is the last one.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 36,
+    "lead": 35,
+    "mgmt-ops-10": 35,
+    "mgmt-desk-1": 36,
+    "mgmt-desk-2": 35
+  },
+  "history": [
+    {
+      "at": "2026-10-04T07:58:44.253Z",
+      "who": "mgmt-ops-10",
+      "action": "assign",
+      "note": "mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T11:04:51.918Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-1"
+    },
+    {
+      "at": "2026-10-04T14:04:50.567Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    },
+    {
+      "at": "2026-10-04T20:23:26.787Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T10:57:37.108Z",
+    "lead": "2026-10-04T11:04:41.660Z",
+    "mgmt-desk-1": "2026-10-04T11:05:27.292Z",
+    "mgmt-desk-2": "2026-10-04T14:04:52.237Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

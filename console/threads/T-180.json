@@ -1,0 +1,99 @@
+{
+  "id": "T-180",
+  "title": "Comment on PR-023 \"End-of-page menu: a long swipe back up leaves the end in on…\": What's adoption from rev 2 ?",
+  "anchor": {
+    "page": "proposals",
+    "item": "PR-023",
+    "label": "End-of-page menu: a long swipe back up leaves the end in one go (rev 7d, phones)"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T04:36:49.792Z",
+  "updatedAt": "2026-10-05T09:41:24.647Z",
+  "rev": 20,
+  "assignees": [
+    "fix-hero-exit-threaded"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T04:36:49.792Z",
+      "by": "user",
+      "text": "What's adoption from rev 2 ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T04:37:06.984Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "Nothing new to adopt: rev 3 changes no code. Builds A and B are exactly the rev 2 builds.\n- Rev 3 only adds text under Risk, answering your note that both felt laggy.\n- Your phone was in heat mode (Serious) during your try; the lag is the same in A and B.\n- The small stutter right after you let go has no known cause yet; the heat-mode research agent is on it.\n- Correction: the menu-close repaint fix is planned for build v9, not in it yet.\n| | rev 2 | rev 3 |\n|---|---|---|\n| A (accepted menu fix) | same | same |\n| B (long swipe up leaves the end) | same | same |\n| lag explanation | none | added |\nWhat you need to do: decide PR-023 (A or B) when you like; your rev 2 try still applies."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T04:38:14.008Z",
+      "by": "user",
+      "text": "Can you try on v9 ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T04:38:36.242Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "Yes, it can be done, but B on v9 needs a v9 rebuild first, so I passed it to the lead.\n- A on v9 exists: v9 step 4 (v8 + your accepted menu fix + 3 other fixes) is built and checked.\n- B on v9 (v9 with the long-swipe change) is not built yet; v9 waits on this very decision.\n- Note: v9 step 4 does not yet have the nav colour fix or the menu-close repaint fix, so some lag stays on both.\n- The lead decides whether to build v9 with B now, just for your Try-it.\nWhat you need to do: nothing now; the lead answers here."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-05T04:38:51.387Z",
+      "by": "user",
+      "text": "They might adopt already. apply v9 plus your propose. it might be better."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-05T04:39:40.866Z",
+      "by": "lead",
+      "text": "Yes. We're building v9 with the proposal, so you can try both on v9. Expect the new version of this proposal (rev 4) in about 30 min.\n| step | who | ETA |\n|---|---|---|\n| build v9 + proposal (B) | fix-hero-exit-threaded | ~20 min |\n| post rev 4 with Try-it A and B on v9 | fix-hero-exit-threaded | ~10 min after |\n- A = v9 step 4 as built, with the accepted menu fix. B = the same build with the proposal in place of that fix.\n- Neither build has the nav colour fix or the menu-close repaint fix yet, so some lag stays on both.\n- The phone is still in heat mode (Serious). This is your test setting, so lag shows more than at normal heat.\nWhat you need to do: nothing now; try A and B when rev 4 appears on the Proposals page."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-05T04:45:15.417Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "Done: PR-023 rev 4 is up, with Try-it on v9.\n- A = v9 with the accepted menu fix (rev 7c); B = the same v9 with the long-swipe change (rev 7d).\n- I checked the served pages: they differ only in that lift-off rule; no errors.\n- Neither has the nav colour fix or the menu-close repaint fix yet, and heat mode is on.\n- Phone links (your Wi-Fi): A http://lan:6410/ and B http://lan:6414/ (also on the Proposals page).\n- v9 itself goes on with rev 7c, so there's no rush on this decision.\nWhat you need to do: try A and B when you like, then decide PR-023."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-05T04:46:21.820Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "Rev 5 waits for the final v9, as you asked.\n- I build rev 5 when the final v9 lands, in about 3-4 h. It adds the nav colour fix and the menu-close repaint fix.\n- A = final v9; B = final v9 with the long-swipe change (rev 7d).\n- Rev 4's Try-it pages stay up in the meantime.\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-05T09:26:15.646Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "PR-023 rev 5 is up: Try-it on the final v9, as you asked.\n- A = final v9 as it ships (menu rev 7c); B = the same final v9 with the long-swipe change (rev 7d).\n- I checked the served pages: they differ only in that lift-off rule; no errors.\n- Both have the nav colour fix. The menu-close repaint fix is not in v9 (planned for v9.1). Heat mode is on.\n- Phone links (your Wi-Fi): A http://lan:6411/ and B http://lan:6412/ (also on the Proposals page).\nWhat you need to do: try A and B when you like, then decide PR-023."
+    }
+  ],
+  "reads": {
+    "user": 9,
+    "fix-hero-exit-threaded": 9,
+    "lead": 6
+  },
+  "history": [
+    {
+      "at": "2026-10-05T04:36:49.792Z",
+      "who": "console",
+      "action": "assign",
+      "note": "fix-hero-exit-threaded (author of PR-023)"
+    },
+    {
+      "at": "2026-10-05T04:38:39.218Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "escalate",
+      "note": "User wants PR-023 Try-it on v9. A = v9 step 4 (rev 7c) exists; B = v9 step 4 rebuilt with rev 7d (2065a394) needs int-v8. Your call: build v9s4-7d now for Try-it before the decision?"
+    }
+  ],
+  "readsAt": {
+    "fix-hero-exit-threaded": "2026-10-05T09:26:15.646Z",
+    "lead": "2026-10-05T04:39:40.866Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

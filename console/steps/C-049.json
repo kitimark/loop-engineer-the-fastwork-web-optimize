@@ -1,0 +1,163 @@
+{
+  "id": "C-049",
+  "by": "fix-hero-exit-threaded",
+  "topic": "pr-018-menu-morph",
+  "kind": "swipe-pair",
+  "title": "PR-018: fast short swipes on the end menu, two pages",
+  "instructions": "Do your fast short swipes to open and close the end menu, about 8 each way.\n- The phone starts at the end of the page, menu closed; swipe when the page says so, then tap Done.\n- At the end, pick the page where opening and closing was easier.",
+  "url": "http://192.168.0.56:51367/",
+  "showUrl": false,
+  "meta": {
+    "key": {
+      "1": "R7 ms-0b87602cab0c",
+      "2": "R6D ms-49c2317ecf98"
+    },
+    "capture": "fixes/morph-scroll/finger-capture.mjs"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ],
+    "scale": {
+      "min": 1,
+      "max": 5,
+      "label": "How big was the difference?"
+    }
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.56:51367/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-04T18:48:23.917Z",
+        "ready": "2026-10-04T18:48:44.160Z",
+        "started": "2026-10-04T18:52:00.840Z",
+        "recording": "2026-10-04T18:52:14.155Z",
+        "done": "2026-10-04T18:52:34.237Z"
+      }
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.56:51313/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-04T18:52:44.497Z",
+        "ready": "2026-10-04T18:53:01.189Z",
+        "started": "2026-10-04T18:53:10.200Z",
+        "recording": "2026-10-04T18:53:23.508Z",
+        "done": "2026-10-04T18:53:51.960Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-04T18:48:14.053Z",
+  "queuedAt": "2026-10-04T18:48:14.053Z",
+  "updatedAt": "2026-10-04T18:54:15.871Z",
+  "rev": 12,
+  "history": [
+    {
+      "at": "2026-10-04T18:48:14.053Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-04T18:48:23.917Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-04T18:48:44.160Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-04T18:52:00.840Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T18:52:14.155Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-04T18:52:34.237Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T18:52:44.497Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-04T18:53:01.189Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-04T18:53:10.200Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T18:53:23.508Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-04T18:53:51.960Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T18:54:15.871Z",
+      "who": "user",
+      "action": "answer",
+      "value": "1"
+    }
+  ],
+  "queueSeq": 8,
+  "startedAt": "2026-10-04T18:52:00.840Z",
+  "result": {
+    "value": "1",
+    "notes": "both are still a bit laggy. can we improve this animation more smooth ?",
+    "scale": 3,
+    "at": "2026-10-04T18:54:15.871Z"
+  }
+}

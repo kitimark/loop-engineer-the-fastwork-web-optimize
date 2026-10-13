@@ -1,0 +1,46 @@
+{
+  "id": "T-252",
+  "title": "Comment on T-228 #102 \"Comment on the Best build page \"Today’s best build\": Did yo…\": Can you list each PR was applied on each version ?",
+  "anchor": {
+    "page": "threads",
+    "item": "thread:T-228/msg:102",
+    "label": "Comment on the Best build page \"Today’s best build\": Did you update the best build ? #102"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-08T17:12:01.048Z",
+  "updatedAt": "2026-10-08T17:19:29.328Z",
+  "rev": 7,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-08T17:12:01.048Z",
+      "by": "user",
+      "text": "Can you list each PR was applied on each version ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-08T17:12:38.689Z",
+      "by": "lead",
+      "text": "Yes; a helper agent is building that list now from the proposal records and the build log, so it is complete and checked.\n- Our build list names only some proposals (e.g. g0.0f = the GPU menu bar PR-038), so I don't want to guess the rest.\n- It will also show which accepted proposals the end-of-page rollback removed.\n- Expect it here in about 15-20 minutes.\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-08T17:17:52.388Z",
+      "by": "lead",
+      "text": "Here is the list: 37 proposals were accepted; 20 are in today's best build g0.0f. Full table: fixes/PR_BY_VERSION.md.\n\n| build | proposals first applied (PR = proposal number) |\n|---|---|\n| g0.0f / g0.0e / g0.0d / g0.0c / g0.0b | 38 GPU menu bar / 37 logo / 36 Join fade / 35 card corners / 34 rollback |\n| v11-v12 | 31 People title slide (kept); 32 Join timed fade (removed) |\n| v10 | 30 GPU end card, 12 menu reveal (both removed); 27 Join no-rise (kept) |\n| v9 | 21 Join timing, 22 middle cards (kept); 18, 23 menu follows swipe (removed) |\n| v8 / v7 | 7 countdown faces, 17 roll, 19 accent word / 8 strips, 14 avatar row (kept) |\n| v6 / v4 / v3 / v1 | 11 hero exit / 9 platform glint / 2 platform styles / 13 avatar slider (kept) |\n\n- Removed by the end-of-page rollback: 12, 18, 23, 30, 32.\n- Accepted but never built: 24 people word timing, 26 end-menu clock roll, 25 lighter pictures, 1.\n- Six more needed no code (e.g. 10, the pixel rule).\nWhat you need to do: nothing; tell me if you want 24 or 26 built on g0.0f."
+    }
+  ],
+  "reads": {
+    "user": 3,
+    "lead": 3
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-08T17:17:52.388Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

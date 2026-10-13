@@ -1,0 +1,172 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-022",
+  "by": "fix-double-drive",
+  "title": "Middle cards follow the scroll without their own trail or jump (desktop)",
+  "area": "middle",
+  "topic": "double-drive",
+  "thread": "T-157",
+  "problem": "On desktop, two cards in the middle of the page move by themselves after you scroll (the 'double drive' research you asked to catch up on, thread T-157):\n- The future card in the 'people' section shrinks with a 0.9 s CSS animation that restarts every frame, so it lags 0.7-1.3 s behind the scroll.\n- Scroll up fast and that card jumps by up to 270 px in one frame, because its shrink anchor flips while it is still shrunk.\n- The commission card jumps about 31 px in one frame when you scroll back up, for the same reason.",
+  "idea": "The page's script already smooths these cards' shrink every frame, so the CSS animation on top is removed while the script drives them.\n- Future card: its shrink anchor stays at the bottom, and its 'shrinking' state is held until the card is back at full size.\n- Commission card: its anchor moves over a few frames instead of flipping in one.\n- At rest every card sits exactly where it does today.\n\nBuilds: A = v8 (the best build), B = v8 + this fix. The same fix is part 3 of the next best build (v9).",
+  "looksSame": "Yes, at rest. Still frames match v8:\n- Chrome desktop, 19 positions: equal apart from the fee counter's count-up (it differs between two loads of v8 too) and 2 css px² at one spot.\n- Chrome phone, 13 positions: the same.\n- Safari (iPhone Simulator), 11 positions: equal apart from the hero animation, which also differs between two loads of v8.\nOnly the motion while scrolling changes: no trail and no jump.",
+  "risk": "- Desktop motion only: you decide whether the cards should follow the scroll without their own trail.\n- Fast scroll up: the future card keeps its 'shrinking' look a few frames longer, until it is back at full size.\n- Not yet run on the real iPhone (no-worse check drafted). No timing numbers: timing is deferred.\n- Not touched: the menu and the end-of-page panel (another fix's area).",
+  "visualDiff": [
+    "Desktop, while scrolling: the future card's size follows your scroll at once (no 0.7-1.3 s trail).",
+    "Desktop, fast scroll up: no card jump (was up to 270 px on the future card and 31 px on the commission card).",
+    "Phones: no visible change. The commission card does not shrink there, and the future card's scale stays 1. Only an invisible restarting animation is removed."
+  ],
+  "gain": [
+    {
+      "what": "Future card: its own animation restarts",
+      "before": "74",
+      "after": "3",
+      "tag": "OBSERVED",
+      "how": "Chrome desktop 1440x900, scripted scroll through the page, counted from the page's own events (no timing).",
+      "better": "better"
+    },
+    {
+      "what": "Future card: drift after you stop",
+      "before": "26.8 px over 0.85 s",
+      "after": "10 px over 0.38 s",
+      "tag": "OBSERVED",
+      "how": "Same probe, stop at y 4500. The rest is the script's own smoothing, which v8 has too.",
+      "better": "better"
+    },
+    {
+      "what": "Future card: jumps on a fast scroll up",
+      "before": "-146 / +271 / -247 px",
+      "after": "none (0.5 px)",
+      "tag": "OBSERVED",
+      "how": "Same probe, fast scroll back up through the people section.",
+      "better": "better"
+    },
+    {
+      "what": "Commission card: jump on scroll up",
+      "before": "-31.2 px in one frame",
+      "after": "+2.0 px",
+      "tag": "OBSERVED",
+      "how": "Same probe. The anchor now glides over a few frames, at most 10.8 px per frame. Measured on the build just before the last small change to the commission anchor; a re-check of the final build is queued, and I will update this row.",
+      "better": "better"
+    },
+    {
+      "what": "Phone (Chrome 430 wide, Safari Simulator)",
+      "before": "4 / 3 restarts",
+      "after": "2 / 2, same positions",
+      "tag": "OBSERVED",
+      "how": "Every card position is identical on phones. A short no-worse check on the real iPhone is drafted (about 20 min), not run yet.",
+      "better": "same"
+    }
+  ],
+  "live": {
+    "patch": "fixes/double-drive/patch.diff",
+    "ref": "HEAD",
+    "blob": "40ce33bdbc97174e0f2c9c685d54366b39ef0b6b",
+    "base": "site-pretty",
+    "files": [
+      "_app/immutable/assets/2.gBuqKVzi.css",
+      "_app/immutable/nodes/2.DyWL8TcE.js"
+    ],
+    "a": {
+      "patch": "fixes/v8-best/patch.diff",
+      "ref": "HEAD",
+      "blob": "a220797b973dec7cd2b55edee4150b492b5b5509",
+      "base": "site-pretty",
+      "files": [
+        "_app/immutable/assets/2.gBuqKVzi.css",
+        "_app/immutable/nodes/2.DyWL8TcE.js"
+      ]
+    }
+  },
+  "compare": {
+    "a": {
+      "label": "Today's best build (v8)"
+    },
+    "b": {
+      "label": "v8 + double-drive fix"
+    },
+    "view": "side",
+    "shots": [
+      {
+        "caption": "Desktop at rest, future card (people section): equal",
+        "a": "r1-a-1.webp",
+        "aSize": [
+          1440,
+          900
+        ],
+        "b": "r1-b-1.webp",
+        "bSize": [
+          1440,
+          900
+        ]
+      },
+      {
+        "caption": "Desktop at rest, commission card: equal",
+        "a": "r1-a-2.webp",
+        "aSize": [
+          1440,
+          900
+        ],
+        "b": "r1-b-2.webp",
+        "bSize": [
+          1440,
+          900
+        ]
+      },
+      {
+        "caption": "Phone (Chrome 430 wide) at rest, people section: equal",
+        "a": "r1-a-3.webp",
+        "aSize": [
+          1290,
+          2796
+        ],
+        "b": "r1-b-3.webp",
+        "bSize": [
+          1290,
+          2796
+        ]
+      }
+    ]
+  },
+  "state": "accepted",
+  "rev": 1,
+  "decision": {
+    "value": "accepted",
+    "at": "2026-10-04T21:27:42.555Z",
+    "who": "user",
+    "rev": 1
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "at": "2026-10-04T21:27:42.555Z",
+      "who": "user",
+      "rev": 1
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-04T21:17:49.098Z",
+      "by": "fix-double-drive",
+      "note": "first version"
+    }
+  ],
+  "createdAt": "2026-10-04T21:17:49.098Z",
+  "updatedAt": "2026-10-04T21:27:42.555Z",
+  "proposedAt": "2026-10-04T21:17:49.098Z",
+  "history": [
+    {
+      "at": "2026-10-04T21:17:49.098Z",
+      "who": "fix-double-drive",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-04T21:27:42.555Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 1
+    }
+  ]
+}

@@ -1,0 +1,245 @@
+{
+  "id": "T-066",
+  "title": "Comment on the Best build page \"Today’s best build\": Report me the current best build and upcoming fixes will land.",
+  "anchor": {
+    "page": "build",
+    "item": "part:page",
+    "quote": "Today’s best build",
+    "label": "Today’s best build"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T04:08:30.024Z",
+  "updatedAt": "2026-10-04T13:38:51.771Z",
+  "rev": 50,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T04:08:30.024Z",
+      "by": "user",
+      "text": "Report me the current best build and upcoming fixes will land."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T04:10:35.690Z",
+      "by": "mgmt-ops-10",
+      "text": "**Today's best build** (the A side of every Try-it and finger test):\n- **Base: st6-rb2.** It holds wave 1: hero carousel, pinned sections, the style work during scroll, F3 arm scope and others.\n- **Plus** the idle-animation fix (platform-idle, your PR-009) and the menu display fix (morph-inherit).\n- **The countdown digit strips (cd-strip)** have landed on main, on the \"does less work\" basis. They aren't in the best build yet; the integrator folds them in next.\n- **Closed with no code change:** the avatar slider (carousel-leaver, you kept st6) and the hero photo sharpness (PR-015, you chose keep).\n\n**Coming next, in phone order:**\n1. **Nav menu edge (P-091):** running on the phone now. It's a measurement that finds what causes the leftover stutter, not a fix yet.\n2. **Hero exit, the top fix (P-095):** the full version failed its phone check this morning. A slimmer version (R2) gets a short phone check, then a blind swipe test with you, then it lands.\n3. **End-of-page morph on the GPU (P-092):** short phone check, then it lands.\n4. **Countdown roll on the GPU (P-093):** short phone check, then it lands.\n5. **Avatar row rests while off-screen (rest-script, P-094, your PR-014 \"keep\"):** short phone check, then it lands.\n\nThe only step that needs you is the hero swipe test. It'll show up under \"Your steps\" when it's ready."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T04:10:54.652Z",
+      "by": "user",
+      "text": "What's about the performance ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T04:11:44.974Z",
+      "by": "mgmt-ops-10",
+      "text": "The short answer: the best build does less work, but it isn't yet smooth at your two problem spots (the hero, and the end of the page). The fixes for those are the ones queued on the phone now.\n\n**What the phone measured** (iPhone Timeline, scripted scroll, 3 runs each, best build without its last two pieces):\n- Style work while the people cards scroll by: 118-123 ms → **59-65 ms** per run.\n- Style work in the middle of the page: 329-346 ms → **207-222 ms** per run.\n- Style work at the top: 228-252 ms → **322-330 ms**, so worse. The carousel fix now in the build removes the slow frames at rest there, but this number hasn't been re-measured since.\n- Countdown digit strips (on main, not yet in the best build): clock repaints in the first second after scrolling back to the countdown went 53.5 → 21 on the phone. Frames at the top and in the pinned part were no worse.\n\n**Not measured yet:** the whole best build as one timed run. Your \"defer timing\" rule holds it back. It's planned once wave 2 is built.\n\n**Your goal** (finger scroll with no frame over 50 ms, steady 60 fps):\n- **Hero:** not there yet. This morning's phone check showed the new hero path takes the per-frame script off the page with no extra slow frames. But it adds work the moment your finger starts a scroll, so it failed. A slimmer version (R2) is next, then your blind swipe test.\n- **End of page:** the GPU morph (P-092) is in the phone queue.\n- **Heat:** the GPU countdown roll (P-093) and the resting avatar row (P-094) cut work at rest, which keeps the phone cooler."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T04:15:29.871Z",
+      "by": "user",
+      "text": "I just thinking about the rendering performance for the real visual that user can feel, it could be near 33-16ms each elements that means the animation could render between 30-60 fps.\n\nCan you research more about this, can we do animation can calculate and re-paint each elements in the parallel, reduce the main threads.\n\nYesterday we was talk about move many calculation to gpu. is it make the performance better ?"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T04:21:52.933Z",
+      "by": "mgmt-ops-10",
+      "text": "Yes, that's the direction the current fixes already take. Here's how it works and where its limit is.\n\n**The frame budget.** 60 fps means one frame every 16.7 ms; 30 fps is 33 ms. Every moving element is drawn into the same page frame, so they can't each run at their own speed. One slow piece holds up the whole frame. Your goal stays: no frame over 50 ms, a steady 60.\n\n**What can run in parallel (from the browser docs):**\n- **Fully off the main thread:** moving, scaling, rotating and fading an element (transform and opacity), when it's done as a CSS or Web Animation. The browser hands these to a separate compositor thread and the graphics chip, so they keep running even when the page's script is busy. Chrome documents this as \"compositor-only properties\" (web.dev, \"Stick to compositor-only properties\"). Safari does the same through Core Animation.\n- **Partly in parallel:** turning drawings into pixels. Chrome does this on helper threads and the GPU. Deciding *what* to draw (layout, style, paint) still happens on the main thread in both browsers.\n- **Not in parallel:** the page's own script, which runs on one thread. A Web Worker can do math in parallel, but it can't touch the page's elements. It only helps for canvas drawing, which this page barely uses.\n\n**What we do with it.** Each fix replaces \"script recalculates the element every frame\" with \"describe the motion once and let the compositor play it\":\n- **Hero exit:** the slim version R2 is next on the phone (P-095).\n- **End-of-page morph:** P-092.\n- **Countdown roll:** P-093.\n\n**Does moving to the GPU help? Yes, with a catch.** This morning's phone check (P-088) showed both sides:\n- **Gain:** the script that moved the hero went from running in about 8 of 10 frames to about 2 in 100, with no extra slow frames.\n- **Catch:** the switch onto the GPU path cost a burst of extra work the moment your finger starts a scroll. That's why it failed.\n\nThe GPU isn't free either. Every element it moves becomes its own layer, which costs memory and compositing work, and on the phone that means heat. So the rule is: put on the GPU only what actually moves, and keep the start of the move cheap. R2 is the version built on that rule.\n\nThe part that has to stay on the main thread is layout and style work. The other fixes cut that down (style work while the people cards scroll went from 118-123 ms to 59-65 ms per run on the phone)."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T04:24:46.931Z",
+      "by": "user",
+      "text": "What we have unknown fields that we need to research more ?"
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T04:26:23.777Z",
+      "by": "mgmt-ops-10",
+      "text": "Yes, there are a few. These are the open ones that matter for your goal (finger scroll, no frame over 50 ms, steady 60 fps), with what is being done about each:\n\n**Being answered right now**\n1. **The hero's \"start of scroll\" cost.** We don't yet know why switching the hero onto the GPU path costs extra work the moment your finger starts a scroll. The slim version R2 tests whether a smaller switch avoids it (P-095, next on the phone).\n2. **The leftover stutter at the menu's edge.** We know where it happens, not which drawing step causes it. P-091 is measuring that on the phone now.\n\n**Known effect, unknown cause** (each fix works around it, but we can't say why Safari does it)\n3. Safari re-lays out the **whole page** when the small avatar slider in the people section swaps a picture. The resting avatar row fix (P-094) stops the slider while it is off-screen, so the cost is gone there. The why is still open.\n4. Safari ignores one of our \"inherit this value\" instructions on the menu. The menu fix works around it, and Safari's own source code says it should work.\n5. During some of your finger scrolls the phone draws at about 80 frames a second instead of 60. We don't know what triggers it, so frame counts from finger runs are not compared with scripted runs (the ms limits still are).\n\n**Not measured yet**\n6. **GPU cost.** Our frame logger sees the page's own work, not the graphics chip's. Blur, see-through backgrounds and GPU animations cost the chip work that our numbers don't fully show. Your GPU question touches this. The fixes are checked with \"no new slow frames\" on the real phone, which catches it if it hurts, but we can't yet split out how much the chip spends.\n7. **Heat:** whether the fixes stay smooth from a hot start (42-44 °C) and under forced heat. That's Milestone 2, after the first three fixes are smooth.\n8. **Feel vs numbers:** whether what you feel follows our frame counts. Your blind swipe tests answer this one fix at a time. The hero R2 swipe is the next one.\n\n**A fixed limit, not an unknown:** the frozen page's countdown runs out on 2 Nov 2026 at 05:00 UTC (12:00 your time). After that, the page gets cheaper by itself, so results from before and after don't compare.\n\nNothing here needs you now. Items 1 and 2 report back today. Items 3-5 are kept as open notes in the project, and nobody is spending phone time on them unless a fix needs the answer."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T04:27:51.448Z",
+      "by": "user",
+      "text": "What's the next action of this ?"
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T04:28:11.039Z",
+      "by": "mgmt-ops-10",
+      "text": "Next actions, in order. None of them need you until step 3.\n\n1. **Now:** the menu-edge measurement (P-091) finishes on the phone. It tells us which drawing step causes the leftover stutter there (unknown 2).\n2. **Next on the phone, about 20 min:** the hero's slim version R2 against today's best build (P-095), at the phone's real \"Serious\" heat. First, one quick Simulator check confirms R2 looks the same as before. This answers unknown 1: whether the smaller switch avoids the extra work at the start of a scroll.\n3. **If R2 passes:** a blind swipe test for you, best build vs best build + R2. It shows up under \"Your steps\" only when the phone is free and ready. If you feel no lag, the lead lands R2.\n4. **Then the three \"does less work\" checks**, each about 15-20 min on the phone: the end-of-page morph (P-092), the countdown roll (P-093) and the resting avatar row (P-094). Each one that passes lands.\n5. **After the first three smoothness fixes are smooth:** Milestone 2, the hot-start and forced-heat checks (unknown 7).\n\nUnknowns 3-6 have no scheduled work; they're open notes. If you want one researched now (for example, how much the graphics chip spends, number 6), say which one and I'll pass it to the lead to schedule."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T04:33:14.078Z",
+      "by": "user",
+      "text": "I'd like to ask you more about the research. i'm not a expert of svelte engine, that fastwork using to build this web. (if i'm wrong, please correct me)\n\nBut in the react, they have the optimization for main thread to better likes this doc https://react.dev/learn/queueing-a-series-of-state-updates\n\nMaybe we can improve the animation calculation behind them. we might no need to calculate all of stage change. but we could calculate animation in some frame that impact the user visual. (we might drop a lot of animation calculation)"
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T04:35:06.551Z",
+      "by": "user",
+      "text": "Can you ask design engineer for researching this queuing of state update ?"
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T04:35:16.635Z",
+      "by": "mgmt-ops-10",
+      "text": "You're right: fastwork.com is built with **Svelte** (SvelteKit). Its files sit under `_app/immutable/`, SvelteKit's default output folder.\n\n**Svelte already does what that React page describes.** When several state changes happen together, Svelte applies them to the page in one go, not one by one (Svelte docs, `tick()`: \"resolves once any pending state changes have been applied\"). So batching state updates isn't where the time goes on this page.\n\n**Where the time actually goes.** On the phone, most of each slow frame is the browser's own work after the script runs:\n- **Style:** working out which CSS rules apply.\n- **Layout:** working out where everything sits. On Safari this is often for the whole page.\n- **Paint:** drawing it.\n\nA frame's script part is usually small. What hurts is when one small script change makes Safari redo style or layout for the whole page.\n\n**Your idea, \"only calculate what the user can see\", is the right one, and it's how most of our fixes work:**\n- **Resting avatar row (P-094):** the slider stops its work while it is off-screen. Off-screen work was exactly what you describe: calculation nobody sees.\n- **Idle animations (platform-idle, in the best build):** animations stop doing work when nothing on screen changes.\n- **Countdown digit strips (landed):** the clock redraws only the digit that changes, not the whole clock.\n- **Hero R2 (P-095):** script no longer recalculates the hero every frame. The browser plays a motion described once.\n\n**What we can't do** is skip frames while something visibly moves. A dropped frame during motion is exactly the stutter you feel. The rule we use: during motion, do the minimum each frame; when nothing visible changes, do nothing.\n\n**A possible next step, if you want it:** a page-wide check that lists every piece of script that runs each frame or each second, and whether its result is visible at that moment. The resting avatar row came out of a check like this for the \"at rest\" case. Say yes here and I'll pass it to the lead to schedule."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T04:36:28.579Z",
+      "by": "mgmt-ops-10",
+      "text": "Passed to the lead, since starting a new research agent is the lead's call. I've asked for a design-engineer study of your idea: list every piece of script that runs each frame or each second, check whether its result is visible at that moment, and see whether skipping or batching that work removes slow frames. The lead will reply here with the plan."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-04T04:37:25.994Z",
+      "by": "lead",
+      "text": "Yes, I've started that study now: a design engineer (de-frame-audit) is listing every piece of script that runs each frame, each scroll event or each second, and whether its result is visible at that moment. It also marks what our fixes already cover and ranks what is left by how much it causes slow frames. It also checks the claim that Svelte already batches state changes against Svelte's own docs and source. It uses Chrome counts only, no phone time, so it doesn't delay the phone tests. You'll get a short plain summary in this thread, in about 1.5 h. Anything worth fixing becomes a new fix I schedule."
+    },
+    {
+      "n": 16,
+      "at": "2026-10-04T04:38:09.929Z",
+      "by": "user",
+      "text": "Can you summarize this and open the new thread for catch up."
+    },
+    {
+      "n": 17,
+      "at": "2026-10-04T04:40:06.740Z",
+      "by": "mgmt-ops-10",
+      "text": "Summary written. I've asked the lead to open it as a new catch-up thread (only the lead can start threads). It will show up in your thread list in a few minutes, and the de-frame-audit results will go there too."
+    },
+    {
+      "n": 18,
+      "at": "2026-10-04T04:40:49.703Z",
+      "by": "mgmt-ops-10",
+      "text": "The catch-up is now its own thread, T-067. Updates and the script-audit results will go there."
+    },
+    {
+      "n": 19,
+      "at": "2026-10-04T07:54:51.336Z",
+      "by": "mgmt-ops-10",
+      "text": "This is now the one thread for the best build and what lands next (your request in T-024 #13).\n- Merged here and closed: T-035, T-046, T-067, T-072, T-076, T-079. You can still read them, and reopen any of them.\n- Newest: v6 is today's best build (hero fade on the graphics chip, code hero-exit-threaded, landed 07:33 UTC). Its Try-it is http://lan:60238/.\nWhat you need to do: nothing. Ask here about any build."
+    },
+    {
+      "n": 20,
+      "at": "2026-10-04T07:55:03.418Z",
+      "by": "mgmt-ops-10",
+      "text": "Correction to #19: v6 is the build you tried and preferred (built 07:33 UTC). It is today's best build, but the hero fix itself has not landed on main yet; the lead lands it."
+    }
+  ],
+  "reads": {
+    "user": 20,
+    "mgmt-ops-10": 20,
+    "lead": 16
+  },
+  "history": [
+    {
+      "at": "2026-10-04T04:08:30.024Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T04:36:28.505Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User #12 asks for a design-engineer study of 'queuing of state update' (React batching idea, #11): a spawn. Desk answered #13: Svelte already batches; offered a page-wide per-frame script audit (visible vs not). Needs lead: spawn de-<area> or not."
+    },
+    {
+      "at": "2026-10-04T10:13:47.211Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "T-035 merged here: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T10:13:47.604Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "T-046 merged here: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T10:13:47.741Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "T-067 merged here: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T10:13:47.896Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "T-072 merged here: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T10:13:48.064Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "T-076 merged here: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T10:13:48.235Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "T-079 merged here: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T13:38:51.771Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T07:55:03.418Z",
+    "lead": "2026-10-04T11:14:49.587Z"
+  },
+  "histSeen": {
+    "lead": 8
+  },
+  "related": [
+    {
+      "id": "T-035",
+      "kind": "merged",
+      "at": "2026-10-04T10:13:47.211Z",
+      "by": "mgmt-ops-10"
+    },
+    {
+      "id": "T-046",
+      "kind": "merged",
+      "at": "2026-10-04T10:13:47.604Z",
+      "by": "mgmt-ops-10"
+    },
+    {
+      "id": "T-067",
+      "kind": "merged",
+      "at": "2026-10-04T10:13:47.741Z",
+      "by": "mgmt-ops-10"
+    },
+    {
+      "id": "T-072",
+      "kind": "merged",
+      "at": "2026-10-04T10:13:47.896Z",
+      "by": "mgmt-ops-10"
+    },
+    {
+      "id": "T-076",
+      "kind": "merged",
+      "at": "2026-10-04T10:13:48.064Z",
+      "by": "mgmt-ops-10"
+    },
+    {
+      "id": "T-079",
+      "kind": "merged",
+      "at": "2026-10-04T10:13:48.235Z",
+      "by": "mgmt-ops-10"
+    }
+  ]
+}

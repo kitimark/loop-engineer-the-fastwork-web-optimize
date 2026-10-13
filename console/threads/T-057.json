@@ -1,0 +1,111 @@
+{
+  "id": "T-057",
+  "title": "Comment on status cd-roll-ca \"Countdown roll as one GPU animation per digit (user-approve…\": Can we link this row to each progress ? It hard to see this row ca…",
+  "anchor": {
+    "page": "status",
+    "item": "status:cd-roll-ca",
+    "label": "Countdown roll as one GPU animation per digit (user-approved, near-identical)"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T03:20:57.355Z",
+  "updatedAt": "2026-10-04T10:13:43.703Z",
+  "rev": 17,
+  "assignees": [
+    "fix-cd-roll-ca",
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T03:20:57.355Z",
+      "by": "user",
+      "text": "Can we link this row to each progress ? \nIt hard to see this row came from which progress."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T03:21:48.952Z",
+      "by": "user",
+      "text": "I'd like to get some link for click between status and progress. it'll easier to tracking and understand between them.",
+      "forLead": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T03:22:24.897Z",
+      "by": "lead",
+      "text": "Good idea, logged as I-104. The toolsmith who is fixing the comment button (ts-i103) will do this right after it: each Status row gets a link to its Progress item, and each Progress item a link back to its Status row. Where there's no match there will be no link, rather than a broken one. I'll tell you here when it's live."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T03:22:38.352Z",
+      "by": "fix-cd-roll-ca",
+      "text": "Good point. Linking a status row to its progress entries is a change to the console itself, so it goes through the lead (tooling changes need a toolsmith and tests). I'm escalating it now. For now, this row is the countdown roll fix (your task T-030, item 10): each hero clock digit rolls as one GPU animation, built on the countdown strips fix (cd-strip), which has landed. Its progress entries are the cd-roll-ca and cd-strip items."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T05:39:37.834Z",
+      "by": "lead",
+      "text": "Done (live now): each Status row now links to its item on the Progress page, and each Progress item links back to its Status row. Reload the console page to see the links."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "fix-cd-roll-ca": 4,
+    "lead": 5,
+    "mgmt-ops-10": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-04T03:20:57.355Z",
+      "who": "router",
+      "action": "assign",
+      "note": "fix-cd-roll-ca (owner of cd-roll-ca)"
+    },
+    {
+      "at": "2026-10-04T03:22:38.421Z",
+      "who": "fix-cd-roll-ca",
+      "action": "escalate",
+      "note": "User asks for status rows to link to their progress entries (console feature, tooling). Not a cd-roll-ca decision; I answered what this row covers."
+    },
+    {
+      "at": "2026-10-04T07:54:18.128Z",
+      "who": "mgmt-ops-10",
+      "action": "assign",
+      "note": "mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T07:54:21.058Z",
+      "who": "mgmt-ops-10",
+      "action": "close",
+      "note": "Merged into T-024 (countdown), one thread per topic at your request (T-024 #13). Related: T-024, T-055, T-077, T-085."
+    },
+    {
+      "at": "2026-10-04T10:13:43.703Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "into T-024: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    }
+  ],
+  "readsAt": {
+    "fix-cd-roll-ca": "2026-10-04T03:22:38.421Z",
+    "lead": "2026-10-04T05:39:37.834Z",
+    "mgmt-ops-10": "2026-10-04T07:55:14.073Z"
+  },
+  "histSeen": {
+    "lead": 2
+  },
+  "merged": {
+    "into": "T-024",
+    "at": "2026-10-04T10:13:43.703Z",
+    "by": "mgmt-ops-10",
+    "closed": false
+  },
+  "related": [
+    {
+      "id": "T-024",
+      "kind": "merged-into",
+      "at": "2026-10-04T10:13:43.703Z",
+      "by": "mgmt-ops-10"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "id": "T-069",
+  "title": "Comment on status cd-roll-ca \"Countdown roll as one GPU animation per digit (user-approve…\": What i need to do ?",
+  "anchor": {
+    "page": "status",
+    "item": "status:cd-roll-ca",
+    "quote": "waiting for a user reply in a console thread or a proposal decision since 04:29Z (13 min, timeout 1 h)",
+    "label": "Countdown roll as one GPU animation per digit (user-approved, near-identical)"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T04:41:56.894Z",
+  "updatedAt": "2026-10-04T11:14:49.588Z",
+  "rev": 6,
+  "assignees": [
+    "fix-cd-roll-ca"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T04:41:56.894Z",
+      "by": "user",
+      "text": "What i need to do ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T04:49:05.551Z",
+      "by": "fix-cd-roll-ca",
+      "text": "Nothing. You don't need to do anything for the countdown roll. That line only means I keep listening for your messages. It is not a question to you: the board shows it for every agent that listens (the lead is fixing that, I-108). Right now I'm queued for the shared Mac slot to finish the last checks: reduced motion, and the Chrome counts and pixels. After that comes one short iPhone check that runs by itself. I'll post here only if something needs your decision."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "fix-cd-roll-ca": 2,
+    "lead": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T04:41:56.894Z",
+      "who": "router",
+      "action": "assign",
+      "note": "fix-cd-roll-ca (owner of cd-roll-ca)"
+    },
+    {
+      "at": "2026-10-04T04:49:25.317Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "fix-cd-roll-ca": "2026-10-04T04:49:05.551Z",
+    "lead": "2026-10-04T11:14:49.588Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

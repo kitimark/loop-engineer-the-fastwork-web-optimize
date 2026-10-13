@@ -1,0 +1,285 @@
+{
+  "id": "T-253",
+  "title": "Comment on T-228 #111 \"Comment on the Best build page \"Today’s best build\": Did yo…\": Catch up the compositing border count in this thread",
+  "anchor": {
+    "page": "threads",
+    "item": "thread:T-228/msg:111",
+    "label": "Comment on the Best build page \"Today’s best build\": Did you update the best build ? #111"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-08T17:32:02.225Z",
+  "updatedAt": "2026-10-09T03:45:31.070Z",
+  "rev": 88,
+  "assignees": [
+    "de-offscreen",
+    "fix-menu-layers",
+    "fix-cm-return"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-08T17:32:02.225Z",
+      "by": "user",
+      "text": "Catch up the compositing border count in this thread"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-08T17:32:15.709Z",
+      "by": "lead",
+      "text": "OK: the compositing-layer results will come in this thread.\n- de-offscreen runs the count (top bar and end menu, 6 points, original vs today's best) and posts here; I check it first.\n- It starts when the phone test ends (about 17:35Z); first numbers about 30 min later.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-08T17:39:58.149Z",
+      "by": "user",
+      "text": "I suspect the boundary of compositing layer;\n- why countdown clock impact compositing layer of start-selling-morph-center ? \n- why start-selling-top-nav took a lot of number ? can we reduce ?",
+      "later": [
+        "de-offscreen"
+      ]
+    },
+    {
+      "n": 4,
+      "at": "2026-10-08T17:40:26.373Z",
+      "by": "lead",
+      "text": "Good questions; both are now part of the layer count de-offscreen is running right now.\n- Countdown and the menu centre: it checks whether the clock sits inside that menu part and whether each tick makes the whole part redraw or split into extra layers.\n- Top bar: it lists each of its layers, why WebKit made it (blur, clip shape, the new GPU colour layers, overlap) and which can go.\n- For each, you get the count and memory for the original page vs today's best, and whether removing it would look the same.\n- The agent is busy measuring, so the answer comes with its result here, in about 30 min.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-08T17:41:10.540Z",
+      "by": "user",
+      "text": "can you split agents for helpping research and work together ?",
+      "later": [
+        "de-offscreen"
+      ]
+    },
+    {
+      "n": 6,
+      "at": "2026-10-08T17:42:06.712Z",
+      "by": "lead",
+      "text": "Yes: the layer research is now split across three agents working together.\n\n| agent | job | how |\n|---|---|---|\n| de-offscreen | counts the real layers at 6 menu points, original vs best | Simulator measurements |\n| map-cd-morphcenter (new) | why the countdown clock affects the menu centre's layer, and fixes | reads the page code and WebKit's source |\n| map-nav-layers (new) | why the top bar has so many layers, and which can go | reads the page code and WebKit's source |\n\n- The two new helpers only read code, so they run at once without waiting for the Simulator.\n- Their answers go to de-offscreen, which confirms each one in its count; the combined answer comes here.\n- Meanwhile fix-g0-box and fix-scrollcb-g0 keep working on the drag-down (your top priority).\nWhat you need to do: nothing."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-08T17:56:59.000Z",
+      "by": "de-offscreen",
+      "text": "Answer: the menu centre is its own layer because it overlaps the moving menu columns; the clock only makes it redraw.\n- Q1: WebKit's \"overlap\" rule makes the centre (morph-center) a layer: it sits over the column animation. The clock lives inside it.\n- Q1: in the original the clock ticks even while the menu is hidden and redraws the centre ~80 times per 0.45 s; opening creates 80 digit layers, closing deletes them.\n- Q2: today's best top bar has 6 layers vs 4, but the extra 2 are plain colour layers with 0 MB, and the bar no longer redraws while the menu moves.\n| Simulator count (layer = one compositing border) | original (v0) | today's best (g0.0f) |\n|---|---|---|\n| top bar layers / MB, menu open | 4 / 12.6 | 6 / 1.0 |\n| whole page at the end, menu closed / open | 29 / 110 layers | 53 / 53 layers |\n| layers created + deleted per open/close | 80 | 0 |\n| centre redraws per 0.45 s, closed / open | ~80 / 0 | 0 / ~21 |\n- Avoidable, same look: the 3 overlap layers (centre, veil, footer; 7.6 MB closed) go if the columns stop while closed: the \"stop columns\" proposal (PR-039 option 2).\n- That saves memory only; the last phone test (P-169, the flip-frame check) found no shorter frame from it.\n- Next idea: the clock on its own small layer while open, so ticks stop redrawing the 5.7 MB centre; it needs a pixel check, else a proposal. Owner: fix-g0-box.\n- Not worth it: dropping the language button's own blur (looks different); freeing the hidden menu's layers (cost moves into the first open frame).\n- All numbers are Simulator counts (OBSERVED), not timings. Check done: with the clock hidden, the original's centre stops redrawing and the 80 layers never appear.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-08T18:02:14.509Z",
+      "by": "user",
+      "text": "Any findings ?"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-08T18:02:29.367Z",
+      "by": "lead",
+      "text": "Yes, the findings are in #7 just above; in short, today's best build (g0.0f) already removed the worst layer problems.\n\n| finding (Simulator, OBSERVED) | original page | g0.0f |\n|---|---|---|\n| menu clock: extra layers on open | 80, made and dropped each open/close | none |\n| hidden menu centre redraws while closed | about 80 per 0.45 s | none |\n| top bar memory | up to 12.6 MB, redraws every step | 1.0 MB, never redraws |\n\n- Proof: hiding the menu clock on the original page removed both clock problems.\n- Still removable: 3 overlap layers while the menu is closed (your proposal PR-039, option 2) and the clock's redraws while open (new idea, queued at fix-g0-box).\nWhat you need to do: nothing; decide PR-039 on the Proposals page when convenient."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-08T18:04:25.485Z",
+      "by": "user",
+      "text": "Can we optimize them ? illusion optical is acceptable."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-08T18:05:06.001Z",
+      "by": "lead",
+      "text": "Yes: a new agent (fix-menu-layers) now optimizes both, using your rule that a look-alike is acceptable.\n\n| what | how | saves (Simulator) |\n|---|---|---|\n| 3 overlap layers while the menu is closed | stop the hidden photo columns, resume at the same spot (proposal PR-039 option 2) | 7.6 MB closed |\n| clock redraws while the menu is open | give the menu clock its own small layer | about 21 redraws of a 5.7 MB layer per 0.45 s |\n\n- Look check: within our look-alike limits passes; anything visibly different comes back to you as a Try-it proposal.\n- Then a short phone check of the menu open and close, after you give the phone back.\n- The drag-down stays first; this agent waits its turn on the Simulator.\n- PR-039 is still open on the Proposals page; accepting option 2 there lets it land without another question.\nWhat you need to do: accept PR-039 option 2 on the Proposals page if you agree."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-08T18:09:24.090Z",
+      "by": "lead",
+      "text": "Thanks: you accepted the menu-columns proposal (PR-039), option 2 \"keep position\", at 18:08Z.\n- fix-menu-layers now builds it into the next best-build candidate, with the clock-layer idea on top.\n- It lands after the look check and a short phone check of the menu, when you give the phone back.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-08T18:09:39.116Z",
+      "by": "user",
+      "text": "I was accept PR-039 with correct option ?"
+    },
+    {
+      "n": 14,
+      "at": "2026-10-08T18:10:03.315Z",
+      "by": "lead",
+      "text": "Yes, you picked the right one: \"keep-phase\" is option 2, the recommended one.\n- It looks the same as today: the menu photo columns resume where they stopped (moves under 0.4 px when you open the menu again).\n- Option 1 (\"restart\") would have made the columns jump back 56 px on the second opening.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-08T18:33:04.728Z",
+      "by": "user",
+      "text": "What's about PR-030 ? i was try to play the end-of-page. it's SOOO ULTRA SMOOOTH",
+      "later": [
+        "fix-menu-layers"
+      ]
+    },
+    {
+      "n": 16,
+      "at": "2026-10-08T18:33:59.425Z",
+      "by": "user",
+      "text": "i got the is end of page background are blink",
+      "later": [
+        "fix-menu-layers"
+      ]
+    },
+    {
+      "n": 17,
+      "at": "2026-10-08T18:34:55.902Z",
+      "by": "lead",
+      "text": "The GPU menu card (PR-030) went out with the end-of-page rollback (PR-034) because it was built for the menu that follows your swipe.\n- What you tried: since 18:31Z the only Try-it page opened is PR-030's B, i.e. v9-final + the GPU card, where the menu follows your finger.\n- Today's best (g0.0h) opens the menu by itself over 0.68 s like fastwork.com, as you asked (T-228 #62); PR-030 cannot drive that.\n- Part of PR-030's idea is already back: the GPU menu bar in g0.0f (PR-038). The full card version stopped on a tiny text shimmer mid-open.\n- The background blink: I have no recording of your play, so I can't trace it yet.\n- If it is in PR-030's B: that build is old (v9-final), and it had a known glass flicker as the menu starts, fixed later.\n\n| Option | Behaviour at the end | Next step |\n|---|---|---|\n| Keep the original behaviour | menu opens by itself | finish the full GPU card as a new proposal with Try-it |\n| Bring back follow-the-finger + PR-030 | menu follows your swipe | undo the rollback; a bigger change |\n\n- I reserved the iPhone for you until 19:03Z, so no agent opens a page on it.\nWhat you need to do: say on which page the blink was (PR-030's B or today's best) and where (while the menu opens, or at rest), and pick an option.",
+      "ask": true
+    },
+    {
+      "n": 18,
+      "at": "2026-10-08T18:37:05.732Z",
+      "by": "user",
+      "text": "blink that i mention is glass flicker. can we fix this ? then try to propose me",
+      "later": [
+        "fix-menu-layers"
+      ]
+    },
+    {
+      "n": 19,
+      "at": "2026-10-08T18:37:52.852Z",
+      "by": "user",
+      "text": "it should including icon and buttons of top nav fix.",
+      "later": [
+        "fix-menu-layers"
+      ]
+    },
+    {
+      "n": 20,
+      "at": "2026-10-08T18:38:19.887Z",
+      "by": "lead",
+      "text": "Yes: the new owner fix-cm-return now fixes the flicker on the top bar's glass, its logo icon and its buttons (language, Join), then proposes it to you.\n- Its plan:\n  1. Confirm the flicker in the GPU menu card's Try-it B (PR-030), checking glass, logo and each button frame by frame.\n  2. Build B = today's best (g0.0h) with that card's end of the page, which follows your finger, and the later glass fix (v13) on top.\n  3. Post a proposal with Try-it: A = g0.0h (the menu opens by itself), B = the new build.\n- Pass rule: 0 flicker frames on glass, logo and both buttons; the rest of the page looks the same as g0.0h.\n- Note: B undoes the end-of-page rollback (PR-034) you asked for earlier; you choose in the proposal.\nWhat you need to do: nothing now; you will get a proposal with Try-it."
+    },
+    {
+      "n": 21,
+      "at": "2026-10-08T18:43:59.355Z",
+      "by": "user",
+      "text": "the PR-30 was have less compositing-layer, it just has only glass flicker.",
+      "later": [
+        "fix-menu-layers"
+      ]
+    },
+    {
+      "n": 22,
+      "at": "2026-10-08T18:46:40.716Z",
+      "by": "user",
+      "text": "the issue when i hold the end-of-page at the early middle a second. the glass will be blur as the same of the nav bar when it don't expand yet. \n\nit just should check if it on-hold of the end-of-page it should hold the blur of glass.",
+      "later": [
+        "fix-menu-layers"
+      ]
+    },
+    {
+      "n": 23,
+      "at": "2026-10-08T18:48:46.534Z",
+      "by": "lead",
+      "text": "Got it, both points went to fix-cm-return as the spec for the GPU menu card (PR-030) fix.\n- Keep its lower number of compositing layers; fix only the flicker.\n- The flicker: you hold your finger part-way into the menu's grow for about a second, and the glass falls back to the closed bar's blur.\n- Rule: while your finger holds, the glass keeps the expanded blur; frames during the hold must match the moving frames.\n- Its test adds that case: drag part-way, hold 1-2 s, check glass, logo and buttons frame by frame (0 fall-back frames).\nWhat you need to do: nothing; the proposal with Try-it comes when this passes."
+    },
+    {
+      "n": 24,
+      "at": "2026-10-08T18:53:22.966Z",
+      "by": "user",
+      "text": "mark the fix-cm-return as highest priority.",
+      "later": [
+        "fix-menu-layers"
+      ]
+    },
+    {
+      "n": 25,
+      "at": "2026-10-08T18:54:12.960Z",
+      "by": "user",
+      "text": "mark the fix-cm-return as highest priority.",
+      "forLead": true,
+      "later": [
+        "fix-menu-layers"
+      ]
+    },
+    {
+      "n": 26,
+      "at": "2026-10-08T18:55:14.296Z",
+      "by": "lead",
+      "text": "Done: fix-cm-return is now priority 1, and its next test runs first on the Mac (moved ahead of the other agents).\n- First result (iPhone Simulator, our observation): the old GPU menu card build (PR-030's B) loses the glass right as the menu starts to open.\n- In 33 of 63 screenshots there the glass, logo, language and Join buttons change; the white logo vanishes.\n- The later build with the glass fix (v14) is clean in still shots (glass under 1 % different, logo moves under 1 px).\n- Next: your hold case (finger held part-way for 1-2 s) and small wiggles near the start, on both builds.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 27,
+      "at": "2026-10-08T19:16:14.793Z",
+      "by": "user",
+      "text": "I was do manual check on original fastwork. the end-of-page during expand the nav bar doesn't start from transparent. the opacity of background of the nav bar still the same and fade the color to background of the end-of-page.\n\nI think we could fix like this, it may easier and better rendering performance.",
+      "later": [
+        "fix-menu-layers",
+        "fix-cm-return"
+      ]
+    },
+    {
+      "n": 28,
+      "at": "2026-10-08T19:16:42.398Z",
+      "by": "lead",
+      "text": "Good idea, sent to fix-cm-return as the design for the flicker fix (the GPU menu card, PR-030).\n- Like the original: the bar keeps its glass and opacity the whole time it grows; only its colour fades into the end-of-page colour.\n- That is cheaper too: a colour fade runs on the graphics chip, and the glass never switches off, so nothing can flicker.\n- fix-cm-return checks the original's own code for the colour path, so the new build matches fastwork.com.\n- If it looks different from the earlier fix, the proposal shows you both.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 29,
+      "at": "2026-10-08T20:12:46.289Z",
+      "by": "lead",
+      "text": "The iPhone check of the menu clock layer (P-170) doesn't count: the phone got too hot by the end (43 °C), so its last control run failed.\n- The counted runs looked no worse (descriptive only, no frame over 50 ms in either build):\n\n| Menu open, iPhone | today (g0.0h) | + clock layer |\n|---|---|---|\n| first open frame | 17 ms | 16 ms |\n| median frame while opening | 17 ms | 17 ms |\n| frames over 34 ms while opening | 0 | 0 |\n\n- Next: one shorter repeat (P-170b), started only once the phone has cooled to 39 °C or less.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 30,
+      "at": "2026-10-08T21:02:43.816Z",
+      "by": "lead",
+      "text": "The new build (B) has no flicker on the glass, logo or buttons in the Simulator's finger tests; the GPU menu card build (PR-030's B) flickers.\n- Small up/down wiggles near the start, 33 screenshots per build (iPhone Simulator, our observation):\n\n| Build | frames losing the glass | logo/button jump at the bar's closed point |\n|---|---|---|\n| PR-030's B (what you played) | 12 of 33 | language and Join flip |\n| v14 (the later glass fix) | 0 | yes: logo 20 px, Join 4 px |\n| new B (your #27 design) | 0 | none |\n\n- Cause in PR-030's B: its glass blur was animated by the scroll, and Safari drops it while your finger moves it.\n- New B keeps one fixed blur and fades only the colour, so nothing can drop.\n- Your hold case (#22) did not show in the Simulator; the real phone may differ, so the Try-it on your iPhone decides.\n- Next: layer counts, look checks, then the proposal with Try-it.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 31,
+      "at": "2026-10-08T22:00:36.987Z",
+      "by": "lead",
+      "text": "Your proposal is ready: PR-040, the end-of-page menu that follows your finger, with a steady glass bar (no flicker), on today's best build.\n- In the iPhone Simulator: glass lost in 0 of 34 frames (the earlier glass menu, PR-030: 12 of 33); the logo no longer jumps after scrolling back.\n- It keeps fewer layers than PR-030 and v14, but 7 more than g0.0h (104 vs 77 MB) near the end; style work is a bit higher, as in v14.\n- It reverses your end-of-page rollback: the menu grows with your swipe instead of opening by itself.\n- The iPhone runs a 30-min menu clock test until about 22:30Z; Try-it on the Mac works now.\n- If you want to try it on the iPhone now, say so here and the test stops at the next run.\nWhat you need to do: open PR-040 in the console's Proposals, try A and B, then accept or ask for changes."
+    },
+    {
+      "n": 32,
+      "at": "2026-10-09T03:40:23.634Z",
+      "by": "lead",
+      "text": "Accepted: the follow-the-finger menu with the steady glass bar (PR-040) now goes into the next best build, g0.0k.\n- fix-cm-return rebuilds it on today's best (g0.0j), so it keeps the people-deck card fix and the menu clock layer.\n- Then it re-runs the flicker, hold and look checks, and an iPhone test of the end of the page (it asks before using the phone).\n- fix-g0-box's wheel-handler test (P-171) is dropped: your choice already removes that slow frame at y ~1750; a smaller page-load check follows later.\nWhat you need to do: nothing now; the iPhone test will be announced before it starts."
+    }
+  ],
+  "reads": {
+    "user": 32,
+    "lead": 32,
+    "de-offscreen": 7,
+    "fix-menu-layers": 27,
+    "fix-cm-return": 27
+  },
+  "history": [
+    {
+      "at": "2026-10-08T17:32:15.378Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "de-offscreen"
+    },
+    {
+      "at": "2026-10-08T18:05:06.091Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-menu-layers"
+    },
+    {
+      "at": "2026-10-08T18:38:19.973Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-cm-return"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-09T03:40:23.634Z",
+    "de-offscreen": "2026-10-08T17:56:59.000Z",
+    "fix-menu-layers": "2026-10-08T20:16:52.131Z",
+    "fix-cm-return": "2026-10-08T22:00:11.720Z"
+  },
+  "histSeen": {
+    "lead": 3
+  }
+}

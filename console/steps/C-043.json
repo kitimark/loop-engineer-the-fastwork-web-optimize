@@ -1,0 +1,58 @@
+{
+  "id": "C-043",
+  "by": "lead",
+  "kind": "action",
+  "title": "Reconnect the iPhone to the Mac",
+  "instructions": "The Mac lost the iPhone at 08:20 UTC (no cable connection seen). Please plug the iPhone into the Mac with the cable, unlock it, tap Trust if it asks, and leave Safari open. Then press Done.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-04T08:23:39.452Z",
+        "done": "2026-10-04T08:24:24.914Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-04T08:23:21.382Z",
+  "queuedAt": "2026-10-04T08:23:21.382Z",
+  "updatedAt": "2026-10-04T08:24:24.914Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-04T08:23:21.382Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-04T08:23:39.452Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T08:24:24.914Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 2,
+  "startedAt": "2026-10-04T08:23:39.452Z",
+  "result": {
+    "value": "done",
+    "notes": "i didn't un-plug before. i was try to un-plug and re-plug it. verify.",
+    "at": "2026-10-04T08:24:24.914Z"
+  }
+}

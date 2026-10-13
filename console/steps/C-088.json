@@ -1,0 +1,57 @@
+{
+  "id": "C-088",
+  "by": "lead",
+  "kind": "action",
+  "title": "Unlock the iPhone and allow UI Automation",
+  "instructions": "Unlock the iPhone, keep it plugged in, and accept any Trust or automation prompt. Then open Settings > Developer and check that Enable UI Automation is on (turn it on if not), go back to the Home Screen, and press Done here.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-06T16:44:19.517Z",
+        "done": "2026-10-06T16:44:22.280Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-06T16:44:12.091Z",
+  "queuedAt": "2026-10-06T16:44:12.091Z",
+  "updatedAt": "2026-10-06T16:44:22.280Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-06T16:44:12.091Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-06T16:44:19.517Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-06T16:44:22.280Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 47,
+  "startedAt": "2026-10-06T16:44:19.517Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-06T16:44:22.280Z"
+  }
+}

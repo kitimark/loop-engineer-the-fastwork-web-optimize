@@ -1,0 +1,46 @@
+{
+  "id": "T-215",
+  "title": "Comment on T-204 #34 \"DIRECTION: Optimize the end of page scroll performance #34\": I think we could apply the stop animation when user didn't see it like count…",
+  "anchor": {
+    "page": "threads",
+    "item": "thread:T-204/msg:34",
+    "label": "DIRECTION: Optimize the end of page scroll performance #34"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-06T10:27:37.074Z",
+  "updatedAt": "2026-10-06T10:39:42.787Z",
+  "rev": 7,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-06T10:27:37.074Z",
+      "by": "user",
+      "text": "I think we could apply the stop animation when user didn't see it like count down clock. is it help ? \n\nand elements are background during we swipe the end of page appear they could stop at this step."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-06T10:28:09.505Z",
+      "by": "lead",
+      "text": "Yes, it should help; it is the same idea as option 1 from your background question, so I'm widening that fix to every animation you can't see.\n- What we know: behind the panel, 5 endless animations and 40 layers keep running even when fully hidden (Chrome probe).\n- Not known yet: whether the countdown clock keeps ticking when it's off screen or under the panel; each tick changes 11 digits.\n- Next: fix A's owner lists every animation and timer still running at the end of the page, then pauses only those you can't see.\n- The look stays the same: when something comes back it shows the right state, and the countdown shows the right time, never a skipped second.\n- Lands like before: a cost check and a pixel check first, then an iPhone check that it's no worse, after the current test.\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-06T10:34:48.772Z",
+      "by": "lead",
+      "text": "Census done: at the end of the page only the hidden section's 5 animations run unseen, and the planned pause covers exactly those. But your clock idea found something bigger.\n- The countdown you see in the open panel is visible, so it must keep running.\n- But each tick repaints the whole panel background, about 26 times a second, a screen-and-a-half-sized area (Chrome probe, our setup).\n- Fix: give the clock its own small layer, so a tick repaints only the clock; the digits stay pixel-identical.\n- Owner: the GPU-morph agent, as a small standalone change that could go into v10 if its checks are clean.\n- Everything else at the end of the page is already paused when off screen, including the top countdown.\nWhat you need to do: nothing now."
+    }
+  ],
+  "reads": {
+    "user": 3,
+    "lead": 3
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-06T10:34:48.772Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

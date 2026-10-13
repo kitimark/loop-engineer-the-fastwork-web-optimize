@@ -1,0 +1,58 @@
+{
+  "id": "C-106",
+  "by": "arch-compositor-morph",
+  "kind": "action",
+  "phone": true,
+  "title": "Unlock the iPhone so the menu-opening phone test can start",
+  "instructions": "Unlock the iPhone and leave it on the home screen; don't open any app. Then press Done. What you need to do: unlock the iPhone, then press Done.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-07T10:31:28.259Z",
+        "done": "2026-10-07T10:31:29.251Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-07T10:31:12.368Z",
+  "queuedAt": "2026-10-07T10:31:12.368Z",
+  "updatedAt": "2026-10-07T10:31:29.251Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-07T10:31:12.368Z",
+      "who": "arch-compositor-morph",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-07T10:31:28.259Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-07T10:31:29.251Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 65,
+  "startedAt": "2026-10-07T10:31:28.259Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-07T10:31:29.251Z"
+  }
+}

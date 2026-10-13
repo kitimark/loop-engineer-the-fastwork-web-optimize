@@ -1,0 +1,46 @@
+{
+  "id": "C-125",
+  "by": "lead",
+  "kind": "question",
+  "title": "Ready for a 50-min iPhone test? (tests the fix for the y≈4525 slow spot)",
+  "instructions": "The next phone test (P-167) runs about 50 minutes: keep the iPhone plugged in and don't touch it until it ends. Answer ready when the phone is free, or later with a time in the notes.",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "yes",
+      "no"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-08T12:51:43.405Z",
+  "queuedAt": "2026-10-08T12:51:43.405Z",
+  "updatedAt": "2026-10-08T12:55:27.735Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-08T12:51:43.405Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-08T12:55:26.414Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-08T12:55:27.735Z",
+      "who": "user",
+      "action": "answer",
+      "value": "yes"
+    }
+  ],
+  "queueSeq": 84,
+  "startedAt": "2026-10-08T12:55:26.414Z",
+  "result": {
+    "value": "yes",
+    "at": "2026-10-08T12:55:27.735Z"
+  }
+}

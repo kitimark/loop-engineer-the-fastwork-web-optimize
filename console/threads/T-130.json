@@ -1,0 +1,118 @@
+{
+  "id": "T-130",
+  "title": "Comment on progress morph-gpu \"End-of-page morph on the graphics chip\": is it done ?",
+  "anchor": {
+    "page": "progress",
+    "item": "progress:morph-gpu",
+    "label": "End-of-page morph on the graphics chip"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T14:19:28.268Z",
+  "updatedAt": "2026-10-04T21:01:08.047Z",
+  "rev": 32,
+  "assignees": [
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T14:19:28.268Z",
+      "by": "user",
+      "text": "is it done ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T14:19:54.965Z",
+      "by": "mgmt-desk-2",
+      "text": "No, it is not done: the Progress label 'landed' is misleading here.\n\n- What is on main: version 1 and 2 as a record only (kept so the work is not lost). Neither is in any best build.\n- Why: both made the menu's first opening frames 4.5-7 ms slower on the phone.\n- Now: the owner built version 3, a 1-line fix (commit 23fad567), and checks it. It joins the next best build (v8) if the phone check passes.\n- Still open: why the very first opening is slow; it is checked after 17:20Z.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T14:35:08.508Z",
+      "by": "user",
+      "text": "Lead, investigate this what's the problem of this ?",
+      "forLead": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T14:35:24.324Z",
+      "by": "mgmt-desk-2",
+      "text": "I sent this to the lead. My reading of the problem: the label 'landed' here means 'kept on main as a record', not 'finished and shipped'.\n\n- Progress says landed (stage L), but it is not in any best build.\n- Status says the owner is still testing; the row has not been updated for 1 h 53 min.\n- The new-labels work (T-124, T-125) should fix both: 'landed, not in a build' as its own label, and a warning for stale rows.\n\nWhat you need to do: nothing; the lead answers here."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T14:35:30.203Z",
+      "by": "lead",
+      "text": "**The fix (rev 3) is finished and goes into v8. The \"landed\" label only meant its notes were saved, which is why it looked done before it was.**\n\nWhat the problem was:\n- When the end-of-page panel opens or closes, the last section's fade crosses fully visible. In Safari that alone forces a re-layout plus a big repaint, every time. This is confirmed in WebKit's source.\n- Rev 3 is one CSS line: the section stops at 99.99 % visible instead of 100 %. It looks identical (checked in Chrome and the simulator).\n\n| repaint, simulator | v7 | rev 3 |\n|---|---|---|\n| panel opens (2nd time onward) | 29 areas | 10 areas |\n| panel finishes closing | 22 areas | gone |\n| panel opens first time after load | 32 areas | 32 (unchanged) |\n\n- **Still open:** the first opening after the page loads, a separate one-time cost. It gets looked at after 17:20Z, to save usage.\n- **Label:** the status fix being built will show \"done, waits for build\" instead of \"landed\".\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T14:36:12.818Z",
+      "by": "user",
+      "text": "Let's fix and adjust the rules of this more proper and understandable."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T14:36:39.700Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes, this fix is already under way with the label work from T-124 and T-125.\n\n- The lead's plan: rows update themselves on landing, a red warning when Progress and Status disagree, wrong labels refused.\n- Added by the lead here: 'done, waits for build' instead of 'landed'.\n- I passed your 'Let's fix' to the lead, so the rules also get plain wording.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T14:36:55.091Z",
+      "by": "lead",
+      "text": "**Going ahead: the labels get plain words and one shared legend on both pages.**\n\n- Labels: \"in best build\", \"done, waits for build\", \"being tested (rev N)\", \"unfinished, paused until …\", \"closed, no fix\", \"dropped\", \"standing by\". \"Landed\" alone goes away.\n- Each item shows one label, worked out by the tools; old agent text becomes a note under it.\n- A tools helper is building it with the T-124/T-125 changes; I'll post here when it's live.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T14:37:46.816Z",
+      "by": "user",
+      "text": "Do we need to improve our tools for harden this ?"
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T14:38:06.323Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes, and the tools are already being improved; the work is with the tools helper (ts-board).\n\n- One label per item, worked out by the tools, not typed by agents (lead, #8).\n- Plain labels and one legend on both pages.\n- Stale rows: the board refreshes a row on events like a proposal decision (incident I-145) and shows landed or owner-ended work by itself (I-152).\n- Planned: wrong labels refused, and a red warning when the two pages disagree.\n\nWhat you need to do: nothing; the lead posts here when it is live."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T16:07:26.340Z",
+      "by": "mgmt-desk-2",
+      "text": "The new row labels are live on the Status and Progress pages. Reload them.\n\n- Every row now shows one plain label read from the Progress page, for example \"in best build (v7)\", \"done, waits for build v8\", \"closed, no fix\" or \"dropped\".\n- \"Finished (nothing to land)\" is gone. A row that disagrees with Progress shows a red \"does not match\".\n- A parked row says why it waits and what restarts it, or shows a red \"needs review\".\n- Both pages have one legend that explains each label.\n- Checked on the live page just now: no red mismatch and no \"needs review\" on the rows we talked about.\n\nWhat you need to do: reload the pages and tell me if any row still reads wrong."
+    }
+  ],
+  "reads": {
+    "user": 11,
+    "mgmt-desk-2": 11,
+    "lead": 9
+  },
+  "history": [
+    {
+      "at": "2026-10-04T14:19:28.268Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    },
+    {
+      "at": "2026-10-04T14:35:24.429Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User #3 asks lead to investigate morph-gpu row: Progress 'landed' (record only, not in a build) vs Status 'testing' 1h53m stale (parked row also exists). Include 'landed, not in build' label + stale-row flag in the T-124/125 label work; reply in T-130."
+    },
+    {
+      "at": "2026-10-04T14:36:39.875Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User #6 'Let's fix and adjust the rules more proper/understandable' = go-ahead for the label rules (T-124/125, your #5 'done, waits for build'). Please make rule wording plain and confirm in T-130 when live."
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-2": "2026-10-04T16:07:26.340Z",
+    "lead": "2026-10-04T21:01:08.047Z"
+  },
+  "histSeen": {
+    "lead": 3
+  }
+}

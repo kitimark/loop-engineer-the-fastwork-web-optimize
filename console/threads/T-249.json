@@ -1,0 +1,71 @@
+{
+  "id": "T-249",
+  "title": "Critical memory usage (2.6GB)",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-08T11:44:10.705Z",
+  "updatedAt": "2026-10-08T11:50:07.918Z",
+  "rev": 18,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-08T11:44:10.705Z",
+      "by": "user",
+      "text": "claude code terminal display this, what's the problem ? \n```\nCritical memory usage (2.6GB) — restart and resume with claude --continue\n```"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-08T11:44:53.698Z",
+      "by": "lead",
+      "text": "The warning is about this lead Claude Code session itself: it has run for 7+ days and its memory grew to about 2 GB. Restarting it with claude --continue is the right fix.\n\n- Nothing breaks: the work is committed, and the console server and the phone test runner run on their own (detached).\n- What stops: my background watches and the helper agents in this session; after the restart I re-arm them and restart the phone test (P-166) with a fresh agent from the committed kit.\n- Best moment: in about 5-10 min, after my test run (ends by 11:50Z) and fix-g0-box's current check of the phone's test tool finish. I'll post \"ready to restart\" here.\n\nWhat you need to do: wait for my \"ready to restart\" in this thread, then type /exit and run claude --continue in the same folder."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-08T11:45:51.230Z",
+      "by": "user",
+      "text": "if i turn on `claude agents`. is it help ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-08T11:46:09.405Z",
+      "by": "lead",
+      "text": "Probably not for this warning: the memory belongs to this one long lead session, and only a restart frees it.\n\n- I have not checked what `claude agents` does in your Claude Code version, so I can't promise more than that.\n- If it runs helper agents as separate sessions, it could keep this lead session smaller later, but it would not shrink the current one.\n- Restart plan unchanged: after my test run (ends by 11:50Z) I post \"ready to restart\" here.\n\nWhat you need to do: nothing yet; please also do the Xcode step on your console (C-123), which unblocks the phone test."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-08T11:47:42.487Z",
+      "by": "lead",
+      "text": "Ready to restart now: my test run passed and nothing is running on the phone or Chrome.\n\n- The phone test (P-166) stays parked until Xcode finishes preparing the iPhone (your step C-123); you can do C-123 before or after the restart.\n- After the restart I re-arm my watches, read C-123 and restart the phone test.\n\nWhat you need to do: in the lead's terminal type /exit, then run claude --continue in the same folder."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-08T11:49:43.878Z",
+      "by": "user",
+      "text": "No need to start them. continue your work. they're not our issue at this time."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-08T11:50:00.780Z",
+      "by": "lead",
+      "text": "OK: no restart; I keep working in this session.\n\n- I'll post again here only if the memory warning starts to block work.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 7,
+    "lead": 7
+  },
+  "history": [
+    {
+      "at": "2026-10-08T11:50:07.918Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-08T11:50:00.780Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

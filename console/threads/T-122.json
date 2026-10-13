@@ -1,0 +1,93 @@
+{
+  "id": "T-122",
+  "title": "Comment on the Status page \"Who is doing what\": What it means ? do i need to do ?",
+  "anchor": {
+    "page": "status",
+    "item": "part:page",
+    "quote": "Waiting on youHero accent word on the graphics side (accent-ca): you: decision on PR-019Steps are on Your steps; anything else, tell the lead.",
+    "label": "Who is doing what"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T13:24:39.649Z",
+  "updatedAt": "2026-10-07T02:15:54.319Z",
+  "rev": 18,
+  "assignees": [
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T13:24:39.649Z",
+      "by": "user",
+      "text": "What it means ? do i need to do ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T13:24:56.150Z",
+      "by": "lead",
+      "text": "**Yes, one choice is waiting for you, whenever you have time; nothing is blocked on it today.**\n\nIt is about the hand-drawn accent word in the hero (the word with the wobbling stroke). We found three ways to handle it (proposal PR-019 on the Proposals page):\n\n| option | looks | saves on iPhone |\n|---|---|---|\n| exact (recommended) | identical | small: about 5-7 % of the word's work |\n| slide | a sliding wipe instead of the drawn stroke (you turned this look down before, in PR-001) | large |\n| keep | no change | nothing |\n\n- Each option has A and B pages on the Proposals page; the phone links are on the Wi-Fi.\n- If you're unsure, \"exact\" is safe: it looks the same and does a little less work.\n\nWhat you need to do: pick one option on PR-019 (Proposals page) when you're ready."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T13:25:36.918Z",
+      "by": "user",
+      "text": "i already answer in the PR-019 ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T13:25:56.485Z",
+      "by": "lead",
+      "text": "Yes, you did, sorry: you chose **exact** at 13:09Z. The status page row was out of date; I've fixed it. The accent-word change now moves onto the best build for the next wave.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T13:28:57.622Z",
+      "by": "user",
+      "text": "Can you improve the tools for support update these data more properly. i think it should not depend on agent update. cause it use token and agent can make mistake. \n\nWe design tools and toolsmith agents for create the tools for help agents work together. more easier and less mistake. \n\nI think maybe you could re-organize the agent roles, do we need some role for ask these agent opinion for help us work together better ? \n\nlet's investigate and plan the long-term of our team."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T13:29:27.741Z",
+      "by": "lead",
+      "text": "**Agreed, and you're right about the cause:** the stale PR-019 row came from an agent having to update the board by hand. The tools already know when you decide a proposal, take a phone slot or finish a step.\n\n**What I'm starting now**\n1. An architecture agent investigates for about an hour, reading only:\n   - every coordination slip so far (stuck steps, stale rows, missed messages, lock jams);\n   - which status updates the tools could make by themselves;\n   - a short question to each active agent: \"what slows you down working with the others?\"\n2. It writes a long-term plan for the team: which board updates become automatic, and whether roles should change. That includes your idea of a role that collects agents' views on teamwork, e.g. a short \"team check\" every few hours that turns the answers into tool fixes.\n3. The plan comes to you as a proposal with options and a Try-it where it makes sense. Nothing changes until you choose.\n\n**Right away:** I logged the stale row as a tool problem (I-145), so a decided proposal clears its \"waiting on you\" line by itself.\n\nWhat you need to do: nothing now; the plan comes as a proposal."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T13:47:08.090Z",
+      "by": "lead",
+      "text": "**Your choice (tools + team check) is under way.**\n\n| step | state |\n|---|---|\n| Board updates itself when you answer | tools helper started (with the one-line wake for every event) |\n| Reply format check | tools helper started (T-123) |\n| Lock chains, phone reservation, peer file reader, duplicate-incident join | logged; start after the current helpers finish (they edit the same tools) |\n| Desk on a cheaper model | running since 13:40Z |\n| Team check every ~6 h | first one after the v8 build, or about 19:45Z |\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 7,
+    "lead": 7,
+    "mgmt-desk-2": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-04T14:04:50.492Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    },
+    {
+      "at": "2026-10-04T14:04:51.742Z",
+      "who": "lead",
+      "action": "unassign",
+      "note": "lead"
+    },
+    {
+      "at": "2026-10-07T02:15:54.319Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T13:47:08.090Z",
+    "mgmt-desk-2": "2026-10-04T14:04:52.245Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "id": "C-145",
+  "by": "lead",
+  "kind": "question",
+  "title": "Medium test draft: do Giphy and Streamable move by themselves?",
+  "instructions": "Optional. Open your unpublished Medium draft \"Embed loop test (private test, do not publish)\" in preview. Answer: does the Giphy clip move and loop without a click? Does the Streamable clip? Do the Vimeo and YouTube boxes show a play button? Then delete the test draft.",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "yes",
+      "no"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-10T09:18:20.273Z",
+  "queuedAt": "2026-10-10T09:18:20.273Z",
+  "updatedAt": "2026-10-10T10:41:03.805Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-10T09:18:20.273Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-10T10:39:09.283Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-10T10:41:03.805Z",
+      "who": "user",
+      "action": "answer",
+      "value": "yes"
+    }
+  ],
+  "queueSeq": 104,
+  "startedAt": "2026-10-10T10:39:09.283Z",
+  "result": {
+    "value": "yes",
+    "notes": "Giphy and imgur are auto-play and loop without click. no need to remove the test draft.",
+    "at": "2026-10-10T10:41:03.805Z"
+  }
+}

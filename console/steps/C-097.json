@@ -1,0 +1,57 @@
+{
+  "id": "C-097",
+  "by": "lead",
+  "kind": "action",
+  "title": "Xcode: check the iPhone's thermal condition, restart it on Serious, then unlock the iPhone",
+  "instructions": "The iPhone still reports Critical at 35 C, so Xcode's condition may not be on Serious. On the Mac, in Xcode choose Window > Devices and Simulators, select the iPhone, and look at Device Conditions > Thermal State. In the notes, write what it shows. Then click Stop, wait about 2 minutes, choose Thermal State 'Serious' and click Start. Finally unlock the iPhone (enter the passcode if asked), check Settings > Developer > Enable UI Automation is on, go to the Home Screen and press Done here.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-07T01:18:47.903Z",
+        "done": "2026-10-07T01:18:50.578Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-07T01:18:13.964Z",
+  "queuedAt": "2026-10-07T01:18:13.964Z",
+  "updatedAt": "2026-10-07T01:18:50.578Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-07T01:18:13.964Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-07T01:18:47.903Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-07T01:18:50.578Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 56,
+  "startedAt": "2026-10-07T01:18:47.903Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-07T01:18:50.578Z"
+  }
+}

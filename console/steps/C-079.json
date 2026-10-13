@@ -1,0 +1,58 @@
+{
+  "id": "C-079",
+  "by": "lead",
+  "kind": "action",
+  "title": "Unlock the iPhone (it locked itself again)",
+  "instructions": "Please unlock the iPhone and leave it on the home screen. Then check Settings > Display & Brightness > Auto-Lock is Never, and press Done here.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-06T07:06:16.215Z",
+        "done": "2026-10-06T07:06:58.221Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-06T07:04:58.607Z",
+  "queuedAt": "2026-10-06T07:04:58.607Z",
+  "updatedAt": "2026-10-06T07:06:58.221Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-06T07:04:58.607Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-06T07:06:16.215Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-06T07:06:58.221Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 38,
+  "startedAt": "2026-10-06T07:06:16.215Z",
+  "result": {
+    "value": "done",
+    "notes": "I was plug and un-plug and auto-lock was never already",
+    "at": "2026-10-06T07:06:58.221Z"
+  }
+}

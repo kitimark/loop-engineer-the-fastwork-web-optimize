@@ -1,0 +1,54 @@
+{
+  "id": "C-011",
+  "by": "lead",
+  "kind": "action",
+  "title": "iPhone: force-quit Safari and reopen it",
+  "instructions": "Swipe up to the app switcher and swipe Safari away (force-quit). Reopen Safari on a blank tab (not fastwork.com), keep it in front with the phone unlocked and plugged in, then press Done.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-01T17:38:12.064Z",
+        "done": "2026-10-01T17:38:19.796Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-01T17:37:57.946Z",
+  "queuedAt": "2026-10-01T17:37:57.946Z",
+  "updatedAt": "2026-10-01T17:38:19.796Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-01T17:37:57.946Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-01T17:38:12.064Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T17:38:19.796Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    }
+  ],
+  "startedAt": "2026-10-01T17:38:12.064Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-01T17:38:19.796Z"
+  }
+}

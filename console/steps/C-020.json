@@ -1,0 +1,40 @@
+{
+  "id": "C-020",
+  "by": "iphone-runner",
+  "kind": "action",
+  "title": "Point QuickTime at the iPhone again (phone recordings for PR-001)",
+  "instructions": "On the Mac, open QuickTime Player and choose File > New Movie Recording. Click the small arrow next to the red record button, pick your iPhone under Camera, and check that the window now shows the phone's screen. Leave that window open, do not press record, and click Done here.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "cancelled",
+  "cur": 0,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "waiting",
+      "at": {}
+    }
+  ],
+  "createdAt": "2026-10-02T08:50:35.055Z",
+  "queuedAt": "2026-10-02T08:50:35.055Z",
+  "updatedAt": "2026-10-02T08:51:14.355Z",
+  "rev": 2,
+  "history": [
+    {
+      "at": "2026-10-02T08:50:35.055Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-02T08:51:14.355Z",
+      "who": "iphone-runner",
+      "action": "cancel",
+      "note": "Withdrawn: no camera use until you approve a route (T-018). Nothing to do."
+    }
+  ]
+}

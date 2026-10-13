@@ -1,0 +1,288 @@
+{
+  "id": "C-092",
+  "by": "int-v11",
+  "topic": "v11",
+  "kind": "swipe-pair",
+  "title": "End-of-page menu: which page follows your finger better?",
+  "instructions": "On each page, swipe down to the very end, then swipe up and down there so the menu at the end opens and closes a few times (about 30 seconds). Judge only that end-of-page menu. Pick 1 or 2; if you are not sure, pick either and write 'not sure' in the notes.",
+  "url": "http://192.168.0.57:50300/",
+  "showUrl": false,
+  "meta": {
+    "ticket": "v11-swipe",
+    "pair": "CC",
+    "key": {
+      "1": "C",
+      "2": "C"
+    },
+    "pins": {
+      "C": "1b2eecc66011/e1359ab9994a",
+      "V11": "9b4a829d15a0/62743920fe1a"
+    },
+    "build": "v11 = Vc + V13 + H1c"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2"
+    ],
+    "scale": {
+      "min": 1,
+      "max": 5,
+      "label": "How different did they feel?"
+    }
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.57:50300/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-07T00:16:43.526Z",
+        "ready": "2026-10-07T00:16:48.682Z",
+        "started": "2026-10-07T00:16:51.930Z",
+        "recording": "2026-10-07T00:16:53.439Z",
+        "done": "2026-10-07T00:17:15.446Z"
+      },
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-07T00:14:18.702Z",
+            "ready": "2026-10-07T00:14:24.368Z",
+            "started": "2026-10-07T00:14:54.561Z",
+            "recording": "2026-10-07T00:14:56.253Z",
+            "done": "2026-10-07T00:15:31.171Z"
+          },
+          "ended": "restart",
+          "by": "user",
+          "endedAt": "2026-10-07T00:16:29.922Z"
+        }
+      ],
+      "attempt": 2
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.57:50300/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-07T00:17:46.754Z",
+        "ready": "2026-10-07T00:17:51.944Z",
+        "started": "2026-10-07T00:17:54.183Z",
+        "recording": "2026-10-07T00:17:55.759Z",
+        "done": "2026-10-07T00:18:20.523Z"
+      },
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-07T00:15:45.016Z",
+            "ready": "2026-10-07T00:15:49.702Z",
+            "started": "2026-10-07T00:15:52.616Z",
+            "recording": "2026-10-07T00:15:54.021Z",
+            "done": "2026-10-07T00:16:11.729Z"
+          },
+          "ended": "restart",
+          "by": "user",
+          "endedAt": "2026-10-07T00:16:29.922Z"
+        }
+      ],
+      "attempt": 2
+    }
+  ],
+  "createdAt": "2026-10-07T00:14:18.608Z",
+  "queuedAt": "2026-10-07T00:14:18.608Z",
+  "updatedAt": "2026-10-07T00:20:39.003Z",
+  "rev": 23,
+  "history": [
+    {
+      "at": "2026-10-07T00:14:18.608Z",
+      "who": "int-v11",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-07T00:14:18.702Z",
+      "who": "int-v11",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-07T00:14:24.368Z",
+      "who": "int-v11",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-07T00:14:54.561Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-07T00:14:56.253Z",
+      "who": "int-v11",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-07T00:15:31.171Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-07T00:15:45.016Z",
+      "who": "int-v11",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-07T00:15:49.702Z",
+      "who": "int-v11",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-07T00:15:52.616Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-07T00:15:54.021Z",
+      "who": "int-v11",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-07T00:16:11.729Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-07T00:16:29.922Z",
+      "who": "user",
+      "action": "restart",
+      "part": 1,
+      "epoch": 1,
+      "attempts": [
+        2,
+        2
+      ]
+    },
+    {
+      "at": "2026-10-07T00:16:43.526Z",
+      "who": "int-v11",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-07T00:16:48.682Z",
+      "who": "int-v11",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-07T00:16:51.930Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-07T00:16:53.439Z",
+      "who": "int-v11",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-07T00:17:15.446Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-07T00:17:46.754Z",
+      "who": "int-v11",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-07T00:17:51.944Z",
+      "who": "int-v11",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-07T00:17:54.183Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-07T00:17:55.759Z",
+      "who": "int-v11",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-07T00:18:20.523Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-07T00:20:39.003Z",
+      "who": "user",
+      "action": "answer",
+      "value": "2"
+    }
+  ],
+  "queueSeq": 51,
+  "startedAt": "2026-10-07T00:14:54.561Z",
+  "epoch": 1,
+  "result": {
+    "value": "2",
+    "notes": "Is it the same version ? the both of end-of-page are the same. so i was remember the gpu render is more smoother.\n\ni'd like to click it's same. but it has no option for them.",
+    "scale": 1,
+    "at": "2026-10-07T00:20:39.003Z"
+  }
+}

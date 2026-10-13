@@ -1,0 +1,58 @@
+{
+  "id": "T-084",
+  "title": "Fyi: i was use iphone a bit during you using. you might have to restart the test process",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T07:29:31.421Z",
+  "updatedAt": "2026-10-04T07:34:06.575Z",
+  "rev": 8,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T07:29:31.421Z",
+      "by": "user",
+      "text": "Fyi: i was use iphone a bit during you using. you might have to restart the test process",
+      "forLead": true
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T07:29:58.373Z",
+      "by": "lead",
+      "text": "**Thanks, no harm done.**\n- No test was running on the phone when you used it. The last swipe pair had just ended, and the next one (C-041, top bar) is waiting for you to press Start.\n- fix-nav-morph will reload its test page on the phone before your Start, so it begins clean.\n\n**What you need to do:** nothing extra. Press Start on C-041 when you're ready."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T07:29:58.745Z",
+      "by": "mgmt-ops-10",
+      "text": "Thanks for telling us. Nothing needs restarting.\n- Since 07:22 no test has been running on the phone. The swipe step C-041 is loaded but not started, so your use touched no results.\n- Before that, the phone was only running your own swipe steps (C-038 to C-040), so those are fine too.\n- I've asked the agent running the test (fix-nav-morph) to reload Page 1, so the step starts fresh at the top of the page.\nWhat you need to do: nothing now. When C-041 shows Start, press it as usual."
+    }
+  ],
+  "reads": {
+    "user": 3,
+    "mgmt-ops-10": 3,
+    "lead": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-04T07:29:31.421Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T07:34:06.575Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T07:29:58.745Z",
+    "lead": "2026-10-04T07:29:58.373Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

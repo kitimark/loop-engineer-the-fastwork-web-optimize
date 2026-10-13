@@ -1,0 +1,101 @@
+{
+  "id": "T-254",
+  "title": "i'd like to use my phone",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-08T17:59:20.357Z",
+  "updatedAt": "2026-10-09T10:39:55.912Z",
+  "rev": 29,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-08T17:59:20.357Z",
+      "by": "user",
+      "text": "i'd like to use my phone"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-08T17:59:46.131Z",
+      "by": "lead",
+      "text": "Yes, the iPhone is yours now: I reserved it for you until 18:59Z, so no agent will start a test on it.\n- No test was running; the agents work in the Simulator right now.\n- The cable watcher now stays quiet while you hold the phone (fixed earlier today), so no \"re-plug\" step should appear.\nWhat you need to do: use the phone; tell me here when you are done (plug it back in if you unplug it)."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-08T18:29:38.902Z",
+      "by": "user",
+      "text": "done"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-08T18:30:01.689Z",
+      "by": "lead",
+      "text": "Thanks, the iPhone is back with the agents: I released your hold at 18:30Z.\n- Cable: connected again (18:28Z). The phone test driver (WDA): ready.\n- Next on the phone: fix-menu-layers' menu open/close check on the new best build g0.0h, once its card is signed.\nWhat you need to do: nothing; leave the phone plugged in and unlocked."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-08T18:47:40.647Z",
+      "by": "user",
+      "text": "done, release it."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-08T18:47:50.585Z",
+      "by": "lead",
+      "text": "Released: the iPhone is back with the agents.\n- The cable is connected; nothing else changed.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-08T19:05:21.035Z",
+      "by": "lead",
+      "text": "The iPhone starts a timed test soon: the menu open/close check (P-170) by fix-menu-layers, about 50 minutes.\n- It compares today's best (g0.0h) with g0.0h plus the menu clock on its own layer (the clock repaints 1.2 MB instead of 5.7 MB).\n- Please don't touch the phone while it runs; if you need it, say so here and it stops at the next run.\nWhat you need to do: nothing; leave the phone plugged in and unlocked."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-08T23:28:18.418Z",
+      "by": "lead",
+      "text": "The iPhone starts a timed test soon: the drag-down card fix (P-172) by fix-scrollcb-g0, about 35 minutes.\n- It compares today's best (g0.0i) with g0.0i plus the people-deck card fix (fewer slow layouts while you drag).\n- Please don't touch the phone while it runs; if you want it (for example to try the follow-the-finger menu proposal), say so here and it stops at the next run.\nWhat you need to do: nothing; leave the phone plugged in and unlocked."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-09T04:20:10.487Z",
+      "by": "lead",
+      "text": "Phone test of the next build (g0.0k = today's best g0.0j + your accepted steady-glass menu, PR-040) starts in about 20 min.\n- Test P-173: the robot finger (WDA, Apple's test driver) drags to the end and opens and closes the menu, g0.0j vs g0.0k, 8 counted runs.\n- It takes about 65 min. The phone is warmed by the tool itself; no Xcode step for you.\n- Pass rule: g0.0k may not have more slow frames at the end than g0.0j (at most +2 frames over 50 ms per run).\n- On pass g0.0k becomes the best build, on the Best build page with a Try-it link.\nWhat you need to do: please leave the iPhone alone (plugged in, Safari open) until I post the result."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-09T04:57:59.678Z",
+      "by": "lead",
+      "text": "The phone test (P-173) stopped early because the iPhone got too hot; it restarts with cool-downs and ends around 07:00Z.\n- The robot-finger runs back to back warmed the phone by about 1 °C per run, from 38 to 43 °C, and iOS reported Critical.\n- Nothing is broken: the phone link and the test driver were fine; the runs so far are kept only as notes, not counted.\n- The restart waits until the battery is at or below 40 °C before every run, so every run starts at the same heat and stays under our 44 °C ceiling.\n- Same pass rule as before: g0.0k may not have more slow frames at the end than g0.0j.\nWhat you need to do: please leave the iPhone alone (plugged in) until I post the result."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-09T06:35:00.212Z",
+      "by": "lead",
+      "text": "The phone test is done and passed: g0.0k is no worse than g0.0j at the end of the page, and the iPhone is free again.\n- 0 frames over 50 ms in both; frames over 34 ms per run 8-24 (g0.0j) vs 9-16 (g0.0k); the long frame at the platform section went from 50 to 19 ms.\n- Every run started below 40 °C; both check runs passed.\n- g0.0k is now the best build (details in the best-build thread, T-228).\nWhat you need to do: nothing; you can use the iPhone again."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-09T09:34:58.728Z",
+      "by": "lead",
+      "text": "Next phone test starts in a few minutes: the deck-blink fix build (g0.0l = g0.0k + \"instant\") vs today's best g0.0k, about 60 min.\n- The robot finger (WDA, Apple's test driver) does two things per run: a fast flick onto the people deck, and slow drags down to the middle of the page.\n- Pass rule (test P-174): g0.0l may not have more slow frames than g0.0k (at most +2 frames over 50 ms per run, in each part).\n- Before every run the phone cools to 40 °C or below; it stops at 43 °C.\n- On pass g0.0l becomes the best build, with a Try-it link on the Best build page.\nWhat you need to do: please leave the iPhone alone (plugged in) until I post the result."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-09T10:36:23.881Z",
+      "by": "lead",
+      "text": "The phone test passed: g0.0l is no worse than g0.0k, and the iPhone is free again.\n- Fast flick onto the deck: 0 blurred deck frames (g0.0k had 51-52 per flick).\n- Frames over 50 ms per run stayed inside the rule (at most +2): +1 in the flick and +1 in the slow drags.\n- All runs started below 40 °C; both check runs passed.\nWhat you need to do: nothing; you can use the iPhone again."
+    }
+  ],
+  "reads": {
+    "user": 13,
+    "lead": 13
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-09T10:36:23.881Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

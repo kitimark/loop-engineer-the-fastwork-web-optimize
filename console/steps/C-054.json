@@ -1,0 +1,49 @@
+{
+  "id": "C-054",
+  "by": "fix-hero-exit-threaded",
+  "kind": "choice",
+  "title": "Where did the menu pages lag? (proposal PR-023)",
+  "instructions": "Pick the place where A and B felt laggy to you. One tap is enough.",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "top of the page",
+      "middle cards",
+      "end menu while my finger moves",
+      "end menu after I let go",
+      "everywhere"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-05T04:18:02.831Z",
+  "queuedAt": "2026-10-05T04:18:02.831Z",
+  "updatedAt": "2026-10-05T04:21:51.631Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-05T04:18:02.831Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-05T04:21:21.585Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-05T04:21:51.631Z",
+      "who": "user",
+      "action": "answer",
+      "value": "end menu after I let go"
+    }
+  ],
+  "queueSeq": 13,
+  "startedAt": "2026-10-05T04:21:21.585Z",
+  "result": {
+    "value": "end menu after I let go",
+    "at": "2026-10-05T04:21:51.631Z"
+  }
+}

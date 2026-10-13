@@ -1,0 +1,146 @@
+{
+  "id": "T-087",
+  "title": "Comment on C-041 \"Top bar and next section: which page follows your finger be…\": Investigate, why \"start over\" take too long time for setup.",
+  "anchor": {
+    "page": "steps",
+    "item": "step:C-041",
+    "label": "Top bar and next section: which page follows your finger better?"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T07:43:51.125Z",
+  "updatedAt": "2026-10-04T10:13:48.435Z",
+  "rev": 35,
+  "assignees": [
+    "fix-nav-morph"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T07:43:51.125Z",
+      "by": "user",
+      "text": "Investigate, why \"start over\" take too long time for setup."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T07:44:16.314Z",
+      "by": "fix-nav-morph",
+      "text": "The delay was my fault, not the console's. Start over itself worked at once.\n- Why: after part 2, I was waiting on one thing only (your answer). The signal for your Start over arrived, but I only read it when that wait ended, about 2 minutes later.\n- What I changed: from now on, a Start over is handled first, within a few seconds (I reload page 1 and set it ready).\n- Your two swipes from this try are kept, but they have no answer yet, so they count as nothing.\n\nWhat you need to do: reply 'again' if you want to redo the swipe test now (I hold the phone for 5 more minutes, then let the next test have it), or 'later'.",
+      "ask": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T07:46:36.563Z",
+      "by": "user",
+      "text": "Let's investigate how you could improve this better when i click the \"start over\""
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T07:47:17.925Z",
+      "by": "fix-nav-morph",
+      "text": "Start over should now take seconds, not minutes. Two fixes are in place as of now.\n- Tool fix (landed just now, I-123): a wait that missed your Start over now notices it at once, instead of waiting for your answer.\n- My fix: through every part, and while you answer, I keep a watcher whose only job is your Start over. When it fires, page 1 is reloaded and set ready within about 10 seconds.\n- Also new: if a test stalls for over 2 minutes, the lead gets an alert automatically.\n\nWhat you need to do: reply 'again' to redo the swipe test now with these fixes, or 'later'. I hold the phone until about 07:52 UTC, then hand it to the next test.",
+      "ask": true
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T07:48:28.434Z",
+      "by": "user",
+      "text": "again"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T08:16:01.801Z",
+      "by": "fix-nav-morph",
+      "text": "Result: you picked page 2, the new top-bar build, as smoother: 4 of 5.\n\nWhat we can't tell yet:\n- Order and heat: the old build ran first both times, and the phone warmed up during the test (39.5 to 40 C). So part of the difference could be order.\n- Where the lag was: by 'end-of-section morph', did you mean (a) when the big first section ends and the top bar changes, or (b) the morph at the very end of the page? This test is about (a).\n\nWhat comes next: one more short test of 4 swipes, in the other order, plus one check pair. It runs after two phone tests that are queued before it, when you say 'ready' here.\n\nWhat you need to do: answer (a) or (b) when you have a moment.",
+      "ask": true
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T08:19:54.131Z",
+      "by": "user",
+      "text": "Can you tracing this lag instead of asking me ?"
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T08:25:17.036Z",
+      "by": "lead",
+      "text": "Yes, we'll trace it ourselves. No more questions to you about it.\n- Your swipes in the last test were recorded on the phone, with a timestamp on every frame and the scroll position at each one.\n- fix-nav-morph will match each slow frame to where the page was: the top bar crossing, the end of the first section, or the end of the page. It does this for both pages, and checks whether page 1 got slower as the phone warmed up.\n- It answers here with a small table: where the slow frames happened, on which page.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T08:29:29.248Z",
+      "by": "fix-nav-morph",
+      "text": "Answer: the phone's own frame log agrees with you. The old build (page 1 in C-042) had more long frames at the top bar change and at the end-of-page morph. This holds whichever page went first, so heat or order doesn't explain it.\n\nLong frames (over 50 ms) while the page moved:\n| test, page order | crossing: old / new | end of page: old / new | all, per 100 frames: old / new |\n|---|---|---|---|\n| C-042 (old first, 39.5-40 C) | 5 / 1 | 7 / 1 | 6.7 / 3.9 |\n| C-041 (new first, 38.5 C) | 10 / 0 | 1 / 0 | 6.3 / 1.1 |\n\n- 'Crossing' = where the top bar starts its change (about 1.8 screens down). 'End of page' = the last 300 px.\n- With 34 ms or 30/38/46/54 ms as the limit, the direction is the same.\n- Limits: this log sees frame timing only, not the delay from your finger to the screen. The old-build swipe in C-042 is from its first try, because the counted try's log was cut. Status: OBSERVED in our setup.\n\nWhat you need to do: nothing. The short 2-step check (other order plus a check pair) still runs later, when you say 'ready'."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T08:39:29.713Z",
+      "by": "fix-nav-morph",
+      "text": "Update: the phone logs already settled the order question, so the other-order test is dropped. One short step is left: 2 swipes, the same as before. It comes after the two phone tests ahead of it. Say 'ready' here when you have 3 minutes.\n\nWhat you need to do: say 'ready' when you have time."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T09:10:48.245Z",
+      "by": "fix-nav-morph",
+      "text": "The phone is free now for the one short step (2 swipes, about 3 minutes).\n\nWhat you need to do: say 'ready' here when you can do it. If now doesn't suit you, say 'later' and I'll hand the phone to the next test.",
+      "ask": true
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T09:21:13.066Z",
+      "by": "user",
+      "text": "ready"
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T09:26:56.354Z",
+      "by": "lead",
+      "text": "Thanks for 'ready'. The step is a few minutes late: the top-bar agent was busy when you answered, and I've nudged it. It appears under 'Your steps' as soon as it's posted; the phone stays reserved for you.\nWhat you need to do: keep the console open; start the step when it shows up."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T09:30:21.673Z",
+      "by": "fix-nav-morph",
+      "text": "Step posted: open Your steps (C-044, the last one, 2 swipes)."
+    }
+  ],
+  "reads": {
+    "user": 14,
+    "fix-nav-morph": 14,
+    "lead": 13
+  },
+  "history": [
+    {
+      "at": "2026-10-04T07:43:51.125Z",
+      "who": "router",
+      "action": "assign",
+      "note": "fix-nav-morph (author of C-041)"
+    },
+    {
+      "at": "2026-10-04T09:45:39.704Z",
+      "who": "user",
+      "action": "close"
+    },
+    {
+      "at": "2026-10-04T10:13:48.435Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "T-078 merged here: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    }
+  ],
+  "readsAt": {
+    "fix-nav-morph": "2026-10-04T09:30:21.673Z",
+    "lead": "2026-10-04T09:26:56.354Z"
+  },
+  "histSeen": {
+    "lead": 1
+  },
+  "related": [
+    {
+      "id": "T-078",
+      "kind": "merged",
+      "at": "2026-10-04T10:13:48.435Z",
+      "by": "mgmt-ops-10"
+    }
+  ]
+}

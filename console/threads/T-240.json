@@ -1,0 +1,64 @@
+{
+  "id": "T-240",
+  "title": "The start-selling-platform-visual section",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-07T18:08:53.509Z",
+  "updatedAt": "2026-10-07T19:00:19.767Z",
+  "rev": 13,
+  "assignees": [
+    "fix-platform-corners"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-07T18:08:53.509Z",
+      "by": "user",
+      "text": "The start-selling-platform-visual section, i was see the rounded edge of this section is not transparent if we compare with another section that related. \n\nlet's investigate and fix."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-07T18:09:37.603Z",
+      "by": "lead",
+      "text": "Got it: a new agent, fix-platform-corners, is investigating the platform-visual section's rounded corners now; cause in about 45 min.\n- It compares that section's four corners with the related rounded sections, on the original page, today's best (v14) and the new end-of-page build, in Safari (Simulator) and Chrome.\n- That tells us whether the original page has it or one of our changes caused it (likely a GPU layer that drops the rounded clip in Safari).\n- Then a small fix, checked so the rest of the section stays pixel-identical; I will show you before/after crops.\n\nWhat you need to do: nothing; if it shows only at one spot (scroll position, menu open or closed), add that here."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-07T18:18:40.100Z",
+      "by": "user",
+      "text": "Fyi: this issue is came from the original fastwork likes \"join waitlist\" button. not our bugs."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-07T18:19:11.259Z",
+      "by": "fix-platform-corners",
+      "text": "Confirmed: it is in the original page, not ours.\n- Safari only (Simulator): the 'What do you need help with?' card (2nd of the 4 platform cards) shows a faint grey square in all four corners, outside the rounded edge. The other 3 cards have clean corners.\n- Same pixels on the original, v14 and the new end-of-page build (1598 corner px off, max +42 brightness, identical in all three). Chrome: clean everywhere.\n- Next: pin down which layer leaks (likely the blurred background picture behind that card) and make a 1-line CSS fix, checked pixel-identical elsewhere.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-07T19:00:11.409Z",
+      "by": "fix-platform-corners",
+      "text": "The fix is ready to try: the corner-fix proposal (PR-035) on the Proposals page; A = today's best build (g0.0b), B = the same + the fix.\n- Cause: a known Safari bug (WebKit bug 312584): a blurred background picture inside the card is cut to the square box, not to the rounded corner. Only card 2 has such a picture.\n- Fix: one style line that cuts that picture to the card's rounded shape.\n- Checked: grey corner pixels 1598 -> 0 in the iOS Simulator; nothing inside the card changes; no extra GPU work; Chrome unchanged.\n\nWhat you need to do: open the proposal's phone links, look at the four corners of the 2nd platform card in A and B, and pick one."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "lead": 2,
+    "fix-platform-corners": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-07T18:09:48.862Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-platform-corners"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-07T18:09:37.603Z",
+    "fix-platform-corners": "2026-10-07T19:00:11.409Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

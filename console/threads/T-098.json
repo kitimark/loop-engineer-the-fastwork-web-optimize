@@ -1,0 +1,113 @@
+{
+  "id": "T-098",
+  "title": "Catch-up: last swipe test, hero card lag, GPU lesson",
+  "status": "open",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T09:43:56.836Z",
+  "updatedAt": "2026-10-04T18:43:35.613Z",
+  "rev": 26,
+  "assignees": [
+    "fix-nav-morph",
+    "arch-gpu-lessons",
+    "fix-hero-exit-threaded"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T09:43:56.836Z",
+      "by": "lead",
+      "text": "Your \"same\" in the last swipe test was the right answer: both pages were the same build (a hidden check).\n\nWhat it tells us:\n- Your earlier pick in the first swipe pair was real, not chance. Your finger test is reliable, so we keep using it.\n- This pair tested nothing new on the top bar; that is why it felt the same.\n\nYour questions:\n- Hero card still lags: the agents trace it from your recordings and our probes first, and answer here with where the slow frames are.\n- Is the graphics-chip (GPU) lesson applied there? The research on where else the countdown lesson applies runs now (T-096). The hero card is on its list; the answer comes here.\n- More information next time: yes. Each swipe step will say which part of the page to watch and what changed, without saying which page is which.\n\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T09:44:05.039Z",
+      "by": "lead",
+      "text": "Correction to my first point: one hidden check can't prove your earlier pick was real. It shows you don't report a difference when there is none, which makes your earlier pick more believable. fix-nav-morph will say here what this means for the top-bar fix."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T09:48:47.868Z",
+      "by": "fix-nav-morph",
+      "text": "Top bar (F3): the hidden check makes your earlier pick for the top-bar build more believable, but it is one check, not proof. It is not landed yet; it goes to the lead with these results.\n\nHero card lag: yes, your recordings show it. The slow frames are in the first section, not at the top bar.\n- Slow frame = a frame over 50 ms while the page moved (our page logger; it sees gaps, not their cause).\n- Page 1: 28 slow frames; 27 of them in the first section (top 1000 px), most about half a screen to one screen down.\n- Page 2: 21 slow frames; 15 in the first section.\n- At the top-bar change: 0 on page 1, 1 on page 2.\n- The hero card is a separate fix (fix-hero-exit-threaded, on the GPU path). It was not in this build, so it felt the same.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T18:13:08.791Z",
+      "by": "user",
+      "text": "Catch up this progress",
+      "forLead": true
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T18:13:55.919Z",
+      "by": "lead",
+      "text": "Catch-up: the hero card and GPU fixes are in the best build; v8 just passed its phone test; the top bar is still paused.\n\n| Topic | Where it is |\n|---|---|\n| Hero card lag | Fix in best build v7 (the hero fade runs on Safari's scroll thread, on the GPU). Fast-flick test of v7 vs v6 at the hero (P-105) is running on the iPhone now, done about 18:45Z |\n| GPU lesson | Applied in 2 more places: countdown roll (in v7) and the end-of-page menu (in v8) |\n| Best build v8 | Phone test vs v7 (P-114): end menu slow frames per run 2 -> 0, hero flicks 1 fewer, nothing worse. Last check (Simulator, iPad, Mac Safari) after P-105, then v8 replaces v7 |\n| Top bar (fix-nav-morph) | Paused: its colour fix failed the pixel-match check (P-104). It resumes now that v8 is decided |\n| End menu follows finger (PR-018) | Rev 7 for your fast-short-swipe note, see T-146 |\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T18:16:02.591Z",
+      "by": "user",
+      "text": "Did we applied on these yet; \n- People still need people text\n- Join whitelist and lang button on nav bar"
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T18:16:32.179Z",
+      "by": "user",
+      "text": "Lead, check. i think fix-hero-exit-threaded is busy right now.",
+      "forLead": true
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T18:17:53.416Z",
+      "by": "lead",
+      "text": "Checking both now; the answer comes here in about 15 min.\n\n- fix-hero-exit-threaded stays on the end-menu rev 7 (PR-018); a code-reading helper takes your question instead.\n- It finds what animates the \"People still need people\" text and the nav's Join whitelist and language buttons, and whether v7 or v8 already changes them.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T18:25:21.585Z",
+      "by": "lead",
+      "text": "Partly: the card around \"People still need people\" and the top bar's colour check are fixed in v7 and v8; the \"o\" reveal and the nav buttons are not yet.\n\n| Part | What moves while you scroll | Fixed? |\n|---|---|---|\n| Card around the text | Blur-in reveal, shrink each frame | Yes, in v7 and v8 (lighter blur, no shrink work on phones) |\n| The \"o\" of people (face stack) | Opens once when it comes into view: a 0.9 s size change | No fix yet |\n| Top bar colour (dark/light) | A check under the bar on every scroll frame | Partly: cheaper check in v7 and v8; style reads remain each frame |\n| Join waitlist + language button | Blurred glass behind them; button width changes once when leaving the top | No fix yet |\n\n- Cost is our code reading only (not measured): the \"o\" and button changes run once, not every frame; the glass blur may cost the phone's graphics chip on every scroll frame.\n- Candidates for after v8: the nav glass blur and the leftover per-frame style reads first, then the \"o\" reveal; each goes through the usual phone check.\n- The button text is \"Join waitlist\" in the page.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T18:42:29.942Z",
+      "by": "fix-nav-morph",
+      "text": "Top bar colour fix (nav-hit-cache): the failed pixel-match check is explained, and the fix now runs on v8.\n\n- The check flagged 1 frame on phones in fast steps. That came from our test script, not from the fix: the script moved the page at a moment no finger or page code does, so the fix saw the position one frame late. The next frame was right.\n- The desktop flags were the test itself: the original page alone gave 5 such flags when run twice.\n- While tracing it I found and fixed a real slip: the bar did not re-check its colour when its own look changed (hidden, pill). Nothing visible came of it in our runs.\n- The fix still skips about a third of the per-frame checks and all of the per-frame style reads (Chrome counts, not timing).\n- Next: a corrected check (new test card) on v8, then a short phone check, then it goes to the lead to land.\n- Join waitlist button: fix-nav-earn handles it (your T-148 'fix it'). I sent them my earlier measurements: the button costs little per frame, so the issue is the late collapse you saw.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "lead": 9,
+    "user": 10,
+    "fix-nav-morph": 10,
+    "fix-hero-exit-threaded": 7
+  },
+  "history": [
+    {
+      "at": "2026-10-04T09:43:56.836Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-nav-morph,arch-gpu-lessons,fix-hero-exit-threaded"
+    },
+    {
+      "at": "2026-10-04T09:45:14.612Z",
+      "who": "user",
+      "action": "close"
+    },
+    {
+      "at": "2026-10-04T09:48:39.938Z",
+      "who": "fix-nav-morph",
+      "action": "reopen"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T18:25:21.585Z",
+    "fix-nav-morph": "2026-10-04T18:42:29.942Z",
+    "fix-hero-exit-threaded": "2026-10-04T18:16:33.598Z"
+  },
+  "histSeen": {
+    "lead": 3
+  },
+  "triaged": [
+    7
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "id": "T-156",
+  "title": "End menu blind test: was your pick biased?",
+  "topic": "pr-018-menu-morph",
+  "status": "open",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T20:12:31.594Z",
+  "updatedAt": "2026-10-04T20:19:45.802Z",
+  "rev": 14,
+  "assignees": [
+    "fix-hero-exit-threaded",
+    "lead"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T20:12:31.594Z",
+      "by": "lead",
+      "text": "The recorded swipes back your pick: page 1 (rev 7c) reached the end every time, page 2 did not.\n- The test was blind: page 1 was v8 + rev 7c, page 2 was v8 + rev 7 (no change since rev 7).\n- Counted from each page's own scroll record, both tries together:\n\n| page | reached the end you aimed for | turned back | stopped part open |\n|---|---|---|---|\n| 1 (rev 7c) | 42 of 42 | 0 | 0 |\n| 2 (rev 7 on v8) | 64 of 85 | 12 | 9 |\n\n- The lag you felt on both is the panel's repaint while it opens or closes: most slow frames came 0.1-0.3 s after you lifted; plain scrolling had far fewer. The GPU team owns that (they have a one-line fix to try for the close).\n- One caveat: in your second try the phone was slower on both pages, even with the page still (cause unknown; it was at 37 °C, not hot). Page 2 always came second, so the lag feel may lean against it a little. The turn-backs do not depend on that.\n- Rev 7c is now posted on the Proposals page with Try-it pages for A (v8) and B (v8 + rev 7c).\n\nWhat you need to do: review the end-menu proposal (PR-018), rev 7c, on the Proposals page when you have time."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T20:17:47.812Z",
+      "by": "user",
+      "text": "Actually, we already found the breakthrough about how we optimize them. with another related topics, for example; gpu optimization. \n\nAnd the performance stats are impact effectively. i think we might no need to ask me to test with specific element optimization if it already prove in the stats.\n\nLet's investigate, distinguish and find the better long-term measurement",
+      "forLead": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T20:18:36.983Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "Agreed: when the stats already prove a change, you should not need a finger test. I've handed the long-term rule to the lead, since it covers every topic.\n- One data point from this menu change, for that rule:\n\n| check | rev 7 on v8 | rev 7c |\n|---|---|---|\n| robot finger, reached the end | 24 of 24 (4 turned back) | 12 of 12 |\n| your recorded swipes, reached the end | 64 of 85 | 42 of 42 |\n\n- The robot could not show your misses: it lifts while the page is already moving. Your recorded swipes did.\n- So for touch timing, a stats check needs swipes like yours. One option is to replay your recorded swipes with the robot instead of asking you again.\n\nWhat you need to do: nothing now; the lead will answer on the measurement rule."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T20:18:59.604Z",
+      "by": "lead",
+      "text": "Agreed: when the numbers already prove a fix, you shouldn't have to finger-test it.\n\n- Your end-menu swipe test matched the robot's counts (42 of 42 against 64 of 85).\n\nI started an architecture agent (arch-stats-vs-finger) to make this the rule. It does three things:\n- Checks every past finger and swipe test against the numbers we had for the same two pages: did the numbers predict your pick? Where they didn't, why?\n- Sorts fixes into kinds, for example:\n\n| Kind | How it lands |\n|---|---|\n| Smoother, looks the same, numbers clear | On the numbers; no test for you |\n| Uses a proven pattern (GPU repaint, one driver per element) | On the numbers |\n| Changes how something moves or looks | You decide on the proposal, as taste |\n| Numbers unclear or disagree | A swipe test, only then |\n\n- Defines the long-term \"feel\" numbers the robot measures instead of your finger.\n  - How far the page trails the finger, slow frames during and after the swipe, settle time, turn-backs.\n  - Each one replaces your test only after it has agreed with your past blind picks.\n\nUntil then, I post no new finger test for a fix that only does less work.\n\nWhat you need to do: nothing now; I'll post the agent's table and the new rule here for your OK."
+    }
+  ],
+  "reads": {
+    "lead": 4,
+    "user": 4,
+    "fix-hero-exit-threaded": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-04T20:12:55.905Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-hero-exit-threaded"
+    },
+    {
+      "at": "2026-10-04T20:18:46.331Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "escalate",
+      "note": "User wants a long-term rule: no user finger test when stats already prove a change. Project-wide, so yours. PR-018 data point: the robot missed the user's misses (rev 7 24/24); recorded user swipes showed them (64/85 vs 42/42). Option: replay recorded swipes via WDA."
+    },
+    {
+      "at": "2026-10-04T20:18:59.680Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T20:18:59.604Z",
+    "fix-hero-exit-threaded": "2026-10-04T20:18:46.331Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

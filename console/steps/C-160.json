@@ -1,0 +1,58 @@
+{
+  "id": "C-160",
+  "by": "lead",
+  "kind": "action",
+  "title": "Deploy both demo gates with one script",
+  "instructions": "In Terminal, in the project folder: bash out/cf-review/deploy.sh . It checks the local files, asks you to confirm Cloudflare Access is off, sets a fresh random key for each demo (never shown), deploys both, then prints PASS/FAIL for each live check. Tap Done when it says ALL PASS, or paste only the FAIL lines.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-13T08:54:55.019Z",
+        "done": "2026-10-13T08:55:45.079Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-13T08:53:54.000Z",
+  "queuedAt": "2026-10-13T08:53:54.000Z",
+  "updatedAt": "2026-10-13T08:55:45.079Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-13T08:53:54.000Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-13T08:54:55.019Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-13T08:55:45.079Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 119,
+  "startedAt": "2026-10-13T08:54:55.019Z",
+  "result": {
+    "value": "done",
+    "notes": "i need to setup the new cloudfare token, again. i was closed the terminal that it already setup the cloudflare credential",
+    "at": "2026-10-13T08:55:45.079Z"
+  }
+}

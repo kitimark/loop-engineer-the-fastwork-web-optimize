@@ -1,0 +1,57 @@
+{
+  "id": "C-062",
+  "by": "lead",
+  "kind": "action",
+  "title": "Stop the Xcode heat condition for 2 minutes",
+  "instructions": "In Xcode's Devices window, stop the thermal condition on the iPhone, then press Done here. I'll read the phone's level for 2 minutes and then post a step to start Serious again.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-05T06:44:00.503Z",
+        "done": "2026-10-05T06:44:01.203Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-05T06:43:18.295Z",
+  "queuedAt": "2026-10-05T06:43:18.295Z",
+  "updatedAt": "2026-10-05T06:44:01.203Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-05T06:43:18.295Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-05T06:44:00.503Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-05T06:44:01.203Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 21,
+  "startedAt": "2026-10-05T06:44:00.503Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-05T06:44:01.203Z"
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "id": "T-135",
+  "title": "Comment on status morph-gpu \"End-of-page morph on the GPU\": I saw this message again. it's ambiguous",
+  "anchor": {
+    "page": "status",
+    "item": "status:morph-gpu",
+    "quote": "paused on purpose; may resume",
+    "label": "End-of-page morph on the GPU"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T14:38:22.746Z",
+  "updatedAt": "2026-10-04T15:03:33.867Z",
+  "rev": 14,
+  "assignees": [
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T14:38:22.746Z",
+      "by": "user",
+      "text": "I saw this message again. it's ambiguous"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T14:38:42.565Z",
+      "by": "mgmt-desk-2",
+      "text": "You are right: 'paused on purpose; may resume' is the same text for every parked row, so it says nothing specific.\n\nFor this row, in plain words:\n- The fix (rev 3, 1 CSS line) is built and goes into v8.\n- Its agent (fix-morph-gpu) has stopped; nothing is running on it.\n- Still to do: a short phone no-worse check inside v8's phone block, and a look at the slow first opening after 17:20Z.\n- The new labels (lead, T-130 #8) will say this directly: 'done, waits for build'.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T14:39:27.825Z",
+      "by": "user",
+      "text": "Investigate and harden them more proper."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T14:39:50.533Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes, I sent it to the lead as the same label work (T-124, T-125, T-130).\n\n- Cause: the board prints one fixed sentence for every parked row, whatever the reason.\n- Fix to ask for: show the row's real reason and next step in its place, taken from the agent's note.\n- Already planned (lead, T-130 #8): plain labels such as 'done, waits for build', one legend on both pages.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T14:40:02.805Z",
+      "by": "lead",
+      "text": "**Agreed: \"paused on purpose; may resume\" is a fixed text the page prints for every paused item, so it says nothing. It goes away.**\n\n- Instead each item will show its real state and what happens next, e.g. \"done, waits for build v8 · next: phone check in v8\".\n- An item paused without a reason shows \"needs review\" in red, so it can't hide.\n- Part of the same label change as T-124/T-125/T-130; I'll post here when it's live.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T15:02:17.231Z",
+      "by": "mgmt-desk-2",
+      "text": "Update: ts-board covers your parked-row points. Parked rows will show 'done, waits for build v8', 'unfinished, paused until ...' or 'standing by', and a red 'needs review' when no reason is given. About 30-40 min to land.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 6,
+    "mgmt-desk-2": 6,
+    "lead": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-04T14:38:22.746Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    },
+    {
+      "at": "2026-10-04T14:39:50.608Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User #3 'investigate and harden': Status prints the same fixed text 'paused on purpose; may resume' for every parked row. Ask ts-board: replace with the row's specific reason + next step; fold into T-130 #8 labels. Reply in T-135."
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-2": "2026-10-04T15:02:17.231Z",
+    "lead": "2026-10-04T14:40:02.805Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

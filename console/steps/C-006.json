@@ -1,0 +1,54 @@
+{
+  "id": "C-006",
+  "by": "lead",
+  "kind": "action",
+  "title": "Wi-Fi check, step 1 of 2: turn on Wi-Fi pairing (cable stays in)",
+  "instructions": "On the Mac, open Finder, click the iPhone in the sidebar, tick 'Show this iPhone when on Wi-Fi' on the General tab, click Apply (tap Trust on the phone if asked). Keep the cable plugged in, then click Done here.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-01T16:46:14.502Z",
+        "done": "2026-10-01T16:48:28.680Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-01T16:46:07.007Z",
+  "queuedAt": "2026-10-01T16:46:07.007Z",
+  "updatedAt": "2026-10-01T16:48:28.680Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-01T16:46:07.007Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-01T16:46:14.502Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T16:48:28.680Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    }
+  ],
+  "startedAt": "2026-10-01T16:46:14.502Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-01T16:48:28.680Z"
+  }
+}

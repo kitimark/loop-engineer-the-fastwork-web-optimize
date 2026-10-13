@@ -1,0 +1,90 @@
+{
+  "id": "T-144",
+  "title": "Comment on PR-018 \"End-of-page menu morph follows your scroll instead of locki…\": Queue me for iphone device",
+  "anchor": {
+    "page": "proposals",
+    "item": "PR-018",
+    "label": "End-of-page menu morph follows your scroll instead of locking it (phones)"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T17:48:19.791Z",
+  "updatedAt": "2026-10-04T18:06:02.867Z",
+  "rev": 15,
+  "assignees": [
+    "fix-hero-exit-threaded",
+    "mgmt-desk-2",
+    "lead"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T17:48:19.791Z",
+      "by": "user",
+      "text": "Queue me for iphone device"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T17:48:55.333Z",
+      "by": "mgmt-desk-2",
+      "text": "You are queued for the iPhone, first in line.\n\n- The phone is in use now: iphone-runner is warming it up for a timed test block (P-114). Its lease ends about 18:03Z.\n- A running block is never interrupted. You get the phone when that run ends or at the next gap between holds.\n- I will post here the moment the phone is yours, with the page to open. Your pages for the end-of-page menu proposal (PR-018) are served on the Wi-Fi.\n- When you are done, write \"done\" and I release the phone for you.\n\nWhat you need to do: nothing yet; wait for my next message."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T17:53:34.522Z",
+      "by": "mgmt-desk-2",
+      "text": "The iPhone is yours now, until 18:07Z (15 min).\n\n- Open the PR-018 pages on the iPhone, same Wi-Fi as the Mac. Page A is http://lan:6401/ and page B is http://lan:6402/ (also linked on the Proposals page).\n- A is today's best build (v7). B is the new end-of-page menu that decides the moment your finger lifts (rev 6).\n- On each, swipe slowly to the bottom and watch how long the menu takes to open or stay closed.\n- iphone-runner is next in line, so write \"done\" when you finish. Need longer? Say so and I extend it.\n\nWhat you need to do: test A and B on the iPhone, then write \"done\"."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T17:53:49.739Z",
+      "by": "lead",
+      "text": "The iPhone is yours now (since 17:52Z, held for you until 18:07Z; the lease stays while you test).\n\n- A (current v7 menu): http://lan:6401/\n- B (PR-018, the menu follows your scroll): http://lan:6402/\n- Open them in Safari on the iPhone, or tap the phone links on the Proposals page (PR-018).\n\nWhat you need to do: try both pages, then write \"done\" here and I give the phone back to the tests. Your decision on PR-018 can go on the Proposals page as before."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T17:56:01.477Z",
+      "by": "user",
+      "text": "no need to queue at all, i got the another device for testing"
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "mgmt-desk-2": 5,
+    "lead": 5,
+    "fix-hero-exit-threaded": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-04T17:48:19.791Z",
+      "who": "console",
+      "action": "assign",
+      "note": "fix-hero-exit-threaded (author of PR-018)"
+    },
+    {
+      "at": "2026-10-04T17:48:19.791Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    },
+    {
+      "at": "2026-10-04T17:55:16.413Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    },
+    {
+      "at": "2026-10-04T17:56:04.025Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-2": "2026-10-04T17:56:03.806Z",
+    "lead": "2026-10-04T18:06:02.866Z",
+    "fix-hero-exit-threaded": "2026-10-04T18:05:12.311Z"
+  },
+  "histSeen": {
+    "lead": 4
+  }
+}

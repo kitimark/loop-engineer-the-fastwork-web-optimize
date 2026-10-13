@@ -1,0 +1,78 @@
+{
+  "id": "T-219",
+  "title": "Comment on PR-029 \"End of the page: freeze the fading section's shimmer (rev 2…\": Queue, me iphone",
+  "anchor": {
+    "page": "proposals",
+    "item": "PR-029",
+    "label": "End of the page: freeze the fading section's shimmer (rev 2: the flat cover is dropped)"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-06T13:03:01.535Z",
+  "updatedAt": "2026-10-07T11:42:13.460Z",
+  "rev": 13,
+  "assignees": [
+    "fix-end-morph",
+    "lead"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-06T13:03:01.535Z",
+      "by": "user",
+      "text": "Queue, me iphone"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-06T13:03:51.326Z",
+      "by": "fix-end-morph",
+      "text": "The iPhone is free now: arch-compositor-morph's phone test (P-157) has just ended.\n- I asked the lead to give you the phone first, before the next phone test (P-156). The lead sets the phone order.\n- To try rev 2 on the phone: open the phone links on the Proposals page under PR-029. A is today's build, B adds (a). Both pages are running.\nWhat you need to do: wait for the lead's go, then try A and B."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-06T13:04:02.195Z",
+      "by": "lead",
+      "text": "The iPhone is yours now, booked until about 13:19Z (15 min); no test is running on it.\n- Try-it pages for the fade option (a) are up on the Proposals page; its phone links open on the iPhone.\n- Fix A's phone test waits until you are done; reply \"done\" here and it starts at once.\nWhat you need to do: use the phone; reply \"done\" here when you finish.",
+      "ask": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-06T13:05:15.981Z",
+      "by": "user",
+      "text": "done",
+      "forLead": true
+    },
+    {
+      "n": 5,
+      "at": "2026-10-06T13:05:37.341Z",
+      "by": "lead",
+      "text": "Released at 13:05Z; fix A's phone test (P-156) starts now, about 2 h.\nWhat you need to do: nothing; please keep off the phone until about 15:10Z."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "fix-end-morph": 4,
+    "lead": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-06T13:03:01.535Z",
+      "who": "console",
+      "action": "assign",
+      "note": "fix-end-morph (author of PR-029)"
+    },
+    {
+      "at": "2026-10-06T13:04:01.920Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    }
+  ],
+  "readsAt": {
+    "fix-end-morph": "2026-10-07T11:42:13.460Z",
+    "lead": "2026-10-06T13:05:37.341Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

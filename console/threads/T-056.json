@@ -1,0 +1,81 @@
+{
+  "id": "T-056",
+  "title": "Comment on the Proposals page \"Proposals\": BUG: comment button is hide another button a bit, that make it click the actual button harder. but is not a blocker",
+  "anchor": {
+    "page": "proposals",
+    "item": "part:page",
+    "quote": "B: proposal (A: keep st6-rb2's slider)open in a new tab",
+    "label": "Proposals"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T02:59:50.246Z",
+  "updatedAt": "2026-10-04T03:53:58.515Z",
+  "rev": 17,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T02:59:50.246Z",
+      "by": "user",
+      "text": "BUG: comment button is hide another button a bit, that make it click the actual button harder. but is not a blocker"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T03:00:22.742Z",
+      "by": "lead",
+      "text": "Thanks, logged as I-103. A toolsmith (ts-i103) is fixing it so the comment button never covers another button, on the phone and on desktop. I'll tell you here when the fixed console is live. Until then, the covered link still works: tap its left part, or zoom in a little."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T03:11:27.121Z",
+      "by": "user",
+      "text": "My idea: can we use comment icon instead of text. it text button quite too long."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T03:12:44.552Z",
+      "by": "lead",
+      "text": "Good idea: the toolsmith will switch it to a small comment icon (a speech bubble, with 'Comment' shown when you hover or long-press). It will also make sure the icon never covers another button, on the phone and on desktop. I'll tell you here when it's live."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T03:42:44.293Z",
+      "by": "lead",
+      "text": "Fixed and live now (reload the console page). The Comment button no longer sits on top of other buttons or links: it moves to the nearest free spot beside the line. It is now a small speech-bubble icon instead of the word, as you suggested. Hover it to see 'Comment'."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T03:43:55.746Z",
+      "by": "user",
+      "text": "Better, Thanks"
+    }
+  ],
+  "reads": {
+    "user": 6,
+    "lead": 6,
+    "mgmt-ops-10": 6
+  },
+  "history": [
+    {
+      "at": "2026-10-04T03:43:55.746Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T03:44:43.590Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T03:53:58.513Z",
+    "mgmt-ops-10": "2026-10-04T03:43:57.382Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

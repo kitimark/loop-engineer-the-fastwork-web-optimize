@@ -1,0 +1,305 @@
+{
+  "id": "C-040",
+  "by": "iphone-runner",
+  "topic": "hero-exit-threaded",
+  "kind": "swipe-pair",
+  "title": "Hero swipe: which page follows your finger better?",
+  "instructions": "Swipe up and down through the top of the page and the section below it on both pages, then say which follows your finger better, or \"same\".",
+  "url": "http://192.168.0.56:63841/",
+  "showUrl": false,
+  "meta": {
+    "block": "hero-swipe",
+    "pair": "catch",
+    "page1": "B",
+    "page2": "B",
+    "A": "best-A-65052c4a3902",
+    "B": "best-BR2-8018ce062d30",
+    "keyDrawnAt": "2026-10-04T03:29:16.093Z",
+    "residual": "P-095 (b): V paints P 4-6 on the first frame ~330 ms after a rest and slightly more at the first move after a rest (C 0-1); touchToScrollMs C 286 / V 283",
+    "by": "iphone-runner"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ]
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.56:63841/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-04T07:18:31.285Z",
+        "ready": "2026-10-04T07:18:46.898Z",
+        "started": "2026-10-04T07:18:49.977Z",
+        "recording": "2026-10-04T07:18:52.554Z",
+        "done": "2026-10-04T07:19:16.843Z"
+      },
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-04T07:16:07.812Z",
+            "ready": "2026-10-04T07:16:23.452Z",
+            "started": "2026-10-04T07:16:26.343Z",
+            "recording": "2026-10-04T07:16:28.629Z",
+            "done": "2026-10-04T07:17:00.149Z"
+          },
+          "ended": "restart",
+          "by": "user",
+          "endedAt": "2026-10-04T07:18:06.101Z"
+        }
+      ],
+      "attempt": 2,
+      "message": "Recording: swipe now, then press Done."
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.56:63841/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-04T07:19:36.519Z",
+        "ready": "2026-10-04T07:19:47.522Z",
+        "started": "2026-10-04T07:19:49.964Z",
+        "recording": "2026-10-04T07:19:52.172Z",
+        "done": "2026-10-04T07:20:15.235Z"
+      },
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-04T07:17:12.607Z",
+            "ready": "2026-10-04T07:17:23.618Z",
+            "started": "2026-10-04T07:17:24.994Z",
+            "recording": "2026-10-04T07:17:27.290Z",
+            "done": "2026-10-04T07:18:01.863Z"
+          },
+          "ended": "restart",
+          "by": "user",
+          "endedAt": "2026-10-04T07:18:06.101Z"
+        }
+      ],
+      "attempt": 2,
+      "message": "Recording: swipe now, then press Done."
+    }
+  ],
+  "createdAt": "2026-10-04T06:28:02.303Z",
+  "queuedAt": "2026-10-04T07:15:58.308Z",
+  "updatedAt": "2026-10-04T07:22:11.023Z",
+  "rev": 25,
+  "history": [
+    {
+      "at": "2026-10-04T06:28:02.303Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-04T06:29:37.727Z",
+      "who": "user",
+      "action": "skip"
+    },
+    {
+      "at": "2026-10-04T07:15:58.308Z",
+      "who": "iphone-runner",
+      "action": "reopen"
+    },
+    {
+      "at": "2026-10-04T07:16:07.812Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading",
+      "note": "Loading page 1 on the iPhone, one moment."
+    },
+    {
+      "at": "2026-10-04T07:16:23.452Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready",
+      "note": "Page 1 is open on the iPhone. Press Start when you are ready."
+    },
+    {
+      "at": "2026-10-04T07:16:26.343Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T07:16:28.629Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording",
+      "note": "Recording: swipe now, then press Done."
+    },
+    {
+      "at": "2026-10-04T07:17:00.149Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T07:17:12.607Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "loading",
+      "note": "Loading page 2 on the iPhone, one moment."
+    },
+    {
+      "at": "2026-10-04T07:17:23.618Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready",
+      "note": "Page 2 is open on the iPhone. Press Start when you are ready."
+    },
+    {
+      "at": "2026-10-04T07:17:24.994Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T07:17:27.290Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording",
+      "note": "Recording: swipe now, then press Done."
+    },
+    {
+      "at": "2026-10-04T07:18:01.863Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T07:18:06.101Z",
+      "who": "user",
+      "action": "restart",
+      "part": 1,
+      "epoch": 1,
+      "attempts": [
+        2,
+        2
+      ]
+    },
+    {
+      "at": "2026-10-04T07:18:31.285Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "loading",
+      "note": "Loading page 1 on the iPhone, one moment."
+    },
+    {
+      "at": "2026-10-04T07:18:46.898Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "ready",
+      "note": "Page 1 is open on the iPhone. Press Start when you are ready."
+    },
+    {
+      "at": "2026-10-04T07:18:49.977Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-04T07:18:52.554Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "recording",
+      "note": "Recording: swipe now, then press Done."
+    },
+    {
+      "at": "2026-10-04T07:19:16.843Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-04T07:19:36.519Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "loading",
+      "note": "Loading page 2 on the iPhone, one moment."
+    },
+    {
+      "at": "2026-10-04T07:19:47.522Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "ready",
+      "note": "Page 2 is open on the iPhone. Press Start when you are ready."
+    },
+    {
+      "at": "2026-10-04T07:19:49.964Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-04T07:19:52.172Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "recording",
+      "note": "Recording: swipe now, then press Done."
+    },
+    {
+      "at": "2026-10-04T07:20:15.235Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-04T07:22:11.023Z",
+      "who": "user",
+      "action": "answer",
+      "value": "same"
+    }
+  ],
+  "skippedAt": "2026-10-04T06:29:37.727Z",
+  "startedAt": "2026-10-04T07:16:26.343Z",
+  "epoch": 1,
+  "result": {
+    "value": "same",
+    "notes": "It's hard to decided which one is better. during scroll of both page are smooth.\n\nI'm not sure this is my bias or not. page 2 at the page start to scroll it quite a bit lag. then after that it go to smooth even i try to scroll up and down multiple time.\n\ncan you investigate more and catch up on the existing thread we already open.",
+    "at": "2026-10-04T07:22:11.023Z"
+  }
+}

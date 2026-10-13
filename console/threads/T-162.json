@@ -1,0 +1,88 @@
+{
+  "id": "T-162",
+  "title": "I'm waiting for my warm-up hold. of iphone-runner means ?",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T21:31:11.481Z",
+  "updatedAt": "2026-10-04T23:16:09.910Z",
+  "rev": 20,
+  "assignees": [
+    "mgmt-devices"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T21:31:11.481Z",
+      "by": "user",
+      "text": "I'm waiting for my warm-up hold. of iphone-runner means ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T21:32:48.587Z",
+      "by": "lead",
+      "text": "It means: iphone-runner has the phone for the double-drive phone test (P-118), but its first run waits for a turn on the Mac.\n- Why: every phone run also takes a short Mac turn (the \"chrome-measure\" lock) so the Mac stays quiet and\n  serves the test pages steadily; the warm-up is the first, uncounted run that heats the phone up evenly.\n- Cause of the wait: its Mac turn was queued 9th, behind fixes that had queued earlier.\n- Which cases: any phone test that starts while the Mac queue is long; the phone then sits held but unused.\n- Workaround (done 21:33Z): I moved it to 1st; it starts when the two short jobs now on the Mac end (~21:37Z).\n- Long-term fix: I-172 (ts-lock-rules, written, in its test run) puts a <device-name>.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T21:35:26.337Z",
+      "by": "user",
+      "text": "Why we don't test on Serious profile by default ? no need to warm up. i think our best build can run on this profile without any laggy. \n\nlet's investigate, distinguish, plan and do execution."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T21:45:08.965Z",
+      "by": "lead",
+      "text": "Yes. From the next phone test on, the default is Xcode's \"Serious\" setting, with no heat warm-up. First, a correction to my last reply: there are two different warm-ups.\n\n| warm-up | what it is for | cost on 10-04 |\n|---|---|---|\n| heat warm-up | the page runs until the phone is really hot (\"Serious\") | 1.4, 6.6, 19 and 31 min; 41 of 109 test starts were not hot enough and were redone |\n| load warm-up | one uncounted run per test page, so first-load work (download, compile) is not counted | ~1 min, stays |\n\n- Cause: on 10-03 we chose real heat, because we did not know whether Xcode's setting also slows the chip like heat does. That is still not known (UNRESOLVED). The page side is the same either way: Safari's timers round to 30 ms in both.\n- Which cases: every phone test that starts on a cool phone.\n- Workaround: the current double-drive phone test (P-118) keeps real heat, because it was approved that way and is already warming. Switching mid-way costs the same time.\n- Long-term fix (owner mgmt-devices, with iphone-runner):\n  - the heat check accepts Xcode's Serious;\n  - the test scripts skip the heat warm-up;\n  - one 10-min check shows whether Xcode's setting slows the chip;\n  - one real-heat test remains, for the final best build only.\n\nWhat you need to do: when the phone is free you'll get one step in Your steps. In Xcode, open Devices and Simulators, select the phone, then Device Conditions, Thermal State \"Serious\", Start. Leave it on."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T21:46:40.420Z",
+      "by": "user",
+      "text": "Can you upgrade the tools set the Serious by default, and tester can set Fair profile is optional."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T21:47:08.898Z",
+      "by": "lead",
+      "text": "Yes. The phone tools will default to Serious, and Fair is an option the tester can pick.\n- What changes: every phone run takes a profile, Serious unless the tester asks for Fair. Before and after each test, the tool checks that the phone is in that state and refuses if it isn't.\n- One limit: no command can switch Xcode's Thermal State, so the tools can't flip it on their own. When the state is wrong, the tool sends you the one-click step in Your steps.\n- Possible later: the tools could click Xcode's setting for you. That needs your OK in System Settings > Privacy > Accessibility. We'll only look into it and ask you first.\n- Owner: mgmt-devices. A tool-fix agent writes it with tests. I land it, and mgmt-devices reports here when it's in.\n\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T22:01:22.151Z",
+      "by": "user",
+      "text": "Can you do workaround for let's the tester set the Serious profile instead of warm-up ?"
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T22:05:23.040Z",
+      "by": "mgmt-devices",
+      "text": "Yes: the step is posted now in Your steps (\"Set Serious in Xcode\"); please do it when you can.\n- The \"condition off\" measurement finished at 22:04Z, earlier than I told you (22:13Z was my worst case).\n- Do: Xcode > Window > Devices and Simulators > the phone > Device Conditions > Thermal State \"Serious\" > Start; leave it on, then answer the step.\n- Then the runner repeats the same measurement with Serious on (about 10 min), and after that the double-drive phone test runs with no warm-up.\n- First result (OBSERVED in our setup only): a heavy animation took the phone from Fair to real Serious in about 40 s and its frame time grew 40 %; a plain CPU loop did not slow. So Serious slows the graphics side, not the CPU loop.\nWhat you need to do: do the Xcode step in Your steps, then click it done."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T23:16:06.104Z",
+      "by": "mgmt-devices",
+      "text": "Yes, done: the phone tools now default to Serious, and Fair is the option. It is on the main branch (commits 6967a25f, a6ff814c).\n- Default: `iphone.mjs run|scroll|record|gesture` expect Xcode's Serious condition (Thermal State Serious, on); `--profile fair` asks for a cool phone instead. Both keep the 44 C limit.\n- Check: once per test hold the tool reads the phone (about 25 s) before touching Safari. If the phone does not fit, it stops, says what to switch in Xcode and posts one step in Your steps.\n- Not scripted: setting the condition in Xcode stays your step. Scripting it would need Mac Accessibility and Automation permissions, and Apple does not document that panel for scripts, so I kept the human step.\n- Next: the v9 phone test is the first to run on the new check (its plan is not signed yet).\nWhat you need to do: nothing now."
+    }
+  ],
+  "reads": {
+    "user": 9,
+    "lead": 7,
+    "mgmt-devices": 9
+  },
+  "history": [
+    {
+      "at": "2026-10-04T22:04:06.905Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-devices"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T22:01:23.398Z",
+    "mgmt-devices": "2026-10-04T23:16:06.104Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

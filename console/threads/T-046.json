@@ -1,0 +1,109 @@
+{
+  "id": "T-046",
+  "title": "Plan to do A/B with best build version.",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-03T14:50:58.111Z",
+  "updatedAt": "2026-10-04T10:13:47.604Z",
+  "rev": 20,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T14:50:58.111Z",
+      "by": "user",
+      "text": "Plan to do A/B with best build version."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T14:52:27.908Z",
+      "by": "lead",
+      "text": "Plan for A/B against the best build (this also fixes the confusion you saw in PR-010):\n1. One 'best build' file. The best build is every fix already landed: st6-rb2, platform-idle (glint and sweep) and morph-inherit, plus cd-strip once your finger test passes. An agent combines them into one build, checks it draws the same as each part, and I land it.\n2. Try it panels compare against it. A toolsmith is already changing the panel: A = best build, B = best build + the proposal's change. Then A and B differ only by what the proposal changes.\n3. Open proposals get redone on it: PR-010 rev 3 and PR-011 rev 2. New ones use it from the start.\n4. Phone finger tests (swipe A/B) use the same pair: best build vs best build + the fix.\n5. Two pages never start their animations in step (about 0.7 s apart even for the same page), so each panel will say that out of step is not a difference.\nQuestion: do you also want one panel 'original vs best build', so you can feel everything landed so far at once?",
+      "ask": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-03T14:55:21.541Z",
+      "by": "user",
+      "text": "Do you already resolve the hero section of card move and morph of the end of page yet with gpu yet ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-03T14:56:13.199Z",
+      "by": "lead",
+      "text": "Not yet for either one. Where each stands:\n1. Hero (the cards and headline sliding away as you scroll): built, not landed. The fix hands the hero's exit motion (fade, slide, blur) to Safari's own scroll animations, so it runs off the page script. In the Simulator, the area Safari repaints during a drag went from 14.9 M to 0.83 M px². Still open: your decision on PR-011 (2 small differences while moving), the phone timing check P-081, and your finger test. The agent is now rebuilding it on the latest main.\n2. End-of-page morph (the bar turning into the panel): not on the GPU yet. What landed today (morph-inherit) is a correctness fix: in Safari, one of our earlier fixes had stopped part of the original morph motion from running, and this puts it back. The F3 agent is working on the jerk in the middle of the morph (touch listeners now set up once instead of on every move); its phone check is waiting for the phone. Moving the whole panel to the GPU would make its blur look different while it moves, so that one would come to you as a proposal first, and it isn't started.\nBoth phone steps need the iPhone back on USB."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-03T14:57:01.271Z",
+      "by": "user",
+      "text": "Let's do both as highest priority"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-03T14:57:51.853Z",
+      "by": "lead",
+      "text": "Understood. Both are now top priority: the hero and the end-of-page morph on the GPU.\nHero: the fix is built. Next in order: the best build and the new Try it panel land, then PR-011 revision 2 comes to you, then the phone check P-081 (it now goes first when the phone is back), then your finger test.\nEnd-of-page morph: a new agent has started. It first maps what Safari redraws on every frame of the morph. Then it looks for a GPU version that looks exactly like the original in every frame. If the only GPU version changes how the blur looks while it moves, it comes to you as a proposal with Try it panels before anything lands. It works with the F3 agent, which owns the same code.\nI'll also add a Try it panel 'original vs best build', so you can feel everything landed so far.\nThe iPhone is still off USB. The phone steps start when it's back."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-03T18:24:24.026Z",
+      "by": "lead",
+      "text": "Your top priority #5 (end-of-page menu morph on the GPU): proposal PR-012 is on the Proposals page. On phones, it draws the menu panel at full size once and reveals it, instead of redrawing it at a new size every frame. In the iPhone Simulator that cuts repainting while the menu opens from about 12 to 2 repaints per frame (our own Simulator count; Chrome shows no gain, and the real phone is not measured yet). The catch: while it moves, text inside the panel can sit up to about 1 device pixel off from today's (up to 1.5 % of the screen at the very end of the opening), so it's your call. At rest it's identical. There is a 'Try it' panel against today's best build. If you accept, a pre-registered phone timing test follows (once the Mac sleep question, T-052, is settled). Separately: the earlier morph fix this builds on (morph-inherit) passed its iPhone test: moving frames over 50 ms went from 21 to about 0.5."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-03T18:28:25.828Z",
+      "by": "lead",
+      "text": "Correction to my last message: the iPhone result I quoted (moving frames over 50 ms from 21 to about 0.5 at the end-of-page animation) compares today's whole best build against the original site, not the morph-inherit fix alone. It is one test block, warm, at the 'Serious' heat level. So: today's build has far fewer slow frames there than the original, and morph-inherit passed its 'no worse' check as part of it. How much of the gain is morph-inherit's own share was not measured. Sorry for overstating it."
+    }
+  ],
+  "reads": {
+    "user": 8,
+    "lead": 8,
+    "mgmt-ops-10": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-04T07:54:33.679Z",
+      "who": "mgmt-ops-10",
+      "action": "assign",
+      "note": "mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T07:54:41.391Z",
+      "who": "mgmt-ops-10",
+      "action": "close",
+      "note": "Merged into T-066 (best build and what lands next), one thread per topic at your request (T-024 #13). Related: T-035, T-046, T-066, T-067, T-072, T-076, T-079."
+    },
+    {
+      "at": "2026-10-04T10:13:47.604Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "into T-066: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-03T18:28:25.828Z",
+    "mgmt-ops-10": "2026-10-04T07:55:14.065Z"
+  },
+  "histSeen": {
+    "lead": 0
+  },
+  "merged": {
+    "into": "T-066",
+    "at": "2026-10-04T10:13:47.604Z",
+    "by": "mgmt-ops-10",
+    "closed": false
+  },
+  "related": [
+    {
+      "id": "T-066",
+      "kind": "merged-into",
+      "at": "2026-10-04T10:13:47.604Z",
+      "by": "mgmt-ops-10"
+    }
+  ]
+}

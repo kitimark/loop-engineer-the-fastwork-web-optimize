@@ -1,0 +1,35 @@
+{
+  "id": "T-264",
+  "title": "SOOO ULTRA SMOOTHHHHHHH",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-09T10:56:06.060Z",
+  "updatedAt": "2026-10-09T10:56:20.982Z",
+  "rev": 5,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-09T10:56:06.060Z",
+      "by": "user",
+      "text": "we are all done the rendering optimization on iphone. \nyou did the good job\ncongratulation."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-09T10:56:20.506Z",
+      "by": "lead",
+      "text": "Thank you, and congratulations to you too: the iPhone rendering work is done, with g0.0l as the final best build.\n- Final build: g0.0l, on the Best build page with its Try-it link; rebuild anytime with node tools/fix.mjs apply g0-0l --reset.\n- Today it added the steady-glass end of page (g0.0k), the blink-free people deck (g0.0l) and the 6 restored service pictures.\n- Everything is committed on this Mac only (nothing pushed or published); the history of every build is in fixes/BEST_BUILDS.md.\n- Left open by choice, if you ever want more: drawing the deck photos before the people card appears (one 44-60 ms frame), and one check with the phone at real heat.\n- No agents are running now, and the iPhone is free.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "lead": 2
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-09T10:56:20.506Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

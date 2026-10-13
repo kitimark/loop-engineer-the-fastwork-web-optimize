@@ -1,0 +1,97 @@
+{
+  "id": "T-239",
+  "title": "Comment on PR-034 \"End of the page: back to the original fastwork menu (g0.0,…\": queue me, iphone",
+  "anchor": {
+    "page": "proposals",
+    "item": "PR-034",
+    "label": "End of the page: back to the original fastwork menu (g0.0, before the GPU step)"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-07T17:38:59.715Z",
+  "updatedAt": "2026-10-07T18:44:48.560Z",
+  "rev": 22,
+  "assignees": [
+    "fix-g0-revert"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-07T17:38:59.715Z",
+      "by": "user",
+      "text": "queue me, iphone"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-07T17:39:24.425Z",
+      "by": "lead",
+      "text": "The iPhone is yours now: nothing else is queued or running on it, so no wait.\n- Open PR-034 on the phone and use its Try-it links (A = today's v14, B = the original end-of-page); they work over Wi-Fi, the cable can stay or go.\n- I paused the \"re-plug the cable\" steps while you have the phone.\n\nWhat you need to do: try both pages at the end of the page, then accept \"g0\" or \"keep\" on PR-034 (or comment); say \"phone free\" when you are done."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-07T18:02:49.601Z",
+      "by": "user",
+      "text": "done, release",
+      "later": [
+        "fix-g0-revert"
+      ]
+    },
+    {
+      "n": 4,
+      "at": "2026-10-07T18:03:19.873Z",
+      "by": "lead",
+      "text": "Thanks, the phone is released; no test needs it for about 3 hours.\n- The Mac lost the phone link at 17:41Z (cable in, but the phone tools can't reach it); a \"re-plug the cable\" step will appear, no rush.\n- Next for you: rev 2 of this proposal (PR-034: the original end-of-page plus the Join no-lift fix) in about 30 min.\n\nWhat you need to do: when convenient, unplug and replug the iPhone cable with the phone unlocked."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-07T18:43:04.551Z",
+      "by": "user",
+      "text": "queue me, iphone",
+      "later": [
+        "fix-g0-revert"
+      ]
+    },
+    {
+      "n": 6,
+      "at": "2026-10-07T18:43:22.770Z",
+      "by": "lead",
+      "text": "The iPhone is yours now, no wait: nothing is queued on it and no test needs it for about 2-3 hours.\n- Re-plug steps are paused while you have it.\n- The original end-of-page proposal (PR-034) rev 2 with the Join no-lift fix is still in its last checks; I will tell you when it is up.\n\nWhat you need to do: say \"phone free\" here when you are done."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-07T18:43:45.654Z",
+      "by": "lead",
+      "text": "Rev 2 of this proposal (PR-034) is up: the original end-of-page with your Join fix; you can try it now on the phone.\n- The Join waitlist button no longer rises 8 px before it fades (measured 8.00 px before, 0.00 px now, at every width and in Safari); the blur and fade stay as in your accepted earlier choice.\n- Everything else matches rev 1 within 1 colour level; above the end it matches today's v14.\n- Try-it option g0: A = v14, B = the new build; there is also a screenshot pair of the button as the menu starts to open.\n\nWhat you need to do: on PR-034, try option g0 at the end of the page, then accept it or comment."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-07T18:44:16.091Z",
+      "by": "user",
+      "text": "done, release"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-07T18:44:48.069Z",
+      "by": "lead",
+      "text": "Thanks, the phone is released; re-plug steps are back on.\n- No test needs it yet; the next phone use is the timing test of the final g0 build.\n\nWhat you need to do: decide rev 2 of this proposal (PR-034) (the original end-of-page with the Join fix) when ready."
+    }
+  ],
+  "reads": {
+    "user": 9,
+    "lead": 9
+  },
+  "history": [
+    {
+      "at": "2026-10-07T17:38:59.715Z",
+      "who": "console",
+      "action": "assign",
+      "note": "fix-g0-revert (author of PR-034)"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-07T18:44:48.069Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

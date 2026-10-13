@@ -1,0 +1,53 @@
+{
+  "id": "T-044",
+  "title": "\"stopped until something else happens\" What it means ?",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-03T10:42:20.247Z",
+  "updatedAt": "2026-10-04T08:26:47.354Z",
+  "rev": 11,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T10:42:20.247Z",
+      "by": "user",
+      "text": "\"stopped until something else happens\" What it means ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T10:42:48.630Z",
+      "by": "lead",
+      "text": "It's the status board's plain wording for the state \"waiting\". The agent isn't working right now because it needs something from someone else first. What it is waiting for is the \"waiting on\" line right under it, for example \"waiting on: fix-cd-strip\" or \"the Chrome slot\". When that thing happens, the agent continues by itself.\n\nThe other states, for comparison:\n- \"paused on purpose; may resume\" (parked) means we stopped it deliberately, usually to save usage or because it stacks on another fix.\n- \"finished; waiting for the lead to land it\" means its work is done and only my landing step is left.\n\nYou're right that the wording is vague. I'll change it to \"waiting for: <what>\", so the reason sits in the same line. That's a small change in the status tool, done by the tool specialist with its next batch."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-03T10:46:30.385Z",
+      "by": "user",
+      "text": "Good, can we do workaround before waiting tools fix is done ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-03T10:46:55.037Z",
+      "by": "lead",
+      "text": "Yes. Until the label is fixed, read the 'waiting on' line right below it: it names what the row waits for (for example, cd-strip waits on iphone-runner's phone test). I also fixed one row whose 'waiting on' was out of date: platform-idle said it waited for your PR-009 decision, which you already gave. It now says it waits for the phone after cd-strip's test. The label change itself ships with the console fix in progress (ts-thread-images)."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-03T11:44:42.006Z",
+      "by": "lead",
+      "text": "Fixed. The board now says 'waiting for: <what it waits on>' (or 'waiting (reason not given)' if the row names nothing), in the board, /status and the progress view. The console restarted at 11:45Z, so reload the page."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "lead": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-04T08:26:47.354Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "id": "T-224",
+  "title": "Research the People still need people section",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-06T15:57:18.842Z",
+  "updatedAt": "2026-10-07T00:10:24.964Z",
+  "rev": 20,
+  "assignees": [
+    "lead"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-06T15:57:18.842Z",
+      "by": "user",
+      "text": "I saw this section still a bit lag. especially, the People still need people title\nResearch after arch-gpu-playbook land the best practices. i think we could use gpu optimization for improve this."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-06T15:57:47.325Z",
+      "by": "lead",
+      "text": "Yes: the \"People still need people\" section is now first on the list, and its research starts right after the playbook lands (about 17:00Z).\n- The playbook agent (arch-gpu-playbook) now puts this section first: where its title and animations live in the code, what evidence we already have of its lag, and what a graphics-chip version would look like.\n- When the playbook lands I start a dedicated agent on this section, using the playbook's check order: Chrome and Simulator work counts first, then a pixel check, then the phone.\n- The fix comes as a proposal with a Try-it page if it changes the look.\nWhat you need to do: nothing now; I'll post the first findings here."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-06T16:04:21.363Z",
+      "by": "user",
+      "text": "I'd like to set the policy, if we found the new breakthrough. we could document them about the practices for another agent catch up and try to optimize their own responsibility",
+      "forLead": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-06T16:05:33.503Z",
+      "by": "lead",
+      "text": "Done: from now on every breakthrough becomes a written practice that all agents apply to their own areas (rule saved for every agent at 16:05Z).\n- The agent that found it (or an architecture agent) writes the practice down: what it is, how to spot where it helps, the check order, the pitfalls, a one-screen checklist.\n- It goes on the findings board, and I message every agent that owns a part of the page.\n- Each owner checks its own part against the checklist and tells me: applies (with its first check) or does not apply (one line why).\n- Look changes still come to you as proposals with Try-it.\n- First case: the GPU playbook now being written (about 17:00Z); its checklist then goes to every owner, starting with your \"People still need people\" section.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-06T16:13:34.168Z",
+      "by": "lead",
+      "text": "The GPU playbook is done and in every agent's rules, and a new agent (fix-people-gpu) started at 16:18Z on your People section.\n- Playbook: what the technique is, the check order, 15 pitfalls with fixes, and a one-screen checklist; saved in the project rules.\n| Rank | Next element | Why |\n|---|---|---|\n| 1 | \"People still need people\" title and card | the \"o\" widening re-lays out the page every frame for about 1 s, each time it comes into view; the card's blur reveal runs on the main thread |\n| 2 | The fade of the section behind the end card | still redrawn on every scroll step (32-38 redraws per open or close) |\n| 3 | Leftover position reads in the end-morph code | cuts layout work about 12 % (less work, no look change) |\n- The People agent first counts the work on v10, then builds a version where the letters and faces slide instead of re-laying out.\n- The card reveal without the main-thread blur will likely look a little different while it plays, so it comes to you as a proposal with Try-it.\n- Ranks 2 and 3 go to the GPU-morph agent after its current fix.\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-06T16:32:49.123Z",
+      "by": "lead",
+      "text": "First counts on the People section: the lag has two causes, and both have a fix in progress.\n| What runs (Simulator, v10) | Page re-layouts now | Without the cause |\n|---|---|---|\n| \"o\" in the title widening, 1.5 s | 56 (29 of the whole screen) | 2 in Chrome with the widening off |\n| Resting at the title, 2 s | 104 in 106 frames | 2 in 26 frames |\n- Cause 1: the \"o\" widening re-lays out the whole screen every frame; the fix slides the letters instead (GPU), and its pixel check is running.\n- Cause 2: the hero's animations (countdown cells, floating, orbit) keep running under the People card, where you cannot see them; the fix pauses them while hidden, so the look stays the same.\n- Owner: fix-people-gpu for both. A look change would come to you as a proposal with Try-it.\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-06T17:27:51.967Z",
+      "by": "lead",
+      "text": "The People title fix is ready for your decision as proposal PR-031: the \"o\" now slides on the GPU instead of re-laying out the page.\n| Title \"o\" opening, 1.5 s | Now (v10) | PR-031 |\n|---|---|---|\n| Page re-layouts (Chrome) | 56 | 4 |\n| Area redrawn (Simulator, million pixels) | 4.6 | 0.3 |\n- Look: at rest it is identical; while the faces open (under 1 s) photo and letter edges are slightly softer. One attempt to sharpen them did not help, so it is your call.\n- Try it on the Mac now (Proposals page, A and B); please wait with the phone links until the v10 phone test ends (about 18:15Z).\n- The hidden-hero pause (same look, less work) passed Chrome and goes to the next build after its Simulator check.\nWhat you need to do: open PR-031 and choose accept or changes-requested, any time."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-07T00:10:20.195Z",
+      "by": "lead",
+      "text": "Thanks: the People title slide (PR-031) is accepted and goes into v11, the best-build candidate; your two phone steps are done too.\n- int-v11 adds the slide to v11 now (a few quick look checks, up to about 10 min), then posts your blind swipe test: current build vs v11 with the slide.\n- If the slide is not ready in 10 min, the swipe test uses v11 without it so you are not kept waiting, and the slide follows.\nWhat you need to do: keep the iPhone unlocked and plugged in; press Start on the swipe test when it appears in your steps."
+    }
+  ],
+  "reads": {
+    "user": 8,
+    "lead": 8
+  },
+  "history": [
+    {
+      "at": "2026-10-06T15:57:47.171Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-07T00:10:20.195Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

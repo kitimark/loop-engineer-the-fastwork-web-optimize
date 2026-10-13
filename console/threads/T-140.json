@@ -1,0 +1,126 @@
+{
+  "id": "T-140",
+  "title": "Comment on status style-recalc \"Style recalculation (your idea: about 19-20 ms per frame)\": This fix will not used ? why ? is it not make better performance ?",
+  "anchor": {
+    "page": "status",
+    "item": "status:style-recalc",
+    "quote": "finished (nothing to land)",
+    "label": "Style recalculation (your idea: about 19-20 ms per frame)"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T15:00:11.456Z",
+  "updatedAt": "2026-10-04T17:50:16.390Z",
+  "rev": 32,
+  "assignees": [
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T15:00:11.456Z",
+      "by": "user",
+      "text": "This fix will not used ? why ? is it not make better performance ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T15:00:44.109Z",
+      "by": "mgmt-desk-2",
+      "text": "It is used. The label 'finished (nothing to land)' is wrong for this row; it already landed.\n\n- The fix (st6-rb2) landed on main as 9d7f9cb and is in the best build since 11:49Z.\n- It restyles only the section whose animations pause or start, not the whole page.\n- Phone recording: the 17-23 ms whole-page layout at the section switch is gone in all 4 runs with the fix (OBSERVED).\n- Not yet timed on the phone as a whole stack; it was accepted by mechanism and pixels.\n- The same wrong label sits on other finished rows. The lead's label fix (T-124) is meant to remove this wording.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T15:02:06.626Z",
+      "by": "user",
+      "text": "I means this label is invalid ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T15:02:24.074Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes, for this row the label is invalid. The fix landed (9d7f9cb) and is in the best build, so 'finished (nothing to land)' is wrong.\n\n- The label comes from the board's 'done' state. It cannot tell a landed fix from a closed job.\n- The toolsmith's new labels (about 30-40 min) fix this: a done row will say 'in best build' or 'not used, because ...'.\n- Until then, treat 'finished (nothing to land)' on a fix row as unreliable. Ask me and I check the Progress page.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T15:02:48.202Z",
+      "by": "user",
+      "text": "Can we do the workaround ?"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T15:03:09.161Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes. I did the workaround just now.\n\n- The 4 done rows that link to a build (style-recalc, illusion-proposals, rest-script, best-stack) now carry a note with the real reason: landed and in the best build, or closed and not used, with why.\n- The label 'finished (nothing to land)' still shows, because it comes from the board. The note under it tells the truth, and the new labels (30-40 min) replace it.\n- The other 39 done rows are tool and review jobs with no build; the label is correct there.\n\nWhat you need to do: reload the Status page and check the style-recalc row."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T15:03:25.548Z",
+      "by": "user",
+      "text": "Lead, i think you could give more authority about they could investigate the workaround and long-term fix.",
+      "forLead": true
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T15:03:38.258Z",
+      "by": "mgmt-desk-2",
+      "text": "That is how this one was handled, and it is already the rule since T-134.\n\n- Workaround: I fixed the 4 row notes myself within minutes.\n- Long-term fix: I sent it to the toolsmith (ts-board) as part of the label change, with the data it needs.\n- The desk can now do both without waiting for the lead: change a row note, open an incident, and dispatch a small tool fix to a running toolsmith.\n- It still goes to the lead for decisions: priorities, landing, spawning, and anything over about 30 min of agent time.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T15:03:51.473Z",
+      "by": "lead",
+      "text": "**Done: whoever owns your thread now does both the workaround and the long-term fix, without asking me.**\n\n- **Workaround now:** fixed right away and told to you in the thread, like the desk did here with the row notes.\n- **Long-term fix:** they find the cause, write down the fix plan, and send it straight to the tool helper that owns that tool.\n- **Only to me:** a fix that needs a new agent or more than ~30 min of work.\n- When the fix is live, they post in your thread.\n- Here, the long-term fix is the new board labels (\"in best build\", \"not used, because …\"), being built now.\n- Written down in fixes/AGENT_ROLES.md.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T15:04:36.044Z",
+      "by": "user",
+      "text": "And they could report you about the workaround for let's you know likes me.",
+      "forLead": true
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T15:04:52.073Z",
+      "by": "lead",
+      "text": "**Yes: each workaround now also comes to me as a one-line note.**\n\n- The line says: which thread, what was wrong, the workaround, and who owns the long-term fix.\n- I only answer when I disagree, so it doesn't slow them down.\n- Added to fixes/AGENT_ROLES.md.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T15:05:29.598Z",
+      "by": "mgmt-desk-2",
+      "text": "Agreed. Agents will now send me the same one-line report as the lead.\n\n- Each line says: thread, what was wrong, the workaround, who owns the long-term fix.\n- The rule is in fixes/AGENT_ROLES.md. I passed it to the v8 integrator and ts-board; the other owners get it with their next message.\n- When you ask me about any problem, I answer from those lines and from the data, and tell you the workaround and the fix owner.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T15:49:42.000Z",
+      "by": "mgmt-desk-2",
+      "text": "Update: the new row labels are slower than I said. The code is done, but it cannot be committed yet.\n\n- The Mac is very busy (load 40-95; the test needs under 16). Two tests failed from the load alone.\n- The toolsmith (ts-board) commits as soon as the load drops, then the lead lands it.\n- A broken test blocked toolsmith commits earlier. That is fixed (97b3518f).\n- Until then, the 4 notes I wrote are what the Status page shows for those rows.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T16:07:26.416Z",
+      "by": "mgmt-desk-2",
+      "text": "The new row labels are live on the Status and Progress pages. Reload them.\n\n- Every row now shows one plain label read from the Progress page, for example \"in best build (v7)\", \"done, waits for build v8\", \"closed, no fix\" or \"dropped\".\n- \"Finished (nothing to land)\" is gone. A row that disagrees with Progress shows a red \"does not match\".\n- A parked row says why it waits and what restarts it, or shows a red \"needs review\".\n- Both pages have one legend that explains each label.\n- Checked on the live page just now: no red mismatch and no \"needs review\" on the rows we talked about.\n\nWhat you need to do: reload the pages and tell me if any row still reads wrong."
+    }
+  ],
+  "reads": {
+    "user": 14,
+    "mgmt-desk-2": 14,
+    "lead": 11
+  },
+  "history": [
+    {
+      "at": "2026-10-04T15:00:11.456Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-2": "2026-10-04T16:07:26.416Z",
+    "lead": "2026-10-04T15:04:52.073Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

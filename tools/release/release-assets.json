@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "release": "v1.0",
+  "repo": "kitimark/loop-engineer-the-fastwork-web-optimize",
+  "assets": [
+    {
+      "name": "snapshot-b1789284481295-a455e793.tar.gz",
+      "sha256": "bab5b652b7acd8dd3f8e7be9db8072e0e2867f55e867e081680e670392368292",
+      "bytes": 54615854,
+      "unpackTo": ".",
+      "kind": "snapshot",
+      "redacted": [
+        {
+          "path": "site/__vendor/www.googletagmanager.com/gtag/js.__q_218232fe7c",
+          "rule": "secret-kv",
+          "originalBlob": "af077130110504e7393ea6905b6fe08263ad61bd",
+          "redactedBlob": "2aed37481a1816af5ad305c57463a5b1c163eef2"
+        },
+        {
+          "path": "site/__vendor/www.googletagmanager.com/gtm.js.__q_141790bd5c",
+          "rule": "secret-kv",
+          "originalBlob": "7bdda0089ce102f21fa1e04f953e59e42e92fea6",
+          "redactedBlob": "82fe39b4dbac4e593b3fdcc0ee53363366e83555"
+        },
+        {
+          "path": "site-pretty/__vendor/www.googletagmanager.com/gtag/js.__q_218232fe7c",
+          "rule": "secret-kv",
+          "originalBlob": "9e7e32130a0f84cbe6437f52a340a5ec2bb85dae",
+          "redactedBlob": "764b45e0ef2de10922aa43aa3e5a20ea1b883b88"
+        },
+        {
+          "path": "site-pretty/__vendor/www.googletagmanager.com/gtm.js.__q_141790bd5c",
+          "rule": "secret-kv",
+          "originalBlob": "404e35a21b6bf9e49dd36c5557b396fa21b1dfcb",
+          "redactedBlob": "edf8ff9dcf503188368605af29e09296b26d5c62"
+        }
+      ]
+    },
+    {
+      "name": "proposal-media.tar",
+      "sha256": "93e259122e85d4645245299d2cbba8ebdb433f3e943a6933c4f3a8c615add9d4",
+      "bytes": 47199744,
+      "unpackTo": ".",
+      "kind": "media"
+    },
+    {
+      "name": "out-media.tar",
+      "sha256": "bc5cfce887b275c5d48ece1e5e41cd71a6cf34e6818f3ace74b028643d050e72",
+      "bytes": 458251264,
+      "unpackTo": ".",
+      "kind": "media"
+    },
+    {
+      "name": "out-data.tar.gz",
+      "sha256": "2ba9cd38341be08aaf0803412c38aa6baf6e9964bc004001db4b8a334a440ef1",
+      "bytes": 30628763,
+      "unpackTo": ".",
+      "kind": "data"
+    }
+  ]
+}

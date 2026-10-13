@@ -1,0 +1,54 @@
+{
+  "id": "C-008",
+  "by": "lead",
+  "kind": "action",
+  "title": "Wi-Fi check done: plug the cable back in",
+  "instructions": "Plug the USB cable back into the iPhone, unlock it, leave Safari as is, then click Done. Keep it plugged in for the scripted checks that follow.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-01T16:52:33.917Z",
+        "done": "2026-10-01T16:52:35.931Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-01T16:52:11.077Z",
+  "queuedAt": "2026-10-01T16:52:11.077Z",
+  "updatedAt": "2026-10-01T16:52:35.931Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-01T16:52:11.077Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-01T16:52:33.917Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T16:52:35.931Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    }
+  ],
+  "startedAt": "2026-10-01T16:52:33.917Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-01T16:52:35.931Z"
+  }
+}

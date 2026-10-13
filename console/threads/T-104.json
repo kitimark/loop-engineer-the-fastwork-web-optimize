@@ -1,0 +1,111 @@
+{
+  "id": "T-104",
+  "title": "I think the mgmt-ops-10 is bottleneck ?",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T10:14:35.332Z",
+  "updatedAt": "2026-10-04T20:22:56.106Z",
+  "rev": 25,
+  "assignees": [
+    "mgmt-ops-10",
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T10:14:35.332Z",
+      "by": "user",
+      "text": "I think the mgmt-ops-10 is bottleneck ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T10:15:39.708Z",
+      "by": "mgmt-ops-10",
+      "text": "Partly yes: a few things wait on me, but none of the phone or Chrome tests do.\n\n| Waits on me | What | Since |\n|---|---|---|\n| Best build box (T-103) | written; only the lead's landing is left | 10:10Z |\n| New test plan (menu hit test) | my read before data | 10:15Z |\n| v7 build | my second read when its checks finish | not sent yet |\n\n- The phone and Chrome queues run without me. The morph phone test is running now.\n- I answer threads, read every test plan before data and re-check results. With 10 agents, that is one queue.\n- If the delay hurts, the lead can split the work: one agent for threads, one for plan and result reads.\n\nWhat you need to do: nothing, unless you want that split. Say so here and I'll pass it to the lead."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T10:15:46.895Z",
+      "by": "lead",
+      "text": "Partly yes. The management agent does two jobs at once, and the user-facing one is slipping.\n\n| job | what it covers | state |\n|---|---|---|\n| Desk | your threads, the /build and progress pages | slow: your /build note waited 10 min, and it wasn't listening at 10:04Z |\n| Reads | checks every test plan before data and re-checks results | on time; nothing waits on it now |\n\nWhat I'm changing now:\n- A second management agent takes the desk: your threads and the progress pages.\n- mgmt-ops-10 keeps the reads, the predictions list and the handover log.\n- The /build box fix is live (10:16Z): it now shows v6.\n\nWhat you need to do: nothing. If something you ask isn't answered within 10 minutes, I get an alarm and take it myself."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T10:16:26.026Z",
+      "by": "user",
+      "text": "Leader, check and measure. if this agents is overloaded. you could fix this bottleneck",
+      "forLead": true
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T10:17:08.148Z",
+      "by": "lead",
+      "text": "Measured: mgmt-ops-10 answers fast, but it is the busiest agent, and fixes wait behind its other work. The split stays.\n\nTime to the first reply to your messages, from the thread log (since 06:00Z):\n\n| hour (Z) | your messages | median wait | longest | answered by ops |\n|---|---|---|---|---|\n| 06 | 12 | 1.1 min | 5.6 min | 10 |\n| 07 | 13 | 0.7 min | 27.6 min (a fix agent) | 5 |\n| 08 | 17 | 1.0 min | 5.6 min | 13 |\n| 09 | 15 | 1.4 min | 5.7 min | 12 |\n\n- Load: ops has the most messages of any agent in this usage window (136), and the most work by weight.\n- Where it slipped: your /build note (T-103) got no reply from ops; I answered after 5 min. The fix itself took 12 min and your \"Fix now\".\n- Correction to my #3: it was not \"10 min of silence\"; the delay was in doing the fix, not in replying.\n- Fix: the new desk agent (mgmt-desk-1) takes your threads and the pages; ops keeps the test-plan checks.\n- I measure again at about 11:15Z, both first reply and time until done, and post it here.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T10:17:49.431Z",
+      "by": "user",
+      "text": "Leader, you could measure the team. find the bottleneck and resolve them. then report me into the new thread.",
+      "forLead": true
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T10:17:56.014Z",
+      "by": "user",
+      "text": "Leader, you could measure the team. find the bottleneck and resolve them. then report me into the new thread.",
+      "forLead": true
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T10:20:06.618Z",
+      "by": "lead",
+      "text": "The full team measurement is in a new thread: T-105, Team bottleneck report. Short version: the Chrome test slot is the main bottleneck (61 % of waiting); fixes are underway there."
+    }
+  ],
+  "reads": {
+    "user": 8,
+    "mgmt-ops-10": 7,
+    "lead": 8,
+    "mgmt-desk-2": 7
+  },
+  "history": [
+    {
+      "at": "2026-10-04T10:14:35.332Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T10:15:46.996Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    },
+    {
+      "at": "2026-10-04T14:03:23.647Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    },
+    {
+      "at": "2026-10-04T14:03:39.364Z",
+      "who": "lead",
+      "action": "unassign",
+      "note": "lead,mgmt-desk-1"
+    },
+    {
+      "at": "2026-10-04T20:22:56.106Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T10:18:49.396Z",
+    "lead": "2026-10-04T10:20:06.618Z",
+    "mgmt-desk-2": "2026-10-04T14:03:25.868Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

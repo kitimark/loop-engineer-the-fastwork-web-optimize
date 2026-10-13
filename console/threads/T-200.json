@@ -1,0 +1,35 @@
+{
+  "id": "T-200",
+  "title": "Which fixes will improve the end of page morph ?",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T13:59:44.570Z",
+  "updatedAt": "2026-10-05T14:00:17.236Z",
+  "rev": 5,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T13:59:44.570Z",
+      "by": "user",
+      "text": "Which fixes will improve the end of page morph ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T14:00:16.383Z",
+      "by": "lead",
+      "text": "The biggest remaining win for the end-of-page morph is the end-screen background images; 3 smaller fixes join the v9.2 build.\n- Already in today's best build: morph on the graphics chip, top bar stops following past the end, lighter panel push, no pin jump, countdown repaints cut.\n- Next build (v9.2, freeze 15:00Z UTC), if their checks pass: the morph's close step (g11) and skipping phone-off scroll work (v9.1d).\n- Also for v9.2: the countdown roll on the graphics chip (P-097) and the nav colour without a per-frame hit test (P-138).\n- Biggest lever: on the phone, runs with the end-screen background images had 14-30 slow frames (over 34 ms); runs without had 2-5 (P-137).\n- Images change the look, so fix-end-bg brings a proposal with Try-it pages around 16:00Z; you pick an option.\n- Still being traced: a leftover stutter at the menu edge during the morph (fix-nav-morph); no fix yet.\n\nWhat you need to do: nothing now. Try the image proposal when it reaches your console."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "lead": 2
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-05T14:00:16.383Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

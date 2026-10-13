@@ -1,0 +1,99 @@
+{
+  "id": "T-202",
+  "title": "Comment on PR-026 \"End-of-page menu clock rolls like the top clock: about 27x…\": give me iphone now.",
+  "anchor": {
+    "page": "proposals",
+    "item": "PR-026",
+    "label": "End-of-page menu clock rolls like the top clock: about 27x less script; small Safari difference only mid-roll"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T20:59:20.278Z",
+  "updatedAt": "2026-10-05T21:04:32.996Z",
+  "rev": 22,
+  "assignees": [
+    "fix-cd-roll-ca-r4"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T20:59:20.278Z",
+      "by": "user",
+      "text": "give me iphone now."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T20:59:48.252Z",
+      "by": "fix-cd-roll-ca-r4",
+      "text": "The phone isn't free yet. The menu clock Try-it pages are ready and waiting for you.\n- int-v8 started a timed phone test for the next build (v9.2) at 20:58Z. It takes up to 15 minutes.\n- Touching the phone now would spoil that test, so I've asked the lead to hand you the phone now or as soon as the test ends.\n- When you have it, open PR-026 on the Proposals page and use its phone links: A is today's page, B is the new menu clock.\n- Scroll to the bottom so the menu is open, then watch the menu clock for a few seconds on each.\nWhat you need to do: wait for the lead's go, then open the two phone links."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T20:59:59.369Z",
+      "by": "user",
+      "text": "free it, now"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T21:00:19.111Z",
+      "by": "lead",
+      "text": "Yes: I'm pausing the v9.2 phone test now, so the iPhone is yours in about a minute.\n- I'll reply here as soon as it is free; nothing runs on it while you try the menu clock proposal (PR-026).\n- Then open PR-026 on the Proposals page and use its two phone links: A is today's page, B is the new menu clock.\n- The paused test restarts after you are done; nothing counted is lost.\nWhat you need to do: wait for my \"free\" message here, then open the two phone links. Tell me here when you are done."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-05T21:00:25.993Z",
+      "by": "fix-cd-roll-ca-r4",
+      "text": "I've asked for the phone to be freed now.\n- int-v8, which holds the phone, has your request to stop its test and give the phone back.\n- The lead has it too and can release the phone directly.\n- You'll see a note here when the phone is free.\nWhat you need to do: when the note says the phone is free, open PR-026's two phone links."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-05T21:00:50.388Z",
+      "by": "lead",
+      "text": "The iPhone is free now and held for you; no test will start on it until you say you are done.\n- Open the menu clock proposal (PR-026) on the Proposals page and use its two phone links: A is today's page, B is the new menu clock.\n- Scroll to the bottom so the menu is open, then watch the menu clock for a few seconds on each.\nWhat you need to do: try A and B now, then pick on the proposal or tell me here \"done\"."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-05T21:02:54.371Z",
+      "by": "user",
+      "text": "done"
+    },
+    {
+      "n": 8,
+      "at": "2026-10-05T21:03:07.679Z",
+      "by": "fix-cd-roll-ca-r4",
+      "text": "Thanks, noted. I've told the lead the phone can go back to the other tests.\nWhat you need to do: on the PR-026 proposal, pick accept, reject or change, with a note on what you saw if you like."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-05T21:03:29.119Z",
+      "by": "lead",
+      "text": "Thanks: I released the iPhone and the paused v9.2 phone test restarts now (about 70 min of robot-finger runs).\n- If the heat setting is off, a console step asks you to press Start on \"Serious\" in Xcode's Device Conditions on the Mac.\n- Your pick on the menu clock proposal (PR-026) can come any time; it does not need the phone.\nWhat you need to do: leave the iPhone plugged in and unlocked, and don't touch it while the test runs."
+    }
+  ],
+  "reads": {
+    "user": 9,
+    "fix-cd-roll-ca-r4": 8,
+    "lead": 9
+  },
+  "history": [
+    {
+      "at": "2026-10-05T20:59:20.278Z",
+      "who": "console",
+      "action": "assign",
+      "note": "fix-cd-roll-ca-r4 (author of PR-026)"
+    },
+    {
+      "at": "2026-10-05T20:59:48.342Z",
+      "who": "fix-cd-roll-ca-r4",
+      "action": "escalate",
+      "note": "The user wants the iPhone now to try PR-026 (Try-it phone links are up). The phone is held by int-v8 for timed block P-142 (since 20:58Z, up to 15 min). Your call: stop or pause the block for the user now, or hand over right after it."
+    }
+  ],
+  "readsAt": {
+    "fix-cd-roll-ca-r4": "2026-10-05T21:03:07.679Z",
+    "lead": "2026-10-05T21:03:29.119Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

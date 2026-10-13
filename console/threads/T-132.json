@@ -1,0 +1,62 @@
+{
+  "id": "T-132",
+  "title": "Comment on progress v8 \"Next best build (v8)\": who do this progress ?",
+  "anchor": {
+    "page": "progress",
+    "item": "progress:v8",
+    "label": "Next best build (v8)"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T14:29:46.268Z",
+  "updatedAt": "2026-10-04T21:01:08.049Z",
+  "rev": 8,
+  "assignees": [
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T14:29:46.268Z",
+      "by": "user",
+      "text": "who do this progress ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T14:30:07.448Z",
+      "by": "mgmt-desk-2",
+      "text": "The lead owns v8 and coordinates it; each part has its own agent.\n\n| part | agent |\n|---|---|\n| v8 as a whole, landing | lead |\n| Countdown roll | fix-cd-roll-ca |\n| Countdown faces | de-countdown (parked, landed) |\n| End-of-page morph, GPU fix | fix-morph-gpu |\n| Accent word | fix-accent-ca |\n| Scroll handlers on phones | fix-scroll-cb |\n| Top bar colour check | fix-nav-morph |\n| Toolbar fix | fix-toolbar-resize |\n\n- The wave integrator, who combines the parts into the build, is not started yet; the lead spawns it when 2 or more parts are ready.\n- v8 is now #1 on the board (your priority request, T-114).\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T14:44:38.418Z",
+      "by": "mgmt-desk-2",
+      "text": "Correction to my table: scroll-cb, nav-hit-cache and toolbar-resize are not v8 parts. The first two failed their checks, and the toolbar fix has no fix yet. The real v8 parts today: countdown roll, countdown faces, accent word, end-of-page morph (GPU fix).\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 3,
+    "mgmt-desk-2": 3,
+    "lead": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T14:29:46.268Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    },
+    {
+      "at": "2026-10-04T20:50:04.963Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-2": "2026-10-04T14:44:38.418Z",
+    "lead": "2026-10-04T21:01:08.049Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

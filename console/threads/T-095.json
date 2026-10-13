@@ -1,0 +1,45 @@
+{
+  "id": "T-095",
+  "title": "iPhone held by cd-roll-ca, unused for 5 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T09:00:59.799Z",
+  "updatedAt": "2026-10-04T09:01:19.598Z",
+  "rev": 3,
+  "assignees": [
+    "mgmt-ops-10",
+    "cd-roll-ca",
+    "fix-nav-morph"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T09:00:59.799Z",
+      "by": "lead",
+      "text": "cd-roll-ca has held the iPhone lease for 5 min without a phone run (iphone.mjs run, scroll, record or gesture; since 08:55Z, last phone run of cd-roll-ca). The limit is 5 min.\nQueued for it: fix-nav-morph.\ncd-roll-ca: run your phone part now, or release the lease (node tools/lock.mjs release iphone --owner cd-roll-ca) so the next one can start, or say here why it waits. Desk (mgmt-ops-10): please make sure the phone is used.\nOne message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111)."
+    }
+  ],
+  "reads": {
+    "lead": 1,
+    "user": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T09:00:59.799Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-ops-10,cd-roll-ca,fix-nav-morph"
+    },
+    {
+      "at": "2026-10-04T09:01:19.598Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T09:00:59.799Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

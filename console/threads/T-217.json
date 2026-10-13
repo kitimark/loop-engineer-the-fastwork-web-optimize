@@ -1,0 +1,48 @@
+{
+  "id": "T-217",
+  "title": "iPhone free for 10 min while 2 jobs wait",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-06T11:32:49.769Z",
+  "updatedAt": "2026-10-06T11:38:50.054Z",
+  "rev": 8,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-06T11:32:49.769Z",
+      "by": "lead",
+      "text": "The iPhone has had no holder for 10 min (since 11:21Z; the lease of iphone-runner ran out). The limit is 5 min.\nWaiting on the status board: end-morph (owner fix-end-morph; its next step names the phone (unmarked)); end-morph-p1 (owner fix-end-morph-p1; its next step names the phone (unmarked)).\nWhat unblocks it: the next of fix-end-morph, fix-end-morph-p1 takes it (node tools/lock.mjs acquire iphone --owner <you> ...).\nNo steward on duty (mgmt-devices is parked): the lead handles this thread (I-175).\nOne message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-06T11:34:44.518Z",
+      "by": "user",
+      "text": "Is arch-compositor-morph ready for using iphone ?"
+    },
+    {
+      "n": 3,
+      "at": "2026-10-06T11:35:52.769Z",
+      "by": "lead",
+      "text": "Not yet: the GPU-morph agent's phone test plan still needs its dry run and my signature, about 12:15Z; fix A's phone test goes first, from about 11:50Z.\n- Its plan: 14 phone runs in 3 parts (about 1.5 h), today's page against the GPU-only morph, counting style, layout and paint work per frame on the real iPhone.\n- Open before the phone: a dry run on today's tools (the phone-control fix landed at 11:34Z), and new build hashes after it fixed two bugs found after closing.\n- Order by benefit, as you asked: fix A first, because it already showed a phone gain (about 2 h, to about 13:45Z), then the GPU-only morph (to about 15:15Z).\n- If you want the GPU-only morph first, I can swap them, but only if its plan is signed before fix A's first counted run.\nWhat you need to do: nothing; reply \"GPU first\" to swap the order."
+    }
+  ],
+  "reads": {
+    "lead": 3,
+    "user": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-06T11:38:50.054Z",
+      "who": "lead",
+      "action": "close",
+      "note": "taken by user"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-06T11:35:52.769Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "id": "T-035",
+  "title": "Any fixes done more after i was test the latest best build ?",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-03T07:32:26.636Z",
+  "updatedAt": "2026-10-04T10:13:47.211Z",
+  "rev": 29,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T07:32:26.636Z",
+      "by": "user",
+      "text": "Any fixes done more after i was test the latest best build ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T07:33:00.456Z",
+      "by": "lead",
+      "text": "Short answer: not yet in a build you can test. The best build is still the one you tested ('optimize 2'). Since then the work went into finding where the remaining lag comes from and building the next fixes; none has passed all its checks yet, so nothing new is in the best build.\n\nDone since your test (findings, no build change):\n- Your finger run analysed: the lag you still feel is in the first ~1000 px (hero fade-out) and in the menu panel at the end; the middle and bottom are clean.\n- Heat test: Fastwork heats the phone ~5x more than apple.com; our fixes already cut a third to two thirds of that (T-029).\n- Countdown 3-face fix confirmed on the phone (fewer slow frames past the hero).\n\nIn progress, in the order they should land:\n1. Countdown digit strips (PR-008): back to you as version 2 soon (a check found a small layout-shift side effect; a variant without it is being built).\n2. Hero fade-out on Safari's scroll thread (the first ~1000 px, where most of your slow frames were): built, review asked for 6 small changes, then a phone check.\n3. Menu panel touch fix (F3, the hitch at the end): its phone test is running right now.\n4. Countdown roll on the GPU, then the 3-face countdown, stacked on 1.\n5. For heat: glint + sweep on the GPU, the people-section avatars stop working off screen, small count-up savings.\nPlus checks at other screen sizes (T-034).\n\nWhen 1-3 have landed I'll build 'optimize 3' and post a finger test for you in the console, the same way as last time, so you can feel the difference yourself."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-03T07:34:01.333Z",
+      "by": "user",
+      "text": "Is the 1-3 are highest priority ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-03T07:34:18.153Z",
+      "by": "lead",
+      "text": "Yes, 1-3 are the highest priority for smoothness: they target the two places you still feel lag (the first ~1000 px and the menu panel at the end). By what you should feel, the order is:\n- Hero fade-out (2): the biggest one. 63 of the 81 slow frames in your last finger run were in the first ~1000 px, where it acts.\n- Countdown strips (1): helps the top too and the menu panel's clock; it's ahead only because it's further along.\n- Menu panel touch fix (3): the hitch at the end of the page.\n\nThey get the phone first: F3 is on it now, the hero fade-out is next once its review changes are done. The heat work (4-5) and the screen-size checks are second priority; they run alongside because they use the Mac's Chrome and Simulator, not the phone, so they don't slow 1-3 down. If you'd rather put heat first, tell me here."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-03T07:34:42.637Z",
+      "by": "user",
+      "text": "What the 1-3 could improve ?"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-03T07:35:14.352Z",
+      "by": "lead",
+      "text": "What each should improve (measured so far on the Simulator/Chrome; the real-phone gain is what the next tests show, so treat the \"you should feel\" parts as expected, not proven):\n\n1. Hero fade-out on Safari's scroll thread (the first ~1000 px)\n- Today: on every scroll frame JavaScript recalculates the hero's fade and blur and Safari redraws the whole hero.\n- After: Safari runs the fade itself on its scroll thread, no JavaScript per frame. Simulator: whole-hero redraws per scroll pass 21 -> 0, area redrawn 20.2 -> 6.8 million pixels, 10 MB less GPU memory.\n- You should feel: smoother scrolling right from the top, where 63 of your 81 slow frames were.\n\n2. Countdown digit strips\n- Today: each digit is 10 separate layers that Safari redraws again and again.\n- After: each digit is one pre-drawn strip that only slides. Simulator: digit redraws 13 -> 0 per 4 s, 8 layers per clock instead of 24 (about 2 MB more memory per clock).\n- You should feel: a calmer top of the page and less work in the menu panel's clock; also less heat.\n\n3. Menu panel touch fix (F3)\n- Today: when your finger holds the page at the end, the menu panel's touch handling is set up again and again; in your last run that area had 91 slow frames (median 20 ms, just under 60 fps), sometimes a short hitch.\n- After: set up once. The phone test running now checks whether it stops the frame-rate drop while you hold the end.\n- You should feel: the end of the page stays smooth while your finger rests there. Part of that area's cost is the panel's clock (80 layers redrawn), which the next test after this one targets."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-03T08:37:02.007Z",
+      "by": "lead",
+      "text": "Update on fix 3 (F3, the hitch in the middle when your finger holds the menu panel): the phone test finished, and it couldn't decide.\n\n- 12 runs on the iPhone with a robot finger, at 40-41 °C, comparing the original against two versions of the fix. Every run was valid.\n- The hitch didn't appear in ANY version, not even the old code that is supposed to show it. So the test can't tell whether the fix removes it. (Our observation only; cause unknown.)\n- A likely reason: the robot finger stopped the page about 4 px lower in most runs than in the runs where the hitch used to show (the test sorts runs by where the page stops).\n- Nothing got worse: the fix ran clean in every run.\n\nNext: the fix's owner is checking why, and will recommend one of these:\n(a) a new phone test with a finger motion that reliably stops in the right place, checked on the Simulator first;\n(b) landing the fix on its other evidence (it sets touch listeners up once instead of repeatedly, with identical pixels). That changes the rule we set for it, so I'd ask you first;\n(c) parking it.\n\nFixes 1 and 2 (hero fade-out, countdown strips) are unaffected and still come first."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-03T08:40:57.257Z",
+      "by": "user",
+      "text": "The fix 3, do you measure about the rendering ? that the \"real rendering complexity\" i was asked to research. can you try to use this on fix 3 ?"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-03T08:41:37.425Z",
+      "by": "lead",
+      "text": "Yes. Fix 3 is now the first fix to get the \"real rendering complexity\" report you asked for. It will also be the template for the other fixes.\n\nWhat it measures, each time your finger pins the menu panel, original vs fix:\n1. how many touch listeners get added and removed (the fix's whole point is \"set up once\" instead of again and again);\n2. how much style, layout, repaint and compositing work the page does per pin and per frame while you hold it;\n3. how many GPU layers the panel uses and how much memory;\n4. how much script runs per pin;\n5. whether every touch move is still handled the same way.\n\nHow: the fix's owner (fix-nav-morph) runs it in Chrome and the iPhone Simulator, with no phone and no heat. The measurement planning agent supplies the report's layout. It counts per pin, not per time window; that lesson came from this morning's countdown trial.\n\nWhat happens with the result:\n- If it shows the fix removes real work per pin and adds no new cost, I'll come back to you with the option to land fix 3 on that evidence. That changes the phone-test rule we set for it, so it's your call.\n- If it shows no difference, I'll tell you plainly and we'll decide between a better phone test and parking it."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-03T11:56:07.161Z",
+      "by": "lead",
+      "text": "Fix 3 (F3, nav morph) update: the Simulator and Chrome cost card is done. Version V does the same work as today's page, but it blocks scrolling on fewer touches, so its benefit can only show up on the real phone and under your finger. Version D does more work, not less, so I've parked it. Next: a pre-registered phone test of V (gesture-driven, at the Serious heat state), after cd-strip and hero-exit, then your swipe A/B."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-03T12:19:04.267Z",
+      "by": "lead",
+      "text": "Fix 3 (the nav morph, F3) update. The current change doesn't help. It moves the morph's touch listener to a smaller area, but the coverage map shows the only cells it frees are a 5-15 px strip at the screen edge, and no finger or scripted swipe starts there. So for every swipe you can actually do, the page does the same work as before (OBSERVED in our setup). I've dropped it as a speed fix. F3 stays in the top three: fix-nav-morph is drafting a new candidate, most likely the countdown clock inside the morph panel, where most of the phone's long frames in that section sit. I'll post the plan here before anything is built. Fixes 1 and 2 go on as planned: cd-strip passed its phone check at real Serious and is waiting for your blind swipe A/B, which will appear in Your steps shortly."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-03T12:26:39.362Z",
+      "by": "lead",
+      "text": "Fix 3, new plan. Most of the remaining jank in the nav morph comes while the panel opens and closes. During the roughly 0.6 s it takes to open or close, about 1 frame in 3 runs slower than 34 ms at real Serious; with the panel held still, frames stay smooth (OBSERVED on the phone). Each of those frames repaints about 15 times. The plan is to find which repaints redraw content that didn't change and remove them, without changing how anything looks. Step 1 is a Simulator investigation only. It doesn't need the phone or you. If any part would change pixels even slightly mid-motion, I'll bring it to you first."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-03T12:54:54.600Z",
+      "by": "lead",
+      "text": "Fix 3, step 1 result. Almost all of the extra repainting while the panel opens and closes is real: the panel and the nav change size every frame, so their content has to be redrawn. Only about 1 % of it redraws something unchanged. A fix that keeps every pixel identical therefore can't make that motion much smoother (OBSERVED on the Simulator, which matched the phone's counts). The one remaining lever changes the motion slightly: draw the panel at full size once and reveal it, instead of resizing it every frame. A rough test version ran at a steady 60 fps on the phone (as an upper bound). fix-nav-morph is drafting this as a proposal for you, with pages you can try on the phone. Nothing visible changes unless you accept it."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-03T13:53:05.374Z",
+      "by": "lead",
+      "text": "A bug found in our own work, now seen on the real iPhone too. In the build all current fixes sit on, the nav menu at the end of the page doesn't animate properly in Safari. When it opens, the logo stays on the left and the 'Join waitlist' button stays visible, while the panel appears suddenly instead of fading in. The original site does this correctly (checked on the Simulator), and Chrome is fine. It comes from a CSS change in an earlier speed fix (scene-scope). Why Safari behaves this way is still unknown: WebKit's current source says it should work. fix-nav-morph is correcting it now so the menu moves exactly like the original. Earlier menu measurements on that build get a warning label. Your countdown swipe test (C-033) isn't affected: both pages have the same menu, and the test is about the countdown."
+    }
+  ],
+  "reads": {
+    "user": 14,
+    "lead": 14,
+    "mgmt-ops-10": 8
+  },
+  "history": [
+    {
+      "at": "2026-10-04T07:54:33.587Z",
+      "who": "mgmt-ops-10",
+      "action": "assign",
+      "note": "mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T07:54:41.312Z",
+      "who": "mgmt-ops-10",
+      "action": "close",
+      "note": "Merged into T-066 (best build and what lands next), one thread per topic at your request (T-024 #13). Related: T-035, T-046, T-066, T-067, T-072, T-076, T-079."
+    },
+    {
+      "at": "2026-10-04T10:13:47.211Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "into T-066: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T07:55:14.063Z"
+  },
+  "merged": {
+    "into": "T-066",
+    "at": "2026-10-04T10:13:47.211Z",
+    "by": "mgmt-ops-10",
+    "closed": false
+  },
+  "related": [
+    {
+      "id": "T-066",
+      "kind": "merged-into",
+      "at": "2026-10-04T10:13:47.211Z",
+      "by": "mgmt-ops-10"
+    }
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "id": "T-154",
+  "title": "Join button at the top of the page: still lags a bit (PR-021 rev 2)",
+  "topic": "nav-earn",
+  "status": "open",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T19:42:34.070Z",
+  "updatedAt": "2026-10-04T20:31:54.483Z",
+  "rev": 37,
+  "assignees": [
+    "fix-nav-earn"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T19:42:34.070Z",
+      "by": "lead",
+      "text": "Catch-up for the Join button at the top of the page (from your PR-021 note).\n\n- You're right: PR-021 only touches the end of the page (the bar growing into the dark panel).\n- The button that appears as you scroll down from the top is a different animation, not changed yet.\n- fix-nav-earn owns it: it traces that animation first (what lags, and why), then brings PR-021 rev 2.\n- Rev 2 keeps the end-of-page part exactly as you liked it and adds the top-of-page part.\n- It posts here what it finds; Try-it pages come with rev 2.\n\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T19:44:10.250Z",
+      "by": "user",
+      "text": "Lead, investigate this. this is the new breakthrough that fix-nav-earn proposal PR-021 was adopt SOOOOOO ULTRA SMOOTH. let's investigate v8 best build. which elements we can  adopt this more SOOOOOO ULTRA SMOOTHHHHHHHHHH."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T19:45:54.699Z",
+      "by": "lead",
+      "text": "Started: a new agent, de-v8-double-drive, sweeps all of v8 for the same pattern.\n\n- The pattern PR-021 fixed: an element follows your scroll, but also has its own slow animation, so it trails behind your finger.\n- The fix: switch that own animation off while your scroll drives the element.\n- The agent finds every such element in v8 and measures how far each one trails, in ms (no phone time needed).\n- You get a ranked list here: element, where on the page, how much it trails, the proposed change.\n- Parts already owned stay with their owners: the top bar and Join button (fix-nav-earn), the end menu (PR-018), the toolbar.\n\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T19:56:59.606Z",
+      "by": "user",
+      "text": "you could update the proposal then change status for ask me to review. i still see the change request status.",
+      "later": [
+        "fix-nav-earn"
+      ]
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T19:57:14.530Z",
+      "by": "user",
+      "text": "lead, investigate this issue. what's the problem ?",
+      "forLead": true,
+      "later": [
+        "fix-nav-earn"
+      ]
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T19:57:56.516Z",
+      "by": "lead",
+      "text": "Nothing is broken: PR-021 still says \"changes requested\" because rev 2 is not posted yet.\n\n- That status is your decision on rev 1; it changes to \"waiting for your review\" only when the agent posts rev 2.\n- fix-nav-earn has built rev 2 (the Join button follows your scroll at the top; the end-of-page part is unchanged).\n- It is checking rev 2 in Chrome right now (started 19:52Z), then in the Simulator.\n- Then it posts its trace here and rev 2 with Try-it pages; the status flips to \"waiting for your review\" then.\n- I asked it to post rev 2 as soon as the checks pass, not to wait for anything else.\n\nWhat you need to do: nothing now; review PR-021 when it says \"waiting for your review\"."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T20:08:00.356Z",
+      "by": "user",
+      "text": "i didn't any notification and \"waiting for your review\" on any proposal. am i wrong ?",
+      "forLead": true,
+      "later": [
+        "fix-nav-earn"
+      ]
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T20:08:47.302Z",
+      "by": "lead",
+      "text": "You're right: no proposal is waiting for your review yet, so there was nothing to notify you about.\n\n- Join button proposal (PR-021): rev 2 is built but not posted. Its last Chrome check waits for the Mac; I moved it to second in line (right after the phone warm-up, at most 9 min).\n- End-menu proposal (PR-018): your swipe test picked rev 7c; fix-hero-exit-threaded is writing rev 7c up now.\n- Each one flips to \"waiting for your review\" the moment its agent posts it, and the Proposals page shows it then.\n- I'll reply here when each is up.\n\nWhat you need to do: nothing now; review each proposal once it says \"waiting for your review\"."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T20:10:22.814Z",
+      "by": "user",
+      "text": "Why you don't investigate what's the problem of this ? what's the workaround ? what's the long-term improvement ? for make it follow our protocol of this proposal protocol. \n\nThis is your responsibility. let's do it.",
+      "forLead": true,
+      "later": [
+        "fix-nav-earn"
+      ]
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T20:12:46.109Z",
+      "by": "lead",
+      "text": "You're right, and my last answer missed it: after your change request the page showed nothing for hours, which is a real gap. Here are the cause, the workaround and the long-term fix.\n\nProblem, from the records:\n\n| Proposal | You asked for changes | Next version posted | Waited with nothing shown |\n|---|---|---|---|\n| End menu (PR-018) | 18:02Z | 20:10Z | 2 h 8 min |\n| Join button (PR-021) | 19:42Z | not yet | 30+ min |\n\nCause:\n- The page has no \"being revised\" state: it shows your own decision until the next version is posted. No step, no time, no owner.\n- Agents held each version until every check passed, and those checks waited in the shared Mac and phone queues.\n- Nothing raised an alarm, so I only heard when you asked.\n\nWorkaround, done now:\n- End menu (PR-018) rev 7c is posted: waiting for your review.\n- Join button (PR-021) shows a note on top: rev 2 in progress, expected by about 20:35Z. Its check is second in the Mac queue.\n\nLong-term:\n- Incident I-177 (the missing progress state): a toolsmith is adding \"Rev N+1 in progress\" with the step and expected time, shown on the page from the moment you ask for changes, plus an alarm to me when it is late or not started after 15 min.\n- New team rule (saved in project memory): the author marks the step and time within 10 min, and posts the next version once its Try-it pages work; slower checks follow later.\n- I move any check you're waiting on to the front of the queue, and check late revisions at every check-in.\n\nWhat you need to do: review the end-menu proposal (PR-018) rev 7c; nothing else."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T20:19:42.283Z",
+      "by": "user",
+      "text": "This is your responsibility, about investigate the issue, distinguish, do workaround and find long-term improvement.\n\ni told you a lot of time. i'm not sure why you forgot that. i'd like to ask you investigate your roles instruction. what's wrong in that ? and re-vise your roles more proper",
+      "forLead": true,
+      "later": [
+        "fix-nav-earn"
+      ]
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T20:24:23.195Z",
+      "by": "lead",
+      "text": "You're right: you asked me for this loop at least 15 times today, and my role instructions never said it. I've now written it into them.\n\nCause (in my role instructions):\n- The loop lived only in your thread messages. No project memory note, lead playbook section or role row named it, so it was lost each time my context was compacted.\n- The lead playbook's loop covered fix waves only (spawn, review, land), not issues you raise.\n- The answer-format check tests how an answer looks, not whether it has a cause, a workaround and a fix.\n- So I explained the state (\"nothing is broken\") instead of fixing the problem.\n\nWhich cases: the threads on parked rows, idle alarms, workarounds, the board, my own role, automated threads, and now these proposals (T-125, T-126, T-134, T-140, T-149, T-155, T-154).\n\nWorkaround, done: my next answers to an issue carry the four parts: cause, which cases, workaround, long-term fix.\n\nLong-term fix, on main (56fd3049):\n- Project memory note \"issue loop\", loaded by every agent in every session, so compaction can't lose it.\n- A new section at the top of the lead playbook, \"The issue loop\": my first job in every thread you open.\n- My role row in the roles file now starts with it; other agents answering an issue follow the same note.\n- Next: I'm opening an incident so the format check flags an issue reply that lacks the four parts.\n\nWhat you need to do: nothing; tell me in this thread if a future answer misses one of the four parts."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T20:24:45.612Z",
+      "by": "lead",
+      "text": "On the phone, no other part of v8 needs the Join button fix (PR-021); only the parts already being fixed had it.\n\n- The trick: an element follows your scroll but also runs its own slow animation, so it trails; switch that animation off while the scroll drives it.\n- Phone, checked in Chrome at phone size: only the top bar (fix-nav-earn, fix-nav-morph) and the end menu (accepted, landing now) have it.\n- Desktop has three more cases; the phone's own styles switch these effects off:\n\n| Where (desktop) | What you'd see | Trail |\n|---|---|---|\n| \"Future\" card, people section | keeps shrinking after you stop | 0.7-1.3 s |\n| Same card, fast scroll up | jumps up to 175 px for 3 frames | one-off |\n| Commission card, scroll up | jumps 20-27 px once | one-off |\n\n- These are Chrome probe numbers (OBSERVED); the Safari check was skipped because the Mac queue was full.\n- I'm not starting desktop fixes, since the goal is the phone; say if you want them.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T20:26:32.590Z",
+      "by": "fix-nav-earn",
+      "text": "Yes, rev 1 did not cover the top of the page. Rev 2 is now up for your review (proposal PR-021) and fixes it.\n- Why it lagged: at the top, the button waits until the hero is 72 % scrolled, then grows on its own clock. The text sweep keeps going after you stop scrolling.\n- Rev 2: the button grows with your finger from 58 % to 72 % and is already full when the bar changes. The end-of-page part is the same as rev 1.\n\n| Top of page, phone (Chrome check) | before (v8) | rev 2 |\n|---|---|---|\n| full size after the bar changes | 0.58 s | 0 s (already full) |\n| text sweep ends | 1.5 s | follows the scroll |\n| page layouts in the 0.7 s after | 43 | 2 |\n\nRev 2 is better in all three rows. The Safari check in the iOS Simulator is still running; its result comes by about 21:10Z in the proposal's comments.\nWhat you need to do: open PR-021 on the phone, try A and B (scroll the top slowly up and down), then decide."
+    }
+  ],
+  "reads": {
+    "lead": 13,
+    "user": 14,
+    "fix-nav-earn": 14
+  },
+  "history": [
+    {
+      "at": "2026-10-04T19:42:41.200Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-nav-earn"
+    },
+    {
+      "at": "2026-10-04T19:44:57.859Z",
+      "who": "fix-nav-earn",
+      "action": "escalate",
+      "note": "#2 asks the lead which other v8 parts can get the PR-021 treatment (an element driven by the gesture value also had its own time-based CSS animation, so it trailed; switch that off while the gesture drives it). I keep the top-of-page Join button part (rev 2)."
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T20:24:45.612Z",
+    "fix-nav-earn": "2026-10-04T20:26:32.590Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

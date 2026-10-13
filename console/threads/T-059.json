@@ -1,0 +1,57 @@
+{
+  "id": "T-059",
+  "title": "Comment on status cd-roll-ca \"Countdown roll as one GPU animation per digit (user-approve…\": What it means ? What i have to do ?",
+  "anchor": {
+    "page": "status",
+    "item": "status:cd-roll-ca",
+    "quote": "waiting for a user reply in a console thread or a proposal decision since 03:22Z (23 min, timeout 1 h)",
+    "label": "Countdown roll as one GPU animation per digit (user-approved, near-identical)"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T03:46:03.456Z",
+  "updatedAt": "2026-10-04T04:43:11.646Z",
+  "rev": 7,
+  "assignees": [
+    "fix-cd-roll-ca"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T03:46:03.456Z",
+      "by": "user",
+      "text": "What it means ? What i have to do ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T03:51:15.595Z",
+      "by": "lead",
+      "text": "Nothing for you to do. That line was misleading: the countdown-roll agent was only listening for your messages, not waiting on you (we're fixing the board so it stops saying that, I-108; see T-060). What it is actually doing: checking on the Mac and the iPhone Simulator that the new countdown roll does less work and looks the same, including with reduced motion. Then one short iPhone check that it isn't worse (no finger test needed, per your T-055 decision). It's 4th in the phone queue."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "fix-cd-roll-ca": 1,
+    "lead": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-04T03:46:03.456Z",
+      "who": "router",
+      "action": "assign",
+      "note": "fix-cd-roll-ca (owner of cd-roll-ca)"
+    },
+    {
+      "at": "2026-10-04T04:43:11.646Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "fix-cd-roll-ca": "2026-10-04T03:46:05.977Z",
+    "lead": "2026-10-04T03:51:15.595Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

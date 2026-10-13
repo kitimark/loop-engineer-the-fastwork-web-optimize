@@ -1,0 +1,81 @@
+{
+  "id": "T-190",
+  "title": "Comment on PR-023 \"End-of-page menu: a long swipe back up leaves the end in on…\": queue me, my device",
+  "anchor": {
+    "page": "proposals",
+    "item": "PR-023",
+    "label": "End-of-page menu: a long swipe back up leaves the end in one go (rev 7d, phones)"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T09:45:36.228Z",
+  "updatedAt": "2026-10-05T10:18:02.399Z",
+  "rev": 18,
+  "assignees": [
+    "fix-hero-exit-threaded"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T09:45:36.228Z",
+      "by": "user",
+      "text": "queue me, my device"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T09:46:20.360Z",
+      "by": "lead",
+      "text": "You are queued: the iPhone is yours as soon as the first half of the running phone test ends, about 10:12Z.\n- Right now the heat test (P-129) is mid-run on the phone; no phone step may start during it.\n- It runs in two halves; your Try-it goes between them, before the second half.\n- I will post one step in Your steps with the A and B links for the end-of-page menu proposal (PR-023 rev 5) on the iPhone.\n- Keep Xcode's Serious condition on; the test checks the heat again after you.\nWhat you need to do: nothing yet; start the step when it appears (about 10:12Z)."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T10:05:10.905Z",
+      "by": "lead",
+      "text": "The iPhone is yours now: your step is posted in Your steps as C-067 (try the end-of-page menu proposal, A vs B).\n- The first half of the heat test (P-129) finished early, at 10:04Z, so you need not wait for 10:12Z.\n- The second half starts after you press Done.\nWhat you need to do: open C-067, try A and B on the iPhone, press Done, then give your verdict on the Proposals page."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T10:07:15.453Z",
+      "by": "user",
+      "text": "Which thermal state at this time ? Is it critical ?"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-05T10:07:50.462Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "Not critical: the phone was at Serious at the last read, 10:03:48Z, 3 min before your question.\n- That level is Xcode's heat mode (Serious), set on purpose; the phone itself is not that hot.\n- Battery 38.9 °C at the last read, up from 37.0 °C at 09:58Z. Our tests stop at 44 °C or Critical.\n| read (UTC) | state | battery |\n|---|---|---|\n| 09:58 | Serious (Xcode) | 37.0 °C |\n| 10:03 | Serious (Xcode) | 38.9 °C |\n- The heat test reads it again when its second half starts, after your Done.\nWhat you need to do: nothing; try A and B as planned."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-05T10:15:46.346Z",
+      "by": "user",
+      "text": "done"
+    },
+    {
+      "n": 7,
+      "at": "2026-10-05T10:17:59.648Z",
+      "by": "lead",
+      "text": "Thanks: your accept of the end-of-page menu change (PR-023, the 7d version) is recorded (10:15Z).\n- The phone step is closed; nothing more to try.\n- fix-hero-exit-threaded now prepares it to land on the main build.\n- The iPhone now runs the second half of the heat test (P-129 part 2, scripted, about 20 min).\n- Then the countdown heat test (P-130) follows.\nWhat you need to do: please leave the iPhone alone with Xcode's Serious condition on until I post the next step."
+    }
+  ],
+  "reads": {
+    "user": 7,
+    "lead": 7,
+    "fix-hero-exit-threaded": 6
+  },
+  "history": [
+    {
+      "at": "2026-10-05T09:45:36.228Z",
+      "who": "console",
+      "action": "assign",
+      "note": "fix-hero-exit-threaded (author of PR-023)"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T10:17:59.648Z",
+    "fix-hero-exit-threaded": "2026-10-05T10:15:47.452Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

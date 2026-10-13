@@ -1,0 +1,109 @@
+{
+  "id": "T-133",
+  "title": "Comment on progress hero-exit-threaded \"Hero ending run by Safari's scrolling thread\": is it part of v8 ?",
+  "anchor": {
+    "page": "progress",
+    "item": "progress:hero-exit-threaded",
+    "label": "Hero ending run by Safari's scrolling thread"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T14:31:09.332Z",
+  "updatedAt": "2026-10-04T14:36:23.550Z",
+  "rev": 24,
+  "assignees": [
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T14:31:09.332Z",
+      "by": "user",
+      "text": "is it part of v8 ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T14:31:36.641Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes: the hero fade is already inside v8's base, and v8 does not change it.\n\n- The hero fade on Safari's scrolling thread went into the best build v6.\n- Today's best build v7 is built on v6, so v8 (built on v7) carries it too.\n- Not in v8 yet: the follow-up, the end-of-page menu following your scroll (PR-018). It is still in your review.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T14:32:07.161Z",
+      "by": "user",
+      "text": "why this task is not highest priority ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T14:32:20.560Z",
+      "by": "mgmt-desk-2",
+      "text": "The hero fade itself is finished, so it has no priority left; the open part is the follow-up (PR-018), ranked #8.\n\n- Why #8: the lead's order of 12:12Z (T-114) put it after the fast-flick test, v8 and v8's parts.\n- That order was set before you tried PR-018 on the phone and gave feedback (slow swipe, 14:18Z).\n- I asked the lead whether PR-018 should move up now.\n\nWhat you need to do: nothing; the lead answers here."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T14:32:54.736Z",
+      "by": "lead",
+      "text": "**You're right; it should rank higher. The end-of-page menu proposal (PR-018) is now #2, right after v8.**\n\n| # | what |\n|---|---|\n| 1 | v8, the next best build (you asked for it first in T-114) |\n| 2 | PR-018 rev 6: fix the slow open/close after a slow swipe |\n| 3 | the fast-flick test |\n\n- The hero fade itself is already in the build; this row now tracks the PR-018 work.\n- PR-018 doesn't wait for v8: its author is tracing your slow-swipe review now and gets the iPhone right after the countdown check.\n\nWhat you need to do: nothing; tell me if you want PR-018 above v8."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T14:33:46.733Z",
+      "by": "user",
+      "text": "You could rank all of fix progresses that related to v8 as highest priority for me easier to tracking."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T14:34:05.404Z",
+      "by": "mgmt-desk-2",
+      "text": "Understood: all fixes that belong to v8 should sit at the top of the board and Progress, in one group.\n\n- Today (lead, #5): v8 is #1, PR-018 #2, the fast-flick test #3.\n- Your request is one more step: tag each v8 part and show them together at the top.\n- I sent it to the lead; the parts are listed in T-132 (#2).\n\nWhat you need to do: nothing; the lead answers here."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T14:34:29.291Z",
+      "by": "lead",
+      "text": "**Done: all v8 parts are now priority #1, together with v8 itself.**\n\n| v8 part | state |\n|---|---|\n| countdown roll (K, your pick) | last iPhone check running now, until ~14:57Z |\n| countdown faces | done, waiting for the build |\n| accent word (exact) | done, waiting for the build |\n| end-of-page fade (rev 3) | done, waiting for the build |\n\n- Not in v8: the scroll-handler and menu-colour fixes (both failed their last check) and the toolbar fix (still finding the cause).\n- A tools helper adds a \"v8\" group at the top of the Progress and Status pages, so finished parts stay visible there until the build lands.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 8,
+    "mgmt-desk-2": 7,
+    "lead": 8
+  },
+  "history": [
+    {
+      "at": "2026-10-04T14:31:09.332Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    },
+    {
+      "at": "2026-10-04T14:32:20.642Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User #3: why is hero-exit-threaded / PR-018 (end-of-page morph follow-up, rev 6 in progress) not highest priority? It is #8 per your 12:12Z order. Decide rank, tell user in T-133."
+    },
+    {
+      "at": "2026-10-04T14:32:29.614Z",
+      "who": "user",
+      "action": "close"
+    },
+    {
+      "at": "2026-10-04T14:32:54.445Z",
+      "who": "lead",
+      "action": "reopen"
+    },
+    {
+      "at": "2026-10-04T14:34:05.514Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User #6: rank/group ALL fix items that belong to v8 at top priority on Progress and Status (easier tracking). Parts: cd-roll-ca, countdown-faces, morph-gpu, accent-ca, scroll-cb, nav-hit-cache, toolbar-resize. Please set ranks / ask ts-board for a v8 group; answer in T-133."
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-2": "2026-10-04T14:34:05.514Z",
+    "lead": "2026-10-04T14:34:29.291Z"
+  },
+  "histSeen": {
+    "lead": 5
+  }
+}

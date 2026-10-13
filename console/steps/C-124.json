@@ -1,0 +1,46 @@
+{
+  "id": "C-124",
+  "by": "lead",
+  "kind": "question",
+  "title": "May I restart Xcode's device service on the Mac? (fixes the phone test tool)",
+  "instructions": "Xcode's background device service (CoreDeviceService, running 7 days) kept an old error from 11:1xZ, so the phone test tool can't start although Xcode's window shows no problem. Restarting it only reconnects Xcode to the iPhone (it restarts by itself in seconds; Xcode may show the phone as reconnecting). Answer yes or no.",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "yes",
+      "no"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-08T11:50:57.994Z",
+  "queuedAt": "2026-10-08T11:50:57.994Z",
+  "updatedAt": "2026-10-08T11:52:18.613Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-08T11:50:57.994Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-08T11:52:17.554Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-08T11:52:18.613Z",
+      "who": "user",
+      "action": "answer",
+      "value": "yes"
+    }
+  ],
+  "queueSeq": 83,
+  "startedAt": "2026-10-08T11:52:17.554Z",
+  "result": {
+    "value": "yes",
+    "at": "2026-10-08T11:52:18.613Z"
+  }
+}

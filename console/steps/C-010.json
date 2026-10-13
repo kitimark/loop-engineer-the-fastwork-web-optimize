@@ -1,0 +1,54 @@
+{
+  "id": "C-010",
+  "by": "lead",
+  "kind": "action",
+  "title": "iPhone: close the test tab and open a fresh one",
+  "instructions": "In Safari on the iPhone, close the current tab (the Fastwork page), open a new tab on any page (e.g. the start page), keep Safari in front and the phone unlocked, then press Done.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-01T17:34:59.698Z",
+        "done": "2026-10-01T17:35:09.906Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-01T17:34:11.244Z",
+  "queuedAt": "2026-10-01T17:34:11.244Z",
+  "updatedAt": "2026-10-01T17:35:09.906Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-01T17:34:11.244Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-01T17:34:59.698Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T17:35:09.906Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    }
+  ],
+  "startedAt": "2026-10-01T17:34:59.698Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-01T17:35:09.906Z"
+  }
+}

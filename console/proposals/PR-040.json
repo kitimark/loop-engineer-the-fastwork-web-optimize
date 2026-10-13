@@ -1,0 +1,178 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-040",
+  "by": "fix-cm-return",
+  "title": "End of page: the menu follows your finger again, with a steady glass top bar (no flicker)",
+  "area": "end",
+  "topic": "cm-return",
+  "problem": "You asked for the end-of-page menu that grows with your swipe, without the glass flicker.\n- In the earlier glass-menu proposal (PR-030), the top bar's frosted glass vanished in many frames while your finger moved near the start of the grow.\n- iPhone Simulator, finger wiggling there: glass missing in 12 of 33 frames; EN and Join changed too.\n- Our older build v14 (the last one where the menu followed the finger) had two more glitches:\n- after scrolling into the menu and back, the logo jumped 20 px left and the buttons 4 px right at every crossing;\n- the Join button's rainbow sweep (its one-time intro) played again each time you stopped near the end or left it.",
+  "idea": "Bring back v14's end of the page (the menu grows with your swipe) on top of today's best build g0.0h, and fix all three glitches.\n- Glass: the bar keeps its normal blur the whole time; only its colour darkens as the menu grows, the way the original page changes it.\n- Nothing animates the blur any more, so Safari has nothing to drop.\n- This replaces v13/v14's per-frame blur change (20 px fading to 0 while the menu grows).\n- Logo and buttons keep their place after you scroll back.\n- The Join sweep plays once when the bar appears, as in g0.0h, and never replays at the end.\n- Above the end of the page the code is exactly g0.0h's.",
+  "looksSame": "Above the end of the page: the same as g0.0h (same code).\n- While the menu grows: the earlier glass menu's look (PR-030, the proposal you accepted before), with the glass kept frosted.",
+  "risk": "Medium: it changes how the end of the page behaves.\n- It reverses your end-of-page rollback (T-228 #62, the menu opening by itself at the end): here the menu grows with your swipe, as in v14.\n- Checked on the iPhone Simulator and Chrome only; not yet on the real iPhone or with your finger.\n- It keeps v14's always-on mouse-wheel listener (a script that watches wheel and trackpad scrolling); Safari does a bit more style work once at page load.\n- Near the end, menu closed, it keeps 7 more layers (pictures the screen keeps) and about 26 MB more graphics memory than g0.0h, so opening costs nothing.\n- That is still fewer than the earlier glass menu (PR-030) and v14.",
+  "visualDiff": [
+    "While the menu grows, the earlier glass menu's known differences stay (PR-030, the proposal you accepted before):\n- early in the grow the bar's top-left (logo, edge) looks slightly different;\n- near fully open, content can sit up to ~1 px off.",
+    "The glass keeps its blur while the menu grows (v14 let it fade).\n- In the Simulator the frames match v14's at the same point of the grow (0.04 % of pixels at the start, 0 a third of the way in).",
+    "Chrome only:\n- after a slow approach the fully open menu's text can stay a little soft;\n- Chrome screenshots (not the screen) can show see-through card corners.",
+    "iPhone Simulator only, above the end:\n- in the platform section, text and pictures sit a fraction of a screen pixel off from g0.0h at 2 of 7 places;\n- probably because this page is 815 px longer; Chrome showed none."
+  ],
+  "gain": [
+    {
+      "what": "Glass missing while the finger moves",
+      "before": "12 of 33 frames",
+      "after": "0 of 34",
+      "tag": "OBSERVED",
+      "how": "iPhone 15 Pro Max Simulator, finger wiggling at the start of the grow; before = the earlier glass-menu build (PR-030)",
+      "better": "better"
+    },
+    {
+      "what": "Logo jump after scrolling back",
+      "before": "20 px",
+      "after": "0 px",
+      "tag": "OBSERVED",
+      "how": "same Simulator run; before = v14",
+      "better": "better"
+    },
+    {
+      "what": "Join sweep replays near the end",
+      "before": "at each stop and exit",
+      "after": "0",
+      "tag": "OBSERVED",
+      "how": "Simulator, log of the button's animations at 9 stops near the end; before = v14",
+      "better": "better"
+    },
+    {
+      "what": "Repaints per frame at the end",
+      "before": "3.67",
+      "after": "0.69",
+      "tag": "OBSERVED",
+      "how": "Simulator Timeline, 5 swipes into the end and 5 back, 1 load per build; before = g0.0h",
+      "better": "better"
+    },
+    {
+      "what": "Layouts per frame at the end",
+      "before": "0.91",
+      "after": "0.46",
+      "tag": "OBSERVED",
+      "how": "same run",
+      "better": "better"
+    },
+    {
+      "what": "Style work per frame at the end",
+      "before": "1.10",
+      "after": "1.46",
+      "tag": "OBSERVED",
+      "how": "same run; it comes from v14's end code (v14: 1.52)",
+      "better": "worse"
+    },
+    {
+      "what": "Layers near the end, menu closed",
+      "before": "46 (77 MB)",
+      "after": "53 (104 MB)",
+      "tag": "OBSERVED",
+      "how": "same run; the earlier glass-menu build (PR-030) had 55 (103 MB), v14 64 (113 MB)",
+      "better": "worse"
+    }
+  ],
+  "live": {
+    "patch": "fixes/cm-return/patch.diff",
+    "ref": "HEAD",
+    "blob": "6a1e460b3053652e258ca98a6ba8f64c659c2513",
+    "base": "site-pretty",
+    "files": [
+      "_app/immutable/assets/2.gBuqKVzi.css",
+      "_app/immutable/nodes/2.DyWL8TcE.js"
+    ],
+    "a": {
+      "patch": "fixes/g0-0h/patch.diff",
+      "ref": "HEAD",
+      "blob": "0fa73154bd066214fcf8d9c710ed574f85aaa2ed",
+      "base": "site-pretty",
+      "files": [
+        "_app/immutable/assets/2.gBuqKVzi.css",
+        "_app/immutable/nodes/2.DyWL8TcE.js"
+      ]
+    }
+  },
+  "compare": {
+    "a": {
+      "label": "Best build g0.0h: the menu opens by itself at the end"
+    },
+    "b": {
+      "label": "This build: the menu grows with your swipe, steady glass"
+    },
+    "view": "side",
+    "shots": [
+      {
+        "caption": "Bar while the finger moves (Simulator). Left: earlier glass menu, glass gone. Right: this build",
+        "a": "r1-a-1.webp",
+        "aSize": [
+          1290,
+          303
+        ],
+        "b": "r1-b-1.webp",
+        "bSize": [
+          1290,
+          303
+        ]
+      },
+      {
+        "caption": "Closed bar after scrolling back (Simulator). Left: v14, logo 20 px off. Right: this build",
+        "a": "r1-a-2.webp",
+        "aSize": [
+          1290,
+          303
+        ],
+        "b": "r1-b-2.webp",
+        "bSize": [
+          1290,
+          303
+        ]
+      }
+    ]
+  },
+  "state": "accepted",
+  "rev": 1,
+  "decision": {
+    "value": "accepted",
+    "notes": "It's SOOOO ULTRAA SMOOTHHH HHHHHHHH",
+    "at": "2026-10-09T03:40:01.923Z",
+    "who": "user",
+    "rev": 1
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "notes": "It's SOOOO ULTRAA SMOOTHHH HHHHHHHH",
+      "at": "2026-10-09T03:40:01.923Z",
+      "who": "user",
+      "rev": 1
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-08T21:59:47.998Z",
+      "by": "fix-cm-return",
+      "note": "first version"
+    }
+  ],
+  "createdAt": "2026-10-08T21:59:47.998Z",
+  "updatedAt": "2026-10-09T03:40:01.923Z",
+  "proposedAt": "2026-10-08T21:59:47.998Z",
+  "history": [
+    {
+      "at": "2026-10-08T21:59:47.998Z",
+      "who": "fix-cm-return",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-09T03:40:01.923Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 1,
+      "note": "It's SOOOO ULTRAA SMOOTHHH HHHHHHHH"
+    }
+  ]
+}

@@ -1,0 +1,345 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-019",
+  "by": "fix-accent-ca",
+  "title": "Hero word 'you' (the hand-drawn word): an exact change saves little; only a sliding reveal saves a lot. Which one?",
+  "area": "hero",
+  "topic": "accent-ca",
+  "problem": "Answer first: the exact version saves only about 5 % of the word's work on Safari. The big saving (about half of all page updates at the top) comes only from a sliding reveal, and you turned that look down once before (first version of the image-frames proposal, PR-001).\n\nWhat this is about\n- The word under 'Show the world what ... can do' wobbles while it rests (3 hand-drawn copies swap every 0.2 s, the 'boil') and draws itself out and in when it changes language.\n- You asked (T-096 #4) to use the countdown lesson: let the graphics chip do the animation.\n\nWhat we found\n- The wobble can move to the graphics chip exactly, but Safari's cost is in the draw, not the wobble.\n- The stroke-by-stroke draw has no exact graphics-chip form: Safari redraws and re-lays out the word on every frame of each 0.9 s draw.\n- So an exact change is small. A large saving needs a different look while the word changes.\n\nWhy you decide\n- Your rule: a look-alike change lands by itself only when it is exact. A difference that shows only in motion comes to you.\n\nCodes used here\n- Simulator: <device-name>(Safari's engine). Counts are per 9.15 s at the top of the page (3 word changes).\n- 'Page update': one screen frame the page had to prepare.",
+  "looksSame": "Option 'Exact wobble': every frozen frame is identical. That holds in Chrome at phone size and desktop size (148 frames, 0 differ) and in the Simulator (58 frames, at most 2 of 255 shades on one frame, which is within the noise between two loads of today's page). With reduced motion on it is identical in both. Option 'Sliding reveal' looks different while the word changes (see that option).",
+  "visualDiff": [],
+  "gain": [],
+  "compare": {
+    "a": {
+      "label": "Today (best build v6 + the hero change)"
+    },
+    "shots": []
+  },
+  "options": [
+    {
+      "name": "exact",
+      "label": "Exact wobble (graphics chip runs the wobble)",
+      "idea": "The 3 wobble copies swap with an animation Safari can hand to the graphics chip, at exactly the same moments as today. While the word draws, the 2 hidden copies stop drawing (nobody can see them). The draw itself stays as it is. CSS only, about 40 lines.",
+      "looksSame": "Identical on every frozen frame in Chrome (phone and desktop size) and in the Simulator; identical with reduced motion.",
+      "risk": "Whether Safari really runs the new wobble on the graphics chip is not proven: the Simulator shows the same layers in both builds (OBSERVED, in our setup). If it does, the swap moments follow the graphics chip's clock instead of the page's, which frozen frames cannot show. Per a teammate's finding (F-212, the countdown work), a running graphics-chip animation asks the screen for 80-120 frames a second during the 1.25 s rest of each 3 s cycle; not measured here. Not checked on the real iPhone.",
+      "visualDiff": [
+        "None on frozen frames: Chrome 148 of 148 identical; Simulator 58 frames, largest difference 2 of 255 shades on one frame, 0 % of the screen beyond the noise between two loads of today's page.",
+        "Possible motion-only difference: the wobble swap may happen on the graphics chip's clock (see risk)."
+      ],
+      "gain": [
+        {
+          "what": "Paints, whole page (Chrome, phone size)",
+          "before": "1316-1317",
+          "after": "688",
+          "tag": "OBSERVED",
+          "how": "Chrome, 9.15 s from a draw, 2 loads of today, 1 of the change (2026-10-04)."
+        },
+        {
+          "what": "Page updates (Simulator)",
+          "before": "483-493",
+          "after": "456",
+          "tag": "OBSERVED",
+          "how": "Simulator, 9.15 s, 2 loads of today, 1 of the change (2026-10-04, 12:30Z)."
+        },
+        {
+          "what": "Style recalculations (Simulator)",
+          "before": "505-516",
+          "after": "484",
+          "tag": "OBSERVED",
+          "how": "Same loads."
+        },
+        {
+          "what": "Paints of the word (Simulator)",
+          "before": "441",
+          "after": "423",
+          "tag": "OBSERVED",
+          "how": "Same loads. Layouts: 357-359 before, 348 after."
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "Exact wobble"
+        },
+        "shots": [
+          {
+            "caption": "Word appearing, 0.3 s in (Chrome, phone size, frozen)",
+            "a": "r1-o1-a-1.webp",
+            "aSize": [
+              924,
+              216
+            ],
+            "b": "r1-o1-b-1.webp",
+            "bSize": [
+              924,
+              216
+            ]
+          },
+          {
+            "caption": "Word appearing, 0.6 s in",
+            "a": "r1-o1-a-2.webp",
+            "aSize": [
+              924,
+              216
+            ],
+            "b": "r1-o1-b-2.webp",
+            "bSize": [
+              924,
+              216
+            ]
+          },
+          {
+            "caption": "Word disappearing, 0.45 s in",
+            "a": "r1-o1-a-3.webp",
+            "aSize": [
+              924,
+              216
+            ],
+            "b": "r1-o1-b-3.webp",
+            "bSize": [
+              924,
+              216
+            ]
+          }
+        ]
+      },
+      "live": {
+        "patch": "fixes/accent-ca/patch.diff",
+        "ref": "HEAD",
+        "blob": "0bf0884675523a48751318e1074b13358bfdebd8",
+        "base": "site-pretty",
+        "files": [
+          "_app/immutable/assets/2.gBuqKVzi.css",
+          "_app/immutable/nodes/2.DyWL8TcE.js"
+        ],
+        "a": {
+          "patch": "fixes/accent-ca--v6/patch.diff",
+          "ref": "HEAD",
+          "blob": "1e7157f7ed4da8db78c57babea4b7de4c646527f",
+          "base": "site-pretty",
+          "files": [
+            "_app/immutable/assets/2.gBuqKVzi.css",
+            "_app/immutable/nodes/2.DyWL8TcE.js"
+          ]
+        }
+      }
+    },
+    {
+      "name": "slide",
+      "label": "Sliding reveal (big saving, new look)",
+      "idea": "The exact wobble, plus: instead of drawing stroke by stroke, the whole finished word is revealed from left to right by a moving edge (0.9 s), and hidden from right to left the same way. The graphics chip moves the edge; the word itself is not redrawn.",
+      "looksSame": "At rest (the wobble): the same as today. While the word changes: different.",
+      "risk": "A visible change: you turned down a sliding wipe for this word in the first version of PR-001 ('the B is changed the visual'). This version is the same kind of slide. Not checked in Chrome counts or on the real iPhone.",
+      "visualDiff": [
+        "While the word changes (2 x 0.9 s of every 3 s): the word appears and disappears behind a moving edge instead of being drawn and erased stroke by stroke. Try it to see.",
+        "At rest: identical to today.",
+        "Chrome, frozen frames while the word changes: 20 of 28 differ, up to 212 of 255 shades, at most 0.11 % of the screen (459 CSS px). Above the agreed limits for a look-alike change."
+      ],
+      "gain": [
+        {
+          "what": "Page updates (Simulator)",
+          "before": "486-499",
+          "after": "263",
+          "tag": "OBSERVED",
+          "how": "Simulator, 9.15 s, 2 loads of today, 1 of the slide (2026-10-04, 12:47Z)."
+        },
+        {
+          "what": "Layouts (Simulator)",
+          "before": "356-364",
+          "after": "32",
+          "tag": "OBSERVED",
+          "how": "Same loads."
+        },
+        {
+          "what": "Paints of the word (Simulator)",
+          "before": "439-447",
+          "after": "58",
+          "tag": "OBSERVED",
+          "how": "Same loads. Style recalculations: 511-520 before, 281 after."
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "Sliding reveal"
+        },
+        "shots": [
+          {
+            "caption": "Word appearing, 0.3 s in (Chrome, phone size, frozen)",
+            "a": "r1-o2-a-1.webp",
+            "aSize": [
+              924,
+              216
+            ],
+            "b": "r1-o2-b-1.webp",
+            "bSize": [
+              924,
+              216
+            ]
+          },
+          {
+            "caption": "Word appearing, 0.6 s in",
+            "a": "r1-o2-a-2.webp",
+            "aSize": [
+              924,
+              216
+            ],
+            "b": "r1-o2-b-2.webp",
+            "bSize": [
+              924,
+              216
+            ]
+          },
+          {
+            "caption": "Word disappearing, 0.45 s in",
+            "a": "r1-o2-a-3.webp",
+            "aSize": [
+              924,
+              216
+            ],
+            "b": "r1-o2-b-3.webp",
+            "bSize": [
+              924,
+              216
+            ]
+          }
+        ]
+      },
+      "live": {
+        "patch": "fixes/accent-ca--wipe/patch.diff",
+        "ref": "HEAD",
+        "blob": "69c0635c66a02eeaba0a261f32a0d31a5d0ddc24",
+        "base": "site-pretty",
+        "files": [
+          "_app/immutable/assets/2.gBuqKVzi.css",
+          "_app/immutable/nodes/2.DyWL8TcE.js"
+        ],
+        "a": {
+          "patch": "fixes/accent-ca--v6/patch.diff",
+          "ref": "HEAD",
+          "blob": "1e7157f7ed4da8db78c57babea4b7de4c646527f",
+          "base": "site-pretty",
+          "files": [
+            "_app/immutable/assets/2.gBuqKVzi.css",
+            "_app/immutable/nodes/2.DyWL8TcE.js"
+          ]
+        }
+      }
+    },
+    {
+      "name": "keep",
+      "label": "Keep today's word",
+      "idea": "No change. The image-frames route you approved for a phone check (PR-001 rev 2) stays the way to keep the hand-drawn look and still remove the draw work.",
+      "looksSame": "Same page.",
+      "risk": "None.",
+      "visualDiff": [
+        "Nothing changes: it is today's page."
+      ],
+      "gain": [
+        {
+          "what": "Page updates (Simulator)",
+          "before": "483-499",
+          "after": "483-499",
+          "tag": "OBSERVED",
+          "how": "No change: the same loads as the other options."
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "Today, kept (B = A)"
+        },
+        "shots": [
+          {
+            "caption": "Word appearing, 0.3 s in (Chrome, phone size, frozen)",
+            "a": "r1-o3-a-1.webp",
+            "aSize": [
+              924,
+              216
+            ],
+            "b": "r1-o3-b-1.webp",
+            "bSize": [
+              924,
+              216
+            ]
+          },
+          {
+            "caption": "Word appearing, 0.6 s in",
+            "a": "r1-o3-a-2.webp",
+            "aSize": [
+              924,
+              216
+            ],
+            "b": "r1-o3-b-2.webp",
+            "bSize": [
+              924,
+              216
+            ]
+          },
+          {
+            "caption": "Word disappearing, 0.45 s in",
+            "a": "r1-o3-a-3.webp",
+            "aSize": [
+              924,
+              216
+            ],
+            "b": "r1-o3-b-3.webp",
+            "bSize": [
+              924,
+              216
+            ]
+          }
+        ]
+      },
+      "live": {
+        "none": "Keep today's word: B is the same page as A."
+      }
+    }
+  ],
+  "recommended": {
+    "option": "exact",
+    "why": "It is exact on every frozen frame and with reduced motion, and does a little less work. The slide saves far more, but it is the look you turned down before; pick it only if the saving matters more to you now than the stroke-by-stroke draw."
+  },
+  "state": "accepted",
+  "rev": 1,
+  "decision": {
+    "value": "accepted",
+    "at": "2026-10-04T13:09:08.722Z",
+    "who": "user",
+    "rev": 1,
+    "option": "exact"
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "at": "2026-10-04T13:09:08.722Z",
+      "who": "user",
+      "rev": 1,
+      "option": "exact"
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-04T12:53:05.918Z",
+      "by": "fix-accent-ca",
+      "note": "first version"
+    }
+  ],
+  "createdAt": "2026-10-04T12:53:05.918Z",
+  "updatedAt": "2026-10-04T13:09:08.722Z",
+  "proposedAt": "2026-10-04T12:53:05.918Z",
+  "history": [
+    {
+      "at": "2026-10-04T12:53:05.918Z",
+      "who": "fix-accent-ca",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-04T13:09:08.722Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 1,
+      "option": "exact"
+    }
+  ]
+}

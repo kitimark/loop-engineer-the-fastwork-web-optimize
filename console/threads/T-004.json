@@ -1,0 +1,66 @@
+{
+  "id": "T-004",
+  "title": "Page end: panel slide-in",
+  "topic": "r4-v3",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-01T20:52:30.765Z",
+  "updatedAt": "2026-10-03T00:15:35.953Z",
+  "rev": 15,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-01T20:52:30.765Z",
+      "by": "lead",
+      "text": "Moved here from T-002 (04:00 +07). Status: the panel slide-in fix landed (b43443b). Your finger check: better than before, but still a bit laggy. Next: the first frame of the slide-in still does 2 extra layouts, cause not found yet. fix-scroll-engine looks for it on the Simulator, then one phone check to confirm. Results come here."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-01T21:06:41.258Z",
+      "by": "lead",
+      "text": "Simulator result (04:08 +07, 2 runs, OBSERVED, matches your phone): the panel's first slide-in costs about 19-20 ms of style work with 2 extra whole-page layouts; the second slide-in in the same visit costs about 2 ms. So it's a one-time setup cost. New suspect: on the first slide-in the panel switches from 'inactive' to active, which makes Safari restyle the whole panel, and it starts loading its images. Next run: switch the panel to active before you reach it, to see whether the first frame becomes as cheap as the second."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-01T21:13:07.235Z",
+      "by": "lead",
+      "text": "Update (04:12 +07, Simulator): activating the panel early did not help: the first slide-in still costs 18-19 ms with 2 extra layouts. One first-time step is left to test: the panel starting to load its images. That run is going now."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-01T21:16:54.598Z",
+      "by": "user",
+      "text": "Could we test it on the real iphone device ?"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-01T21:17:06.198Z",
+      "by": "lead",
+      "text": "Yes. As soon as the Simulator run that's going now finishes (a few minutes), the same test runs on your real iPhone: the robot driver plays the panel slide-in and records Safari's layout records, comparing the current fix with the image-loading step held back. You don't need to touch the phone for it, and no times are compared. Results come here."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-01T21:19:10.749Z",
+      "by": "lead",
+      "text": "Page end update (04:20 +07). Simulator check (OBSERVED): the panel's pictures loading for the first time are not what makes the first slide-in slow. The first slide-in still costs about 20 ms of style work, the second about 2 ms. The Simulator couldn't confirm the block took effect, so the real-iPhone test you asked for now runs. It compares the current fix with and without the picture loads, and checks that the block really worked. I'll post the result here."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-01T21:38:39.345Z",
+      "by": "lead",
+      "text": "Real-iPhone result (04:38 +07, your phone, our own recordings): blocking the panel's picture loads does NOT make the first slide-in cheaper. The block did take effect in every run, so the result is solid.\n- First slide-in: about 14-17 ms of style work plus 2 extra page layouts (about 4.4 ms and 1.4 ms), with or without the pictures.\n- Second slide-in: 0.2-0.5 ms with no extra layouts.\nSo the cost is real, it is one-time only, and it isn't the pictures. The phone stayed under 40 °C and both check runs passed.\nNext: fix-scroll-engine tests five other 'first time only' causes on the Simulator (fonts, image decoding, the panel's first style calculation, and two CSS ones). Any fix will keep the look identical."
+    }
+  ],
+  "reads": {
+    "lead": 7,
+    "user": 7
+  },
+  "history": [
+    {
+      "at": "2026-10-03T00:15:35.953Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

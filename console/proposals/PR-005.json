@@ -1,0 +1,239 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-005",
+  "by": "fix-scroll-engine",
+  "title": "Scroll engine fwreskip: one slow frame when you stop vs. no gain you can see while scrolling (3 options)",
+  "area": "middle",
+  "topic": "fwreskip",
+  "problem": "fwreskip is a scroll-engine change. When the hero leaves the screen, it also skips drawing the next section (#people) until you come near it again. In the Simulator this removes two layout steps of about 20 ms each, every time you scroll down past the hero.\n\nThe trade, measured on the phone in G1b (RB build, robot swipes, 8 runs each):\n- Without the extra idle step, fwreskip made one 65-92 ms frame when a fast fling crossed #people. The current version (P2b) avoids that. When you stop in that area, it draws #people again after 0.3 s of rest.\n- That idle step costs one 44-55 ms frame about 0.3 s after you stop. It was over 50 ms in 5 of 8 runs; today's frame there is 15-18 ms.\n- The gain side did not show on the phone. The frame where the hero is skipped was 25-30 ms today and 25-33 ms with fwreskip. Over 50 ms happened in 1 of 8 runs in both.\n\nWhat this rests on, plainly:\n- Both sides of the trade come from G1b on the older base: RB, robot swipes (not your finger).\n- The newer base (RB + avatar rotator st6) was checked only in the Simulator: counts, not phone times. It has the same two ~20 ms steps and the same idle step, nothing more and nothing cheaper.\n- The planned phone test on the newer base, with a scripted scroll (G2), was not run because the phone is disconnected.\n- Nothing here looks different: fwreskip only changes when a section is drawn. Screens are byte-identical in Chrome (P2 build; P2b adds only teardown).",
+  "visualDiff": [],
+  "gain": [],
+  "compare": {
+    "a": {
+      "label": "Today's best (no fwreskip)"
+    },
+    "shots": []
+  },
+  "options": [
+    {
+      "name": "ship-p2b",
+      "label": "A: ship fwreskip (P2b)",
+      "idea": "Land fwreskip P2b on the current stack. The hero and #people skip drawing together, and #people is drawn again 0.3 s after you stop near it.",
+      "looksSame": "Yes. Only the timing of when a section is drawn changes; Chrome screenshots are byte-identical.",
+      "risk": "It adds a frame of about 50 ms that you don't have today, and no gain was seen on the phone. Not checked: your finger, the newer base on the phone, and whether the phone's display process shows an empty #people during a fast fling (no screen recordings since T-018).",
+      "visualDiff": [
+        "Nothing visible in the page itself. What you might notice: a short hitch in whatever animates on screen about 0.3 s after you stop scrolling in the #people area."
+      ],
+      "gain": [
+        {
+          "what": "Frame where the hero is skipped (phone, scrolling down)",
+          "before": "25-30 ms",
+          "after": "25-33 ms (no gain seen)",
+          "tag": "OBSERVED",
+          "how": "G1b, RB build, robot swipes, 8 runs per side; the ~20 ms the Simulator saves does not show on the phone."
+        },
+        {
+          "what": "Frame ~0.3 s after you stop near #people (phone)",
+          "before": "15-18 ms",
+          "after": "44-55 ms; over 50 ms in 5 of 8 runs",
+          "tag": "OBSERVED",
+          "how": "G1b, RB build, robot swipes, 8 runs per side. Simulator on the newer base: same idle step (about 21 ms layout + 19-29 ms layer commit)."
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "fwreskip P2b"
+        },
+        "shots": [
+          {
+            "caption": "Held at y 3047, the hero end (Chrome, 430 wide; P2 build, P2b adds only teardown)",
+            "a": "r1-o1-a-1.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r1-o1-b-1.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          },
+          {
+            "caption": "#people card deck (Chrome, 430 wide)",
+            "a": "r1-o1-a-2.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r1-o1-b-2.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "drop",
+      "label": "B: drop fwreskip (keep today)",
+      "idea": "Don't land fwreskip. The scroll engine stays as it is today. The branch and its notes stay on file.",
+      "looksSame": "Yes. Nothing changes.",
+      "risk": "Low. If the newer base or your finger would have shown a gain at the hero, we give that up. G1b and the Simulator give no sign of one.",
+      "visualDiff": [
+        "Nothing: this is today's page."
+      ],
+      "gain": [
+        {
+          "what": "Frame ~0.3 s after you stop near #people (phone)",
+          "before": "15-18 ms",
+          "after": "15-18 ms (unchanged)",
+          "tag": "OBSERVED",
+          "how": "G1b, RB build, robot swipes, 8 runs: today's frames at the same moment."
+        },
+        {
+          "what": "Frame where the hero is skipped (phone, scrolling down)",
+          "before": "25-30 ms",
+          "after": "25-30 ms (unchanged)",
+          "tag": "OBSERVED",
+          "how": "G1b, RB build, robot swipes, 8 runs."
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "Today (unchanged)"
+        },
+        "shots": [
+          {
+            "caption": "Held at y 3047, the hero end (Chrome, 430 wide)",
+            "a": "r1-o2-a-1.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r1-o2-b-1.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          },
+          {
+            "caption": "#people card deck (Chrome, 430 wide)",
+            "a": "r1-o2-a-2.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r1-o2-b-2.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "park-retest",
+      "label": "C: park and re-test when the phone is back",
+      "idea": "Decide later. When the phone is back, run G2 (scripted scroll, newer base, 4 runs per side, about 30 min) and, if you like, one finger swipe A/B, then come back with A or B.",
+      "looksSame": "Yes. Nothing changes until then.",
+      "risk": "It costs one phone block and keeps the topic open. Our own prediction (P-064) is that G2 shows no gain, which would end in B anyway.",
+      "visualDiff": [
+        "Nothing until a later decision."
+      ],
+      "gain": [
+        {
+          "what": "Phone frames >50 ms at the hero end + 3 s rest, scripted, newer base",
+          "before": "not measured",
+          "after": "G2 result",
+          "tag": "UNRESOLVED",
+          "how": "G2 is ready (pre-registered as P-064, which predicts no gain). It needs the phone and one ~30-minute block.",
+          "needsPhone": true
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "Today, until G2 runs"
+        },
+        "shots": [
+          {
+            "caption": "Held at y 3047, the hero end (Chrome, 430 wide)",
+            "a": "r1-o3-a-1.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r1-o3-b-1.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          },
+          {
+            "caption": "#people card deck (Chrome, 430 wide)",
+            "a": "r1-o3-a-2.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r1-o3-b-2.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "recommended": {
+    "option": "drop",
+    "why": "The cost is one 44-55 ms frame when you stop (5 of 8 runs over 50 ms), and no gain shows on the phone. The basis is G1b on RB with robot swipes, plus Simulator counts on the newer base. G2 was not run (phone off)."
+  },
+  "state": "accepted",
+  "rev": 1,
+  "decision": {
+    "value": "accepted",
+    "at": "2026-10-02T15:11:17.715Z",
+    "who": "user",
+    "rev": 1,
+    "option": "park-retest"
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "at": "2026-10-02T15:11:17.715Z",
+      "who": "user",
+      "rev": 1,
+      "option": "park-retest"
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-02T12:10:48.533Z",
+      "by": "fix-scroll-engine",
+      "note": "first version"
+    }
+  ],
+  "createdAt": "2026-10-02T12:10:48.533Z",
+  "updatedAt": "2026-10-02T15:11:17.715Z",
+  "proposedAt": "2026-10-02T12:10:48.533Z",
+  "history": [
+    {
+      "at": "2026-10-02T12:10:48.533Z",
+      "who": "fix-scroll-engine",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-02T15:11:17.715Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 1,
+      "option": "park-retest"
+    }
+  ]
+}

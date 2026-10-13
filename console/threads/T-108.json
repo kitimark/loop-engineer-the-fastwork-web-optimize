@@ -1,0 +1,63 @@
+{
+  "id": "T-108",
+  "title": "Manage session usage.",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T10:55:17.737Z",
+  "updatedAt": "2026-10-04T13:34:18.667Z",
+  "rev": 10,
+  "assignees": [
+    "mgmt-desk-1"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T10:55:17.737Z",
+      "by": "user",
+      "text": "Currently the session usage is 63% current session used and resets on 7:20pm."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T10:56:32.122Z",
+      "by": "mgmt-desk-1",
+      "text": "Thanks. At today's pace we stay under the limit, but only just: about 90-95 % by the reset at 12:20Z (your 7:20pm).\n\n| | value |\n|---|---|\n| used now (your reading, 10:55Z) | 63 % |\n| used in the last 30 min | about 11 % |\n| time to reset | 85 min |\n| expected at reset, same pace | about 90-95 % |\n| crosses 85 % | about 11:55Z |\n\n- Our usage meter had the wrong reset time (14:20Z) and showed only 35 %; I fixed its anchor with your reading, and it now agrees with you (about 67 %).\n- I've asked the lead to slow down until 12:20Z: no new agents, research paused, the top-3 fixes and running phone tests keep going.\n\nWhat you need to do: nothing. Tell me here if you'd rather pause more, or nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T10:57:50.276Z",
+      "by": "lead",
+      "text": "Done: I slowed the team down at 10:58Z until your reset at 7:20pm (12:20Z). Thanks for the reading; our meter had the wrong reset time.\n\n| | value |\n|---|---|\n| used (your reading, 10:55Z) | 63 % |\n| last 30 min | about 10.5 % |\n| at reset if nothing changed | about 96 % (too close) |\n| aim with the pause | about 85-88 % |\n\n- **Keep running:** the hero, countdown and end-of-page menu fixes, the phone test, and 3 nearly finished tool fixes.\n- **Paused until 12:20Z:** build v7, the scroll fix, faster tests, the Try-it server tool, and your two new laggy spots (button and \"People\" word). Those two start right after the reset.\n- No new agents; the ops and desk agents check less often.\n\nWhat you need to do: nothing. Another reading around 11:30Z would help me check the aim."
+    }
+  ],
+  "reads": {
+    "user": 3,
+    "mgmt-desk-1": 2,
+    "lead": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-04T10:55:17.737Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-1 (the desk)"
+    },
+    {
+      "at": "2026-10-04T10:56:32.207Z",
+      "who": "mgmt-desk-1",
+      "action": "escalate",
+      "note": "Usage: user 63% at 10:55Z, reset 12:20Z (TZ +07). Meter anchor was wrong (09:20Z, showed 35%); anchored 07:20Z + calibrated: 66.8%. Pace ~11%/30 min -> ~90-95% at reset, 85% ~11:55Z. Proposed: no spawns, pause research till 12:20Z. Fix your usage cron --reset."
+    },
+    {
+      "at": "2026-10-04T13:34:18.667Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-1": "2026-10-04T10:56:32.207Z",
+    "lead": "2026-10-04T10:57:50.276Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "id": "T-110",
+  "title": "iPhone free for 5 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T11:23:09.423Z",
+  "updatedAt": "2026-10-04T11:42:10.510Z",
+  "rev": 4,
+  "assignees": [
+    "fix-hero-exit-threaded"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T11:23:09.423Z",
+      "by": "lead",
+      "text": "The iPhone has had no holder for 5 min (since 11:17Z; released by fix-morph-gpu). The limit is 5 min.\nWaiting on the status board: hero-exit-threaded (owner fix-hero-exit-threaded; its note names the phone).\nOwners: take it now (node tools/lock.mjs acquire iphone --owner <you> ...), or say here why not.\nOne message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T11:26:27.536Z",
+      "by": "lead",
+      "text": "The iPhone is idle on purpose: all phone work is paused until the 12:20Z usage reset. hero-exit-threaded is parked on that pause, not waiting for the phone. Phone work resumes after 12:20Z in this order: countdown roll check, countdown display-rate check, scroll-handler no-worse check.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "lead": 2,
+    "user": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-04T11:23:09.423Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-hero-exit-threaded"
+    },
+    {
+      "at": "2026-10-04T11:42:10.510Z",
+      "who": "lead",
+      "action": "close",
+      "note": "taken by cd-roll-ca"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T11:26:27.536Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

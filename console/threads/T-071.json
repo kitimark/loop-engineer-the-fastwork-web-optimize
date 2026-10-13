@@ -1,0 +1,137 @@
+{
+  "id": "T-071",
+  "title": "Comment on the Progress page \"Fix progress\": you can use `gh` for fetching github instead of do direct `curl`",
+  "anchor": {
+    "page": "progress",
+    "item": "part:page",
+    "quote": "de-frame-audit: Frame audit (T-066): code inventory done (~25 repeating items); Chrome count census baseline vs best build queued in the shared lanemeasuring it on Chrome or the phoneWaiting on: the Chrome slot · in line for Chrome, #4 of 5 · waiting for a user reply in a console thread or a propos…",
+    "label": "Fix progress"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T04:52:45.475Z",
+  "updatedAt": "2026-10-04T05:28:00.220Z",
+  "rev": 31,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T04:52:45.475Z",
+      "by": "user",
+      "text": "you can use `gh` for fetching github instead of do direct `curl`"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T04:53:07.214Z",
+      "by": "mgmt-ops-10",
+      "text": "Thanks, passed on: the frame-audit agent will use the gh command line (read-only) to fetch Svelte's source from GitHub for its batching check, and cite file and line in its T-067 summary."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T04:53:31.858Z",
+      "by": "user",
+      "text": "I saw some agents try to fetch github with `curl`. so, they got the rate requests are limited."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T04:53:58.785Z",
+      "by": "mgmt-ops-10",
+      "text": "Understood. It's now a board rule every agent reads (finding F-203): fetch GitHub with gh, read-only, never plain curl, and report it if gh isn't logged in rather than retrying curl. I've also asked the lead to make it a standing project rule, so new agents get it at startup."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T04:54:01.063Z",
+      "by": "user",
+      "text": "announce all agents use `gh` instead of `curl` for this.",
+      "forLead": true
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T04:54:50.625Z",
+      "by": "mgmt-ops-10",
+      "text": "Done: announced to every running agent (9 of them, plus the findings board, F-203): use gh, read-only, never plain curl for GitHub. The lead is adding it as a standing rule so new agents get it at startup too."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T04:55:13.010Z",
+      "by": "mgmt-ops-10",
+      "text": "Now a standing project rule: saved in the project memory that every agent loads at startup (github-via-gh), and announced to all running agents. The lead will ask you separately whether to add an automatic block on plain curl to GitHub."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T04:55:28.448Z",
+      "by": "user",
+      "text": "Leader, i'd like to ask did you find this problem before ? why these agents still work with the conflict likes this ?",
+      "forLead": true
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T05:01:43.537Z",
+      "by": "lead",
+      "text": "Honest answer: yes, it showed up once before, and I missed it. On 2026-10-01 the claims audit (research/architecture/claims-audit.md, line 109) noted that it couldn't fetch commit hashes because unauthenticated GitHub requests were rate-limited. It was written down as a footnote, never reported as a problem, so nobody fixed it.\n\nWhy agents kept doing it: there was no rule on HOW to fetch source. Our 'check platform claims against the engine source' rule sends agents to GitHub, and each one picked its own way, usually plain curl. Nothing told them gh is logged in on this Mac. That gap is mine: I wrote the rule without the how.\n\nWhat's fixed now: a standing memory note (github-via-gh) that every new agent loads at startup; a line in every spawn prompt; a board finding (F-203); and every running agent was told directly. If an agent hits a limit, it now reports it instead of retrying.\n\nOne option for you: I can add a safety-hook rule that asks before any curl to github.com, so a forgotten rule can't slip through. That changes the safety layer, so it's your call. Reply 'yes, add the hook' if you want it."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T05:02:43.690Z",
+      "by": "user",
+      "text": "yes, add the hook"
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T05:02:57.294Z",
+      "by": "mgmt-ops-10",
+      "text": "Thanks, passed to the lead to schedule. Changing the safety hook asks you for permission when it's edited, so expect one permission prompt for it."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T05:04:34.473Z",
+      "by": "lead",
+      "text": "Thanks, approved and started (incident I-115). A tools agent is adding a safety-hook rule: any curl or wget to github.com, api.github.com or raw.githubusercontent.com (and WebFetch to them, if the settings support it) will stop and ask, pointing to gh. Because it changes the safety layer, you'll see one permission prompt for that edit. That's expected, please allow it. I'll tell you here when it's live."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T05:27:00.480Z",
+      "by": "lead",
+      "text": "The GitHub hook is live (main 1f7458d1): any curl or wget to github.com, api.github.com, raw.githubusercontent.com, codeload.github.com or gist.github.com now stops and asks, pointing to gh. WebFetch to those sites asks too. Thanks for approving it."
+    }
+  ],
+  "reads": {
+    "user": 13,
+    "mgmt-ops-10": 11,
+    "lead": 13
+  },
+  "history": [
+    {
+      "at": "2026-10-04T04:52:45.475Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T04:59:22.348Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User #8 asks the Leader directly: had we found the curl/GitHub rate-limit problem before, and why do agents keep working with conflicts like this? Your answer (history + why rules did not stop it)."
+    },
+    {
+      "at": "2026-10-04T05:02:57.223Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User #10: 'yes, add the hook' = approval for the git-guard ask/deny on plain curl to GitHub (enforcement layer, .claude/hooks). Yours to schedule (toolsmith + user's permission prompt on the hook edit)."
+    },
+    {
+      "at": "2026-10-04T05:28:00.220Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T05:02:57.294Z",
+    "lead": "2026-10-04T05:27:00.480Z"
+  },
+  "histSeen": {
+    "lead": 3
+  }
+}

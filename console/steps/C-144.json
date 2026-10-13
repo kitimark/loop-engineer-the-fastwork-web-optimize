@@ -1,0 +1,57 @@
+{
+  "id": "C-144",
+  "by": "lead",
+  "kind": "action",
+  "title": "Claude Code chat: allow more web searches for the video research",
+  "instructions": "The project settings file is an enforcement-layer file, so I change it only on your words in the Claude Code chat, not from a console message. To allow it, type this line in the Claude Code chat: \"Set CLAUDE_CODE_MAX_WEB_SEARCHES_PER_SESSION to 400 in the project .claude/settings.json env.\" I make the change and commit it; then reload Claude Code so the new limit applies. Then press Done.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-10T08:32:08.747Z",
+        "done": "2026-10-10T09:13:45.853Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-10T08:31:59.938Z",
+  "queuedAt": "2026-10-10T08:31:59.938Z",
+  "updatedAt": "2026-10-10T09:13:45.853Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-10T08:31:59.938Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-10T08:32:08.747Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-10T09:13:45.853Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 103,
+  "startedAt": "2026-10-10T08:32:08.747Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-10T09:13:45.853Z"
+  }
+}

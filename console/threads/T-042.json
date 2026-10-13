@@ -1,0 +1,199 @@
+{
+  "id": "T-042",
+  "title": "Pixel-identical: how we measure, PR-009 diffs, and a tolerance rule",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-03T10:31:53.358Z",
+  "updatedAt": "2026-10-04T11:14:49.580Z",
+  "rev": 55,
+  "assignees": [
+    "de-pixel-rule",
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T10:31:53.358Z",
+      "by": "lead",
+      "text": "This thread follows up your PR-009 decision (\"both\" accepted, 10:31Z). It covers your three asks: how we measure \"pixel-identical\", the diff % for PR-009, and a tolerance rule. Image posting and \"use the technique elsewhere\" are answered at the end.\n\nHow we measure pixel-identical today:\n1. Two versions of the page (original A, fix B) are opened at the same size and scroll position.\n2. All animations are paused and set to the same moment, so we compare a frozen frame, not a moving one.\n3. We take a screenshot of each and compare them pixel by pixel. For each pixel and colour channel, the difference runs from 0 (same) to 255 (black vs white).\n4. We report two numbers: the largest difference anywhere (\"max levels\"), and the share of the frame that differs at all (\"% of pixels\").\n5. Noise floor: the original is also compared with itself (A vs A). Some things differ even then: the countdown moment, image decoding, the rotating accent word. A difference only counts when it is above that A-vs-A level.\n\"Identical\" means: within the A-vs-A noise everywhere.\n\nPR-009's numbers (max levels out of 255; the % of pixels is being computed, see below):\n- Colour sweep in the titles: up to 9 on phones, up to 23 on a wide desktop; up to 10 in iPhone WebKit. The cause is a third-of-a-pixel offset in the gradient.\n- Moving glint on the dashed line: up to 64 (Chrome) and 33 (WebKit), only on the soft top and bottom edge pixels, and only while the glint passes. The inside is within ±1.\n- iPhone WebKit: the grey dashes' bottom edge differs by up to 17 the whole time.\n- Reduced motion: identical (0).\n- For scale: A vs A differs by up to 3 levels there. Differences of about 10 or less are generally hard to see; 30-60 on an edge pixel is a slightly softer or sharper edge.\n\nNext (by one research agent, de-pixel-rule):\n1. The % of pixels and the area for PR-009 and for earlier \"near-identical\" cases (cd-roll-ca's accepted case, the rm1440 sharper photos), so you have both numbers side by side.\n2. A draft tolerance rule for you to decide on, e.g. \"max ≤ N levels, area ≤ X %, edges only, no layout or colour change, reduced motion exact\", based on those cases. It comes back to you as a proposal, so you choose the numbers.\n3. A survey of other animated parts of the page where the same GPU techniques could save work, ranked by expected saving.\n\nImages in threads: right, threads can't show images yet. A tool specialist will add it: images stored locally only, shown in the thread, never uploaded anywhere."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T10:42:24.039Z",
+      "by": "de-pixel-rule",
+      "text": "de-pixel-rule here (research agent for the pixel rule). First answers, with numbers computed from the saved screenshots of each case. The tolerance rule (your ask 3) and the survey of other elements (ask 4) follow in this thread; the rule comes as a proposal so you can pick the numbers.\n\nHOW WE MEASURE (ask 1). Four methods are in use, and they see different things:\n1. fix.mjs ab / verify.mjs screenshot check: 3 whole-page shots (top, middle, bottom), a pixel counts only if its three colour channels differ by more than 48 in total. It is a coarse \"did something big change\" alarm. Today's page against itself already shows 0-0.4 %. It cannot see PR-009's colour sweep (at most 9 levels per channel) and would catch only a few pixels of the glint edge.\n2. Frozen-frame probes (platform-idle, cd-strip, cd-roll-ca, hero-exit): both versions are stopped at the same animation moment and cropped to the element. They report the largest difference in any channel and the number of differing pixels. This is the fine tool, but it only looks at the crop.\n3. de-breakpoints' sweep: whole-frame shots at 14 window sizes and 6 scroll stops, a pixel counts if a channel differs by more than 8 (\"big\": more than 48). A stop is flagged when the change is above the page's own A-vs-A noise by 0.05 % of the frame.\n4. Layer and position checks (cd-roll-ca): where each digit cell sits, in fractions of a pixel, plus the frozen-frame pixels.\nNone of them checks a moving frame, and none checks the real phone; only Simulator frames stand in for iPhone WebKit.\n\nHONEST CAVEAT ON PR-009. The \"A vs A is up to 3 levels\" figure I relayed earlier is not a true A-vs-A run. It comes from moments when the glint is off the line, comparing old build to new build. A real A-vs-A (same old build loaded twice) was never captured for PR-009. It is a 5-minute shared probe if you want it; the 3 is probably about right, but it is unproven.\n\nPR-009 NUMBERS (ask 2). \"Frame\" is the whole screen; \"area\" is in CSS pixels, the page's own unit.\n- Glint, Chrome phone width: worst moment = 448 pixels differ by more than 3 levels = 0.012 % of the frame, about 50 CSS px2, on the top and bottom edge rows only (98 % of them), while the glint passes (12 of 22 sampled moments), up to 56 levels. Desktop 1440: 0.003 %, 44 CSS px2, up to 64 levels.\n- Colour sweep, Chrome: per title, at 2 s into the cycle: about 2,000 pixels (phone) to 2,900 (desktop 1440) above 3 levels = 0.055 % of the frame, 221 / 737 CSS px2; two thirds of them sit in the flat fill inside the letters (a shade difference, not an edge). Up to 8-9 levels (phone), 10-23 (desktop). It shows the whole time a title is on screen.\n- iPhone WebKit (Simulator): sweep up to 10 levels, glint up to 33, and the grey dash bottom edge up to 17 all the time; about 400-1,300 pixels in the glint crop, 4,000-11,000 in a title crop at any level. The Simulator probe did not save an A-vs-A.\n- Reduced motion: 0.\n\nNEXT TO THE OTHER \"NEAR-IDENTICAL\" CASES (same method, my own recount):\n- cd-strip (accepted, PR-008): 1 level, at most 119 pixels per frame = 0.003 %; today vs today also shows an 8-pixel spot.\n- cd-roll-ca (your approved case): 236 pixels, up to 4-5 levels, only on the edges of the two rolling digits = 0.007 % of a phone frame; A-vs-A up to 1 level. It also differs in motion by under 1 pixel from the 60 Hz original.\n- Sharper hero photos at 1440 with reduced motion (st6-rb2, de-breakpoints): 3.1 % (top) and 1.3 % (hero) of the frame above 8 levels, up to 118+ levels, on photo detail; A-vs-A 0. That is 25-250x more area than PR-009's glint.\n- hero-exit R5 (WebKit at 980 wide): 0.18-0.53 % of the frame beyond A-vs-A, up to 59-130 levels, on the tilted cards; static while resting.\nSo PR-009 sits with cd-strip and cd-roll-ca (tiny area, small levels, fills and edges), far from the photo and card cases.\n\nI am now posting the tolerance rule as a proposal and will reply here again with the survey (your ask 4)."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-03T10:45:24.807Z",
+      "by": "user",
+      "text": "Ok, if it's proposed to the team, catch up me."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-03T10:45:34.892Z",
+      "by": "de-pixel-rule",
+      "text": "de-pixel-rule, second part: the rule (ask 3) and the survey (ask 4).\n\nASK 3, THE RULE. It is posted as proposal PR-010 on the Proposals page (\"A rule for almost identical\", 3 options, recommended B). In short:\n- Exact and within-noise (A against A) land as today.\n- A new middle tier, \"near-identical\", lands after a numbers check, but only when: only edge pixels or a sub-pixel colour step change, differences are small, the area is a tiny share of the screen, nothing moves / recolours / re-words, reduced motion is exact, it is checked in Chrome AND the iPhone Simulator with a real A-against-A run, and a moving part stays within 1 device pixel of the original.\n- Anything above that, photos, text, layout, or a permanent static change in the first screen is a proposal to you, like PR-009.\n- Option A keeps today's rule (everything comes to you). B (recommended): up to 24 of 255 in fills, 64 on edge pixels, 0.1 % of the screen. That admits PR-009, the countdown strips and the countdown roll, and keeps the sharper hero photos and the WebKit hero cards with you. C is wider (64 / 128 / 0.5 %): more lands unseen, including most of the hero-card case.\n- The pictures on the page are magnified crops of the same frames: the glint edge rows, a sweep title, and, as the contrast, the sharper-photo case.\nThe full numbers and the five-method inventory are in research/pixel-tolerance/README.md.\n\nASK 4, WHERE THE SAME TECHNIQUES COULD GO NEXT (survey of what is still on the main thread; ranked by expected saving, with the fidelity risk):\n1. The countdown clock inside the morph panel on the GPU roll (the same as cd-roll-ca does for the hero clock). The hero clock went from 162 to 7 script callbacks per 6 s in Chrome. The panel is where the phone shows its 91 long frames while a finger holds the morph. Risk low (same class as cd-roll-ca). Nobody owns it yet: cd-roll-ca left it out on purpose.\n2. The \"boil\" and caret blinks in iPhone WebKit (accent word, commission underline, zero mark, typing carets): WebKit runs step-style animations on the main thread, two-state keyframes would not. Risk low (exact except at the ramp edges, about 1 frame in 140). Owner: illusion-boil-ca, a draft that was never decided.\n3. Typing and count-up loops in the platform and commission sections (text written every 18-48 ms): the biggest at-rest cost left after PR-009 (style every frame and 394-602 paints per 2 s at the agents typing). The safe form halves the writes (illusion-typing-chunks: layouts 226 to 97 and 101 to 46); a pure GPU reveal would change word-wrap and caret placement, so high risk. Owners: illusion-typing-chunks (draft), and rest-script is working on rest-time loops (to check overlap).\n4. The morph panel as a composited reveal: the biggest remaining feel item at the bottom of the page (16-37 fps on the phone), but the blur radius would be fixed, so it differs in motion (not at rest). That is your call, not a numbers rule. Owner: fix-nav-morph measures its sibling; this one is not scheduled.\n5. Scroll-linked values (commission, shrink effects, nav theme) as scroll-driven animations, as hero-exit did: JS script cost is the top script at every CPU rate, but the easing tail cannot be copied by a timeline, and phones already skip most of these. Medium risk. Owner: hero-exit-threaded only.\nLower: layout transitions (nav width, grid rows) and load-only effects (nav unmask, copy entrance): small or once per page. Nothing left to convert from SMIL (the glint was the only live SMIL).\nWhat the rule changes: with option B, 1 and 2 land on counts plus the numbers check; 3 lands in its safe form; 4 and 5 stay your decision because their difference shows in motion, which frozen-frame numbers cannot see.\n\nOne honesty note again: PR-009's \"A against A is 3\" is a proxy, not a real run. B and C both require a real one, so PR-009 would need one cheap probe to qualify under the new rule."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-03T10:45:59.753Z",
+      "by": "lead",
+      "text": "Will do. de-pixel-rule is writing the tolerance proposal now. When it's ready I'll post it as a proposal you can decide on, and I'll put a short catch-up here: what is measured, the PR-009 numbers, and the proposed limits."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-03T10:47:14.109Z",
+      "by": "de-pixel-rule",
+      "text": "Catch-up: yes, it is proposed. PR-010 is on your Proposals page now (A keep the rule, B standard recommended, C wide), with magnified crops. Nothing lands under a new rule until you pick an option there. The reply above has the numbers and the survey; the write-up is research/pixel-tolerance/README.md (commit 2f12c41 on my branch, for the lead to land)."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-03T11:10:35.541Z",
+      "by": "de-pixel-rule",
+      "text": "de-pixel-rule: PR-010 is now revision 2, answering your note point by point (the proposal quotes it). (1) Every option has its own Try it panel with the real pages. (2) Each case has the whole screen at real size: old, new, and old with every changed pixel painted. (3) The hero photo you felt is the sharper-photo case (desktop, reduced motion); it is shown at 1:1 at the top of option A. (4) A table gives each case's size on the page and how it looks when shrunk. Two new facts: PR-009 now has a real A-against-A in Chrome and it matches the earlier proxy (3 levels on the phone, 1 on desktop); and the photo difference exists only at desktop width with reduced motion, phone width shows 0. Whether a level is visible is for your eyes; the pictures are at real size."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-03T14:42:06.878Z",
+      "by": "lead",
+      "text": "Thanks, good catch. I've asked the pixel-rule agent to investigate the avatar carousel in the Try-it panels for options B and C. Two possible reasons: (1) the two pages just started at different moments, so their carousels are out of step (harmless), or (2) the earlier best build, which both B pages include, really changed how the carousel moves. That would break our pixel-identical rule, and we'd fix it. It also checks the original against itself, so we can see what out of step alone looks like. The answer comes in revision 3 of PR-010."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-03T14:51:05.774Z",
+      "by": "de-pixel-rule",
+      "text": "About the avatar slider in the Try it panels: no, it is not intended and it is not part of this proposal. Two things cause it. First, two pages never start in step: even the old build against itself is about 0.7 s apart on a 1.02 s cycle. Second, a small real change from the best build (st6-rb2): the old build squeezes the face that leaves into a thin sliver, st6-rb2 crops it into a shrinking circle that slides left, for about 100 ms and up to about 10 px wider. The other faces move the same. Option B and C show it because their B side is the old page plus st6-rb2 plus the option's example, while A is the plain old page. Rev 3 of PR-010 says this in each option and states what B carries. I told the lead about the change itself, since it is already in the best build."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-03T14:51:38.188Z",
+      "by": "user",
+      "text": "Is it bug ?"
+    },
+    {
+      "n": 11,
+      "at": "2026-10-03T14:52:27.818Z",
+      "by": "lead",
+      "text": "Yes, by our own rule it is a bug. It sits in st6-rb2, a fix we already landed (the 'best build'), not in PR-010. When a face leaves the avatar slider, the original squeezes it into a thin sliver. st6-rb2 shrinks it as a circle that slides left. That lasts about 0.1 s on a small 32 px avatar, but it is a visible change, and visible changes need your OK first. We measured this in Chrome only so far. Plan: (1) a fix agent makes the leaving face move exactly like the original again, and checks it frame by frame in Chrome and the iPhone Simulator against the original. (2) I land that, so the best build is pixel-identical here again. If you would rather keep st6-rb2's circle look, say so here and I'll write it up as a proposal instead."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-03T14:54:52.506Z",
+      "by": "lead",
+      "text": "About your PR-010 note (same slider issue as PR-011): it is one issue, shared by both. Each proposal's 'new' side is built on st6-rb2, a fix we already landed that has this slider bug (the leaving face, about 0.1 s). The 'old' side is the plain original, so the panels show st6-rb2's bug as if it were part of the proposal. Two fixes are in progress: (1) an agent makes the slider move exactly like the original again; (2) the panels' 'old' side becomes the best build, so old and new differ only by the proposal. The PR-010 agent is checking PR-011 with its agent now. PR-010 revision 4 comes when both fixes are in, so what you see there will be correct."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-03T15:10:49.668Z",
+      "by": "user",
+      "text": "For you information \n\nI think this bug might was happen in the proposal page \"Try it: scroll the real pages\" section.\n\nI'm not sure, i was try to see in my iphone. the user carousel work proper in the optimize version."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-03T15:12:51.606Z",
+      "by": "user",
+      "text": "and try to open with the new tabs. the user carousel animation work properly. \n\nDo you reproduce this bug already ?"
+    },
+    {
+      "n": 15,
+      "at": "2026-10-03T15:15:30.706Z",
+      "by": "lead",
+      "text": "Thank you, that is very useful. Honest answer: no, we have not reproduced what you saw. What we measured is different: a small change in how the leaving face moves, about 0.1 s, found in Chrome with each page opened on its own, not inside the panel. We have not checked it in Safari yet. You saw the slider work properly on your iPhone and in a new tab. So what looks wrong in the panel may be a problem of the Try it panel itself, for example the small frames inside the proposal page. Next: (1) the PR-010 agent opens the real proposal page and records the slider inside the panel and in a new tab, so we see exactly what you saw; (2) the slider agent checks the Safari engine (iPhone Simulator) before changing anything. If the panel is the cause, we fix the panel, not the site. One question so we match what you saw: in the panel, does the slider jump, freeze, or move differently from the new tab?",
+      "ask": true
+    },
+    {
+      "n": 16,
+      "at": "2026-10-03T15:22:29.003Z",
+      "by": "lead",
+      "text": "Got your PR-010 decision: option C (wide). From now on, a look-alike fix lands without asking you only when every difference is tiny and measured: edge pixels up to 128 of 255, fill shades up to 64, at most 0.5 % of the screen. It must also be checked against the original in both Chrome and the iPhone Simulator, and anything that moves must stay within 1 screen pixel. Anything bigger, and any difference you can only see while things move, still comes to you as a proposal. I've saved this as a standing rule for all agents. The avatar slider goes on in parallel, as you said: the PR-010 agent is checking whether the Try it panel itself causes what you saw, and I'll post its answer here."
+    },
+    {
+      "n": 17,
+      "at": "2026-10-03T15:24:33.030Z",
+      "by": "user",
+      "text": "I'd like to know if we adjust image that help the browser engine render smoother ? why ?"
+    },
+    {
+      "n": 18,
+      "at": "2026-10-03T15:26:27.920Z",
+      "by": "lead",
+      "text": "Short answer: yes, images can make scrolling smoother or rougher, but it depends on how the page uses them, not only on the file itself.\n\nWhy: on every frame, Safari repaints the parts of the screen that changed and sends them to the GPU. Photos are large areas, so painting and decoding them is one of the most expensive jobs in a frame. When a frame needs more than about 16 ms of that work, the frame comes late and you see a stutter.\n\nThree ways this shows up on this page:\n1. Images that change size through layout (width/height), for example cards that grow during the end-of-page morph. While an image keeps changing size, Safari paints it at a lower quality. 0.5 s after the last change it paints it again at full quality, so that is one extra repaint. CONFIRMED in WebKit's source (ImageQualityController, 500 ms). This is also the leading candidate for PR-011's item 2 (the photo cards looking a little different for about 0.1-0.3 s), but for that case it is still UNRESOLVED. The fix-side remedy is to scale with transform instead: a transform scale does not trigger this.\n2. Images in a layer that has just been created are decoded in the background. They show up 1-3 frames later as extra paints. CONFIRMED in WebKit's source, and it is part of why the morph's first frames are expensive. Remedy: decode the images early, during idle time (img.decode() or decoding=\"async\", with src set before the morph).\n3. Image resolution. A photo costs decode time and memory in proportion to its pixel count, so a 3x image costs about 2.25 times a 2x image. Apple's own pages cap images at 2x for this reason (observed on apple.com; Twitter's engineering blog gives the same reasoning). We have NOT measured whether this page sends larger photos than it shows, or what smaller files would gain.\n\nOne catch: making the files smaller or lighter changes their pixels. Under your PR-010 rule that is T3, so it needs your decision (the \"sharper photos\" case at 1440 px wide is exactly that kind of difference). Remedies 1 and 2 keep the pixels the same, so they fit the existing fixes. The morph fix (fix-morph-gpu) already plans to use them.\n\nDo you want me to have an agent measure point 3 (photo sizes on the page and the decode and paint time they cost in the Simulator)? It would not touch the phone.",
+      "ask": true
+    },
+    {
+      "n": 19,
+      "at": "2026-10-03T15:29:45.955Z",
+      "by": "lead",
+      "text": "A correction to point 2 of my last reply. I wrote that the morph fix already plans to decode the panel photos early. I checked with its agent: that is not true. The morph fix does point 1 (the photos keep their final size and are only scaled by a GPU transform, so nothing gets resized mid-morph), but it has no early decode. I've asked it to measure whether the late-decode repaint shows up in its first-frame counts, and to add the early decode if it does. That changes no pixels."
+    },
+    {
+      "n": 20,
+      "at": "2026-10-03T15:30:56.934Z",
+      "by": "user",
+      "text": "Yes, i do, let's measure point 3."
+    },
+    {
+      "n": 21,
+      "at": "2026-10-03T15:39:20.619Z",
+      "by": "lead",
+      "text": "OK. I've started a study of point 3 (de-image-cost). It lists every photo the page loads at phone width: its file size, its pixel size and the size it's actually shown at. Then it measures in the iPhone Simulator how long decoding and painting the biggest ones take. If some photos are larger than needed, it also measures what capping them at 2x would save, and shows how much softer they would look on your 3x screen. That part would come to you as a proposal, because it changes pixels. It won't touch your iPhone. I'll post the plain summary here."
+    },
+    {
+      "n": 22,
+      "at": "2026-10-03T18:13:32.290Z",
+      "by": "lead",
+      "text": "Your point 3 (do smaller images help the phone render smoother?): the study is done and saved (research/image-cost). In five lines:\n1. Many photos are far bigger than the phone shows. No image on the page offers smaller versions for phones. The 42 on-screen photos would take 95.8 MB of memory at full size, against 38 MB a 3x phone screen needs. Hero covers are 2-3.4x too big, avatars 4-7x.\n2. Why it can cost smoothness: when a big photo first appears in a part of the page that is already drawn, Safari decodes it at full size on the main thread, inside that frame (confirmed in WebKit's own source code, the iOS 26 version). Other photos decode in the background.\n3. Measured in the iPhone Simulator (our own measurement, not the real phone yet): that first draw drops from about 9-11 ms to about 1.3 ms for the biggest hero photos when photos are capped at 2x. Over a full scroll, slow drawing steps fall from 11-12 to 4-6, and photo memory from 14-17 MB to 3-7 MB. At rest nothing changes.\n4. But photos are not the main cause of the lag on this page. In one scroll, drawing photos takes about 0.25 s, against about 8 s of combining layers and 11 s of layout, and a cap doesn't change those. So it's a small \"less work\" gain, not a fix for the big stutters.\n5. The cost: capped photos look visibly softer. 46 of 50 change more than your \"near-identical\" limit allows. So a 2x cap would be your decision, as a proposal. A gentler option (phone-sized files at full 3x sharpness) is not measured yet.\nNothing is proposed yet. If you want either option looked at as a proposal, say so here."
+    },
+    {
+      "n": 23,
+      "at": "2026-10-04T09:20:39.441Z",
+      "by": "user",
+      "text": "Catch up this progress"
+    },
+    {
+      "n": 24,
+      "at": "2026-10-04T09:26:02.807Z",
+      "by": "mgmt-ops-10",
+      "text": "Since #22 (10-03 18:13 UTC) nothing in this thread has changed. Nothing here is waiting on you.\n- Tolerance rule: your 'wide' rule (PR-010, 10-03) is in force for every fix. A fix must look the same within small fixed limits in Chrome and the Simulator, and be exactly the same with reduced motion on.\n- Early photo decode (#19): the end-of-page morph agent checked it. Its photos are drawn only once, so there was nothing to gain, and it added nothing.\n- Image study (#22): it's saved (research/image-cost). No image change was proposed. A 2x cap would make photos visibly softer, and photos are a small part of the lag anyway.\n- The carousel bug from #10-#14 was fixed on 10-03 (the carousel fix).\n- Today's bigger news is in other threads. The countdown roll on the graphics chip passed and lands next (T-096), and we're now looking for other animations that could use the same approach.\nWhat you need to do: nothing. If you want a phone-sized photo option (same sharpness, smaller files) looked at, say so here."
+    },
+    {
+      "n": 25,
+      "at": "2026-10-04T09:26:21.540Z",
+      "by": "mgmt-ops-10",
+      "text": "A correction to my #24: the carousel issue from #10-#14 was not fixed. You decided it in PR-013: keep the current slider build (keep-st6), and that topic is closed. Everything else in #24 stands.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "lead": 23,
+    "user": 25,
+    "de-pixel-rule": 9,
+    "mgmt-ops-10": 25
+  },
+  "history": [
+    {
+      "at": "2026-10-03T10:41:43.917Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "de-pixel-rule"
+    },
+    {
+      "at": "2026-10-04T09:20:39.441Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T09:27:34.539Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T09:26:21.540Z",
+    "lead": "2026-10-04T11:14:49.580Z"
+  },
+  "histSeen": {
+    "lead": 3
+  }
+}

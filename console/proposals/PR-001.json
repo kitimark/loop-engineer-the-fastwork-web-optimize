@@ -1,0 +1,208 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-001",
+  "by": "de-illusion-style",
+  "title": "Accent word as apple.com-style image frames: exact when frozen, stalls live in the Simulator; parked for a phone check",
+  "area": "hero",
+  "topic": "illusion-accent-frames",
+  "problem": "Your note on rev 1: \"the B is changed the visual. why we don't try to make them likes animation images frame or video likes apple.com did. let's research them.\"\n\n1. \"B changed the visual\": agreed. The rev 1 wipe is dropped. Rev 2 shows the word's own pixels.\n2. \"animation image frames like apple.com\": built and tested. The erase and the draw of 'you' were captured in Safari (Simulator, 3x) at every 1 ms of the 0.9 s, giving 2 x 901 frames. They are packed into one image and played on a canvas over the word, on the SVG's own animation clock.\n3. \"video like apple.com\": researched; it can't match pixel for pixel. Safari's only transparent video, HEVC with alpha, stores colour at 4:2:0 (Apple, HEVC Video with Alpha Interoperability Profile: both layers Main Profile, chroma_format_idc 1). CONFIRMED.\n4. \"let's research them\": what worked and what failed is below. Frozen frames match exactly. Live playback stalls in the Simulator, and so does a minimal page with no Fastwork code, so the Simulator can't tell us about the phone. Status: parked until a phone check, not withdrawn.\n\nWhat it would remove: in Safari every frame of the stroke animation is a style + SVG layout change (WebKit source, F-097). Per 'you' draw in the Simulator today: 57.8 style recalcs, 57.3 layouts, 61.3 paints (Timeline counts, 4 draws).",
+  "idea": "How it works (Safari only, by construction):\n- Frames: only the 16 px tiles that change from one ms to the next are stored. That is one PNG (512x2291, 6023 tiles) plus a tile list for 'you'.\n- Playback: a canvas sits on whole device pixels over the word. Each frame it takes the elapsed time from a Web Animation started with the SVG's own animations and copies the tiles up to that ms. The SVG stays underneath, hidden but still animating.\n- Handback: the SVG takes over in the same frame, with the same timing, when you scroll (the canvas runs only at the very top), when the clock gives a time with no frame, or when the position check fails.\n- Clock gate: the canvas runs only where the animation clock gives whole ms. WebKit floors it to 1 ms on pages that are not cross-origin isolated (Performance.cpp:73, timePrecision 1 ms; 20 us when isolated since d6c1e30075b7). fastwork.com sends COOP but no COEP, so it is not isolated. If COEP is ever added, the gate falls back to the SVG. Chrome's clock is fractional (Blink time_clamper 100 us), so Chrome keeps today's SVG.\n- Loading: after the page's load event, at idle. The image is decoded (img.decode + createImageBitmap) before the canvas can take over, never during a draw. Until then the SVG runs.\n\nWhat the phone check would test (not built yet; approve or reject):\n- Arm 1, today's tile arm: 38-73 copies per frame on average, up to 195.\n- Arm 2, one copy per frame like apple.com: every distinct frame stored whole. 'you' has 863 distinct frames, about 83 MB decoded and about 4 MB PNG (ESTIMATE). Test only: 7 words would need about 580 MB.\nIf arm 2 runs smoothly on the phone and arm 1 doesn't, a middle layout would follow: one box per changed ms, 5-10 copies per frame (max 17), about 18.6 MB per word (ESTIMATE). If both stall, we withdraw.\n\nYour decision: approve the phone check (arm 1, plus arm 2 as a test-only build), or withdraw the frames route. The phone check needs the iPhone plugged in by USB (it is unplugged now).",
+  "looksSame": "Frozen frames, exact (OBSERVED, Simulator Safari 26.5): every 13th ms of the erase and the draw, 71/71 + 71/71 frames byte-identical to the original's own frames (word area 279x219 device px). Ink floor 500 px: 1 frame per direction is under it, and those match too. 0 blank frames. Repeat shots 6/6 the same. The canvas engaged in every frame.\n\nLimits of that check:\n- Each frame was drawn with the clock stopped, and read back with getImageData so the drawing was finished. Live playback does not wait like that, and live it does not keep up (see risk). So it does NOT look the same in motion today.\n- Position was verified at the top of the page only. Whole-viewport parity was checked in Chrome only (no difference outside the countdown and photo-card boxes, which also differ between two loads of the original).\n- Frames are captured per engine. Whether the Simulator's pixels equal the phone's is UNRESOLVED.",
+  "risk": "Live playback FAILED in the Simulator (OBSERVED, cause unknown):\n- Each canvas draw gets 0-9 frames instead of about 54, then the whole page stops rendering for 1-1.9 s. The page's own frame counter stops too. There were no script errors, and the page's script was idle (0-1 ms per frame).\n- During the pauses Safari's WebKit GPU process runs at 73-100 % CPU (about 14 % otherwise). Canvas drawing runs in that process (WebKit source: WebChromeClient.cpp:1199-1206, GPU-process canvas on by default).\n- The pause grows with the number of image copies. Hiding the SVG with no copies: no pause. One copy per frame: about 37 frames per second. A few thousand copies: a 15 s pause.\n- In the Simulator, even a minimal page with no Fastwork code stalls in proportion to the number of drawImage calls from the image, with the WebKit GPU process at about 100 % CPU (OBSERVED, cause unknown). We therefore can't tell from the Simulator whether Safari on the phone stalls. That needs the phone, which we don't use before you approve.\n- Memory: arm 2 would hold about 83 MB of decoded frames for 'you' alone (ESTIMATE), a real memory-pressure risk on a phone; that is why it is test-only.\n\nAlso tried, not chosen:\n- A, CSS contain on the word: WebKit source REFUTES the saving.\n- B, animate only the visible copy: smaller saving, and it is not the frames you asked for.\n- Image-source and GPU-accelerated-canvas variants: their earlier runs relied on a URL flag the page drops, so they are void, including the observation that Chrome resampled an accelerated canvas. They were NOT re-run after the flag fix: hold 5 tested only hide-only, no-draw and one-copy.\n- Video: 4:2:0 colour (CONFIRMED above).\nVoid results: earlier runs that relied on a URL flag (the page drops it) and the cached Simulator runs (F-115).",
+  "visualDiff": [
+    "Frozen frames: none. 142/142 frames are the original's own pixels (filmstrip: top row erase, bottom row draw).",
+    "Live in the Simulator today: the word freezes part-way through each erase or draw, for up to ~0.5 s, then jumps. Visible until a phone run shows otherwise.",
+    "Chrome: no change. The clock gate keeps the original SVG."
+  ],
+  "gain": [
+    {
+      "what": "Style recalcs per 'you' draw (Safari, Simulator)",
+      "before": "57.8",
+      "after": "not claimed (canvas runs stalled)",
+      "tag": "OBSERVED",
+      "how": "WebKit Timeline record counts at the top of the page, 4 draws each, original vs canvas. The canvas count (5.0) is low because rendering paused, so it is not a saving."
+    },
+    {
+      "what": "SVG layouts per 'you' draw (Safari, Simulator)",
+      "before": "57.3",
+      "after": "not claimed (canvas runs stalled)",
+      "tag": "OBSERVED",
+      "how": "same Timeline run; stroke-dashoffset is a WebKit layout change (F-097, WebKit source)"
+    },
+    {
+      "what": "Frames per 0.9 s draw, live (Safari, Simulator)",
+      "before": "53-55 (SVG)",
+      "after": "0-9 (canvas, then a 1-1.9 s pause)",
+      "tag": "OBSERVED",
+      "how": "plain rAF counter: 22 draws on the original page, 13 canvas draws over 2 sessions; the WebKit GPU process at 73-100 % CPU during the pauses (ps, attribution only)",
+      "needsPhone": true
+    },
+    {
+      "what": "Minimal page, no Fastwork code (Simulator)",
+      "before": "-",
+      "after": "same stall; a 15 s pause after a few thousand copies",
+      "tag": "OBSERVED",
+      "how": "fixes/illusion-accent-frames/tools/standalone.html, same image; cause unknown. Flaw: its clock was stale on a page with no animations, so the first tick redrew everything",
+      "needsPhone": true
+    },
+    {
+      "what": "Chrome (what ships there)",
+      "before": "SVG",
+      "after": "same SVG (clock gate)",
+      "tag": "OBSERVED",
+      "how": "Chrome r14: 0/16 canvas draws; per-draw counts equal within noise (paint 220.5 vs 219.3)"
+    },
+    {
+      "what": "Download",
+      "before": "page 5.31 MB",
+      "after": "+0.33 MB 'you' (WebP); +2.3 MB all 7 words",
+      "tag": "estimate",
+      "how": "'you' measured (lossless WebP decodes byte-identical to the PNG, 0.91 MB); the 6 others scaled from 'you'; Thai, Chinese and Korean words may differ"
+    },
+    {
+      "what": "Memory (decoded image)",
+      "before": "0",
+      "after": "+4.5 MB 'you'; ~31 MB all 7 words",
+      "tag": "estimate",
+      "how": "512x2291 RGBA per word. WebKit source puts the ImageBitmap in the GPU process; a second copy in the page is UNRESOLVED"
+    },
+    {
+      "what": "Capturing the other 6 words",
+      "before": "-",
+      "after": "~82 min of Simulator time",
+      "tag": "estimate",
+      "how": "0.37-0.39 s per frame measured on 'you'; only if you approve"
+    }
+  ],
+  "compare": {
+    "a": {
+      "label": "Original (SVG), Safari Simulator"
+    },
+    "b": {
+      "label": "Frames on canvas, Safari Simulator"
+    },
+    "view": "side",
+    "shots": [
+      {
+        "caption": "'you' frozen at 0, 156, 299, 455, 598, 754, 900 ms; top: erase, bottom: draw. 0 px differ",
+        "a": "r2-a-1.webp",
+        "aSize": [
+          1977,
+          442
+        ],
+        "b": "r2-b-1.webp",
+        "bSize": [
+          1977,
+          442
+        ]
+      },
+      {
+        "a": "r2-a-2.webp",
+        "aSize": [
+          1977,
+          442
+        ],
+        "b": "r2-b-2.webp",
+        "bSize": [
+          1977,
+          442
+        ]
+      }
+    ]
+  },
+  "state": "accepted",
+  "rev": 2,
+  "decision": {
+    "value": "accepted",
+    "notes": "I was see you find 3 ways of this proposal, I'd like to feedback to leader the proposal feature could propose the multiple solution in the same proposal topics and allow user to decide which one could do.\n\nAnyway, i'm ok of all solution, some solution might have a bit pixel diff compare with the existing, it's acceptable. i'd like to ask you to investigate which one give the the best performance. and pick that solution instead.",
+    "at": "2026-10-02T06:31:00.013Z",
+    "who": "user",
+    "rev": 2
+  },
+  "decisions": [
+    {
+      "value": "rejected",
+      "notes": "It's not illusion. it's changed the visual.",
+      "at": "2026-10-01T21:02:13.419Z",
+      "who": "user",
+      "rev": 1
+    },
+    {
+      "value": "changes-requested",
+      "notes": "the B is changed the visual. why we don't try to make them likes animation images frame or video likes apple.com did. let's research them.",
+      "at": "2026-10-01T21:04:04.964Z",
+      "who": "user",
+      "rev": 1
+    },
+    {
+      "value": "accepted",
+      "notes": "I was see you find 3 ways of this proposal, I'd like to feedback to leader the proposal feature could propose the multiple solution in the same proposal topics and allow user to decide which one could do.\n\nAnyway, i'm ok of all solution, some solution might have a bit pixel diff compare with the existing, it's acceptable. i'd like to ask you to investigate which one give the the best performance. and pick that solution instead.",
+      "at": "2026-10-02T06:31:00.013Z",
+      "who": "user",
+      "rev": 2
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-01T21:00:25.519Z",
+      "by": "de-illusion-style",
+      "note": "first version"
+    },
+    {
+      "rev": 2,
+      "at": "2026-10-02T02:37:28.829Z",
+      "by": "de-illusion-style",
+      "note": "Rev 2 per your note: image frames like apple.com built and tested on 'you'. Frozen frames match exactly; live playback stalls in the Simulator (even on a minimal page), so it is parked until a phone check. Video can't be pixel-identical (4:2:0)."
+    }
+  ],
+  "createdAt": "2026-10-01T21:00:25.519Z",
+  "updatedAt": "2026-10-02T06:31:00.013Z",
+  "proposedAt": "2026-10-02T02:37:28.829Z",
+  "history": [
+    {
+      "at": "2026-10-01T21:00:25.519Z",
+      "who": "de-illusion-style",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-01T21:02:13.419Z",
+      "who": "user",
+      "action": "decided",
+      "value": "rejected",
+      "rev": 1,
+      "note": "It's not illusion. it's changed the visual."
+    },
+    {
+      "at": "2026-10-01T21:02:45.223Z",
+      "who": "user",
+      "action": "undecided",
+      "was": "rejected",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-01T21:04:04.964Z",
+      "who": "user",
+      "action": "decided",
+      "value": "changes-requested",
+      "rev": 1,
+      "note": "the B is changed the visual. why we don't try to make them likes animation images frame or video likes apple.com did. let's research them."
+    },
+    {
+      "at": "2026-10-02T02:37:28.829Z",
+      "who": "de-illusion-style",
+      "action": "revised",
+      "rev": 2,
+      "note": "Rev 2 per your note: image frames like apple.com built and tested on 'you'. Frozen frames match exactly; live playback stalls in the Simulator (even on a minimal page), so it is parked until a phone check. Video can't be pixel-identical (4:2:0)."
+    },
+    {
+      "at": "2026-10-02T06:31:00.013Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 2,
+      "note": "I was see you find 3 ways of this proposal, I'd like to feedback to leader the proposal feature could propose the multiple solution in the same proposal topics and allow user to decide which one could do.\n\nAnyway, i'm ok of all solution, some solution might have a bit pixel diff compare with the existing, it's acceptable. i'd like to ask you to investigate which one give the the best performance. and pick that solution instead."
+    }
+  ]
+}

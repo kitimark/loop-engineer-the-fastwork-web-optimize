@@ -1,0 +1,389 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-034",
+  "by": "fix-g0-revert",
+  "title": "End of the page: back to the original fastwork menu, with the Join button fix (g0.0b, before the GPU step)",
+  "area": "end",
+  "topic": "g0-revert",
+  "problem": "You asked to put the end of the page back to how fastwork.com does it, and keep everything above the end as in v14 (today's best build).\n- Where you asked: your thread about the end of the page (T-228, messages 60 and 62).\n- In v14 the menu at the end follows your finger, and the section before it (\"One platform is everything you need\") sticks while it opens.\n- On fastwork.com the page stops at the end, and one swipe opens the menu by itself.\n- Revision 2: on revision 1 you asked to add the fix for the Join waitlist button, which lifted up while it faded out as the end-of-page menu appeared.",
+  "idea": "g0.0b is v14 with the original end of the page, plus the Join button fix you asked for. Everything above the end stays v14's.\nA second step, g0.1 (the GPU step, by fix-g0-gpu), builds on it and moves the menu animation to the graphics chip to make it smoother.",
+  "looksSame": "Above the end, g0.0b shows the same pixels as v14 in Chrome at the four tested widths: the differences stay inside what two loads of v14 differ by.\nAt the end, it matches the original page except the Join button.\n- Tested in Chrome at four widths (phone with and without the browser bar, tablet, desktop) and in the iPhone Simulator.\n- At the closed menu, every 80 ms of the opening and closing, and with the menu open.\nThe Join button matches the original with only the lift removed: the look you accepted in PR-027 (your earlier proposal about the Join button), option \"no lift\".",
+  "risk": "Not faster yet; the GPU step g0.1 follows to fix that.\n- While the menu opens it redraws more per frame than v14, as on fastwork.com, so on a hot phone the opening can stutter like the original.\n- The page holds still at the end: a swipe during the animation waits for it to finish. That is the original behaviour, but it can feel stiffer than v14's swipe-following menu.\n- Not yet tried on the real iPhone with a finger; the checks used Chrome and the iPhone Simulator.",
+  "visualDiff": [],
+  "gain": [],
+  "compare": {
+    "a": {
+      "label": "v14 (today's best build)"
+    },
+    "view": "side",
+    "shots": []
+  },
+  "options": [
+    {
+      "name": "g0",
+      "label": "Original end of the page, with the Join button fix",
+      "idea": "The end of the page works as on fastwork.com again.\n- The page holds still at the end; one swipe down opens the menu by itself over 680 ms, one swipe up closes it.\n- The Join waitlist button moves aside as on the original, but no longer lifts up while it fades: it blurs and fades in place. The blur and the fade stay as in the option you accepted in PR-027 (your earlier proposal about the Join button).\n- The section before the menu (\"One platform is everything you need\") scrolls normally again; v14 made it stick.\n- The page is as long as the original: v14 added one extra screen of scroll after the end.",
+      "risk": "Not faster while the menu opens (see the shared risk); the GPU step g0.1 follows.",
+      "visualDiff": [
+        "At the end: the menu opens by itself in 680 ms instead of following your finger (as on fastwork.com).",
+        "The Join waitlist button no longer moves 8 pixels up while it is still visible.\n- It blurs and fades in place: the look you accepted for the Join button (PR-027, option no lift).\n- The same when it comes back as the menu closes.",
+        "The section before the menu no longer sticks; it scrolls like the rest of the page (as on fastwork.com).",
+        "Against the original page with that one fix: at most 54 colour levels of 255 differ, at the menu's glass edge; they come from v14 parts this step keeps.",
+        "Above the end: no visible difference to v14 in Chrome; in the iPhone Simulator only the section before the menu, which no longer sticks."
+      ],
+      "gain": [
+        {
+          "what": "Menu at the end",
+          "before": "follows the swipe",
+          "after": "opens by itself, 680 ms",
+          "tag": "OBSERVED",
+          "how": "Chrome and Simulator pixel checks against fastwork.com's original page at every 80 ms of the opening",
+          "better": "same"
+        },
+        {
+          "what": "Join button lift while still visible",
+          "before": "8 px up (revision 1)",
+          "after": "0 px",
+          "tag": "OBSERVED",
+          "how": "Chrome at 4 widths and the iPhone Simulator: the button's top while it fades; the whole bar moves about 1 px, as on the original",
+          "better": "better"
+        },
+        {
+          "what": "Repaints per frame while the menu opens",
+          "before": "about 1",
+          "after": "about 5-6",
+          "tag": "OBSERVED",
+          "how": "iPhone Simulator Timeline counts, 2 loads each; the original page needs about 20. The GPU step g0.1 targets this",
+          "better": "worse"
+        },
+        {
+          "what": "Style work while the page rests at the end",
+          "before": "60 per second",
+          "after": "0",
+          "tag": "OBSERVED",
+          "how": "iPhone Simulator Timeline, 2 s window with the menu closed, 2 loads each",
+          "better": "better"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "g0.0b (original end of the page, Join fix)"
+        },
+        "shots": [
+          {
+            "caption": "Chrome phone 430x775: end of the page, menu closed (left v14, right g0.0b)",
+            "a": "r2-o1-a-1.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r2-o1-b-1.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "Chrome phone: menu half open, 160 ms of 680. Left: fastwork.com's original (v14 follows the finger). Right: g0.0b",
+            "a": "r2-o1-a-2.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r2-o1-b-2.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "Chrome phone: menu open (left v14, right g0.0b)",
+            "a": "r2-o1-a-3.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r2-o1-b-3.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "Chrome phone: Join button as the menu starts to open (left revision 1, lifted; right g0.0b, in place)",
+            "a": "r2-o1-a-4.webp",
+            "aSize": [
+              840,
+              270
+            ],
+            "b": "r2-o1-b-4.webp",
+            "bSize": [
+              840,
+              270
+            ]
+          },
+          {
+            "caption": "iPhone Simulator: end of the page, menu closed (left v14, right g0.0b)",
+            "a": "r2-o1-a-5.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r2-o1-b-5.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          },
+          {
+            "caption": "iPhone Simulator: menu half open, 200 ms of 680 (left fastwork.com's original, right g0.0b)",
+            "a": "r2-o1-a-6.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r2-o1-b-6.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          },
+          {
+            "caption": "iPhone Simulator: menu open (left v14, right g0.0b)",
+            "a": "r2-o1-a-7.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r2-o1-b-7.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          },
+          {
+            "caption": "iPhone Simulator: Join button as the menu starts to open (left revision 1, lifted; right g0.0b)",
+            "a": "r2-o1-a-8.webp",
+            "aSize": [
+              840,
+              270
+            ],
+            "b": "r2-o1-b-8.webp",
+            "bSize": [
+              840,
+              270
+            ]
+          }
+        ]
+      },
+      "live": {
+        "patch": "fixes/g0-revert/patch.diff",
+        "ref": "HEAD",
+        "blob": "d193fd5eaa45b64fe87e23ebccf44a476e42d7c3",
+        "base": "site-pretty",
+        "files": [
+          "_app/immutable/assets/2.gBuqKVzi.css",
+          "_app/immutable/nodes/2.DyWL8TcE.js"
+        ],
+        "a": {
+          "patch": "fixes/cm-v14/patch.diff",
+          "ref": "HEAD",
+          "blob": "acd72479c723f5bb93a628cd32970c452d6cd829",
+          "base": "site-pretty",
+          "files": [
+            "_app/immutable/nodes/2.DyWL8TcE.js",
+            "_app/immutable/assets/2.gBuqKVzi.css"
+          ]
+        }
+      }
+    },
+    {
+      "name": "keep",
+      "label": "Keep v14's swipe-following menu",
+      "idea": "Keep v14 as it is: at the end the menu follows your finger as you swipe, and the section before it sticks while the menu opens.\nThe Try-it panel here has the two builds swapped (A is g0.0b, B is v14), so you can compare both ways round.",
+      "risk": "It is not the original behaviour you asked for.\n- Where you asked: your thread about the end of the page (T-228, messages 60 and 62).\n- The GPU step g0.1 would then have no base to build on.",
+      "visualDiff": [
+        "No change to today's best build (v14)."
+      ],
+      "gain": [
+        {
+          "what": "Menu at the end",
+          "before": "opens by itself, 680 ms",
+          "after": "follows the swipe",
+          "tag": "OBSERVED",
+          "how": "v14 as measured for the current best build (iPhone check P-161)",
+          "better": "same"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "v14 (keep)"
+        },
+        "shots": [
+          {
+            "caption": "Chrome phone: end of the page, menu closed (left g0.0b, right v14)",
+            "a": "r2-o2-a-1.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r2-o2-b-1.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "Chrome phone: menu open (left g0.0b, right v14)",
+            "a": "r2-o2-a-2.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r2-o2-b-2.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "iPhone Simulator: menu open (left g0.0b, right v14)",
+            "a": "r2-o2-a-3.webp",
+            "aSize": [
+              1290,
+              2796
+            ],
+            "b": "r2-o2-b-3.webp",
+            "bSize": [
+              1290,
+              2796
+            ]
+          }
+        ]
+      },
+      "live": {
+        "patch": "fixes/cm-v14/patch.diff",
+        "ref": "HEAD",
+        "blob": "acd72479c723f5bb93a628cd32970c452d6cd829",
+        "base": "site-pretty",
+        "files": [
+          "_app/immutable/nodes/2.DyWL8TcE.js",
+          "_app/immutable/assets/2.gBuqKVzi.css"
+        ],
+        "a": {
+          "patch": "fixes/g0-revert/patch.diff",
+          "ref": "HEAD",
+          "blob": "d193fd5eaa45b64fe87e23ebccf44a476e42d7c3",
+          "base": "site-pretty",
+          "files": [
+            "_app/immutable/assets/2.gBuqKVzi.css",
+            "_app/immutable/nodes/2.DyWL8TcE.js"
+          ]
+        }
+      }
+    }
+  ],
+  "recommended": {
+    "option": "g0",
+    "why": "It is what you asked for, with the Join fix from your revision 1 note.\n- Where you asked: your thread about the end of the page (T-228, messages 60 and 62).\n- The GPU step g0.1 builds on it."
+  },
+  "state": "accepted",
+  "rev": 2,
+  "decision": {
+    "value": "accepted",
+    "at": "2026-10-07T18:44:34.394Z",
+    "who": "user",
+    "rev": 2,
+    "option": "g0"
+  },
+  "decisions": [
+    {
+      "value": "changes-requested",
+      "notes": "I'd like to apply the fix of \"join waitlist\" button padding that lift up during fade-out, end-of-page appear.",
+      "at": "2026-10-07T17:42:56.484Z",
+      "who": "user",
+      "rev": 1,
+      "option": "g0"
+    },
+    {
+      "value": "accepted",
+      "at": "2026-10-07T18:44:34.394Z",
+      "who": "user",
+      "rev": 2,
+      "option": "g0"
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-07T17:19:06.678Z",
+      "by": "fix-g0-revert",
+      "note": "first version"
+    },
+    {
+      "rev": 2,
+      "at": "2026-10-07T18:42:35.157Z",
+      "by": "fix-g0-revert",
+      "note": "Your note on revision 1: \"I'd like to apply the fix of \"join waitlist\" button padding that lift up during fade-out, end-of-page appear.\"\n- Done: the Join waitlist button no longer lifts up while it fades as the end-of-page menu appears, nor when it comes back as the menu closes.\n- It is the fix you "
+    }
+  ],
+  "createdAt": "2026-10-07T17:19:06.678Z",
+  "updatedAt": "2026-10-07T18:44:34.394Z",
+  "proposedAt": "2026-10-07T18:42:35.157Z",
+  "history": [
+    {
+      "at": "2026-10-07T17:19:06.678Z",
+      "who": "fix-g0-revert",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-07T17:42:56.484Z",
+      "who": "user",
+      "action": "decided",
+      "value": "changes-requested",
+      "rev": 1,
+      "note": "I'd like to apply the fix of \"join waitlist\" button padding that lift up during fade-out, end-of-page appear.",
+      "option": "g0"
+    },
+    {
+      "at": "2026-10-07T17:43:25.403Z",
+      "who": "lead",
+      "action": "revising",
+      "rev": 1,
+      "note": "fix-g0-revert is adding the Join waitlist fix (no lift before the fade, PR-027 nolift) to the original end-of-page build; then rev 2 with Try-it",
+      "eta": "2026-10-07T18:43:25.398Z"
+    },
+    {
+      "at": "2026-10-07T17:43:30.961Z",
+      "who": "fix-g0-revert",
+      "action": "revising",
+      "rev": 1,
+      "note": "Adding the Join button fix (no lift before the fade) to the original end of the page (option g0)",
+      "eta": "2026-10-07T18:43:30.956Z"
+    },
+    {
+      "at": "2026-10-07T18:13:55.328Z",
+      "who": "fix-g0-revert",
+      "action": "revising",
+      "rev": 1,
+      "note": "The Join fix is built and checked in Chrome and the iPhone Simulator; last re-checks running, then rev 2 goes up",
+      "eta": "2026-10-07T19:08:55.323Z"
+    },
+    {
+      "at": "2026-10-07T18:42:35.157Z",
+      "who": "fix-g0-revert",
+      "action": "revised",
+      "rev": 2,
+      "note": "Your note on revision 1: \"I'd like to apply the fix of \"join waitlist\" button padding that lift up during fade-out, end-of-page appear.\"\n- Done: the Join waitlist button no longer lifts up while it fades as the end-of-page menu appears, nor when it comes back as the menu closes.\n- It is the fix you "
+    },
+    {
+      "at": "2026-10-07T18:44:34.394Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 2,
+      "option": "g0"
+    }
+  ]
+}

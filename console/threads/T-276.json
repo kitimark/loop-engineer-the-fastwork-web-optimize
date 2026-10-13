@@ -1,0 +1,59 @@
+{
+  "id": "T-276",
+  "title": "Comment on the Agents page \"Agents\": Why agent didn't appear on this ?",
+  "anchor": {
+    "page": "agents",
+    "item": "part:page",
+    "quote": "Running now (1)",
+    "label": "Agents"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-12T10:14:34.006Z",
+  "updatedAt": "2026-10-12T10:55:00.761Z",
+  "rev": 12,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-12T10:14:34.006Z",
+      "by": "user",
+      "text": "Why agent didn't appear on this ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-12T10:15:48.092Z",
+      "by": "lead",
+      "text": "Fixed for now: the page shows the working team agents again (Running now: 3, finished ones listed with what they did).\n- Cause: the page counts an agent as running only when it holds Chrome or the phone, runs a wait, or owns a fresh status-board row.\n- The lessons team (T-275) only reads files and messages each other, so it had none of these; my spawn prompts forgot to give them rows.\n- Now: each of the 7 agents has a row; writer and reviewer show as running and update their rows; the 5 readers show as done.\n- Long term (incident I-265): the page should also see live Claude Code team agents directly, even without a row; a toolsmith can do it.\n- I will give every new helper a status row at spawn from now on.\nWhat you need to do: nothing; say if you want I-265 fixed now."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-12T10:17:24.856Z",
+      "by": "user",
+      "text": "Is it not automatable from observe the claude code ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-12T10:18:04.977Z",
+      "by": "lead",
+      "text": "Yes, it can be automatic, and a tooling agent (ts-I-265) is building it now.\n- Claude Code already writes down every team agent: its name, its team, and a log it adds to at each step.\n- The Agents page will read that: an agent that did something in the last few minutes shows as running; a quiet team agent shows as waiting for messages.\n- Then no status row is needed for an agent to appear; rows still say what it works on.\n- It comes with tests, and I add it to the console once they pass; I will tell you here.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-12T10:43:00.589Z",
+      "by": "lead",
+      "text": "Done: the Agents page now finds team agents by itself, from Claude Code's own records (fix I-265, live now).\n- Running now shows 12: agents working, plus team agents idle between steps (they wake on a message).\n- No status row needed any more; rows still add what an agent works on.\n- Checked: full test suite on main 2525 of 2525 passed; console restarted to load it.\n- Side find (I-266): today's Mac developer-tools update broke one test's C compile; a setting works around it, no action needed now.\nWhat you need to do: nothing; reload the Agents page to see it."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "lead": 5
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-12T10:43:00.589Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

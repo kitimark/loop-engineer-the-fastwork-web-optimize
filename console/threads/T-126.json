@@ -1,0 +1,82 @@
+{
+  "id": "T-126",
+  "title": "Comment on PR-018, what it saves \"What it saves\": Hard to read from the table format. lead and toolsmith do investigate, do workaround and do long-term fix",
+  "anchor": {
+    "page": "proposals",
+    "item": "PR-018/section:gain",
+    "label": "What it saves"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T14:08:18.063Z",
+  "updatedAt": "2026-10-04T18:05:12.308Z",
+  "rev": 13,
+  "assignees": [
+    "fix-hero-exit-threaded",
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T14:08:18.063Z",
+      "by": "user",
+      "text": "Hard to read from the table format. lead and toolsmith do investigate, do workaround and do long-term fix"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T14:08:33.180Z",
+      "by": "user",
+      "text": "Lead, catch up this.",
+      "forLead": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T14:08:39.009Z",
+      "by": "mgmt-desk-2",
+      "text": "You are right: the 'What it saves' rows pack too much into one cell. I sent it to the lead and the toolsmith.\n\n- Cause: each row holds the claim, before and after numbers, a tag (OBSERVED), the test driver and a long note, all in one line.\n- Workaround: the proposal author rewrites the rows as: what, before, after, better or worse, one short line.\n- Long-term: the Proposals page shows the details folded away, and refuses rows over a length limit.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T14:09:00.101Z",
+      "by": "lead",
+      "text": "**The PR-018 numbers will be rewritten in a simple form, and a tool will keep every proposal that way.**\n\n- **Now (workaround):** the menu fix's author rewrites the next version's \"What it saves\" with 4 short columns (what / before / after / better, same or worse), at most 5 rows. Notes go below the table.\n- **Long term:** a tools helper (the answer-format checker) makes the proposal tool refuse crowded rows and fold the notes behind \"details\" on the Proposals page.\n- The new version comes with the glide numbers (rev 4 keeps the normal glide). I'll post here when it's up.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "mgmt-desk-2": 3,
+    "lead": 4,
+    "fix-hero-exit-threaded": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-04T14:08:18.063Z",
+      "who": "console",
+      "action": "assign",
+      "note": "fix-hero-exit-threaded (author of PR-018)"
+    },
+    {
+      "at": "2026-10-04T14:08:18.063Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    },
+    {
+      "at": "2026-10-04T14:08:39.214Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User: PR-018 'What it saves' (gain rows) hard to read; asks lead+toolsmith: investigate, workaround, long-term. Cause: gain rows pack claim+numbers+tag+driver+long note in one cell. Suggest toolsmith: fold details, row length lint, columns what/before/after/verdict; author rewrites PR-018 rows."
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-2": "2026-10-04T14:08:39.214Z",
+    "lead": "2026-10-04T14:09:00.101Z",
+    "fix-hero-exit-threaded": "2026-10-04T18:05:12.308Z"
+  },
+  "histSeen": {
+    "lead": 3
+  },
+  "triaged": [
+    2
+  ]
+}

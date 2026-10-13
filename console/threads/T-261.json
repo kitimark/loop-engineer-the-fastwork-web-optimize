@@ -1,0 +1,60 @@
+{
+  "id": "T-261",
+  "title": "image lost on start-selling-platform-agents-ask-list section",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-09T07:28:42.430Z",
+  "updatedAt": "2026-10-09T09:25:49.797Z",
+  "rev": 12,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-09T07:28:42.430Z",
+      "by": "user",
+      "text": "On the start-selling-platform-agents-ask-list section. i'd like to pull all of image that related on display. \n\nthe original snapshot might not pull all image that need to display.\nfyi: the real fastwork.com already update bit. just focus to reconcile the image of this section."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-09T07:29:35.340Z",
+      "by": "lead",
+      "text": "Yes, I will add the missing pictures of the platform section's agent ask list to our copy of the site, only for that section.\n- Now: a helper (map-ask-images) lists every picture that list can show, which ones our frozen copy lacks, and whether fastwork.com still serves the same files.\n- Then I fetch only those files from fastwork.com; no code changes, so today's builds stay as they are.\n- Catch: our copy of the site is frozen on purpose (one fixed version for fair before/after tests); adding files makes a new version of it.\n- So I add them after the running build check (g0.0l, about 1 h), then re-check that the best build still passes on the new copy.\n- I post the list here before fetching anything.\nWhat you need to do: nothing now; you will get the list to confirm."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-09T07:30:48.820Z",
+      "by": "lead",
+      "text": "Found it: 6 of the 8 service pictures in the agent ask list are missing from our copy; fastwork.com still serves all 6 at the same address.\n- Each picture has a small and a sharper version; our copy has all the small ones, but only 2 of the 8 sharper ones, and iPhone Safari asks for the sharper one, so it shows nothing.\n- Missing (all sharper versions): post-1, post-2, post-3, cover-cafe, service-thumb-bot, service-thumb-main (15-185 KB each, about 420 KB in all).\n- Nothing else in that section is missing: no fonts, data or other files.\n- Plan: fetch exactly these 6 files after the g0.0l phone check, as a new frozen copy of the site (no code change), then re-check the best build on it.\n- Side effect: the section now decodes 6 more pictures, so tests before and after this change are not compared with each other.\nWhat you need to do: reply \"yes\" here to add these 6 pictures, or tell me what to change.",
+      "ask": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-09T07:41:14.964Z",
+      "by": "user",
+      "text": "yes"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-09T08:50:57.760Z",
+      "by": "lead",
+      "text": "Done: the 6 missing service pictures of the agent ask list are now in our copy of the site (new frozen version b1789284481295-a455e793).\n- Fetched from fastwork.com at the same addresses the page asks for; sizes match the live files; no code changed.\n- All 8 service pictures in that list now have their sharper version, so none should show blank.\n- The next build check (g0.0l) and its phone test now run on this new copy, both arms alike.\nWhat you need to do: nothing; you will see the pictures in the next Try-it or best build."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "lead": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-09T09:25:49.797Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-09T08:50:57.760Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

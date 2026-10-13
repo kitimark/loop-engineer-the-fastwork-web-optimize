@@ -1,0 +1,41 @@
+{
+  "id": "C-127",
+  "by": "lead",
+  "kind": "action",
+  "title": "Re-plug the iPhone's USB cable",
+  "instructions": "The Mac lost the iPhone on USB (the cable is in, but the phone tools cannot reach it). Unplug the cable from the iPhone, wait 3 s, plug it back in, unlock the phone, then press Done. This step closes by itself when the link is back.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "cancelled",
+  "cur": 0,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "waiting",
+      "at": {}
+    }
+  ],
+  "createdAt": "2026-10-08T16:24:35.373Z",
+  "queuedAt": "2026-10-08T16:24:35.373Z",
+  "updatedAt": "2026-10-08T16:44:10.922Z",
+  "rev": 2,
+  "history": [
+    {
+      "at": "2026-10-08T16:24:35.373Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-08T16:44:10.922Z",
+      "who": "lead",
+      "action": "cancel",
+      "note": "posted by the USB-link watcher while the user had the iPhone off the cable on purpose (T-251); not needed"
+    }
+  ],
+  "queueSeq": 86
+}

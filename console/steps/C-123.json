@@ -1,0 +1,58 @@
+{
+  "id": "C-123",
+  "by": "lead",
+  "kind": "action",
+  "title": "Let Xcode finish preparing the iPhone (the phone test can't connect)",
+  "instructions": "On the Mac, open Xcode > Window > Devices and Simulators and select the iPhone. Keep the phone unlocked and plugged in until the iPhone shows no error or 'preparing' message (a few minutes), then press Done; if it shows an error, type it in the notes.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-08T11:47:45.844Z",
+        "done": "2026-10-08T11:48:30.481Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-08T11:45:49.359Z",
+  "queuedAt": "2026-10-08T11:45:49.359Z",
+  "updatedAt": "2026-10-08T11:48:30.481Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-08T11:45:49.359Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-08T11:47:45.844Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-08T11:48:30.481Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 82,
+  "startedAt": "2026-10-08T11:47:45.844Z",
+  "result": {
+    "value": "done",
+    "notes": "there's no any issue on the \"Devices and Simulators\" appear in the windows. and i was re-plugged. it has no issue the same.",
+    "at": "2026-10-08T11:48:30.481Z"
+  }
+}

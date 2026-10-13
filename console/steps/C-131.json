@@ -1,0 +1,58 @@
+{
+  "id": "C-131",
+  "by": "lead",
+  "kind": "action",
+  "title": "Unlock the iPhone for the menu test (P-170)",
+  "instructions": "Unlock the iPhone and keep it plugged in. Check Settings > Developer > Enable UI Automation is on, then open Safari and press Done here.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-08T19:08:34.414Z",
+        "done": "2026-10-08T19:08:56.094Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-08T19:07:54.818Z",
+  "queuedAt": "2026-10-08T19:07:54.818Z",
+  "updatedAt": "2026-10-08T19:08:56.094Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-08T19:07:54.818Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-08T19:08:34.414Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-08T19:08:56.094Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 90,
+  "startedAt": "2026-10-08T19:08:34.414Z",
+  "result": {
+    "value": "done",
+    "notes": "I was unlocked before. what's the problem ?",
+    "at": "2026-10-08T19:08:56.094Z"
+  }
+}

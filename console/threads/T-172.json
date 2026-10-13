@@ -1,0 +1,44 @@
+{
+  "id": "T-172",
+  "title": "iPhone held by lead, unused for 0 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-05T00:40:58.353Z",
+  "updatedAt": "2026-10-05T00:42:58.423Z",
+  "rev": 3,
+  "assignees": [
+    "mgmt-devices"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T00:40:58.353Z",
+      "by": "lead",
+      "text": "lead has held the iPhone lease for 0 min without a phone run (iphone.mjs run, scroll, record or gesture; since 00:40Z, lease taken by lead). The limit is 5 min.\nWaiting on the status board: device-plan (owner mgmt-devices; its note names the phone).\nWhat unblocks it: lead runs its phone part now, or releases the lease (node tools/lock.mjs release iphone --owner lead), or says why it waits.\nSteward (mgmt-devices): answer the user here; the lead is the second tier (I-175).\nOne message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111)."
+    }
+  ],
+  "reads": {
+    "lead": 1,
+    "user": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-05T00:40:58.353Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-devices"
+    },
+    {
+      "at": "2026-10-05T00:42:58.423Z",
+      "who": "lead",
+      "action": "close",
+      "note": "released by lead"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T00:40:58.353Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "id": "C-082",
+  "by": "lead",
+  "kind": "action",
+  "title": "Re-plug the iPhone cable (phone link dropped again)",
+  "instructions": "Please unplug the iPhone's cable, wait 5 seconds, plug it back in, and unlock the phone if it asks. Don't change the Xcode setting. Then press Done.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-06T08:25:28.979Z",
+        "done": "2026-10-06T08:25:29.761Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-06T08:18:16.689Z",
+  "queuedAt": "2026-10-06T08:18:16.689Z",
+  "updatedAt": "2026-10-06T08:25:29.761Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-06T08:18:16.689Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-06T08:25:28.979Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-06T08:25:29.761Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 41,
+  "startedAt": "2026-10-06T08:25:28.979Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-06T08:25:29.761Z"
+  }
+}

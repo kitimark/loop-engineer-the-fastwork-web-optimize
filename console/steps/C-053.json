@@ -1,0 +1,58 @@
+{
+  "id": "C-053",
+  "by": "mgmt-devices",
+  "topic": "phone-queue",
+  "kind": "action",
+  "title": "Set Serious in Xcode on the iPhone (stays on)",
+  "instructions": "In Xcode: Window > Devices and Simulators > select the iPhone > Device Conditions > Thermal State: Serious > Start. Leave it on, then click Done here.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-04T22:06:01.784Z",
+        "done": "2026-10-04T22:06:19.762Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-04T22:05:22.944Z",
+  "queuedAt": "2026-10-04T22:05:22.944Z",
+  "updatedAt": "2026-10-04T22:06:19.762Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-04T22:05:22.944Z",
+      "who": "mgmt-devices",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-04T22:06:01.784Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T22:06:19.762Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 12,
+  "startedAt": "2026-10-04T22:06:01.784Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-04T22:06:19.762Z"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "id": "T-022",
+  "title": "I'd like to disconnect the iphone device now",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-02T11:53:18.161Z",
+  "updatedAt": "2026-10-02T11:59:50.530Z",
+  "rev": 13,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-02T11:53:18.161Z",
+      "by": "user",
+      "text": "Re-plan and ask team for revise thier plan. Ping me when ready."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-02T11:53:47.103Z",
+      "by": "lead",
+      "text": "On it. I told iphone-runner to stop now: the cooling test ends where it is, nothing new starts on the phone, Safari gets parked and the phone lease released. Please wait for my 'safe to unplug' here (a minute or two) so no run is cut mid-way. Meanwhile I'm asking every agent to re-plan without the phone: the two queued phone tests (scroll-engine G2, word-alone) and your ioscap first run go on hold, and the team switches to Chrome and Simulator work. I'll ping you here with the revised plan."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-02T11:54:31.643Z",
+      "by": "lead",
+      "text": "Safe to unplug now. The phone is idle: Safari is parked on a blank page and the only thing running was the cooling test reading the battery once a minute, which just ends early (its partial curve is kept). iphone-runner will release the lease at its next step and nothing new will start on the phone. I'll ping you here with the team's revised plan."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-02T11:55:05.152Z",
+      "by": "lead",
+      "text": "Revised plan without the phone (ready):\n\nON HOLD until you reconnect the phone: the word-alone phone test (PR-004, 2 blocks), the scroll-engine fix's G2 test, and your 10-second ioscap first run (its safety hardening is finished and landed).\n\nNOW, Chrome and Simulator only (no timing tests, per your earlier rule):\n1. Word-alone (de-illusion-style): Simulator counts of the word's own drawing work vs the rest of the page; the cause of the 1 % pixel difference; a Chrome breakdown of each draw. Gives a first answer to your 'only your part' question; the phone numbers still decide it later.\n2. Scroll-engine fix (fwreskip): the earlier robot-swipe phone data already shows it removes about as many slow frames as it adds (one ~50 ms frame when the page settles). One Simulator check on the current best build, then a proposal to you recommending we DROP this fix, saying plainly that it rests on older-build phone data.\n3. Best build (st6-rb2): already rebuilt and checked; nothing pending.\n4. iphone-runner: writes up the partial cooling curve and stays parked.\n\nNothing needs you now; the next thing for you will be the scroll-engine proposal in the console."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-02T11:59:17.082Z",
+      "by": "user",
+      "text": "can i disconnect my device now ?"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-02T11:59:36.302Z",
+      "by": "lead",
+      "text": "Yes, you can disconnect it now. The phone was released at 11:56Z: no test is running on it, nothing is queued for it, and Safari is parked. No agent will use it until you tell me it's back."
+    }
+  ],
+  "reads": {
+    "user": 6,
+    "lead": 6
+  },
+  "history": [
+    {
+      "at": "2026-10-02T11:59:50.530Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

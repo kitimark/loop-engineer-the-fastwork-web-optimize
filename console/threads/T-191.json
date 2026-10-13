@@ -1,0 +1,36 @@
+{
+  "id": "T-191",
+  "title": "iPhone free for 13 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-05T10:17:27.863Z",
+  "updatedAt": "2026-10-05T10:19:00.485Z",
+  "rev": 3,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T10:17:27.863Z",
+      "by": "lead",
+      "text": "The iPhone has had no holder for 13 min (since 10:04Z; released by iphone-runner (process hold ended)). The limit is 5 min.\nWaiting on the status board: device-plan (owner lead; startable: P-129).\nWhat unblocks it: the next owner takes it (node tools/lock.mjs acquire iphone --owner <you> ...).\nNo steward on duty (mgmt-devices is parked): the lead handles this thread (I-175).\nOne message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105)."
+    }
+  ],
+  "reads": {
+    "lead": 1,
+    "user": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-05T10:19:00.485Z",
+      "who": "lead",
+      "action": "close",
+      "note": "taken by iphone-runner"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T10:17:27.863Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

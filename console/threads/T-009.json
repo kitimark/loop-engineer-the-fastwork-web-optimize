@@ -1,0 +1,101 @@
+{
+  "id": "T-009",
+  "title": "Why cool down iphone device take too long ?",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-01T21:31:08.903Z",
+  "updatedAt": "2026-10-03T00:16:07.874Z",
+  "rev": 27,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-01T21:31:08.903Z",
+      "by": "user",
+      "text": "Why cool down iphone device take too long ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-01T21:31:47.039Z",
+      "by": "lead",
+      "text": "The phone was too hot (41.5 °C) when the test started. Our first check run before each test failed: the page scrolled at about half its normal smoothness. A hot iPhone slows itself down, so any numbers from it would be wrong. Our rule then said: cool a fixed 10 minutes and restart.\nThe fixed 10 minutes is a safe guess, not a measurement, so I've changed it. The phone's temperature is now read every minute, and the test restarts as soon as it is back at the temperature where the check passed before (about 38 °C). The check run still decides whether the results count.\nThings you can do that help it cool faster (only if convenient):\n- take the case off;\n- keep it off a warm surface and out of the sun;\n- lower the screen brightness.\nCharging adds heat too: we're checking whether the cable to the Mac is charging it during tests."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-01T21:32:36.597Z",
+      "by": "lead",
+      "text": "Follow-up: the test restarted at 04:31 with the phone at 38.7 °C, and the first check now passes. Charging was not the cause: the phone reports it is not charging (it stays at 80 %, the battery's charge limit). The heat most likely came from the tests running back to back: your finger checks at 03:42-03:46, then this test straight after (our guess, not proven). From now on, cooling ends by temperature, not after a fixed 10 minutes."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-01T21:33:24.078Z",
+      "by": "user",
+      "text": "The iphone can check the temp ?"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-01T21:33:35.401Z",
+      "by": "lead",
+      "text": "Yes. The Mac reads the phone's battery temperature over the USB cable, through Apple's diagnostics interface (the same one that reports charge level and charging state). Our tool logs it at the start and end of every test run. That's where the 41.5 °C and 38.7 °C come from.\nOne limit: it is the battery's sensor, not the chip's. The chip runs hotter and changes faster, so the battery reading trails it. That's why the check run before each test, not the temperature, still decides whether a test counts. The temperature only tells us when to try again."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-01T21:34:16.437Z",
+      "by": "user",
+      "text": "Ok, can we try to wait by measure the temp instead of waiting timeout ?"
+    },
+    {
+      "n": 7,
+      "at": "2026-10-01T21:34:39.681Z",
+      "by": "lead",
+      "text": "Yes, that's what we do from now on. Since 04:32, iphone-runner checks the temperature every minute while the phone cools. The test restarts as soon as the phone is back at the temperature where the check last passed (about 38 °C). 10 minutes stays only as a maximum.\nTo make this the rule for every agent, not just iphone-runner, a toolsmith is adding a 'wait until the phone is cool' command and writing the rule into our measurement protocol. I'll tell you when it lands."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-01T21:35:02.521Z",
+      "by": "user",
+      "text": "Good"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-01T21:59:20.962Z",
+      "by": "lead",
+      "text": "Landed (05:01 +07): cooling now waits on the measured temperature, built into our tools and written into the measurement protocol. After a failed check, the phone is read once a minute and testing resumes as soon as it is at or below the last good temperature (38 °C if there is none today). 10 minutes is only the maximum. The check run still decides whether results count."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-01T22:00:43.392Z",
+      "by": "user",
+      "text": "I'd like to ask you do measurement about the actual time we need to cool down as well. then report me."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-01T22:01:03.448Z",
+      "by": "lead",
+      "text": "Yes. iphone-runner is measuring it now, in two parts:\n1. from today's records: how hot each test block left the phone, how long until the next start, and at which temperatures the check run passed or failed;\n2. live: the phone is idle now, so it logs the temperature once a minute until it stops dropping. That gives the real cooling curve (degrees per minute, minutes to 38 °C).\nI'll report the cooling time and a recommended rule here."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-01T22:01:19.447Z",
+      "by": "lead",
+      "text": "Early finding (OBSERVED): the phone wasn't really resting between tests. After the 04:31 test, Safari still showed the page-end panel with its animations running, so the phone kept working. 20 minutes later it was warmer (41.0 °C) than at the end of the test (39.7 °C). iphone-runner now parks Safari on a blank page after every test, and the cooling curve is being measured from that resting state. I've asked for this park step to become a standard tool step for every agent."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-01T22:13:36.677Z",
+      "by": "lead",
+      "text": "Cooldown report from iphone-runner (our own readings, few samples, so treat as rough):\n- Parked on a blank page, the phone cooled from 41.1 to 36.7 °C in 11 minutes. That's about 0.6 °C/min near 40 and 0.3 °C/min near 38.\n- Time to get down to 38 °C: about 4 min after a typical block (39.8 °C), about 5.5 min from 41 °C.\n- Left on the animated page it barely cooled (0.1 °C/min) or even warmed, 39.7 → 41.0 °C in 22 min. Parking cools 3-5x faster. That was the real reason the cooling took so long.\n- Heat only seemed to hurt one kind of run, the morph test: it failed once at 41.5 °C, while every other check passed from 35.6 up to 42.5 °C.\nNew rule: park Safari after every block, then wait for the temperature (expect 4-6 min instead of a fixed 10), and start morph blocks at 39.5 °C or below. One correction: the phone was charging for a while today (01:38-01:56 your time); my earlier 'never charging' was wrong for that stretch."
+    }
+  ],
+  "reads": {
+    "user": 13,
+    "lead": 13
+  },
+  "history": [
+    {
+      "at": "2026-10-03T00:16:07.874Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

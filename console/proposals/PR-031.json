@@ -1,0 +1,210 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-031",
+  "by": "fix-people-gpu",
+  "title": "People title: slide the letters instead of re-laying out the line while the faces open (phones)",
+  "area": "middle",
+  "topic": "people-gpu",
+  "problem": "The 'o' in the 'People still need people' title costs a full re-layout on every frame while it opens.\n- The 'o' of the second 'people' opens into a row of face photos and closes again (0.92 s).\n- Today the browser grows the 'o' box step by step, so it lays out and repaints the title line on every frame.\n- Chrome at phone size: 56 layouts while it opens, 59 while it closes.\n- iOS Simulator: about 30 layouts and 150 repaints (4.6 million CSS pixels) while it opens.",
+  "idea": "The 'o' box takes its final size at once; the letters beside it slide into place by a GPU move.\n- Phones only (860 px wide or less), not with reduced motion.\n- The slide has the same length and curve as today's motion (0.92 s).\n- Closing runs backwards: the box keeps its open size while the letters slide back, then closes.\n- The slide distances come from sizes already in the CSS: nothing is measured on the page.\n- When the motion ends, the page is exactly today's.\n- Base: today's v10 build with the compositor morph (js file a33a6c7c1f2b, css file 62743920fe1a).\n- This change: js file 9e66ff0696b4, css file 592d1f2a8af4 (file fingerprints).",
+  "looksSame": "At rest it is pixel-identical to today's build, in Chrome and in the iOS Simulator.\n- Closed, open, and after scrolling back: identical.\n- During the motion letters and faces follow the same path within 0.03 CSS px.\n- They are moved as a picture instead of re-drawn at each place, so edges land a little differently.",
+  "risk": "Low; the main open points are the phone check and the base build.\n- The letters are wrapped in small spans on phones at runtime; the text a screen reader reads is the same.\n- Opened and closed quickly, the slide reverses from where it is, as today's motion does.\n- Simulator counts are OBSERVED in our setup; the phone gain is not measured yet.\n- If the base build changes, this has to be rebuilt and re-checked.",
+  "visualDiff": [
+    "While the faces open (about 1 s), photo and letter edges are slightly softer.\n- Chrome: up to 0.35 % of the screen, strongest shade 217 of 255, on the photo edges.\n- iOS Simulator: 0.33 %, shade 233.",
+    "This is above the 'looks the same' limit (shade 128 on edges).\n- So it is visible in a still frame, which is why this is a proposal.\n- In motion it lasts under 1 s.",
+    "While the faces close, the difference is smaller.\n- Under 0.04 % of the screen (Chrome), shade up to 212 on a few edge pixels.",
+    "Tried and dropped: the face photos on their own layers did not reduce it (shade 220).",
+    "A/A check (today's build against itself): 0 % in Chrome, under 0.07 % in the Simulator.\n- The numbers above count only pixels off by more than 8 shades in both repeats and not in the A/A.",
+    "Nothing changes on screens wider than 860 px, with reduced motion, or for right-to-left text."
+  ],
+  "gain": [
+    {
+      "what": "Layouts while the faces open (Chrome)",
+      "before": "56",
+      "after": "4",
+      "tag": "OBSERVED",
+      "how": "Chrome trace, 430x775, DPR 3, one open at the title.",
+      "better": "better"
+    },
+    {
+      "what": "Layouts while the faces close (Chrome)",
+      "before": "59",
+      "after": "6",
+      "tag": "OBSERVED",
+      "how": "Same trace, one close.",
+      "better": "better"
+    },
+    {
+      "what": "Layouts while opening (Simulator)",
+      "before": "30",
+      "after": "8",
+      "tag": "OBSERVED",
+      "how": "iOS Simulator Timeline, counts only, rest of the page paused.\n- The first version of this change had 15; resting the photo fades at 0.9999 removed 7 more.",
+      "needsPhone": true,
+      "better": "better"
+    },
+    {
+      "what": "Repaints while opening (Simulator)",
+      "before": "153 (4.6 M px)",
+      "after": "25 (0.35 M px)",
+      "tag": "OBSERVED",
+      "how": "Same runs; CSS pixels painted in total.",
+      "needsPhone": true,
+      "better": "better"
+    },
+    {
+      "what": "Layouts / px painted while closing (Simulator)",
+      "before": "25 / 9.5 M",
+      "after": "10 / 2.6 M",
+      "tag": "OBSERVED",
+      "how": "Same runs, one close.",
+      "needsPhone": true,
+      "better": "better"
+    },
+    {
+      "what": "Smoothness on the iPhone",
+      "before": "not measured",
+      "after": "pending",
+      "tag": "UNRESOLVED",
+      "how": "A phone check after your decision, through the lead.",
+      "needsPhone": true,
+      "better": "same"
+    }
+  ],
+  "live": {
+    "overlay": "fixes/people-gpu-x2/overlay",
+    "blob": "97203e4a74e33f607daa17ecae6a2523b03cc4e9",
+    "base": "site-pretty",
+    "files": [
+      "_app/immutable/assets/2.gBuqKVzi.css",
+      "_app/immutable/nodes/2.DyWL8TcE.js"
+    ],
+    "a": {
+      "overlay": "fixes/people-gpu-base/overlay",
+      "blob": "6291d7f5cf2f94d7966dfb54d75f2d3a93eccf78",
+      "base": "site-pretty",
+      "files": [
+        "_app/immutable/assets/2.gBuqKVzi.css",
+        "_app/immutable/nodes/2.DyWL8TcE.js"
+      ]
+    }
+  },
+  "compare": {
+    "a": {
+      "label": "Today's build (v10 + compositor morph)"
+    },
+    "b": {
+      "label": "Letters slide (this proposal)"
+    },
+    "view": "side",
+    "shots": [
+      {
+        "caption": "Chrome, faces opening, 0.12 s in",
+        "a": "r2-a-1.webp",
+        "aSize": [
+          1290,
+          360
+        ],
+        "b": "r2-b-1.webp",
+        "bSize": [
+          1290,
+          360
+        ]
+      },
+      {
+        "caption": "Chrome, faces opening, 0.45 s in (largest difference)",
+        "a": "r2-a-2.webp",
+        "aSize": [
+          1290,
+          360
+        ],
+        "b": "r2-b-2.webp",
+        "bSize": [
+          1290,
+          360
+        ]
+      },
+      {
+        "caption": "Chrome, open and at rest (identical)",
+        "a": "r2-a-3.webp",
+        "aSize": [
+          1290,
+          360
+        ],
+        "b": "r2-b-3.webp",
+        "bSize": [
+          1290,
+          360
+        ]
+      },
+      {
+        "caption": "iOS Simulator, faces opening, 0.6 s in",
+        "a": "r2-a-4.webp",
+        "aSize": [
+          1290,
+          330
+        ],
+        "b": "r2-b-4.webp",
+        "bSize": [
+          1290,
+          330
+        ]
+      }
+    ]
+  },
+  "state": "accepted",
+  "rev": 2,
+  "decision": {
+    "value": "accepted",
+    "at": "2026-10-07T00:09:44.817Z",
+    "who": "user",
+    "rev": 2
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "at": "2026-10-07T00:09:44.817Z",
+      "who": "user",
+      "rev": 2
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-06T17:27:26.938Z",
+      "by": "fix-people-gpu",
+      "note": "first version"
+    },
+    {
+      "rev": 2,
+      "at": "2026-10-06T17:41:50.334Z",
+      "by": "fix-people-gpu",
+      "note": "Simulator counts of this exact build are in: 8 layouts while opening (was 30), 25 repaints (was 153), 10 layouts while closing (was 25). Nothing else changed."
+    }
+  ],
+  "createdAt": "2026-10-06T17:27:26.938Z",
+  "updatedAt": "2026-10-07T00:09:44.817Z",
+  "proposedAt": "2026-10-06T17:41:50.334Z",
+  "history": [
+    {
+      "at": "2026-10-06T17:27:26.938Z",
+      "who": "fix-people-gpu",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-06T17:41:50.334Z",
+      "who": "fix-people-gpu",
+      "action": "revised",
+      "rev": 2,
+      "note": "Simulator counts of this exact build are in: 8 layouts while opening (was 30), 25 repaints (was 153), 10 layouts while closing (was 25). Nothing else changed."
+    },
+    {
+      "at": "2026-10-07T00:09:44.817Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 2
+    }
+  ]
+}

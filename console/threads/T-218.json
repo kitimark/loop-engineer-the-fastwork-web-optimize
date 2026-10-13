@@ -1,0 +1,105 @@
+{
+  "id": "T-218",
+  "title": "Comment on PR-029 \"End of the page: freeze the fading section's shimmer, or fa…\": Queue me, the iphone",
+  "anchor": {
+    "page": "proposals",
+    "item": "PR-029",
+    "label": "End of the page: freeze the fading section's shimmer, or fade it out under a flat cover"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-06T11:37:31.708Z",
+  "updatedAt": "2026-10-06T11:52:30.751Z",
+  "rev": 23,
+  "assignees": [
+    "fix-end-morph",
+    "lead"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-06T11:37:31.708Z",
+      "by": "user",
+      "text": "Queue me, the iphone",
+      "later": [
+        "fix-end-morph"
+      ]
+    },
+    {
+      "n": 2,
+      "at": "2026-10-06T11:38:50.113Z",
+      "by": "lead",
+      "text": "The iPhone is yours now, booked for you until about 11:54Z (15 min); no test is running on it.\n- Fix A's phone test waits until you are done; its Mac check runs meanwhile, so nothing is lost.\n- If you need longer, just say so here; if you finish early, reply \"done\" and the test starts at once.\nWhat you need to do: use the phone; reply \"done\" when you finish.",
+      "ask": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-06T11:46:42.067Z",
+      "by": "user",
+      "text": "done"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-06T11:47:22.192Z",
+      "by": "fix-end-morph",
+      "text": "PR-029 revision 2 is under way; I (fix-end-morph) am doing it, expected by about 13:15Z.\n- Step 1, now: I trace the bug you saw in option (b), the section fading out wrongly at Serious heat, from our own recordings. Is it the new flat cover or the old fade? No phone needed.\n- Step 2: I fix (b), or drop it if I can't.\n- Option (a), shimmers frozen during the fade, stays.\n- Rev 2 will also say how (a) relates to arch-compositor-morph's experiment (the morph drawn by the graphics chip only): whether that replaces (a) or goes on top.\n- Your priority note for arch-compositor-morph went to the lead, who sets priorities.\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-06T11:48:27.439Z",
+      "by": "user",
+      "text": "done, you can the iphone"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-06T11:48:39.409Z",
+      "by": "fix-end-morph",
+      "text": "Thanks, the phone is free again.\n- It goes next to arch-compositor-morph's test (CM, your top priority), then to fix-end-morph-p1's test; the lead runs that order.\n- My rev 2 work on PR-029 needs no phone: I'm tracing option (b)'s bug in the iPhone Simulator.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-06T11:51:47.170Z",
+      "by": "user",
+      "text": "done, did you release the iphone yet ?",
+      "forLead": true
+    },
+    {
+      "n": 8,
+      "at": "2026-10-06T11:52:07.265Z",
+      "by": "fix-end-morph",
+      "text": "I don't hold the iPhone, and I have nothing queued on it.\n- It is still booked under your name, until 11:53:35Z, from your request earlier; next in line is arch-compositor-morph's test.\n- I've asked the lead to end your booking now, so that test starts at once. Otherwise it ends by itself at 11:53Z.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-06T11:52:30.530Z",
+      "by": "lead",
+      "text": "Yes, released now (11:52Z); the GPU-morph test starts on the phone at once. Sorry: your first \"done\" went to another agent's queue, not mine.\n- The thread was routed to the end-morph agent (it owns a proposal you also viewed), so my listener did not wake; I'll keep your phone threads assigned to me.\nWhat you need to do: nothing; please keep off the phone until about 13:30Z."
+    }
+  ],
+  "reads": {
+    "user": 9,
+    "lead": 9,
+    "fix-end-morph": 8
+  },
+  "history": [
+    {
+      "at": "2026-10-06T11:37:31.708Z",
+      "who": "console",
+      "action": "assign",
+      "note": "fix-end-morph (author of PR-029)"
+    },
+    {
+      "at": "2026-10-06T11:52:30.631Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-06T11:52:30.530Z",
+    "fix-end-morph": "2026-10-06T11:52:07.265Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

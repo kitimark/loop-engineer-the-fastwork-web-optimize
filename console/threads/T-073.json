@@ -1,0 +1,130 @@
+{
+  "id": "T-073",
+  "title": "Current priority",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T05:24:10.605Z",
+  "updatedAt": "2026-10-05T11:41:12.975Z",
+  "rev": 30,
+  "assignees": [
+    "mgmt-ops-10",
+    "mgmt-desk-1",
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T05:24:10.605Z",
+      "by": "user",
+      "text": "I'd like to adjust the Current priority is;\n- Fix I-108 incidents\n- Fixes of GPU rendering priority\n  * Priority to bundle into the new best build for me to testing\n- Frame audit research\n\nIf you have any questions. you can ask me in this thread.",
+      "forLead": true
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T05:25:37.053Z",
+      "by": "mgmt-ops-10",
+      "text": "Got it, thanks. I've passed this to the lead, who sets the order. In short, today's state: I-108 has a toolsmith (ts-i103), with it first in line. The GPU fixes running now are the hero (phone check P-095 running), the end-of-page morph (P-092) and the countdown roll (P-093), each before its landing. The frame audit is in progress (de-frame-audit, results about 06:10Z). The lead will answer here with the new order and when the new best build is ready for you."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T05:26:24.366Z",
+      "by": "lead",
+      "text": "Got it, and done in that order:\n1) I-108: finished and live now (both parts on main; the console was restarted). Rows nobody has updated for 45 min now say 'may be out of date', each wait shows how long it has waited and who it waits on, and plain listening no longer looks like waiting.\n2) GPU fixes: they now go first on the phone: hero (P-095, running now), then the end-of-page morph (P-092), then the countdown roll (P-093). The F3 swipe test and the rest come after them. I also started an integrator (wi-gpu-bundle) that bundles the three GPU fixes on top of the current best build into one test build. It checks it by pixels and counts (no phone), then gives you a Try-it with A = today's best build and B = the GPU build. I'll put your hands-on test in your steps between phone blocks, never during one. It's marked as a preview until each fix passes its own phone check.\n3) Frame audit: done and landed; summary in T-067. Its next steps (menu hit test, phone-only scroll handlers, countdown timers off-screen) come after the GPU work, unless you want them sooner."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T05:38:04.322Z",
+      "by": "lead",
+      "text": "Good news on GPU fix #1: the hero fade on the GPU passed its phone check (P-095): no worse than today's best build, with fewer slow frames (frames over 34 ms: 27 down to 12). Heads-up: in about 30 min, after the end-of-page morph phone test finishes, two short blind swipe tests will show up in your steps, one after the other: first the F3 menu-edge fix, then the hero fix. Each one shows two versions without saying which is which; you swipe both and tell us which follows your finger better. Nothing to do until they appear."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T07:33:47.683Z",
+      "by": "user",
+      "text": "Catch up this progress."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T07:34:16.880Z",
+      "by": "mgmt-ops-10",
+      "text": "Catch-up at 07:34: the three GPU fixes are all moving. One needs a decision from you.\n- Hero fade (GPU fix 1): it passed its phone check, and in your blind swipe you picked it in both pairs (the catch pair came out \"same\", as it should). Next, the lead lands it.\n- End-of-page panel (GPU fix 2): the phone test found one cost: the first frame when the panel opens is about 7 ms slower. A revised version (rev 2) fixes that in the Chrome and Simulator counts. Its checks are running now.\n- Countdown roll (GPU fix 3): it waits for your decision on PR-017 (land or park). Its phone check (P-093) is 3rd in the phone line.\n- Test build: all three GPU fixes are bundled on top of today's best build (\"v5 GPU preview\" on Progress). The lead posts its Try-it (PR-016) after your current swipe test.\n- Now on the phone: C-041, the top bar swipe test, is loaded and waiting for you.\n- Tools: I-108 is done. A disk-space guard (I-124) is approved and being finished.\nWhat you need to do: press Start on C-041 when you're ready, and decide PR-017 when you have a moment."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T07:34:46.458Z",
+      "by": "mgmt-ops-10",
+      "text": "One correction to my catch-up: PR-017 (the countdown roll) is getting a revised text (rev 3) after its review. Please wait for rev 3 before deciding. The lead will let you know when it's up.\nAlso new: the hero fade fix has landed and is today's new best build.\nWhat you need to do: only C-041 for now, when you're ready."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T10:59:37.713Z",
+      "by": "user",
+      "text": "Catch up this progress"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T11:05:27.367Z",
+      "by": "mgmt-desk-1",
+      "text": "Catch-up on your priority list (from 05:24Z): item 1 is done, item 2 is nearly done, item 3 is under way.\n\n| your priority | state |\n|---|---|\n| 1. Status board fix (I-108) | done, live since 05:25Z |\n| 2. GPU fixes, bundled for you to test | hero fade and countdown roll landed; end-of-page menu: phone checks running now. Next best build (v7) is being checked |\n| 3. Frame audit follow-ups | all 3 started: top bar section check, phone scroll jobs, countdown timers off screen (progress in T-100) |\n\n- v7 = today's best build + countdown strips and roll + resting avatar row, plus the end-of-page menu if its phone checks pass.\n- New GPU candidates: hero accent word, and your 2 spots from T-107 (menu buttons, People title).\n- Until 12:20Z the team runs lighter to stay inside your usage limit (T-108).\n\nWhat you need to do: nothing. A Try-it for v7 comes when it is ready."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T13:34:31.407Z",
+      "by": "user",
+      "text": "Catch up this progress"
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T13:35:30.712Z",
+      "by": "lead",
+      "text": "**Your priorities, now (13:37Z):**\n\n| # | work | state |\n|---|---|---|\n| 1 | Fast-flick lag (T-113) | cause found: Safari's toolbar resize makes the top of the page re-lay out (12-15 ms each step); the test of 6 suspects is on the phone now |\n| 2 | v8, next best build (T-114) | 2 parts nearly ready, 4 in checks |\n| - | End-of-page menu (PR-018 rev 4) | your 4 points built; glide check on the phone next, then it comes to you |\n| - | Team plan (T-122) | planning agent working; a proposal in about an hour |\n| - | Page servers (T-106) | tools helper restarted |\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 11,
+    "mgmt-ops-10": 10,
+    "lead": 11,
+    "mgmt-desk-1": 9,
+    "mgmt-desk-2": 10
+  },
+  "history": [
+    {
+      "at": "2026-10-04T05:24:10.605Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T05:25:36.985Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User priority change (05:24Z): 1 fix I-108, 2 GPU rendering fixes, bundled into a new best build for the user to test, 3 frame audit research. Needs your ruling on queue and lock order, plus spawns. Desk replied with a holding note."
+    },
+    {
+      "at": "2026-10-04T11:04:52.003Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-1"
+    },
+    {
+      "at": "2026-10-04T14:04:50.869Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    },
+    {
+      "at": "2026-10-04T14:06:16.743Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-05T11:41:12.975Z",
+    "lead": "2026-10-04T13:35:30.712Z",
+    "mgmt-desk-1": "2026-10-04T11:05:27.367Z",
+    "mgmt-desk-2": "2026-10-04T14:04:52.240Z"
+  },
+  "histSeen": {
+    "lead": 3
+  }
+}

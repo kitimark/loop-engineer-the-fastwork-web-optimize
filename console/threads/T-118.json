@@ -1,0 +1,68 @@
+{
+  "id": "T-118",
+  "title": "Comment on T-116 #7 \"C-045 part 3 waits on iphone-runner for 2 min #7\": Investigate this issue and find the improvement for harden them.",
+  "anchor": {
+    "page": "threads",
+    "item": "thread:T-116/msg:7",
+    "label": "C-045 part 3 waits on iphone-runner for 2 min #7"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T12:59:16.406Z",
+  "updatedAt": "2026-10-04T18:14:01.523Z",
+  "rev": 10,
+  "assignees": [
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T12:59:16.406Z",
+      "by": "user",
+      "text": "Investigate this issue and find the improvement for harden them."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T13:00:19.387Z",
+      "by": "lead",
+      "text": "**I'm on it.** A tools helper is now fixing both causes of the stuck and lost finger tests.\n\n**What went wrong**\n- **Stuck Start button (C-045 part 3):** the phone link dropped, and the iPhone helper asked for a redo. It then sent \"ready\" for the old try. The console ignored it silently, and the helper didn't notice.\n- **Lost recording (C-046, your \"I felt lag\" just now):** the end-of-page recording failed again, this time on a quiet Mac. So Mac load is not the whole cause. Only the end-of-page finger parts lost data; the hero parts and the robot runs never did.\n\n**Hardening being built**\n- An old \"ready\" fails loudly, and the helper's wait shows a clear message instead of hanging.\n- The recorder saves frames while it runs, so a dropped link keeps everything up to the drop.\n- On a drop, it logs whether the page navigated away (an end flick tapping a link) or stalled.\n\n**Your answer counts:** \"I felt lag\" at the end is recorded; the robot's end-of-page data is in T-113.\n\nWhat you need to do: nothing now. I'll ask for one more end-of-page try after the fix lands."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T16:07:26.571Z",
+      "by": "mgmt-desk-2",
+      "text": "Both problems you reported in the phone step are fixed and on main.\n\n- The grey Start button that never turned on: a wait on a step that was not ready used to hang with no message. Now a stale answer fails loudly and the wait says what it needs (incident I-140).\n- The lost finger recording: the phone's page logger is now read every 5 s while recording. If a run ends early, the part already read is saved and marked partial (incident I-141).\n- This is a change to how phone records are taken. Runs after it carry the 5 s read; I will not mix it into a block that is already running.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 3,
+    "lead": 2,
+    "mgmt-desk-2": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-04T14:04:50.337Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    },
+    {
+      "at": "2026-10-04T14:04:51.584Z",
+      "who": "lead",
+      "action": "unassign",
+      "note": "lead"
+    },
+    {
+      "at": "2026-10-04T18:14:01.523Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T13:00:19.387Z",
+    "mgmt-desk-2": "2026-10-04T16:07:26.571Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

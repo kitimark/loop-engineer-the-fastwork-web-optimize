@@ -1,0 +1,47 @@
+{
+  "id": "C-051",
+  "by": "lead",
+  "kind": "choice",
+  "title": "iPhone still not seen on the cable: please check once more",
+  "instructions": "After your Done (19:17Z) the Mac still sees no iPhone on the cable. Unplug and re-plug both ends (or another cable or Mac port), unlock the phone, tap Trust if asked, then pick an answer.",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "re-plugged and unlocked",
+      "I unplugged it on purpose (phone busy)",
+      "no Trust prompt and still not working"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-04T19:19:32.816Z",
+  "queuedAt": "2026-10-04T19:19:32.816Z",
+  "updatedAt": "2026-10-04T19:20:19.641Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-04T19:19:32.816Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-04T19:19:41.424Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-04T19:20:19.641Z",
+      "who": "user",
+      "action": "answer",
+      "value": "re-plugged and unlocked"
+    }
+  ],
+  "queueSeq": 10,
+  "startedAt": "2026-10-04T19:19:41.424Z",
+  "result": {
+    "value": "re-plugged and unlocked",
+    "at": "2026-10-04T19:20:19.641Z"
+  }
+}

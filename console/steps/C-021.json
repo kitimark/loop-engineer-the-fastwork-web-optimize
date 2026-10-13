@@ -1,0 +1,157 @@
+{
+  "id": "C-021",
+  "by": "iphone-runner",
+  "kind": "action",
+  "title": "PR-001 look check: record the iPhone screen while 4 versions play (about 6 min)",
+  "instructions": "The phone records its own screen; the Mac camera is not used. Numbers only: no agent looks at the video without asking you first.",
+  "showUrl": false,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 4,
+  "parts": [
+    {
+      "label": "Start the screen recording",
+      "instructions": "On the iPhone: turn on Do Not Disturb. Open Control Center, press and hold the Screen Recording button and check that Microphone is OFF. Tap Start Recording, wait for the 3-second countdown, then close Control Center. Click Done here when it is recording (\"started\").",
+      "record": false,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "ready": "2026-10-02T09:28:13.365Z",
+        "started": "2026-10-02T09:30:22.739Z",
+        "done": "2026-10-02T09:30:55.689Z"
+      }
+    },
+    {
+      "label": "Versions 1-4 play (about 3.5 min)",
+      "instructions": "Click Start, then put the phone down and don't touch it. I load 4 versions of the page, one after another, about 48 s each. I finish this part myself when version 4 is done.",
+      "record": false,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "ready": "2026-10-02T09:31:13.454Z",
+        "started": "2026-10-02T09:31:21.025Z",
+        "done": "2026-10-02T09:31:26.584Z"
+      }
+    },
+    {
+      "label": "Stop the recording",
+      "instructions": "Tap the red recording indicator at the top of the iPhone screen, then Stop. Click Done.",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-02T09:38:58.328Z",
+        "done": "2026-10-02T09:38:59.161Z"
+      }
+    },
+    {
+      "label": "Move the file to the Mac",
+      "instructions": "AirDrop the recording from Photos to this Mac. Then drag it from Downloads into this folder: /Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/agent-afc7d9fff1fcc6154/out/pr001-visual/ . Click Done when it is moved (\"moved\"). The copy in your Photos is yours to delete.",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-02T09:39:09.068Z",
+        "done": "2026-10-02T09:39:35.395Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-02T09:28:05.487Z",
+  "queuedAt": "2026-10-02T09:28:05.487Z",
+  "updatedAt": "2026-10-02T09:39:35.395Z",
+  "rev": 13,
+  "history": [
+    {
+      "at": "2026-10-02T09:28:05.487Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-02T09:28:13.366Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "state": "ready",
+      "note": "Phone is ready, version 1 is loaded. Start whenever you like."
+    },
+    {
+      "at": "2026-10-02T09:30:22.739Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-02T09:30:55.689Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    },
+    {
+      "at": "2026-10-02T09:31:13.455Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "state": "ready",
+      "note": "Recording started, thanks. Click Start and put the phone down; the 4 versions take about 3.5 min."
+    },
+    {
+      "at": "2026-10-02T09:31:21.025Z",
+      "who": "user",
+      "action": "start",
+      "part": 2
+    },
+    {
+      "at": "2026-10-02T09:31:26.584Z",
+      "who": "user",
+      "action": "done",
+      "part": 2
+    },
+    {
+      "at": "2026-10-02T09:36:24.939Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 3,
+      "note": "All 4 versions have played (09:36:13Z). Please stop the recording now (red pill at the top, then Stop), then click Done."
+    },
+    {
+      "at": "2026-10-02T09:38:58.328Z",
+      "who": "user",
+      "action": "start",
+      "part": 3
+    },
+    {
+      "at": "2026-10-02T09:38:59.161Z",
+      "who": "user",
+      "action": "done",
+      "part": 3
+    },
+    {
+      "at": "2026-10-02T09:39:06.442Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 4,
+      "note": "Thanks, recording stopped. Now AirDrop it to this Mac and drag it into the folder shown, then click Done."
+    },
+    {
+      "at": "2026-10-02T09:39:09.068Z",
+      "who": "user",
+      "action": "start",
+      "part": 4
+    },
+    {
+      "at": "2026-10-02T09:39:35.395Z",
+      "who": "user",
+      "action": "done",
+      "part": 4
+    }
+  ],
+  "startedAt": "2026-10-02T09:30:22.739Z",
+  "result": {
+    "value": "done",
+    "notes": "I was made the mistake. retry this process again. for workaround",
+    "at": "2026-10-02T09:39:35.395Z"
+  }
+}

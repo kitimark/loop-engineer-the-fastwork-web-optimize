@@ -1,0 +1,58 @@
+{
+  "id": "C-163",
+  "by": "lead",
+  "kind": "action",
+  "title": "Run the fixed deploy script (the earlier stop was my bug, now fixed)",
+  "instructions": "In Terminal on this Mac, in the project folder: bash out/cf-review/deploy.sh . It now continues past the local checks and asks: Cloudflare Access is OFF for both Workers? Answer y. Tap Done after ALL PASS, or paste the last 5 lines if any line says FAIL.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-13T09:00:23.890Z",
+        "done": "2026-10-13T09:02:14.467Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-13T09:00:07.623Z",
+  "queuedAt": "2026-10-13T09:00:07.623Z",
+  "updatedAt": "2026-10-13T09:02:14.467Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-13T09:00:07.623Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-13T09:00:23.890Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-13T09:02:14.467Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 122,
+  "startedAt": "2026-10-13T09:00:23.890Z",
+  "result": {
+    "value": "done",
+    "notes": "FAIL  optimized /_headers -> 404  (expected 302 to /gate)\nPASS  optimized /th/ -> gate\nPASS  optimized /gate 200\nPASS  optimized /gate noindex\nFAIL  optimized gate text (0 of 3 lines)\nFAIL  optimized robots.txt\nPASS  optimized no cookie without the tick\nFAIL  optimized tick did not give the cookie\nPASS  optimized forged cookie refused\n\nSome checks FAILED: paste only the FAIL lines in the console step.",
+    "at": "2026-10-13T09:02:14.467Z"
+  }
+}

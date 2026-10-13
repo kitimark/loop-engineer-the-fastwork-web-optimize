@@ -1,0 +1,166 @@
+{
+  "id": "T-125",
+  "title": "Comment on progress countdown-faces \"Countdown digits as 3 ready-made faces, nothing animating w…\": now: parked, what it means ? it already done ?",
+  "anchor": {
+    "page": "progress",
+    "item": "progress:countdown-faces",
+    "label": "Countdown digits as 3 ready-made faces, nothing animating while hidden"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T13:55:44.593Z",
+  "updatedAt": "2026-10-04T17:50:42.744Z",
+  "rev": 48,
+  "assignees": [
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T13:55:44.593Z",
+      "by": "user",
+      "text": "now: parked, what it means ? it already done ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T13:56:04.665Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes, the work is done and landed; 'parked' only means its agent is paused, not working on it.\n\n- The fix is on main (commit 5cb4dc4c): countdown digits use 3 ready-made faces and the hidden timer is stopped.\n- It is not in a best build yet. It is a candidate for the next best build (v8).\n- It competes with the lighter countdown roll (cd-roll-ca); only the better one goes in.\n- The agent (de-countdown) is parked on purpose; the lead wakes it if v8 needs it.\n- The phone no-worse check was waived by your rule T-055.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T13:57:25.388Z",
+      "by": "user",
+      "text": "it should be \"now: done\" ? so, parked. it feel ambiguous. between agent paused but work can be in-progress or done. \n\nlet's investigate all progress that set is parked"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T13:57:53.608Z",
+      "by": "mgmt-desk-2",
+      "text": "You are right: 'parked' mixes work that is finished with work that is paused. I checked all 8 parked rows.\n\n| Parked row | Real state |\n|---|---|\n| cdwc, re-keep-op | finished, in today's best build; only a later timing test is paused |\n| countdown-faces | finished and landed, not in a best build yet |\n| blur-cubic | unfinished, paused on purpose |\n| nav-hit-cache | unfinished: a check failed, needs rework |\n| people-avatars | unfinished, not started; its note is stale |\n| ops, ts-testspeed | not a fix: ops waits for data, ts-testspeed waits for a tool fix |\n\n- Proposal: split 'parked' into 'done, agent paused', 'unfinished, paused' and 'standing by'.\n- I sent it to the lead, joined with your label request in T-124.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T13:58:10.745Z",
+      "by": "lead",
+      "text": "**\"Parked\" means the agent is paused, not that the work is done. The label will now say which.**\n\n- **For this item:** the countdown change is finished and is going into the next best build. Its agent is paused because it has nothing left to do.\n- **New labels**, worked out automatically from the progress page:\n\n| label | meaning |\n|---|---|\n| done, agent paused | the work is finished or in a build |\n| unfinished, paused | the work isn't done yet |\n| standing by | a helper, not a fix |\n\n- This comes in the same change as T-124. I'll post here when it's live.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T13:59:31.297Z",
+      "by": "user",
+      "text": "I'd like to ask again, \"Countdown digits as 3 ready-made faces, nothing animating while hidden\" already done or not ?"
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T13:59:44.374Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes, it is done.\n\n- Built and landed on main (commit 5cb4dc4c): 3 ready-made faces per digit, and the hidden timer is stopped.\n- Not yet: it is not in a best build. It waits for v8, where it competes with the countdown roll.\n- Nothing more is being worked on for it now.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T14:00:03.217Z",
+      "by": "user",
+      "text": "but the status is \"now: park\" ?"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T14:00:17.973Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes, the label is wrong for this row: the work is done, the word 'parked' describes the agent.\n\n- Parked means the agent de-countdown is paused. It says nothing about the fix.\n- The row should read 'done' (landed). I asked the lead to change it now.\n- The new labels (T-124, T-125) will stop this confusion for every row.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T14:00:38.484Z",
+      "by": "user",
+      "text": "Lead, investigate this, could we harden them ? how ?",
+      "forLead": true
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T14:00:40.983Z",
+      "by": "lead",
+      "text": "**Fixed: the countdown row now says \"landed\".** The work is finished and on main; it goes into the next best build (v8), where it gets a short phone check that it's no worse.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T14:00:53.133Z",
+      "by": "mgmt-desk-2",
+      "text": "The lead has your question about hardening the labels; it needs the lead's decision.\n\n- What I already sent them: the 8 parked rows sorted by real state, 7 Progress/Status mismatches (T-124), and a 3-label proposal.\n- Hardening idea for the lead: an automatic warning when a row's label and its Progress state disagree.\n\nWhat you need to do: nothing; the lead answers here."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T14:00:59.475Z",
+      "by": "lead",
+      "text": "**Yes. The cause: each row is typed by its agent, and nothing updates it when work lands. The fix makes the tools keep rows right on their own.**\n\nHow:\n1. **Auto-update on landing:** when I land a change, a tool sets that item's row to the right label from the project history. No agent needs to remember.\n2. **Disagreement check every minute:** if a row and the progress page disagree, the row turns red until it's corrected.\n3. **Wrong labels refused:** an agent can't set \"parked\" or \"researching\" on work that already landed. The tool says which label to use instead.\n\n- A tools helper (the status-board fixer) builds all three, with tests, in the same change as T-124. I'll post here when it's live.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T14:01:22.103Z",
+      "by": "user",
+      "text": "You could think about the long-term for manage them. let's investigate all parked progress."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-04T14:01:42.480Z",
+      "by": "mgmt-desk-2",
+      "text": "The investigation of all parked rows is done, and the lead's long-term plan is in #13.\n\n- All 8 parked rows, with their real state: my table in #4. 3 are finished, 3 unfinished, 2 not fixes.\n- Long-term plan (lead, #13): rows update themselves on landing, a red warning when a row and Progress disagree, wrong labels refused.\n- One gap I asked the lead about: whether 'parked' is also split into 'unfinished, paused' and 'standing by'.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 16,
+      "at": "2026-10-04T14:02:26.602Z",
+      "by": "lead",
+      "text": "**I checked all 8 parked items. Most are fine, but one was forgotten. Long term: every pause must name what restarts it, and the tools flag it when that happens.**\n\n| item | real state | restarts when |\n|---|---|---|\n| end-of-page fade, card reveal re-layout, countdown repaint | done (1 waits for the next build) | the next best build |\n| menu-colour fix (nav-hit-cache) | unfinished, its check failed | after 17:20Z (usage) |\n| card blur curve | unfinished, low priority | after the top-3 fixes |\n| people-word lag | research done, waiting on **my** decision | I decide after the hero toolbar fix (same cause) |\n| faster tests (helper) | **forgotten**: its blocker was fixed at 11:20Z | after 17:20Z (usage) |\n| planning helper | standing by | when work comes in |\n\nThe fix (tools helper, with tests, same change as T-124):\n1. **A reason to restart is required:** an agent can only pause an item if it names what restarts it (a tool fix, a landing, a time, a decision).\n2. **Automatic alert:** when that happens, the item turns red (\"ready to resume\") and I'm told once.\n3. **Review flag:** anything paused over 4 h with no restart reason is flagged for review.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 17,
+      "at": "2026-10-04T16:07:26.250Z",
+      "by": "mgmt-desk-2",
+      "text": "The new row labels are live on the Status and Progress pages. Reload them.\n\n- Every row now shows one plain label read from the Progress page, for example \"in best build (v7)\", \"done, waits for build v8\", \"closed, no fix\" or \"dropped\".\n- \"Finished (nothing to land)\" is gone. A row that disagrees with Progress shows a red \"does not match\".\n- A parked row says why it waits and what restarts it, or shows a red \"needs review\".\n- Both pages have one legend that explains each label.\n- Checked on the live page just now: no red mismatch and no \"needs review\" on the rows we talked about.\n\nWhat you need to do: reload the pages and tell me if any row still reads wrong."
+    }
+  ],
+  "reads": {
+    "user": 17,
+    "mgmt-desk-2": 17,
+    "lead": 16
+  },
+  "history": [
+    {
+      "at": "2026-10-04T13:55:44.593Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    },
+    {
+      "at": "2026-10-04T13:57:53.839Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User: 'parked' ambiguous (done vs paused). Of 8 parked rows: 3 finished, 3 unfinished, 2 not fixes. Propose 3 labels: 'done, agent paused' / 'unfinished, paused' / 'standing by'; join with T-124 ts-board work. people-avatars note stale."
+    },
+    {
+      "at": "2026-10-04T14:00:18.155Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User #8: countdown-faces row says parked though work is landed. Please set the row to done/landed now (de-countdown parked) and keep the new-labels work (T-124/T-125)."
+    },
+    {
+      "at": "2026-10-04T14:00:53.265Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User #10 addressed to lead: investigate and HARDEN status/progress labels (parked vs done, T-124 7 mismatches, I-145 stale rows). Needs your plan: labels + mismatch lint + row freshness. Answer in T-125."
+    },
+    {
+      "at": "2026-10-04T14:01:42.569Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User #14 asks long-term parked mgmt. Your #13 covers landed work; does the status-board fixer also split 'parked' (unfinished paused / standing by / agent-paused-done)? Tell user in T-125."
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-2": "2026-10-04T16:07:26.250Z",
+    "lead": "2026-10-04T14:02:26.602Z"
+  },
+  "histSeen": {
+    "lead": 5
+  }
+}

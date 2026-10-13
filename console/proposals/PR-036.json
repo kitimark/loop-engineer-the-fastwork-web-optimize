@@ -1,0 +1,177 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-036",
+  "by": "fix-join-fade",
+  "title": "Join waitlist button: clean edges and a kept gap while it fades out at the end of the page",
+  "area": "end",
+  "topic": "join-fade",
+  "thread": "T-242",
+  "problem": "Three bugs of the original site, all while the Join waitlist button fades out at the end of the page:\n- The original page, v14 and today's best build g0.0c all have them.\n- Edges: the button blurs while it fades. In Safari the blur shows as a dark square block next to the pill's left end, over the language button, with straight top and bottom edges. Chrome shows only a thin sliver in the corners.\n- Gap: the space before the button is removed at once (about 0.05 s into the menu's 0.68 s opening), while the button stays visible for about 0.44 s more. So the language button touches the fading button.\n- Safari only: the button's side padding is supposed to shrink over 0.68 s, but Safari skips that animation, so the pill snaps narrower at once and the language button jumps about 32 px to the right.",
+  "idea": "Three small style rules, only for this fade:\n- Cut the blurred button to its own pill shape while the menu moves, so nothing shows outside its rounded edge.\n- Keep the gap until the button has faded out, then close it with the button's last bit of width. On the way back the gap opens first, before the button fades back in.\n- Let Safari run the padding animation too: name the left and right padding instead of the combined 'inline' name, which Safari does not animate.\n- Chrome already did exactly this.\nWhat you need to do: on the phone, open A and B, scroll to the end so the menu opens, and watch the Join waitlist button and the EN button as it fades. Then pick one.",
+  "looksSame": "Everything outside the Join button and the gap is unchanged:\n- Above the end of the page, the nav is pixel-identical (Chrome, 20 scroll positions each at phone and desktop width).\n- The open menu, the closed state and the button at rest look the same as today.\n- Reduced motion (the setting that turns animations off) keeps today's behaviour.",
+  "risk": "Low: three style rules on one button and the gap before it; no script change, no new layers.\n- Safari's square block: the exact Safari code path is not pinned down yet (OBSERVED in the iOS Simulator only); the fix does not depend on it.\n- Safari's skipped padding animation is explained by WebKit's source code (the engine that runs Safari): it does not animate the combined 'inline' padding name.",
+  "visualDiff": [
+    "During the fade only: no dark square next to the pill in Safari; its edge is the rounded pill shape.",
+    "The gap between EN and the button stays (4 px on phones, 8 px wider) until the button is gone, then closes.",
+    "Safari: the pill keeps its side padding and shrinks smoothly, as in Chrome, so EN slides instead of jumping."
+  ],
+  "gain": [
+    {
+      "what": "Gap during the fade (phone)",
+      "before": "0 px from 0.05 s",
+      "after": "4 px until faded",
+      "tag": "OBSERVED",
+      "how": "Chrome 430 wide and the iOS Simulator, menu opening stopped at 7 moments of the button's fade.\n- 8 px instead of 0 at 768 and 1280 wide.",
+      "better": "better"
+    },
+    {
+      "what": "Dark pixels outside the pill (Safari)",
+      "before": "1645 px",
+      "after": "0",
+      "tag": "OBSERVED",
+      "how": "iOS Simulator (iPhone 15 Pro Max, iOS 26.5), fade stopped while the button is still fully visible and blurred.\n- Counted against a shot of the same moment with the button hidden.",
+      "better": "better"
+    },
+    {
+      "what": "Corner pixels outside the curve (Chrome, phone)",
+      "before": "37-59 per moment",
+      "after": "0",
+      "tag": "OBSERVED",
+      "how": "Chrome 430 wide, the same stops.",
+      "better": "better"
+    },
+    {
+      "what": "Rest of the page changed",
+      "before": "-",
+      "after": "none beyond test noise",
+      "tag": "OBSERVED",
+      "how": "Chrome, 50 moments of the menu opening and closing, 430 to 1280 wide, plus 20 scroll positions.\n- Only the button and the gap differ.\n- The rest differs by at most 4 colour levels, the same as the fix compared with itself.",
+      "better": "same"
+    }
+  ],
+  "live": {
+    "patch": "fixes/join-fade-g00c/patch.diff",
+    "ref": "HEAD",
+    "blob": "b9f31f3686d8701a5dcb262c5815355ee5e961dd",
+    "base": "site-pretty",
+    "files": [
+      "_app/immutable/assets/2.gBuqKVzi.css",
+      "_app/immutable/nodes/2.DyWL8TcE.js"
+    ],
+    "a": {
+      "patch": "fixes/platform-corners-g00b/patch.diff",
+      "ref": "HEAD",
+      "blob": "940de7571f6f377fcdddcb6e35beead3e5312867",
+      "base": "site-pretty",
+      "files": [
+        "_app/immutable/assets/2.gBuqKVzi.css",
+        "_app/immutable/nodes/2.DyWL8TcE.js"
+      ]
+    }
+  },
+  "compare": {
+    "a": {
+      "label": "g0.0c, today's best build (fade as today)"
+    },
+    "b": {
+      "label": "g0.0c + the Join fade fix"
+    },
+    "view": "side",
+    "shots": [
+      {
+        "caption": "Safari (Simulator), fade starting: today a dark block over EN, gap lost; fix: clean pill edge, gap kept",
+        "a": "r1-a-1.webp",
+        "aSize": [
+          600,
+          192
+        ],
+        "b": "r1-b-1.webp",
+        "bSize": [
+          600,
+          192
+        ]
+      },
+      {
+        "caption": "Safari, full blur: today a dark square over EN, narrow pill; fix: rounded edge, 4 px gap, full width",
+        "a": "r1-a-2.webp",
+        "aSize": [
+          600,
+          192
+        ],
+        "b": "r1-b-2.webp",
+        "bSize": [
+          600,
+          192
+        ]
+      },
+      {
+        "caption": "Safari, button half faded: today EN touches it; fix: the gap stays until it is gone",
+        "a": "r1-a-3.webp",
+        "aSize": [
+          600,
+          192
+        ],
+        "b": "r1-b-3.webp",
+        "bSize": [
+          600,
+          192
+        ]
+      },
+      {
+        "caption": "Safari, the fade running 50x slowed (not paused): the same picture in motion",
+        "a": "r1-a-4.webp",
+        "aSize": [
+          600,
+          192
+        ],
+        "b": "r1-b-4.webp",
+        "bSize": [
+          600,
+          192
+        ]
+      }
+    ]
+  },
+  "state": "accepted",
+  "rev": 1,
+  "decision": {
+    "value": "accepted",
+    "at": "2026-10-08T03:02:03.871Z",
+    "who": "user",
+    "rev": 1
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "at": "2026-10-08T03:02:03.871Z",
+      "who": "user",
+      "rev": 1
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-07T20:11:28.472Z",
+      "by": "fix-join-fade",
+      "note": "first version"
+    }
+  ],
+  "createdAt": "2026-10-07T20:11:28.472Z",
+  "updatedAt": "2026-10-08T03:02:03.871Z",
+  "proposedAt": "2026-10-07T20:11:28.472Z",
+  "history": [
+    {
+      "at": "2026-10-07T20:11:28.472Z",
+      "who": "fix-join-fade",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-08T03:02:03.871Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 1
+    }
+  ]
+}

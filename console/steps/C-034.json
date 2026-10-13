@@ -1,0 +1,57 @@
+{
+  "id": "C-034",
+  "by": "iphone-runner",
+  "kind": "action",
+  "title": "iPhone: close the extra Safari tabs",
+  "instructions": "In Safari on the iPhone, close all tabs except one (any one is fine), leave Safari open on that tab, then press Done. The phone test can't pick a page while several tabs are open.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-03T15:48:44.380Z",
+        "done": "2026-10-03T15:49:39.458Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-03T15:48:22.505Z",
+  "queuedAt": "2026-10-03T15:48:22.505Z",
+  "updatedAt": "2026-10-03T15:49:39.458Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-03T15:48:22.505Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-03T15:48:44.380Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-03T15:49:39.458Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "startedAt": "2026-10-03T15:48:44.380Z",
+  "result": {
+    "value": "done",
+    "notes": "I already go back to tab we was test before the \"192.168.0.56:55926\" tab",
+    "at": "2026-10-03T15:49:39.458Z"
+  }
+}

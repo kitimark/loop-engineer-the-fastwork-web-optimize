@@ -1,0 +1,60 @@
+{
+  "id": "T-014",
+  "title": "Fixes progress catch up.",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-02T07:02:58.622Z",
+  "updatedAt": "2026-10-03T00:15:26.564Z",
+  "rev": 13,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-02T07:02:58.622Z",
+      "by": "user",
+      "text": "Catch up: what's about fixed progress ? How we can improve ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-02T07:04:07.811Z",
+      "by": "lead",
+      "text": "Catch-up (07:1xZ), honest version.\n\nWHAT IS IN TODAY'S BEST BUILD\n- Wave 1: nine small fixes combined (scroll handlers, idle countdown work, animations, scroll engine). Scripted scroll on the iPhone: frames over 50 ms 5 -> 3 per run, over 34 ms 16 -> 9, scroll 52.8 -> 57.1 fps (OBSERVED, 3 runs each).\n- Plus step 1 of the platform-section style fix (RB).\n- But your finger test said \"laggy, the same\", at the hero and the page end. So far the gains are measurable, not felt.\n\nIN FLIGHT NOW\n1. Mid-page size write (y about 2990, fwreskip): review accepted; the fling test on the iPhone ran just now, result pending. Then landing (your questions (i)/(ii) in T-005 #19 are still open).\n2. Hero accent word (PR-001): five ways to draw it are being built; you get the measured winner.\n3. Platform section (PR-002): rev 2 answering your note (same animation? undetectable?).\n4. Hero avatar carousel: cause found; candidate st6 removes the page re-layout in 35 of 36 slides (Simulator). Waits for a timing test.\n\nREADY BUT WAITING ON TIMING TESTS (on hold since your 02:27 decision, except PR-001)\ncountdown repaint (cdwc), touch listeners once (f3), card reveal without re-layout (re-keep-op), card blur easing (blur-cubic), carousel st6.\n\nWHY IT FEELS SLOW, AND HOW WE CAN IMPROVE\n- Biggest lever: five candidates are finished and only need a phone test. Proposal: one phone session that stacks them on today's best build and compares it with today's build: scripted runs, then one blind finger swipe by you. About 45 min of phone time plus 5 min of yours. If it feels better, we land the stack; if not, we know which parts don't matter.\n- Fewer review rounds: the platform fix took 4 reviews. From now on, at most 2 review rounds per fix before it comes to you.\n- One phone, one queue: I keep functional checks on the Simulator and pack phone tests into blocks. Recording on the Mac now competes with Simulator jobs; I am checking whether that hurt this test's recordings.\n- Usage: about 25 % of the plan in this window (estimate), so there is room.\n\nYour call: reply \"stack test\" to lift the timing hold for that one stacked phone session (it goes after the current fling test and the PR-001 blocks), or \"keep\" to keep the hold.",
+      "ask": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-02T07:07:49.932Z",
+      "by": "user",
+      "text": "do slack test then PR-001 is the next queue."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-02T07:08:19.316Z",
+      "by": "lead",
+      "text": "Got it. I read 'slack test' as the stack test; tell me if you meant something else. Phone order is now:\n1) finish the fling test already on the phone (4 runs to redo, plus the blank-card check),\n2) the stack test: the five ready fixes stacked on today's best build vs today's best build, scripted runs on the iPhone, then one blind finger swipe for you in the console,\n3) PR-001's two blocks.\nThe timing hold is lifted for the stack test only. An integrator builds the stack now; you'll get a console step when the phone part needs you."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-02T07:16:51.421Z",
+      "by": "lead",
+      "text": "Correction to my catch-up (#2): 3 of the 5 'waiting' fixes are already inside today's best build (countdown repaint, card reveal, touch listeners once); they were stacked in earlier, just never timed alone. So the stack test compares today's best build with today's best + the 2 fixes not yet in it (card blur easing and the carousel fix st6). Same plan otherwise: scripted runs on the iPhone, then a blind finger swipe for you."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-02T08:36:03.479Z",
+      "by": "lead",
+      "text": "Thanks for the swipe (C-019). Unblinded: page 1 was the new stack (today's best build + 2 more fixes); page 2 was today's best build. So your pick agrees with the phone measurements: fewer long frames while the page rests at the top.\n\nCan it be improved? Yes. What's lined up, in order:\n1. One frame got worse in the stack: when the \"people\" section scrolls into view, its longest frame grew from about 50 ms to about 70 ms (seen in all 8 phone runs; cause not known yet). We're testing the stack with each of the two new fixes left out to find which one causes it, then fix or drop that one.\n2. The style-recalculation fix you accepted (PR-002) saves work on many frames in the middle of the page; next is its check on the real iPhone, then it joins the stack.\n3. The fling fix around the same \"people\" section (fwreskip) is being finished and gets its phone test after PR-001.\n4. PR-001 (the hand-drawn word): its phone rounds start now, then you choose the option.\nWhen 1-3 are in, I'll send you another blind swipe pair of the new stack against this one, so you can judge whether the lag you still feel is gone."
+    }
+  ],
+  "reads": {
+    "user": 6,
+    "lead": 6
+  },
+  "history": [
+    {
+      "at": "2026-10-03T00:15:26.564Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

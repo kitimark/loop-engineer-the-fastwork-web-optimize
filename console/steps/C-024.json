@@ -1,0 +1,46 @@
+{
+  "id": "C-024",
+  "by": "lead",
+  "kind": "choice",
+  "title": "Keep the Mac awake while the agents work?",
+  "instructions": "The Mac went into idle sleep three times today, for 15 minutes each (12:27, 12:55, 13:12Z), which pauses every agent and could spoil a measurement. I can run macOS's built-in 'caffeinate -i': it only stops the Mac's idle sleep (the screen can still turn off), changes no settings, and ends on its own after 4 hours or when I stop it. Recommended: awake for 4 h.",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "Keep awake 4 h (recommended)",
+      "Keep awake only during measurements",
+      "Let it sleep"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-02T13:42:35.721Z",
+  "queuedAt": "2026-10-02T13:42:35.721Z",
+  "updatedAt": "2026-10-02T14:54:41.607Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-02T13:42:35.721Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-02T14:54:29.216Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-02T14:54:41.607Z",
+      "who": "user",
+      "action": "answer",
+      "value": "Keep awake only during measurements"
+    }
+  ],
+  "startedAt": "2026-10-02T14:54:29.216Z",
+  "result": {
+    "value": "Keep awake only during measurements",
+    "at": "2026-10-02T14:54:41.607Z"
+  }
+}

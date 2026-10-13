@@ -1,0 +1,57 @@
+{
+  "id": "C-138",
+  "by": "lead",
+  "kind": "action",
+  "title": "iPhone: reconnect to the same Wi-Fi as the Mac",
+  "instructions": "The iPhone reaches the internet but not this Mac, so the phone test cannot load its pages. On the iPhone open Settings > Wi-Fi: make sure Wi-Fi is on and joined to the same network as the Mac (turn any VPN off). Then press Done.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-09T09:53:43.184Z",
+        "done": "2026-10-09T09:53:50.062Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-09T09:50:27.049Z",
+  "queuedAt": "2026-10-09T09:50:27.049Z",
+  "updatedAt": "2026-10-09T09:53:50.062Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-09T09:50:27.049Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-09T09:53:43.184Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-09T09:53:50.062Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 97,
+  "startedAt": "2026-10-09T09:53:43.184Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-09T09:53:50.062Z"
+  }
+}

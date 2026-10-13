@@ -1,0 +1,113 @@
+{
+  "id": "T-070",
+  "title": "I saw a lot of \"waiting for a user reply in a console thread or a proposal decision\"",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T04:45:49.672Z",
+  "updatedAt": "2026-10-04T05:04:56.859Z",
+  "rev": 31,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T04:45:49.672Z",
+      "by": "user",
+      "text": "I saw a lot of \"waiting for a user reply in a console thread or a proposal decision\"\n\nbut i didn't see any task for me to decide at this time. i remember you ask toolsmith to improve this. \n\nwhat's about the progress ?",
+      "forLead": true
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T04:46:01.321Z",
+      "by": "lead",
+      "text": "You're right: none of those lines is a request for you. They only mean that agent is listening for messages. The fix is I-108. Its tools agent finished it and is committing it right now (the full test run started at 04:43Z). I'll land it in the next few minutes and restart the console. After that, a listening agent shows as 'listening for messages', and 'waiting for you' appears only when a step or proposal truly needs your answer. I'll reply here once it's live."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T04:46:29.867Z",
+      "by": "mgmt-ops-10",
+      "text": "You're right: **nothing is waiting for you.** That line is wrong. It's a display bug (incident I-108), and the fix is in progress.\n\n**What the line really means:** an agent is listening for your messages so it can answer quickly. That's normal background listening, not a question for you. Anything that really needs you shows up under \"Your steps\". Right now there is nothing there.\n\n**Progress on the fix** (toolsmith ts-i108):\n- **Part 1 is written and tested.** A plain listener no longer shows as \"waiting for a user reply\". A row says \"waiting on you\" only when there's a real step or question for you. Each owner gets one row. It's running its final test pass right now; then the lead lands it, about 10-20 min from now.\n- **Part 2 is designed.** It clears out-of-date rows and attaches live queue info (phone/Chrome place) to the right row. It comes after part 1.\n\nI'll post here when part 1 is live, so you can check the board."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T04:46:36.952Z",
+      "by": "user",
+      "text": "do this as highest priority."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T04:46:55.016Z",
+      "by": "mgmt-ops-10",
+      "text": "Got it. I've passed 'highest priority' to the lead, who sets the order. Part 1 is in its final test now; the lead lands it as soon as that passes, and part 2 goes first after it. I'll post here when part 1 is live."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T04:47:41.648Z",
+      "by": "user",
+      "text": "Can we do workaround, remove outdated these status for now. it make me confuse.",
+      "forLead": true
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T04:48:22.331Z",
+      "by": "mgmt-ops-10",
+      "text": "Yes. Two quick steps, both with the lead now: (1) the 7 'waiting for a user reply' lines come from agents listening; the fix for exactly those lines is in its last test and gets landed first, in minutes. (2) Meanwhile the lead can hide the 7 old rows that have sat paused for 1-2 days (count checks, the old countdown and card-reveal experiments, the claims audit, the Simulator tool), so the board shows only live work. I'll confirm here when the board is clean."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T04:59:22.277Z",
+      "by": "mgmt-ops-10",
+      "text": "Part 1 is live (console restarted): the false 'waiting for a user reply' lines are gone. An agent that is only listening now shows 'listening for console messages', which needs nothing from you. Anything for you still appears only under 'Your steps'. One leftover is the wording of the hero agent's own note; I've asked it to remove that sentence. Next is part 2: clearing out-of-date rows, the Status and Progress pages linked both ways, and the remaining stale-wait cleanup. Please tell me here if you still see a row that looks like it waits on you."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T04:59:45.910Z",
+      "by": "mgmt-ops-10",
+      "text": "Correction to part 2's list (I mixed in another item): part 2 (a) marks any row that may be out of date (its fix is already landed, the question it waits on is already answered, or it hasn't been updated for 45 min); (b) counts waiting time from the last change, not from when the row was created; (c) stops waits from showing as 'unknown'. The Status and Progress links are a separate item (I-104)."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T05:04:34.401Z",
+      "by": "lead",
+      "text": "Done. I took 7 outdated rows off the board: count-checks, claims-audit and i063-sim (finished), cdwc (replaced by the countdown work), and re-keep-op, blur-cubic and countdown-faces (off for now; they can come back after the top-3 fixes). Nothing was deleted: they're under 'finished' and come back with --all. The board now shows only live work: 6 working, 5 waiting, none parked. The 'waiting for a user reply' lines are gone too (part 1 of the fix). Part 2 (flagging rows that go stale by themselves) is next and has top priority."
+    }
+  ],
+  "reads": {
+    "user": 10,
+    "mgmt-ops-10": 9,
+    "lead": 10
+  },
+  "history": [
+    {
+      "at": "2026-10-04T04:45:49.672Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T04:46:54.940Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User #4: make I-108 (status board false 'waiting for a user reply' + stale rows) the highest priority. Priority call: land ts-i108 part 1 the moment its hook npm test passes (running in the shared lane now), then part 2 first in line."
+    },
+    {
+      "at": "2026-10-04T04:48:22.265Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User #6: wants a workaround now: remove outdated statuses. 7 'user reply' lines are listener waits (fixed by I-108 part 1). Stale rows hideable now: count-checks, cdwc, re-keep-op, blur-cubic, claims-audit, i063-sim (parked 29-57 h), countdown-faces (27 h). Lead: set done/dropped?"
+    },
+    {
+      "at": "2026-10-04T05:04:56.859Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T04:59:45.910Z",
+    "lead": "2026-10-04T05:04:34.401Z"
+  },
+  "histSeen": {
+    "lead": 3
+  }
+}

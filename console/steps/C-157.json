@@ -1,0 +1,66 @@
+{
+  "id": "C-157",
+  "by": "lead",
+  "kind": "action",
+  "title": "Accept the Xcode licence in Terminal (one command, needs your Mac password)",
+  "instructions": "In Terminal, run: sudo xcodebuild -license accept. The Mac now uses Xcode for its compiler, and our tests can't compile until the licence is accepted; agents can't run sudo.",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "done",
+      "not now"
+    ]
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-13T05:09:28.409Z",
+        "done": "2026-10-13T05:09:32.251Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-13T05:03:16.157Z",
+  "queuedAt": "2026-10-13T05:03:16.157Z",
+  "updatedAt": "2026-10-13T05:09:32.746Z",
+  "rev": 4,
+  "history": [
+    {
+      "at": "2026-10-13T05:03:16.157Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-13T05:09:28.409Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-13T05:09:32.251Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-13T05:09:32.746Z",
+      "who": "user",
+      "action": "answer",
+      "value": "done"
+    }
+  ],
+  "queueSeq": 116,
+  "startedAt": "2026-10-13T05:09:28.409Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-13T05:09:32.746Z"
+  }
+}

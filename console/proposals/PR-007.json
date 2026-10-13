@@ -1,0 +1,318 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-007",
+  "by": "de-countdown",
+  "title": "Countdown: 3 faces per digit, and no re-rendering while nobody can see it",
+  "area": "whole",
+  "topic": "countdown-faces",
+  "thread": "T-024",
+  "problem": "The countdown clock re-renders its rolling digits on every animation frame, even when it can't be seen: the hero clock after it fades out or scrolls away, and the second clock in the morph panel, which sits at opacity 0 for most of the page. Each digit is 10 stacked faces. On the full page in Chrome, past the hero, the main thread was busy about 760-815 ms less per 6 s with the change below (n=1, Chrome at 6x CPU, a CPU profile, not a timing A/B). In the iOS Simulator the hidden clocks cause about 100 extra layouts and 100 extra paints per 4 s past the hero (n=1, Simulator, not the phone).",
+  "idea": "Follow apple.com's pattern (iPhone page, media-card gallery): animations play only while their scroll range is on screen, the page decides this from the scroll position, and only the cards next to the visible one are rendered. One difference: a countdown must show the current time, so on return it shows the frame an always-running clock shows, instead of continuing from where it stopped.",
+  "looksSame": "Checked with frozen frames in Chrome on the hero clock: the countdown's clock and frames are virtual and stepped identically in both versions, with frame times jittered by up to 1 ms like real ones and the 1-second tick falling mid-frame. 295 screenshots were compared byte for byte, plus the exact position of every visible face: rest, every phase of 6 kinds of roll at 60 Hz and 4 kinds at 120 Hz, and coming back after a fade-out, after scrolling away, after a tab switch and after two ticks while away. 0 of 295 differ; the baseline against itself also gives 0. The first frame after an instant jump back was read in 12 cases: 0 differ. Not shot: the panel clock, Safari/WebKit, a real 120 Hz screen.",
+  "risk": "This replaces the earlier countdown fix #1 (countdown-idle-raf) in the same code: #1 snaps a hidden clock, which shows a different digit when the clock comes back mid-roll. The panel call site is shared with the morph lazy-mount fix (#13); when both land, the panel uses the stricter visibility condition. With hidden frames cheaper, Chrome at 6x renders more frames, so total style recalcs and paints for the page rise 10-25 % (less per frame). At the faded-out hero, layouts are +7 % and paints +13 %, cause unknown (n=3). While the clock is visible, about 1 small layout and 2 face repaints per second are added (a face slot changes its digit once per roll). The saving ends when the countdown expires (2026-11-02 05:00 UTC). Safari was checked for counts in the Simulator only; a phone check is needed before landing. No timing gain is claimed.",
+  "visualDiff": [],
+  "gain": [],
+  "compare": {
+    "a": {
+      "label": "Today (baseline)"
+    },
+    "shots": []
+  },
+  "options": [
+    {
+      "name": "full",
+      "label": "3 faces + no re-rendering while unseen",
+      "idea": "Each digit keeps 3 face slots instead of 10 (the two that can be in view plus one spare). While the clock is faded out, scrolled away or in the hidden panel, its spring keeps counting in the background but nothing is re-rendered; in the frame the clock is shown again it displays the value the original computes for the same frames. The hidden clock's spring still runs on every animation frame (about as many frames as today); only the re-rendering is skipped.",
+      "looksSame": "Pixel-identical in Chrome in all 295 frozen-frame shots (142 rolls, 153 coming back) and in the first frame after 12 instant jumps back. The conditions: the hero clock, 60 and 120 Hz virtual frames. Not shot: the panel clock, Safari, real 120 Hz screens.",
+      "risk": "Touches the hero's fade-out code and the panel call site (shared with #13); replaces fix #1's version of the same code.",
+      "visualDiff": [
+        "Nothing visible in the shots: 0 of 295 frozen frames differ, at rest, mid-roll and on coming back, including the first frame after a jump."
+      ],
+      "gain": [
+        {
+          "what": "Face style writes while the clock is hidden (Chrome, 3 s)",
+          "before": "1580-2750",
+          "after": "0",
+          "tag": "OBSERVED",
+          "how": "probe.mjs counts, full page, n=3, CPU 6x, windows aligned to the ticks"
+        },
+        {
+          "what": "Countdown animation-frame time while hidden (Chrome, 3 s)",
+          "before": "438-644 ms",
+          "after": "18-44 ms",
+          "tag": "OBSERVED",
+          "how": "trace, n=3 medians, CPU 6x; rough ms, not a timing A/B"
+        },
+        {
+          "what": "Layouts / paints past the hero (iOS Simulator, 4 s)",
+          "before": "214 / 180",
+          "after": "107 / 82",
+          "tag": "OBSERVED",
+          "how": "sim-counts.mjs, Web Inspector Timeline record counts, n=1; Simulator, not the phone",
+          "needsPhone": true
+        },
+        {
+          "what": "Compositor layers for the hero clock",
+          "before": "80 face layers",
+          "after": "24 face layers",
+          "tag": "OBSERVED",
+          "how": "LayerTree count, Chrome"
+        },
+        {
+          "what": "Main-thread busy time past the hero (Chrome 6x, 6 s)",
+          "before": "4015 ms",
+          "after": "3251 ms",
+          "tag": "OBSERVED",
+          "how": "CPU profile, n=1, Chrome 6x, not a timing A/B"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "3 faces + no re-rendering while unseen"
+        },
+        "shots": [
+          {
+            "caption": "Hero clock mid-roll (ones wrap 0 to 9; frame 8 at 60 Hz; frozen frame): byte-identical",
+            "a": "r4-o1-a-1.webp",
+            "aSize": [
+              1152,
+              288
+            ],
+            "b": "r4-o1-b-1.webp",
+            "bSize": [
+              1152,
+              288
+            ]
+          },
+          {
+            "caption": "First frame after the hero fades back in (6 frames after a tick; mid-roll): byte-identical",
+            "a": "r4-o1-a-2.webp",
+            "aSize": [
+              1152,
+              288
+            ],
+            "b": "r4-o1-b-2.webp",
+            "bSize": [
+              1152,
+              288
+            ]
+          }
+        ]
+      },
+      "live": {
+        "patch": "fixes/countdown-faces/patch.diff",
+        "ref": "HEAD",
+        "blob": "221a60aa94cb37ff6d41e7f5c2c4587e58e2c9c4",
+        "base": "site-pretty",
+        "files": [
+          "_app/immutable/nodes/2.DyWL8TcE.js"
+        ]
+      }
+    },
+    {
+      "name": "pause-only",
+      "label": "No re-rendering while unseen, keep 10 faces",
+      "idea": "Only the hidden-clock part: the spring keeps counting in the background while the clock is unseen and nothing is re-rendered; each digit keeps its 10 faces. This is fix #1's idea with an exact return instead of a snap.",
+      "looksSame": "Same mechanism as 'full'; this variant itself was not built or shot.",
+      "risk": "No new layout or paint while visible, but the hero clock keeps its 80 face layers.",
+      "visualDiff": [
+        "Nothing visible expected (same mechanism as 'full'; not separately shot)."
+      ],
+      "gain": [
+        {
+          "what": "Hidden-clock work (Chrome and Simulator)",
+          "before": "as today",
+          "after": "about as 'full'",
+          "tag": "estimate",
+          "how": "the hidden-case savings come from skipping the re-render; the face count matters mainly while visible"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "No re-rendering while unseen, keep 10 faces"
+        },
+        "shots": [
+          {
+            "caption": "Shot with option full (same resume mechanism); this option was not built or shot itself",
+            "a": "r5-o2-a-1.webp",
+            "aSize": [
+              1152,
+              288
+            ],
+            "b": "r5-o2-b-1.webp",
+            "bSize": [
+              1152,
+              288
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "faces-only",
+      "label": "3 faces, always re-rendering",
+      "idea": "Only the 3 face slots; the clock keeps re-rendering while unseen, as today.",
+      "looksSame": "The slot code gives the same visible faces and offsets as the 10-face original (math check over 110k values: 0 mismatches); the rolls in the frozen-frame shots run through it.",
+      "risk": "The unseen clocks keep re-rendering, so the main hidden cost (and the Simulator layouts) stays.",
+      "visualDiff": [
+        "Nothing visible expected (same slot code as 'full'; not separately shot)."
+      ],
+      "gain": [
+        {
+          "what": "Elements styled per frame, isolated rolling clock (Chrome)",
+          "before": "9.8",
+          "after": "2.0",
+          "tag": "OBSERVED",
+          "how": "probe.mjs counts, isolated page, n=1"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "3 faces, always re-rendering"
+        },
+        "shots": [
+          {
+            "caption": "Visible roll shot with option full (same 3-face slot code); this option was not built itself",
+            "a": "r6-o3-a-1.webp",
+            "aSize": [
+              1152,
+              288
+            ],
+            "b": "r6-o3-b-1.webp",
+            "bSize": [
+              1152,
+              288
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "recommended": {
+    "option": "full",
+    "why": "It removes the hidden re-rendering (the bulk of the cost) and cuts the hero clock's face layers from 80 to 24, with 0 pixel differences in 295 frozen frames in Chrome. Safari still needs a phone check before landing."
+  },
+  "state": "accepted",
+  "rev": 6,
+  "decision": {
+    "value": "accepted",
+    "at": "2026-10-02T22:08:59.401Z",
+    "who": "user",
+    "rev": 6,
+    "option": "full"
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "at": "2026-10-02T22:08:59.401Z",
+      "who": "user",
+      "rev": 6,
+      "option": "full"
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-02T20:25:17.003Z",
+      "by": "de-countdown",
+      "note": "first version"
+    },
+    {
+      "rev": 2,
+      "at": "2026-10-02T21:55:18.583Z",
+      "by": "de-countdown",
+      "note": "rev 2 after review r1: the hidden clock keeps its spring running and only skips re-rendering (exact for any frame sequence; the replay was not exact under real jittered frame times); 295 frozen-frame shots incl. mid-frame ticks, 120 Hz, two ticks while away and the first frame after a jump: 0 differ"
+    },
+    {
+      "rev": 3,
+      "at": "2026-10-02T22:05:18.646Z",
+      "by": "de-countdown",
+      "note": "rev 3: reviewer r2 wording: frame-count rise and heroExit +7/+13 % in the risk; the hidden spring still runs every frame (option full); 'computes for the same frames'"
+    },
+    {
+      "rev": 4,
+      "at": "2026-10-02T22:06:59.891Z",
+      "by": "de-countdown",
+      "note": "screenshot pairs from the frozen-frame run (byte-identical pairs)"
+    },
+    {
+      "rev": 5,
+      "at": "2026-10-02T22:07:09.055Z",
+      "by": "de-countdown",
+      "note": "pause-only: shot from the full build (not built separately)"
+    },
+    {
+      "rev": 6,
+      "at": "2026-10-02T22:07:09.124Z",
+      "by": "de-countdown",
+      "note": "faces-only: shot from the full build (same slot code while visible)"
+    }
+  ],
+  "createdAt": "2026-10-02T20:25:17.003Z",
+  "updatedAt": "2026-10-02T23:25:21.894Z",
+  "history": [
+    {
+      "at": "2026-10-02T20:25:17.003Z",
+      "who": "de-countdown",
+      "action": "drafted",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-02T21:55:18.583Z",
+      "who": "de-countdown",
+      "action": "revised",
+      "rev": 2,
+      "note": "rev 2 after review r1: the hidden clock keeps its spring running and only skips re-rendering (exact for any frame sequence; the replay was not exact under real jittered frame times); 295 frozen-frame shots incl. mid-frame ticks, 120 Hz, two ticks while away and the first frame after a jump: 0 differ"
+    },
+    {
+      "at": "2026-10-02T22:05:18.646Z",
+      "who": "de-countdown",
+      "action": "revised",
+      "rev": 3,
+      "note": "rev 3: reviewer r2 wording: frame-count rise and heroExit +7/+13 % in the risk; the hidden spring still runs every frame (option full); 'computes for the same frames'"
+    },
+    {
+      "at": "2026-10-02T22:06:59.891Z",
+      "who": "de-countdown",
+      "action": "revised",
+      "rev": 4,
+      "note": "screenshot pairs from the frozen-frame run (byte-identical pairs)"
+    },
+    {
+      "at": "2026-10-02T22:07:09.055Z",
+      "who": "de-countdown",
+      "action": "revised",
+      "rev": 5,
+      "note": "pause-only: shot from the full build (not built separately)"
+    },
+    {
+      "at": "2026-10-02T22:07:09.124Z",
+      "who": "de-countdown",
+      "action": "revised",
+      "rev": 6,
+      "note": "faces-only: shot from the full build (same slot code while visible)"
+    },
+    {
+      "at": "2026-10-02T22:07:09.195Z",
+      "who": "de-countdown",
+      "action": "published",
+      "rev": 6
+    },
+    {
+      "at": "2026-10-02T22:08:59.401Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 6,
+      "option": "full"
+    },
+    {
+      "at": "2026-10-02T23:25:21.894Z",
+      "who": "lead",
+      "action": "live",
+      "option": "full",
+      "note": "live B: fixes/countdown-faces/patch.diff @ 221a60aa94cb"
+    }
+  ],
+  "proposedAt": "2026-10-02T22:07:09.195Z"
+}

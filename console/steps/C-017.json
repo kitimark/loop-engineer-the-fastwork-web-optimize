@@ -1,0 +1,55 @@
+{
+  "id": "C-017",
+  "by": "lead",
+  "kind": "action",
+  "title": "fwreskip G1: let the Mac record the iPhone screen",
+  "instructions": "A macOS prompt may ask to let the terminal control QuickTime Player: click OK (or Don't Allow if you'd rather start each recording yourself). A QuickTime window showing the iPhone screen will open; leave it, and leave the Mac and the iPhone untouched for about 20 min. Press Done when you have answered the prompt.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-02T06:34:08.892Z",
+        "done": "2026-10-02T06:34:29.690Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-02T06:28:52.129Z",
+  "queuedAt": "2026-10-02T06:28:52.129Z",
+  "updatedAt": "2026-10-02T06:34:29.690Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-02T06:28:52.129Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-02T06:34:08.892Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-02T06:34:29.690Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    }
+  ],
+  "startedAt": "2026-10-02T06:34:08.892Z",
+  "result": {
+    "value": "done",
+    "notes": "can you use xcode to record the iphone screen ? \nhttps://developer.apple.com/documentation/xcuiautomation/recording-ui-automation-for-testing",
+    "at": "2026-10-02T06:34:29.690Z"
+  }
+}

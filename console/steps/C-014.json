@@ -1,0 +1,54 @@
+{
+  "id": "C-014",
+  "by": "lead",
+  "kind": "action",
+  "title": "Close Safari Web Inspector on your Mac (style-recalc block is recording)",
+  "instructions": "Please close any Safari Web Inspector or Develop-menu window attached to the iPhone, and keep it closed while blocks run. Press Done once it's closed. In the notes, roughly when it was open (e.g. since when).",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-01T18:41:47.880Z",
+        "done": "2026-10-01T18:41:48.686Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-01T18:39:16.455Z",
+  "queuedAt": "2026-10-01T18:39:16.455Z",
+  "updatedAt": "2026-10-01T18:41:48.686Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-01T18:39:16.455Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-01T18:41:47.880Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T18:41:48.686Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    }
+  ],
+  "startedAt": "2026-10-01T18:41:47.880Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-01T18:41:48.686Z"
+  }
+}

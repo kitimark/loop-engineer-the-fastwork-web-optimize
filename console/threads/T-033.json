@@ -1,0 +1,53 @@
+{
+  "id": "T-033",
+  "title": "I'd like to disconnect the iPhone, now",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-03T07:01:00.384Z",
+  "updatedAt": "2026-10-03T07:11:49.881Z",
+  "rev": 13,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T07:01:00.384Z",
+      "by": "user",
+      "text": "I'd like to disconnect the iPhone, now"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T07:01:47.203Z",
+      "by": "lead",
+      "text": "OK. One agent had just taken the phone to prepare a check; I've told it to stop and release it. I'll confirm here in a moment when nothing touches the phone, then you can unplug. No phone work will start until you say it's reconnected."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-03T07:02:06.773Z",
+      "by": "lead",
+      "text": "Done: the phone is released and nothing is running on it (Safari is on blank tabs). I now hold the phone's lock myself so no agent can start anything on it. You can disconnect it now. Tell me here when it is back and I'll hand it out again (next in line: the F3 warm-phone test, then the hero fade-out check)."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-03T07:09:30.287Z",
+      "by": "user",
+      "text": "iphone is connected, continue the work"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-03T07:09:52.243Z",
+      "by": "lead",
+      "text": "Thanks, I see the phone again (Safari on blank tabs). I've released my hold on it; next on it: the hero fade-out traced check (no action from you), then the F3 warm-phone test once its plan is signed."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "lead": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-03T07:11:49.881Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

@@ -1,0 +1,248 @@
+{
+  "id": "T-049",
+  "title": "Clean temp file",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-03T15:36:13.356Z",
+  "updatedAt": "2026-10-04T11:14:49.581Z",
+  "rev": 73,
+  "assignees": [
+    "ts-i095",
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T15:36:13.356Z",
+      "by": "user",
+      "text": "How much of our temp files can delete without any impact of file that use in this console ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T15:38:11.804Z",
+      "by": "lead",
+      "text": "Short answer: about 21 GB can go with no impact at all, and up to about 50 GB more with a small impact (old raw measurement files). Nothing the console uses is in any of it.\n\nWhat the console uses (keep): its own store in the project's .git folder (about 225 MB: threads, proposals, the pictures copied into each proposal, the archive). Try it builds its pages from the fixes' committed patch files into that same store. The frozen site copy (site/, site-pretty/) and the committed fixes/ and research/ folders also stay. I checked: no proposal or thread points to a file in the temp folders below.\n\nSafe to delete, no impact (about 21 GB):\n1. Throwaway Chrome profiles that agents created for test runs: about 13 GB in 157 folders. Chrome makes a new one every run. I would skip any that a running Chrome is using.\n2. A copy of the iPhone Simulator download (iOS 26.5): 7.9 GB in my own scratch folder. The Simulator is installed separately and shows \"Ready\", so this copy is very likely no longer needed.\n\nSmall impact (about 50 GB, overlaps with item 1, which lives inside these folders):\n3. Agents' scratch folders in the session temp folder: about 8 GB more (largest 2.0, 1.2 and 1.2 GB). These are raw probe data from finished topics; the results are written up in committed READMEs.\n4. Measurement output (out/) in finished agents' work folders: about 45 GB in total (largest 10, 5.5 and 4.4 GB). These are raw frames, screenshots and traces. The numbers are already in committed READMEs and results.json, but re-checking an old result would mean re-running it.\n\nMust keep: the work folders of agents that are still running (hero exit, best build, carousel, morph, the toolsmiths, ops), and the iPhone runner's folder, which holds the exact build copies for the queued phone tests P-081 and P-085.\n\nIf you want, reply \"delete 1 and 2\" (or \"1-3\"), and I'll do exactly that and nothing else. For item 4, I'd first post the list of folders for your OK.",
+      "ask": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-03T15:40:40.185Z",
+      "by": "user",
+      "text": "Delete 1 and 2, let's investigate how can remove some temp file during work. if it's not use. \n\nFyi: this experiment, we'd summarize and writing the article how we can improve following my assumption with loop engineer. we might have to keep the some evidence for reference."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-03T15:42:47.231Z",
+      "by": "lead",
+      "text": "I tried to delete 1 and 2 as you said, but Claude Code's own safety check blocked it twice ('irreversible local destruction'). It doesn't see your OK here in the console, only in the terminal. I won't work around it. Two ways forward, your choice:\n(a) You delete them yourself. The Chrome profiles are the folders named profile*, chrome-* or *user-data* inside each agent's out/ folder (.claude/worktrees/*/out/...) and in the session temp folder. The Simulator copy is the folder ios-platform in my scratch folder under /private/tmp/claude-501/.\n(b) You allow it in Claude Code's permission settings (a Bash rule), or tell me in the terminal chat, and I do it.\nAbout cleaning up during work: I've started a toolsmith on it. The plan: (1) every tool deletes its own throwaway Chrome profile when its run ends; (2) a keep-list of evidence for your article (results, key frames, the numbers behind each proposal), so nothing we may cite gets lost; (3) a report command that shows what is safe to delete and how much space it frees. It deletes nothing; you decide. It will post the design here."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-03T15:43:52.736Z",
+      "by": "user",
+      "text": "Approved, then investigate how to improve our tools can remove un-used files that is not impact our experiment evidence."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-03T15:46:50.274Z",
+      "by": "ts-i095",
+      "text": "Design (ts-i095), plain words:\n1. Cause: tools and probes make a fresh Chrome profile per run (75-155 MB each, mostly parts Chrome downloads for itself). Most delete it only when the run finishes cleanly. When a run is stopped (lock time limit, an error, Ctrl-C) the folder stays: one agent's out/ alone holds 137 of them, 10 GB.\n2. Fix: the shared Chrome launcher writes down each throwaway profile it creates (and leaves a small marker file in it) and deletes exactly that folder when Chrome closes, when the run fails, and when the run is stopped by a signal. It never deletes by name pattern, only what that same run created. The profiles that timing measurements reuse on purpose (chrome-verify-profile) are not touched, so measured numbers don't change. FW_KEEP_PROFILE=1 (or --keep-profile) keeps it for debugging. Every probe that uses the shared helper gets this for free.\n3. What can't be caught: a hard kill (the lock's SIGKILL, 3 s after the time limit). Those leftovers show up in the report.\n4. Evidence for your article: a small list per topic, fixes/<topic>/evidence.json (or research/<topic>/evidence.json), naming the out/ files to keep (results, key frames, traces behind each proposal and number) with one line why. The files stay out of git (Fastwork pictures never go in git); the list is in git. Cap 200 MB per topic.\n5. node tools/space.mjs report: read-only. Shows sizes by group: leftover throwaway profiles no Chrome is using, out/ folders of finished agents (branch already in main, or board row done/parked), scratch folders, must-keep evidence, and free disk space. --list <file> writes the paths for you to review. It deletes nothing.\n6. lock.mjs status and fix.mjs doctor print a WARNING when free space is under 10 GB."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-03T17:17:18.229Z",
+      "by": "ts-i095",
+      "text": "Done, waiting for the lead to land it. (1) Chrome's throwaway profiles now delete themselves when a run ends, errors out or is stopped normally. One gap remains: a run killed outright (kill -9, or Ctrl-C on a shared or short lock job) still leaves its profile behind. A separate lock fix will cover that. (2) To see what can go, run this read-only report (it never deletes anything): node tools/lock.mjs run chrome-measure --owner me --no-timing --max-seconds 600 -- node tools/space.mjs report --list out/space.tsv . It lists leftover profiles, research-probe profiles (listed separately), out/ folders of finished worktrees, scratch folders, and the evidence each topic must keep (evidence.json files: fixes/README.md 'Evidence keep-list'). (3) lock.mjs status and fix.mjs doctor warn when free space drops below 10 GB. You decide what to delete."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T03:30:10.426Z",
+      "by": "user",
+      "text": "What's about this progress ?"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T03:30:44.080Z",
+      "by": "mgmt-ops-10",
+      "text": "Where it stands:\nDone and in use since yesterday evening:\n- Chrome's throwaway profiles now delete themselves when a run ends, fails or is stopped normally. That was the main source of the clutter.\n- A read-only space report (tools/space.mjs) shows what can go and how much space it frees. It deletes nothing.\nStill open:\n- A run that is killed outright still leaves its profile behind. The planned fix for that hasn't been built yet.\n- No topic has written its evidence keep-list yet. That's the list of files to keep for your article.\n- The one-off deletion of items 1 and 2 needs your own OK in the terminal (Claude Code's safety check), and I can't tell from here whether it was done.\nOne warning: the Mac has about 12 GB free right now, close to the 10 GB alarm. I'm asking the lead to run the space report and send you its list.,"
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T03:35:38.373Z",
+      "by": "user",
+      "text": "Can you give me the command for delete ?"
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T03:36:28.839Z",
+      "by": "mgmt-ops-10",
+      "text": "Here are the commands. Run them yourself in Terminal; they delete only what is named.\nItem 2, the iPhone Simulator download copy (7.9 GB, in the lead's scratch folder, not used by anything):\nrm -rf '/private/tmp/claude-501/-Users-<user>-source-fastwork-com-web-optimize/<device id>/scratchpad/lead/ios-platform'\nItem 1, the leftover Chrome test profiles: wait until the lead posts the space report here (it is queued). That report writes out/space.tsv in the project folder. Then, from the project folder, run:\nawk -F'\\t' '$1 ~ /^profile-/ && $2 == \"leftover\" {print $5}' out/space.tsv | while IFS= read -r p; do rm -rf -- \"$p\"; done\nThis removes only the profiles the report marked leftover. It skips anything a running Chrome is using, anything a tool reuses on purpose, and anything marked as evidence. Experiment evidence, the committed files and the console are not touched."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T03:36:48.756Z",
+      "by": "mgmt-ops-10",
+      "text": "Correction to item 2: the console hid part of that folder name for privacy, so the rm line above won't work as shown. Use this instead. It finds the one folder (the lead's scratch ios-platform copy, 7.9 GB) and deletes only it:\nfind /private/tmp/claude-501 -maxdepth 5 -type d -path '*/scratchpad/lead/ios-platform' -prune -exec rm -rf {} +\nTo see what it would delete first, run the same line without the part from -exec on."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T03:38:02.207Z",
+      "by": "user",
+      "text": "It's quite hard to read can you adjust with this format ? \n\ndescription, explain\n\n```bash\nfind /private/tmp/claude-501 -maxdepth 5 -type d -path '*/scratchpad/lead/ios-platform' -prune -exec rm -rf {} +\n```"
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T03:38:19.171Z",
+      "by": "mgmt-ops-10",
+      "text": "Sure, here they are in that format.\n\n**1. Delete the iPhone Simulator download copy (7.9 GB)**\n\nThis is a spare copy of the iOS download in the lead's scratch folder. The Simulator is installed separately and nothing uses this copy. The command finds that one folder and deletes only it.\n\n```bash\nfind /private/tmp/claude-501 -maxdepth 5 -type d -path '*/scratchpad/lead/ios-platform' -prune -exec rm -rf {} +\n```\n\nTo check what it would delete first, run the same search without the delete part:\n\n```bash\nfind /private/tmp/claude-501 -maxdepth 5 -type d -path '*/scratchpad/lead/ios-platform' -prune\n```\n\n**2. Delete the leftover Chrome test profiles (wait for the lead's report first)**\n\nThe lead's space report is queued. It writes the list `out/space.tsv` in the project folder and will be posted here. Then run the command below from the project folder. It deletes only the profiles the report marked \"leftover\". It skips anything a running Chrome uses, anything a tool reuses on purpose, and anything kept as evidence.\n\n```bash\nawk -F'\\t' '$1 ~ /^profile-/ && $2 == \"leftover\" {print $5}' out/space.tsv | while IFS= read -r p; do rm -rf -- \"$p\"; done\n```\n\nTo see the list first, without deleting:\n\n```bash\nawk -F'\\t' '$1 ~ /^profile-/ && $2 == \"leftover\" {print $4, $5}' out/space.tsv\n```\n\nExperiment evidence, the committed files and the console's own data are not touched by either command."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-04T03:44:38.679Z",
+      "by": "lead",
+      "text": "Space report done (03:43Z, read-only, nothing deleted). Free now: 12.0 GB.\nWhat can go:\n1. Leftover Chrome test profiles: 276 folders, 20.4 GB. These are safe to delete: no Chrome uses them, and none is evidence. Ops' command in #11 (the awk line, run from the project folder) deletes exactly these 276 and nothing else. I checked that it matches only them.\n2. The 7.9 GB Simulator download copy (#12): also safe; the Simulator is installed separately and works without it.\nTogether that frees about 28 GB.\nNot yet: out/ folders of finished agents (52 folders, 18.2 GB). Wait until the helper finishes the keep-lists for your article, so evidence is protected; I'll post here when it is safe. Probe profiles (12 GB) stay for now too; their owners may reuse them.\nThe full list is in out/space.tsv in the project folder."
+    },
+    {
+      "n": 16,
+      "at": "2026-10-04T05:06:18.881Z",
+      "by": "lead",
+      "text": "Disk: 11 GB free now. These measurement-output folders belong to work that is finished and already on main, so nothing reads them any more. They are safe for you to delete (about 16 GB in total), from the project folder:\n- .claude/worktrees/agent-a49a278f1d0bd6803/out (5.5 GB, st6-rb2, landed 2 days ago)\n- .claude/worktrees/agent-a99b0551b3dccfb42/out (3.7 GB, platform-idle, landed)\n- .claude/worktrees/agent-afc7d9fff1fcc6154/out (2.6 GB, illusion test, closed)\n- .claude/worktrees/agent-a0966ab688224905d/out (2.3 GB, cd-strip, landed)\n- .claude/worktrees/agent-af756241c686d490e/out (2.0 GB, image-size, dropped)\nPlease don't delete the others yet: rest-script (10 GB) and nav-morph (4.5 GB) are still running their phone tests. I'll tell you here when those are done."
+    },
+    {
+      "n": 17,
+      "at": "2026-10-04T05:36:36.909Z",
+      "by": "lead",
+      "text": "One more safe to delete (about 1.5 GB): .claude/worktrees/agent-a65f148991747deb7/out/cd-roll-ca/chrome holds old throwaway Chrome profiles from cd-roll-ca's probes. They are not evidence, and the agent doesn't need them. From now on, a killed test job removes its own throwaway profiles (I-106, landed today)."
+    },
+    {
+      "n": 18,
+      "at": "2026-10-04T06:18:16.340Z",
+      "by": "lead",
+      "text": "Lead: disk is now down to about 10 GB free, about 1 GB less every 10 minutes while the tests run. Below about 5 GB, tests and the phone recorder start failing. The quickest win is the list in my earlier message (#16-#17, about 17 GB: five finished agents' out folders plus cd-roll-ca's old Chrome profiles). Nothing in that list is needed by any running agent. I've asked the agents to write less from now on."
+    },
+    {
+      "n": 19,
+      "at": "2026-10-04T06:24:35.592Z",
+      "by": "lead",
+      "text": "More you can delete (about 2.2 GB). The cd-roll-ca owner checked that nothing cited uses these. Disk is at 10 GB free.\nAll the paths are inside the project folder:\n1. .claude/worktrees/agent-a65f148991747deb7/out/cd-roll-ca/chrome/  (1.5 GB, old Chrome temp profiles from yesterday)\n2. .claude/worktrees/agent-a65f148991747deb7/out/cd-roll-ca/chrome-profile-pixels/  (157 MB)\n3. .claude/worktrees/agent-a65f148991747deb7/out/cd-roll-ca/pixels-2026-10-04T05-15-43-143Z/  (24 MB, a broken run that was replaced)\n4. In .claude/worktrees/agent-a65f148991747deb7/out/cd-roll-ca/simpx/, delete only these 9 folders and keep every .json file and the other folders (about 550 MB):\n   2026-10-03T05-38-01-209Z, 2026-10-03T05-50-33-557Z, 2026-10-03T06-36-24-336Z, 2026-10-03T06-47-53-243Z,\n   2026-10-03T07-10-10-961Z, 2026-10-03T10-33-01-524Z, 2026-10-03T10-54-38-590Z, 2026-10-04T03-26-27-409Z,\n   2026-10-04T03-42-38-135Z\nKeep everything else in that folder. This adds to the list in #18; the folders there are still the bigger win (about 17 GB)."
+    },
+    {
+      "n": 20,
+      "at": "2026-10-04T06:25:25.444Z",
+      "by": "user",
+      "text": "can you list all of need to ask me to delete by myself and command how to delete them with this pattern\n\n```bash\ncommand\n```"
+    },
+    {
+      "n": 21,
+      "at": "2026-10-04T06:27:46.413Z",
+      "by": "mgmt-ops-10",
+      "text": "Here is everything the lead has asked you to delete so far (#16, #17 and #19). I checked at 06:27Z: every item is still there, and the disk has 10 GB free. All of it is old test output that no running agent needs. Together it frees about 19 GB.\n\nPaste it into Terminal as is. It starts by going to the project folder, and every path is spelled out in full, so nothing else gets deleted.\n\n```bash\ncd ~/source/fastwork-com-web-optimize/.claude/worktrees\n\n# 1. Five finished agents' test output (about 16 GB, from #16)\nrm -rf agent-a49a278f1d0bd6803/out\nrm -rf agent-a99b0551b3dccfb42/out\nrm -rf agent-afc7d9fff1fcc6154/out\nrm -rf agent-a0966ab688224905d/out\nrm -rf agent-af756241c686d490e/out\n\n# 2. Countdown agent's old throwaway files (about 2.2 GB, from #17 and #19)\nrm -rf agent-a65f148991747deb7/out/cd-roll-ca/chrome\nrm -rf agent-a65f148991747deb7/out/cd-roll-ca/chrome-profile-pixels\nrm -rf agent-a65f148991747deb7/out/cd-roll-ca/pixels-2026-10-04T05-15-43-143Z\n\n# 3. Nine old picture folders in simpx (about 550 MB). Only these folders go; the .json files next to them stay.\ncd agent-a65f148991747deb7/out/cd-roll-ca/simpx\nrm -rf 2026-10-03T05-38-01-209Z 2026-10-03T05-50-33-557Z 2026-10-03T06-36-24-336Z\nrm -rf 2026-10-03T06-47-53-243Z 2026-10-03T07-10-10-961Z 2026-10-03T10-33-01-524Z\nrm -rf 2026-10-03T10-54-38-590Z 2026-10-04T03-26-27-409Z 2026-10-04T03-42-38-135Z\n\n# 4. Check the free space\ndf -h /\n```\n\nPlease don't delete anything else yet. The rest-script and menu-fix agents' folders are still in use by phone tests. The lead will post here when they are free."
+    },
+    {
+      "n": 22,
+      "at": "2026-10-04T06:35:00.755Z",
+      "by": "user",
+      "text": "Done. let's investigate this issue, plan to do long-term fix to harden this.",
+      "forLead": true
+    },
+    {
+      "n": 23,
+      "at": "2026-10-04T06:35:38.114Z",
+      "by": "mgmt-ops-10",
+      "text": "Thank you. The disk went from 10 GB to 28 GB free (06:35Z), so the tests are safe again. I've asked the lead to make the long-term fix a proper piece of work for a tools agent. The plan I proposed:\n(1) an automatic low-disk alarm, like the idle alarm, so the team hears about it at 15 GB, long before it gets dangerous;\n(2) a size report per agent, so the folders that grow fast stand out;\n(3) test runs that delete their own throwaway browser profiles;\n(4) a clean-up step when a fix lands, so finished work stops piling up and you don't have to delete by hand.\nThe lead decides and will post the plan here."
+    },
+    {
+      "n": 24,
+      "at": "2026-10-04T06:35:49.617Z",
+      "by": "lead",
+      "text": "Thanks for cleaning up; the disk is back to 26 GB free. The cause: every test run leaves files in the agents' work folders (temporary browser profiles, screenshot folders, copies of the site), and nothing watches the total. Long-term fix (incident I-124, a new tool agent starting now): 1) Prevent: tools delete their own temporary browser profiles every time, and keep full screenshots only when there's a difference to look at. 2) Watch: below 20 GB free I get an alert naming the biggest folders and which agent made them; below 8 GB no new timing measurement starts, so nothing runs on a full disk. 3) Report: one command lists what's safe to delete (not used as evidence, belongs to a finished agent) and gives you a ready-to-paste delete command. One question for you: today you delete everything yourself. May the tools delete their own throwaway files automatically (temporary browser profiles, screenshot folders not used as evidence, older than a day)? Evidence and anything cited is never touched. Reply yes or no; until you say yes, they only report.",
+      "ask": true
+    },
+    {
+      "n": 25,
+      "at": "2026-10-04T06:37:16.411Z",
+      "by": "user",
+      "text": "I didn't understand your question. explain more."
+    },
+    {
+      "n": 26,
+      "at": "2026-10-04T06:38:58.439Z",
+      "by": "mgmt-ops-10",
+      "text": "The lead's question, in simpler words:\n\nRight now, only you delete files. When the disk fills up, we send you a list and you run the commands, like you just did.\n\nThe lead is asking whether the tools may clean up their own scratch files automatically, so you don't have to. That would cover only:\n- temporary browser profiles, the throwaway copies of Chrome a test makes and never needs again;\n- screenshot folders from test runs that nobody uses as proof;\n- and only once they are more than a day old.\n\nNever touched: anything used as proof for a result (evidence), and any agent's work that is still running.\n\nYour options:\n- yes: the tools clean those files by themselves, and the disk stays healthy without you.\n- no: nothing changes. The tools only warn us and prepare a delete command for you to run, like today.\n\nJust reply yes or no here."
+    },
+    {
+      "n": 27,
+      "at": "2026-10-04T06:40:37.822Z",
+      "by": "user",
+      "text": "yes, clean by themselves. consider about the evidence for writing the medium.com blog post as well. we should keep that for loop engineering experimental."
+    },
+    {
+      "n": 28,
+      "at": "2026-10-04T06:42:04.404Z",
+      "by": "mgmt-ops-10",
+      "text": "Thank you, noted: yes, the tools may clean their own throwaway files. I've passed your second point to the lead: material for the blog post about this experiment counts as evidence too, so it is kept. That means the agents' logs, notes, results, screenshots and recordings that show how the work was done, not only the files cited in results. The lead will tell the tools agent (I-124) and confirm here what is kept."
+    },
+    {
+      "n": 29,
+      "at": "2026-10-04T06:45:02.377Z",
+      "by": "lead",
+      "text": "Thanks. Confirmed: the tools will clean up after themselves, and the blog material stays.\n\nDeleted automatically (only throwaway files):\n• Temporary browser profiles, as soon as a test ends\n• Screenshot folders that no write-up uses, after 1 day. A small preview of each is kept first, so the blog can still show it\n\nAlways kept (blog material):\n• Every write-up, note, result file and log\n• Phone test records and screen-recording numbers\n• Your console threads, the incident list and the findings board\n• Anything a write-up refers to\n\nYou'll get:\n• An alert when the disk drops below 20 GB free\n• A log of everything that was cleaned (what and how big), useful for the blog too\n\nThe tools agent (I-124) is building this now. I'll tell you here when it's done."
+    },
+    {
+      "n": 30,
+      "at": "2026-10-04T09:47:25.084Z",
+      "by": "user",
+      "text": "This issue was resolve yet ?"
+    },
+    {
+      "n": 31,
+      "at": "2026-10-04T09:51:34.066Z",
+      "by": "mgmt-ops-10",
+      "text": "Yes, it is fixed. The disk guard went live at 07:56 UTC today (I-124).\n- Free disk space now: about 44 GB (it was 10 GB when you raised this).\n- Throwaway files are cleaned automatically while the lead's watcher runs. That means old browser profiles, and screenshot folders that no write-up uses (a small preview of each is kept).\n- Blog material is always kept: write-ups, notes, results, logs, phone records, threads.\n- You get an alert thread if free space drops below 20 GB.\n- Below 8 GB, new timing tests refuse to start, so a full disk can't spoil a measurement.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 31,
+    "lead": 30,
+    "ts-i095": 7,
+    "mgmt-ops-10": 31
+  },
+  "history": [
+    {
+      "at": "2026-10-03T15:43:10.088Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "ts-i095"
+    },
+    {
+      "at": "2026-10-04T03:30:10.426Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T06:35:38.038Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User #22: deleted (disk 10 -> 28 GB free 06:35Z); wants investigation + long-term hardening. Proposal: incident + toolsmith: disk alarm (like idle.mjs, warn <15 GB), per-agent out/ budget report, auto-delete throwaway Chrome profiles, out/ cleanup step at landing."
+    },
+    {
+      "at": "2026-10-04T06:42:04.491Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User #27: YES to auto-delete of throwaway files (old Chrome profiles, unused shot dirs). Also keep evidence for a medium.com blog post on the loop-engineering experiment: protect logs, notes, results, shots, recordings. Pass to ts-i124 (I-124) and confirm in T-049."
+    },
+    {
+      "at": "2026-10-04T09:52:28.886Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T09:51:34.066Z",
+    "lead": "2026-10-04T11:14:49.581Z"
+  },
+  "histSeen": {
+    "lead": 5
+  }
+}

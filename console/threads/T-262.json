@@ -1,0 +1,47 @@
+{
+  "id": "T-262",
+  "title": "i'd like to use iphone.",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-09T07:41:44.518Z",
+  "updatedAt": "2026-10-09T08:51:07.279Z",
+  "rev": 10,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-09T07:41:44.518Z",
+      "by": "user",
+      "text": "i'd like to use iphone."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-09T07:42:09.590Z",
+      "by": "lead",
+      "text": "The iPhone is yours now: I reserved it for you for 30 min, so no agent test will start on it.\n- Nothing was running on it; the next robot-finger test (g0.0l) waits until you are done.\n- When you finish, reply \"done\" here and I release it; after 30 min it frees itself.\nWhat you need to do: use the iPhone; reply \"done\" when finished."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-09T08:48:37.707Z",
+      "by": "user",
+      "text": "done"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-09T08:50:57.487Z",
+      "by": "lead",
+      "text": "Released: the iPhone is free for the agents again.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "lead": 4
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-09T08:50:57.487Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

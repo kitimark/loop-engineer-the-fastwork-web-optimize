@@ -1,0 +1,133 @@
+{
+  "id": "T-247",
+  "title": "Make iphone hit real heat.",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-08T06:39:08.484Z",
+  "updatedAt": "2026-10-08T16:47:41.870Z",
+  "rev": 36,
+  "assignees": [
+    "fix-g0-box"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-08T06:39:08.484Z",
+      "by": "user",
+      "text": "Make iphone hit real heat.\nWhy you don't open the original of fastwork. it raise a lot of heat each per run."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-08T06:39:40.392Z",
+      "by": "lead",
+      "text": "Yes, good idea: the phone now warms up on the live fastwork.com page, which heats it much faster than our copy.\n- Why it was slow: the warm-up runs used our frozen copy of the site, which adds only about 0.35 °C per run. From 31 °C that is 20+ runs.\n- What changes: only the uncounted warm-up runs go to the live site. Every counted run and every temperature check stays on the frozen copy, so the result still compares the same two builds.\n- The first test try also stopped because Safari had 2 tabs open; fix-g0-box now closes extra tabs before each check.\n- Owner: fix-g0-box changes the test kit and restarts part 1 (no counted data was lost).\n\nWhat you need to do: nothing; leave the iPhone plugged in and don't use it."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-08T06:56:25.104Z",
+      "by": "user",
+      "text": "I think you could focus on do hard & fast scroll, especially, the end-of-page that take a lot of performance. \n\ndelegate to new agents for helpping them.",
+      "later": [
+        "fix-g0-box"
+      ]
+    },
+    {
+      "n": 4,
+      "at": "2026-10-08T06:57:18.786Z",
+      "by": "lead",
+      "text": "Yes: a new helper agent, fix-heat-fling, now builds a hard, fast fling program for heating, aimed mostly at the end of the page.\n- What it is: automated fast flings on the live fastwork.com page, about 90-120 s per run. Most of them open and close the end-of-page menu, the most costly part, plus a few full-page flings.\n- How it is used: fix-g0-box swaps it in for the warm-up runs at the next hold boundary, and also for re-heats between counted holds. The running test is not stopped.\n- What stays the same: only uncounted warm-ups change; every counted run and temperature check stays as signed.\n- Now: the phone reached Fair (warm) at 34.8 °C after 7 min of live-page scrolling, about 0.4-0.5 °C per minute.\n\nWhat you need to do: nothing; leave the iPhone alone and plugged in."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-08T06:58:32.862Z",
+      "by": "user",
+      "text": "i was do fast scroll on end-of-page. open/close multiple time. it raise the heat so fast.",
+      "later": [
+        "fix-g0-box"
+      ]
+    },
+    {
+      "n": 6,
+      "at": "2026-10-08T06:58:48.729Z",
+      "by": "lead",
+      "text": "Thanks, that matches the plan: the helper's fling program does exactly that, fast open/close flings at the end of the page, many times per run.\n- fix-heat-fling builds it now; fix-g0-box swaps it in at the next hold boundary, with the current live-page scrolling as the fallback.\n- Phone now: Fair (warm), 35.6 °C at 06:58Z, about 0.2 °C per minute with plain scrolling.\n- Please don't scroll the phone by hand while the test runs: the automated runs would collide with your touches.\n\nWhat you need to do: nothing; leave the iPhone alone and plugged in."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-08T07:00:26.986Z",
+      "by": "user",
+      "text": "actually. i was found the heat raise from original page that we was capture. we may no need to direct to fastwork.com. you can do some experimental for prove this. and you can tracing back your logs that you capture. \n\nthis is reason why you need to implement the heat probe. cause you was facing this issue before.",
+      "later": [
+        "fix-g0-box"
+      ]
+    },
+    {
+      "n": 8,
+      "at": "2026-10-08T07:01:19.479Z",
+      "by": "lead",
+      "text": "Agreed; we test it with data instead of assuming: the live site may not be needed.\n- Logs: a new helper, de-heat-trace, reads our past phone records and lists the heating rate (°C per minute) by method and page, by start temperature.\n- Heat probe: every warm-up run now logs one line with method, page, start and end °C and the rate.\n- Experiment: during the uncounted warm-up, fix-g0-box alternates end-of-page flings on our copy and on the live site, at least 3 each. It keeps the faster one, or our copy if they tie (no network, same page as the test).\n- fix-heat-fling makes its fling program fit our copy's end of page first.\n- Counted runs are untouched; this changes only how the phone gets warm.\n\nWhat you need to do: nothing; leave the iPhone alone and plugged in."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-08T07:06:58.523Z",
+      "by": "lead",
+      "text": "Our logs agree with you so far: our copy heated the phone at least as fast as the live site (observed in our data only; the sample is small).\n\n| Heat method | Page | Battery band | °C per minute |\n|---|---|---|---|\n| scripted scroll | our copy | below 34 °C | 0.53 (1 reading pair) |\n| scripted scroll | live site | below 34 °C | 0.44 |\n| scripted scroll | live site | 34-37 °C | 0.24 |\n| end-of-page gestures | our copy | 37-40 °C | 0.13 |\n| end-of-page gestures | our copy | above 40 °C | 0.03 (levels off near 41 °C) |\n\n- The live address opens a different page (/selling), so it was never the same page as the test anyway.\n- Decision: warm-ups now use our copy with the hard end-of-page flings; the live site runs only as the comparison in the heat experiment.\n- Watch item: heating slows sharply as the phone warms. If it stays at Fair after the 60-min warm-up, I decide next (report to you in this thread).\n\nWhat you need to do: nothing; leave the iPhone alone and plugged in."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-08T07:17:32.261Z",
+      "by": "user",
+      "text": "Note this probe, we will use them for reproduce for writing blog posts",
+      "later": [
+        "fix-g0-box"
+      ]
+    },
+    {
+      "n": 11,
+      "at": "2026-10-08T07:18:03.452Z",
+      "by": "lead",
+      "text": "Noted: the heat probe is saved as a project memory note (e9718b6d), so every agent keeps it reproducible for your blog posts.\n- What it records: one line per warm-up run with method (fling or scroll), page (our copy or live), start and end °C, seconds, °C per minute, and the phone's heat state before and after.\n- Files kept stable: the temperature reader, the fling program and the line format; the past-rate table from our logs is in the note too.\n- Rule for posts: rates stay marked as observed with sample size and temperature band, and no device or network details.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-08T10:42:14.482Z",
+      "by": "user",
+      "text": "I'd like to ask the thermal state can not reproduce this issue ? why we don't set the theral state to serious or critical to test them ?",
+      "later": [
+        "fix-g0-box"
+      ]
+    },
+    {
+      "n": 13,
+      "at": "2026-10-08T10:42:50.079Z",
+      "by": "lead",
+      "text": "We can, and for this test we will: the slow-spot test (P-166) now runs with the phone set to Serious by our tool, if the 2 spots still show that way.\n- Most earlier phone tests already used a tool-set Serious state (no manual Xcode step).\n- Real heat was used once, for the final build, because a set state might not slow the chips the way real heat does; that is still an open question.\n- Why switch now: the phone has cooled, and real heat cost about 40 min of warm-up plus a stop at Critical last time.\n- Check built in: a spot counts as reproduced only if the build is at least 6 ms slower there than the original under the set state; if not, that spot needs one real-heat test later.\n- Critical is not a test target: it is the top state where the phone slows itself down hard; we treat it as the ceiling, not a condition users scroll in.\n\nWhat you need to do: re-plug the iPhone (step C-120) and answer \"ready\" on the test step (C-119)."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-08T10:52:06.709Z",
+      "by": "lead",
+      "text": "The slow-spot phone test (P-166) is running now with the tool-set Serious state; it takes about 45 min, until about 11:50Z.\n- Your earlier \"ready\" still counts, so there is no new step.\n- No warm-up this time: the tool sets Serious, and the test clears the setting when it ends.\n\nWhat you need to do: keep the iPhone plugged in and don't touch it until about 11:50Z."
+    }
+  ],
+  "reads": {
+    "user": 14,
+    "lead": 14,
+    "fix-g0-box": 12
+  },
+  "history": [
+    {
+      "at": "2026-10-08T06:39:40.472Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-g0-box"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-08T10:52:06.709Z",
+    "fix-g0-box": "2026-10-08T16:47:41.870Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

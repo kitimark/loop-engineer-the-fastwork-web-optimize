@@ -1,0 +1,46 @@
+{
+  "id": "C-022",
+  "by": "iphone-runner",
+  "kind": "choice",
+  "title": "PR-001 look check: I don't see the recording in the folder yet",
+  "instructions": "The folder /Users/<user>/source/fastwork-com-web-optimize/.claude/worktrees/agent-afc7d9fff1fcc6154/out/pr001-visual/ has no video file yet. If it is still copying, wait and pick 'now it's there'. If it is somewhere else, drag it into that folder (in Finder press Shift-Cmd-G and paste the path), then pick 'now it's there'.",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "now it's there",
+      "recording is missing or too short"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-02T09:40:13.221Z",
+  "queuedAt": "2026-10-02T09:40:13.221Z",
+  "updatedAt": "2026-10-02T09:40:56.658Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-02T09:40:13.221Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-02T09:40:30.703Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-02T09:40:56.658Z",
+      "who": "user",
+      "action": "answer",
+      "value": "recording is missing or too short"
+    }
+  ],
+  "startedAt": "2026-10-02T09:40:30.703Z",
+  "result": {
+    "value": "recording is missing or too short",
+    "notes": "Retry the C-021",
+    "at": "2026-10-02T09:40:56.658Z"
+  }
+}

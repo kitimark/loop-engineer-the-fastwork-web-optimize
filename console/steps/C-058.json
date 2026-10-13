@@ -1,0 +1,51 @@
+{
+  "id": "C-058",
+  "by": "art-worst-cases",
+  "topic": "art-worst-cases",
+  "kind": "choice",
+  "title": "Review two iPhone screen clips: original vs v8 (end of page, scripted scroll)",
+  "instructions": "Open the link, watch both clips (hold 1, Xcode heat mode Serious; the screen shows fewer stalls than the page log because Safari scrolls outside the page's code, explained on the page), then pick which clips are OK to publish. Add a note for anything wrong.",
+  "url": "http://127.0.0.1:5871/review.html",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "both OK",
+      "only end-of-page OK",
+      "only scripted scroll OK",
+      "reject both"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-05T05:24:07.354Z",
+  "queuedAt": "2026-10-05T05:24:07.354Z",
+  "updatedAt": "2026-10-05T05:31:30.401Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-05T05:24:07.354Z",
+      "who": "art-worst-cases",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-05T05:25:21.543Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-05T05:31:30.401Z",
+      "who": "user",
+      "action": "answer",
+      "value": "reject both"
+    }
+  ],
+  "queueSeq": 17,
+  "startedAt": "2026-10-05T05:25:21.543Z",
+  "result": {
+    "value": "reject both",
+    "notes": "I miss-understand about your first draft came from real iphone device. \ni think we should capture these in the real device comparison\n\nFull page\n- Hero card fade out, this is first thing i catch\n- End of section\n\nCrop page\n- User carousell \n- People still need people title\n- Countdown clock\n- another your findings",
+    "at": "2026-10-05T05:31:30.401Z"
+  }
+}

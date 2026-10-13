@@ -1,0 +1,144 @@
+{
+  "id": "T-114",
+  "title": "the next best build fixes",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T12:10:09.977Z",
+  "updatedAt": "2026-10-04T23:23:30.215Z",
+  "rev": 38,
+  "assignees": [
+    "mgmt-desk-2",
+    "int-v8"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T12:10:09.977Z",
+      "by": "user",
+      "text": "Which fixes you will pick to the next best build ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T12:10:31.169Z",
+      "by": "lead",
+      "text": "For v8, these are the candidates, in the order I expect them to be ready. A fix joins only once it passes its checks.\n\n| fix | what it does | state |\n|---|---|---|\n| countdown roll, lighter | the same roll with far fewer animation steps (343 -> 66 per digit) | phone test needs one more short round |\n| countdown faces | each digit as 3 ready-made faces, nothing animating while hidden | look checks pass in Chrome and Simulator; write-up next |\n| scroll handlers off on phones | skips scroll work that only matters on desktop | first check passed; counts next |\n| hero accent word on the GPU | the coloured word in the hero repaints about half as often (1316 -> 688 paints) | looks identical in Chrome; Simulator check next |\n| top-bar colour check | less per-frame work deciding the top bar's colour | needs a re-planned test (first one judged the wrong count) |\n| fixes for your fast-scroll report | whatever the T-113 checks find in the hero cards and end of page | starts now |\n\n- The two countdown fixes do the same job in different ways. Only the better one goes in, after a side-by-side check.\n- Still out: the end-of-page menu animation on the GPU, until we know why its opening frame got slower.\n- Each one also gets the new fast-flick check before v8 becomes the best build.\n\nWhat you need to do: nothing. If one of these matters more to you, tell me and I'll move it up."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T12:12:00.263Z",
+      "by": "user",
+      "text": "Let's do it as highest priority below of Fast flicks stress test"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T12:12:25.627Z",
+      "by": "lead",
+      "text": "Done. The status board order is now:\n\n| # | work |\n|---|---|\n| 1 | fast-flick stress test on v7 (T-113) |\n| 2 | v8, the next best build |\n| 3-7 | v8's parts: countdown roll, countdown faces, scroll handlers, accent word, top bar |\n| 8 | hero fade, next revision |\n\n- At 12:20Z, when the usage limit resets, I restart the v8 agents in that order. Anything T-113 finds in the hero cards or the end of page joins v8.\n- I post here when v8 is ready to try.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T13:34:09.705Z",
+      "by": "user",
+      "text": "Catch up this progress"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T13:35:30.606Z",
+      "by": "lead",
+      "text": "**v8 (the next best build): 2 parts are ready or nearly ready; the build starts when they are in.**\n\n| part | state |\n|---|---|\n| Countdown faces | landed |\n| Accent word \"exact\" (your PR-019 choice) | being moved onto v7 now |\n| Countdown roll (PR-017) | Chrome counts done; phone checks about 14:10Z |\n| Scroll handlers off on phones | Simulator checks running |\n| Top bar click speed-up | not ready: in 1 of 5 checks the menu highlights the wrong section; owner fixing |\n| Toolbar fix (new, from the fast-flick test) | its test is on the phone now; joins v8 if it works |\n\nWhat you need to do: nothing; I post here when v8 is ready to try."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T14:22:36.737Z",
+      "by": "user",
+      "text": "What about this progress ?"
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T14:23:06.354Z",
+      "by": "mgmt-desk-2",
+      "text": "v8 is not ready yet: 1 part landed, the rest are in checks, and the build starts when 2 or more are ready.\n\n| part | state at 14:22Z |\n|---|---|\n| Countdown faces | landed |\n| Countdown roll | Chrome counts done; waits for the phone (next in line) |\n| End-of-page morph, 1-line GPU fix | landed as a record; joins v8; phone check in v8's block |\n| Accent word, exact (your PR-019 choice) | being put onto v7, checking pixels |\n| Scroll handlers off on phones | counts pass; one noise re-run finishing |\n| Top bar colour check | not landable: a check failed; the owner is finding why |\n| Toolbar fix (from your flick test) | its phone test is next in line |\n\n- The fast-flick stress test found the hero lag comes while Safari's toolbar collapses or expands (our data only).\n\nWhat you need to do: nothing; the lead posts here when v8 is ready to try."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T14:23:37.305Z",
+      "by": "user",
+      "text": "mark it as highest priority."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T14:23:50.599Z",
+      "by": "mgmt-desk-2",
+      "text": "Got it: I sent your request to the lead, because only the lead sets priority.\n\n- Today: the fast-flick stress test is #1 and v8 (the next best build) is #2.\n- I understood 'it' as v8. If you meant something else, tell me.\n\nWhat you need to do: nothing; the lead confirms here."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T14:24:27.018Z",
+      "by": "lead",
+      "text": "**Done: the next best build (v8) is now priority #1, ahead of the fast-flick test.**\n\n- v8 parts ready: countdown faces, accent word, end-of-page fade (rev 3). The countdown roll's last phone check is next on the iPhone (~14:45Z).\n- I start the v8 build right after that check, then it gets the width, iPad and phone checks before you try it.\n\nWhat you need to do: nothing; I'll post here when v8 is ready to try."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T15:26:43.958Z",
+      "by": "int-v8",
+      "text": "Best build v8 is ready to try: http://lan:6400/ (not landed yet).\n- It is v7 plus: a lighter countdown roll, the hero countdown paused while off screen, a cheaper accent drawing under the heading, and the end-of-page menu fade kept on the graphics chip.\n- Checks done: the build matches every part exactly, and the Chrome page check passes (no errors, no missing files).\n- Still running: still-picture comparisons against v7 (Chrome, Safari engine, screen sizes) and the iPhone \"no worse than v7\" check (P-111).\nWhat you need to do: nothing; try the link on the iPhone if you like."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T18:22:06.241Z",
+      "by": "user",
+      "text": "Mark best build v8 as highest priority."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T18:22:48.785Z",
+      "by": "lead",
+      "text": "Done: best build v8 is top priority (#1 on the board), and its last check now goes first.\n\n- v8 already passed its iPhone test against v7 (0 slow frames vs 2 per run at the end menu; nothing worse).\n- Its last check (Simulator, iPad, Mac Safari) now starts after the current phone session (about 18:28Z) instead of after the whole phone test (about 18:45Z).\n- The phone test pauses for it and finishes afterwards; the iPhone meanwhile runs the end-menu rev 7 flicks (PR-018).\n- If the check passes, v8 replaces v7 as the best build and I post here.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 14,
+    "lead": 14,
+    "mgmt-desk-2": 10,
+    "int-v8": 13
+  },
+  "history": [
+    {
+      "at": "2026-10-04T14:04:50.263Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    },
+    {
+      "at": "2026-10-04T14:04:51.506Z",
+      "who": "lead",
+      "action": "unassign",
+      "note": "lead"
+    },
+    {
+      "at": "2026-10-04T14:23:50.681Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User #9: 'mark it as highest priority' on T-114 progress; I read it as v8 (now #2 behind t113 fast-flick test). Please set priority and confirm in T-114."
+    },
+    {
+      "at": "2026-10-04T15:26:19.205Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "int-v8"
+    },
+    {
+      "at": "2026-10-04T20:49:56.905Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T18:22:48.785Z",
+    "mgmt-desk-2": "2026-10-04T14:23:50.681Z",
+    "int-v8": "2026-10-04T23:23:30.215Z"
+  },
+  "histSeen": {
+    "lead": 4
+  }
+}

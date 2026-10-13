@@ -1,0 +1,334 @@
+{
+  "id": "C-035",
+  "by": "iphone-runner",
+  "kind": "swipe-pair",
+  "title": "Countdown: which page follows your finger better?",
+  "instructions": "Swipe up and down through the countdown and the section below it on both pages, then say which follows your finger better, or \"same\". (re-run of the earlier countdown test that the cable drop cut off)",
+  "url": "http://192.168.0.56:55922/",
+  "showUrl": false,
+  "meta": {
+    "block": "cd-strip finger swipe A/B (fix 2)",
+    "key": {
+      "1": "C",
+      "2": "V"
+    },
+    "arms": {
+      "C": "st6-rb2 (JS 7bf7c4657d21, CSS f523598b2a24)",
+      "V": "strip-tc (JS 6fa0e1e8a221, CSS 982a747d9263)"
+    },
+    "by": "iphone-runner",
+    "predecessor": "C-033",
+    "rerunOf": "C-033 (cut off by the cable drop, skipped)"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ]
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.56:55922/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-04T02:44:49.846Z",
+        "ready": "2026-10-04T02:45:01.232Z",
+        "started": "2026-10-04T02:45:16.818Z",
+        "recording": "2026-10-04T02:45:18.914Z",
+        "done": "2026-10-04T02:46:19.058Z"
+      },
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-03T22:16:20.883Z",
+            "ready": "2026-10-03T22:16:31.708Z",
+            "started": "2026-10-04T02:39:42.812Z",
+            "recording": "2026-10-04T02:39:45.175Z",
+            "done": "2026-10-04T02:40:45.335Z"
+          },
+          "ended": "restart",
+          "by": "user",
+          "endedAt": "2026-10-04T02:44:28.730Z"
+        }
+      ],
+      "attempt": 2
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.56:55926/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-04T02:46:19.122Z",
+        "ready": "2026-10-04T02:46:29.864Z",
+        "started": "2026-10-04T02:46:34.496Z",
+        "recording": "2026-10-04T02:46:37.010Z",
+        "done": "2026-10-04T02:47:37.165Z"
+      },
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-04T02:40:45.398Z",
+            "ready": "2026-10-04T02:40:56.052Z",
+            "started": "2026-10-04T02:41:02.390Z",
+            "recording": "2026-10-04T02:41:04.740Z",
+            "done": "2026-10-04T02:42:04.901Z"
+          },
+          "ended": "restart",
+          "by": "user",
+          "endedAt": "2026-10-04T02:44:28.730Z"
+        }
+      ],
+      "attempt": 2
+    }
+  ],
+  "createdAt": "2026-10-03T17:14:42.874Z",
+  "queuedAt": "2026-10-03T17:14:42.874Z",
+  "updatedAt": "2026-10-04T02:48:55.109Z",
+  "rev": 29,
+  "history": [
+    {
+      "at": "2026-10-03T17:14:42.874Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-03T17:14:53.545Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-03T17:15:04.963Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-03T18:17:19.129Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-03T18:17:29.722Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-03T20:23:05.486Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-03T20:23:16.085Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-03T22:16:20.883Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-03T22:16:31.708Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-04T02:39:42.812Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T02:39:45.175Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-04T02:40:45.335Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "done"
+    },
+    {
+      "at": "2026-10-04T02:40:45.398Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-04T02:40:56.052Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-04T02:41:02.390Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T02:41:04.740Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-04T02:42:04.901Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "done"
+    },
+    {
+      "at": "2026-10-04T02:44:28.730Z",
+      "who": "user",
+      "action": "restart",
+      "part": 1,
+      "epoch": 1,
+      "attempts": [
+        2,
+        2
+      ]
+    },
+    {
+      "at": "2026-10-04T02:44:49.846Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-04T02:45:01.232Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-04T02:45:16.818Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-04T02:45:18.914Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-04T02:46:19.058Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "done"
+    },
+    {
+      "at": "2026-10-04T02:46:19.122Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-04T02:46:29.864Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-04T02:46:34.496Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-04T02:46:37.010Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-04T02:47:37.165Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "done"
+    },
+    {
+      "at": "2026-10-04T02:48:55.109Z",
+      "who": "user",
+      "action": "answer",
+      "value": "1"
+    }
+  ],
+  "startedAt": "2026-10-04T02:39:42.812Z",
+  "epoch": 1,
+  "result": {
+    "value": "1",
+    "notes": "it quite hard to detect from visual, but i fill page 2 are a bit warmer than page 1.  \nand page 2 are a bit laggy (i'm not sure it's my bias or not)",
+    "at": "2026-10-04T02:48:55.109Z"
+  }
+}

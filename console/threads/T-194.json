@@ -1,0 +1,62 @@
+{
+  "id": "T-194",
+  "title": "tracing or debug the animation in iphone environment",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T10:43:49.603Z",
+  "updatedAt": "2026-10-05T11:08:22.401Z",
+  "rev": 13,
+  "assignees": [
+    "lead"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T10:43:49.603Z",
+      "by": "user",
+      "text": "Actually, which agents would like to tracing or debug the animation in iphone environment.\nYou can do it on the real device if it's free.\n\nThat it, now iphone is free."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T10:44:29.645Z",
+      "by": "lead",
+      "text": "Thanks: fix-hero-exit-threaded takes the free iPhone now for a short trace of the end-of-page menu (about 10 min).\n- Question: is the hiccup right after you lift your finger caused by the menu's 200 ms settle timer?\n- It is a robot swipe with the browser's timeline on; no timing claim, just where the time goes.\n- The phone is free only until about 10:57Z; then the countdown heat test (P-130) runs for about an hour.\n- The \"People\" title proposal and the end-of-page panel ideas get their phone tries after that.\nWhat you need to do: nothing; please leave the iPhone alone while the robot swipes."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T10:44:40.353Z",
+      "by": "user",
+      "text": "You will get more proper tracing and debug for the real device. use this golden time."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T10:45:27.423Z",
+      "by": "lead",
+      "text": "Agreed: iphone-runner is starting a real-device trace now (about 10 min) on the build that ships today.\n- It records Safari's timeline during fast swipes at the end of the page and in the hero.\n- Already learned from this morning's phone runs: the menu's 200 ms timer is not behind the hiccups after you lift your finger (0 of 97 slow frames).\n- Those slow frames were all drawing or mixed work, none pure script; that points at the panel's redraw ideas (3 and 4 in T-193).\n- Today's trace checks the same on the shipping build; then the countdown heat test runs.\nWhat you need to do: please leave the iPhone alone while it swipes by itself."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-05T10:55:20.057Z",
+      "by": "lead",
+      "text": "The real-iPhone trace is done: slow frames during a swipe are mostly page script; at the page end, after lift-off, mostly drawing.\n\n- What ran: two swipe runs (end of page, hero) at Serious heat, about 2,090 moving frames each; both passed all six quality gates.\n- Codes: MAIN = page script, style and layout; RENDER = drawing and compositing; MIXED = both. \"Slow\" = a frame over 30 ms.\n\n| run | slow | MAIN | RENDER | MIXED |\n|---|---|---|---|---|\n| End of page | 99 | 70 | 13 | 16 |\n| Hero | 99 | 72 | 11 | 16 |\n\n- During the swipe (hero and middle): about 98 % are MAIN; the largest single layout or style step is 13-20 ms. They bunch where the hero exits (scroll 530-1010 px) and just below it.\n- At the page end after lift-off: mostly MIXED or RENDER, in bursts of 2-6 frames within 0.4 s, almost all when Safari's toolbar changes height. Worst: 66-79 ms.\n- The 0.2 s settle timer is not involved: no timer and no layout after one in any of those frames.\n- Limits: one run each, the Mac was busy, and Timeline recording adds script work itself. So this is OBSERVED (our data only), not a verdict.\n- Next: fix-hero-exit-threaded maps the hero-exit frames to code; fix-toolbar-resize gets the toolbar frames.\n\nWhat you need to do: nothing; the countdown heat test (P-130) is on the iPhone now."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "lead": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-05T10:44:29.459Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T10:55:20.057Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

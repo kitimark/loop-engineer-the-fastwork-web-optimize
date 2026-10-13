@@ -1,0 +1,160 @@
+{
+  "id": "C-026",
+  "by": "iphone-runner",
+  "kind": "swipe-pair",
+  "title": "Blind swipe: original vs best build",
+  "instructions": "Swipe page 1 from the top to the bottom at your normal pace, then do the same on page 2. Pick the one that follows your finger better, or same.",
+  "url": "http://192.168.0.56:49291/",
+  "showUrl": false,
+  "meta": {
+    "ticket": "T-031",
+    "page1": "O",
+    "page2": "B",
+    "O": "original baseline 4606120cf392/27776f3d4138",
+    "B": "st6-rb2 7bf7c4657d21/f523598b2a24",
+    "coin": "crypto.randomInt(2)=0 -> page1=O"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ]
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.56:49291/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-02T23:31:26.426Z",
+        "ready": "2026-10-02T23:32:54.726Z",
+        "started": "2026-10-02T23:36:09.238Z",
+        "recording": "2026-10-02T23:36:17.761Z",
+        "done": "2026-10-02T23:37:02.196Z"
+      }
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.56:49292/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-02T23:37:12.520Z",
+        "ready": "2026-10-02T23:37:17.345Z",
+        "started": "2026-10-02T23:37:20.364Z",
+        "recording": "2026-10-02T23:37:30.307Z",
+        "done": "2026-10-02T23:38:24.063Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-02T23:31:19.734Z",
+  "queuedAt": "2026-10-02T23:31:19.734Z",
+  "updatedAt": "2026-10-02T23:41:33.290Z",
+  "rev": 12,
+  "history": [
+    {
+      "at": "2026-10-02T23:31:19.734Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-02T23:31:26.426Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading",
+      "note": "loading page 1 on the phone"
+    },
+    {
+      "at": "2026-10-02T23:32:54.726Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready",
+      "note": "page 1 is ready on the phone: press Start, then swipe when it says so"
+    },
+    {
+      "at": "2026-10-02T23:36:09.238Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-02T23:36:17.761Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-02T23:37:02.196Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-02T23:37:12.520Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "loading",
+      "note": "loading page 2 on the phone"
+    },
+    {
+      "at": "2026-10-02T23:37:17.345Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready",
+      "note": "page 2 is ready on the phone: press Start, then swipe when it says so"
+    },
+    {
+      "at": "2026-10-02T23:37:20.364Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-02T23:37:30.307Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-02T23:38:24.063Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-02T23:41:33.290Z",
+      "who": "user",
+      "action": "answer",
+      "value": "2"
+    }
+  ],
+  "startedAt": "2026-10-02T23:36:09.238Z",
+  "result": {
+    "value": "2",
+    "notes": "Ok, Your optimize 2 is smoother.\n\nThe hero section and morph nav quite smoother than the original.\n\nWe already ask de-gpu for research about more improvement.\nThe optimized page still have a little bit laggy. i think it might came from cpu processing.\n\nLet's ask de-gpu for investigate and can we improve them more smoother with gpu ?",
+    "at": "2026-10-02T23:41:33.290Z"
+  }
+}

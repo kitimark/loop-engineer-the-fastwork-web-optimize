@@ -1,0 +1,103 @@
+{
+  "id": "T-123",
+  "title": "Comment on T-034 #7 \"ASK: these optimization consider test on another breakpoint…\": Why this agent didn't apply rules of how to answer the threads, it could mo…",
+  "anchor": {
+    "page": "threads",
+    "item": "thread:T-034/msg:7",
+    "label": "ASK: these optimization consider test on another breakpoint ? #7"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T13:43:30.695Z",
+  "updatedAt": "2026-10-04T21:01:08.046Z",
+  "rev": 22,
+  "assignees": [
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T13:43:30.695Z",
+      "by": "user",
+      "text": "Why this agent didn't apply rules of how to answer the threads, it could more readable."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T13:43:50.332Z",
+      "by": "user",
+      "text": "Lead, investigate your team.",
+      "forLead": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T13:43:52.523Z",
+      "by": "mgmt-desk-2",
+      "text": "You are right: my T-034 replies had long lines, codes (T-040, PR-015) and the action not set apart. I did not check them against the answer-format rule. Here is T-034 again in that format:\n\n**Other screen widths: partly checked, the rest is now scheduled.**\n\n| Check | State |\n|---|---|\n| Landed fixes vs the original, 11 widths (375 to 1920 px), touch, landscape, Reduce Motion | done, no errors, same look in 13 of 14 setups |\n| Same check on the newest builds (v7) | running now |\n| iPad Simulator and Mac Safari | not done yet; required for every best build from v8 on |\n\n- Savings (less layout work) held at every width.\n- One difference, sharper hero photos on desktop with Reduce Motion: you chose to keep it.\n\nWhat you need to do: nothing; results come to the T-034 thread."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T13:44:45.647Z",
+      "by": "lead",
+      "text": "**Found it: the reading rule lives in a note agents only see as a one-line title, and nothing checks a reply before it is posted. So a new agent (the desk, started 13:40Z) skipped it.**\n\n| cause | fix |\n|---|---|\n| Rule is a note agents must open themselves | the desk was told to read it before every reply (now) |\n| No check before posting | a tools helper is building one: a reply with long lines, unexplained codes or no \"What you need to do\" line is refused (about 1 h) |\n| Same slip could happen to any agent | the check covers every agent and me, threads and proposals |\n\n- The desk already re-posted its answer in the right format (T-123 #3).\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T13:45:44.052Z",
+      "by": "user",
+      "text": "Let's fix"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T13:46:04.918Z",
+      "by": "mgmt-desk-2",
+      "text": "Understood: the lead's fix goes ahead.\n\n- The desk now checks every reply against the answer-format rule before posting.\n- The automatic check (refuses long lines, unexplained codes, a missing last line) is being built, about 1 h.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T15:16:28.048Z",
+      "by": "mgmt-desk-2",
+      "text": "The answer-format check is live. A reply that breaks your format rule is now refused before it reaches you.\n\n- It refuses a reply whose last line is not \"What you need to do: ...\", one over 18 lines, a line over 250 characters, or an unexplained code like T-123.\n- It applies to every agent and the lead, with no exemption. To post anyway, an agent must write a reason, and the reason is logged.\n- Proposal tables get 4 short cells plus a required better / same / worse, with notes folded under \"Details\" (your T-126 point).\n- Old proposals still render; only new ones are checked.\n\nWhat you need to do: tell me if a reply still reads badly."
+    }
+  ],
+  "reads": {
+    "user": 7,
+    "mgmt-desk-2": 7,
+    "lead": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-04T13:43:30.695Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    },
+    {
+      "at": "2026-10-04T13:46:05.240Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User said 'Let's fix' (#5): go ahead with the reply lint (ts-answer-lint) as in your #4."
+    },
+    {
+      "at": "2026-10-04T13:47:10.447Z",
+      "who": "user",
+      "action": "close"
+    },
+    {
+      "at": "2026-10-04T15:16:27.961Z",
+      "who": "mgmt-desk-2",
+      "action": "reopen"
+    },
+    {
+      "at": "2026-10-04T17:52:02.090Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-2": "2026-10-04T15:16:28.048Z",
+    "lead": "2026-10-04T21:01:08.046Z"
+  },
+  "histSeen": {
+    "lead": 5
+  }
+}

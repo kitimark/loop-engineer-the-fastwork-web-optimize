@@ -1,0 +1,74 @@
+{
+  "id": "T-137",
+  "title": "Comment on status morph-gpu \"End-of-page morph on the GPU\": It has 2 comments, but when i clicked it direct to latest comment that i was commented. What if i'd…",
+  "anchor": {
+    "page": "status",
+    "item": "status:morph-gpu",
+    "quote": "2 comments",
+    "label": "End-of-page morph on the GPU"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T14:54:49.941Z",
+  "updatedAt": "2026-10-04T17:50:13.443Z",
+  "rev": 13,
+  "assignees": [
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T14:54:49.941Z",
+      "by": "user",
+      "text": "It has 2 comments, but when i clicked it direct to latest comment that i was commented.\n\nWhat if i'd like to go to first comment ? how ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T14:55:21.899Z",
+      "by": "mgmt-desk-2",
+      "text": "Today there is no way from that badge, so here is the workaround, and the fix is assigned.\n\n- Workaround: open the Threads page and pick the older thread from the list. The two comments on this row are T-135 and T-136.\n- Cause: the badge links only to the newest comment.\n- Fix (incident I-156, small): the badge opens a short list of its comments. The status-board toolsmith (ts-board) has it.\n- I will post here when it is live.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T14:55:57.532Z",
+      "by": "user",
+      "text": "Good, boy. mgmt-desk-2."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T16:07:26.493Z",
+      "by": "mgmt-desk-2",
+      "text": "The comment badge fix is live. An item with 2 or more comment threads now links to all of them, not only the newest.\n\n- Click the badge on the item and pick the thread you want, including the first one.\n- Reload the page first so you get the new version.\n\nWhat you need to do: try it on an item with 2 comments and tell me if the first thread opens."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "mgmt-desk-2": 4,
+    "lead": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-04T14:54:49.941Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    },
+    {
+      "at": "2026-10-04T17:50:11.304Z",
+      "who": "user",
+      "action": "close"
+    },
+    {
+      "at": "2026-10-04T17:50:13.443Z",
+      "who": "user",
+      "action": "reopen"
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-2": "2026-10-04T16:07:26.493Z",
+    "lead": "2026-10-04T15:05:58.976Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

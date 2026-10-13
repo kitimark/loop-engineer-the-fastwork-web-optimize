@@ -1,0 +1,208 @@
+{
+  "id": "C-041",
+  "by": "fix-nav-morph",
+  "topic": "f3-arm-scope",
+  "kind": "swipe-pair",
+  "title": "Top bar and next section: which page follows your finger better?",
+  "instructions": "Start at the top. Swipe down slowly past the end of the big first section into the next one, then back up, 2-3 times on each page. Pick the page that follows your finger better (fewer catches or jumps), or \"same\".",
+  "url": "http://192.168.0.56:64286/",
+  "showUrl": false,
+  "meta": {
+    "ticket": "F3 swipe A/B (lead ruling after P-091 VOID)",
+    "page1": "V",
+    "page2": "C",
+    "coin": "crypto.randomInt(2)=1 -> page1=V",
+    "C": "plain baseline B 4606120cf392/27776f3d4138",
+    "V": "best build N best-65052c4a3902 65052c4a3902/e0f92804c521",
+    "condition": "no xctrace gate (user step first, right after the hero swipes); batt 38.5 C at 07:22Z",
+    "redoOf": "C-037 (skipped after lease lapse)",
+    "by": "fix-nav-morph"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ],
+    "scale": {
+      "min": 1,
+      "max": 5,
+      "label": "How sure / how different? (1 = barely, 5 = very)"
+    }
+  },
+  "status": "skipped",
+  "cur": 0,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.56:64286/",
+      "record": true,
+      "gate": true,
+      "state": "waiting",
+      "at": {},
+      "message": "You started over (try 2).",
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "ready": "2026-10-04T07:35:40.203Z",
+            "loading": "2026-10-04T07:35:21.381Z",
+            "started": "2026-10-04T07:39:59.172Z",
+            "recording": "2026-10-04T07:40:12.612Z",
+            "done": "2026-10-04T07:40:39.886Z"
+          },
+          "ended": "restart",
+          "by": "user",
+          "endedAt": "2026-10-04T07:42:04.709Z"
+        }
+      ],
+      "attempt": 2
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.56:64281/",
+      "record": true,
+      "gate": true,
+      "state": "waiting",
+      "at": {},
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-04T07:40:49.582Z",
+            "ready": "2026-10-04T07:41:15.259Z",
+            "started": "2026-10-04T07:41:20.413Z",
+            "recording": "2026-10-04T07:41:32.131Z",
+            "done": "2026-10-04T07:42:00.658Z"
+          },
+          "ended": "restart",
+          "by": "user",
+          "endedAt": "2026-10-04T07:42:04.709Z"
+        }
+      ],
+      "attempt": 2
+    }
+  ],
+  "createdAt": "2026-10-04T07:22:49.983Z",
+  "queuedAt": "2026-10-04T07:22:49.983Z",
+  "updatedAt": "2026-10-04T07:43:52.698Z",
+  "rev": 14,
+  "history": [
+    {
+      "at": "2026-10-04T07:22:49.983Z",
+      "who": "fix-nav-morph",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-04T07:22:55.649Z",
+      "who": "fix-nav-morph",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready",
+      "note": "Page 1 is loaded on the phone. Press Start when ready."
+    },
+    {
+      "at": "2026-10-04T07:35:21.381Z",
+      "who": "fix-nav-morph",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading",
+      "note": "Reloading page 1 on the phone, a few seconds."
+    },
+    {
+      "at": "2026-10-04T07:35:40.203Z",
+      "who": "fix-nav-morph",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready",
+      "note": "Page 1 is reloaded at the top. Press Start when ready."
+    },
+    {
+      "at": "2026-10-04T07:39:59.172Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T07:40:12.612Z",
+      "who": "fix-nav-morph",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording",
+      "note": "Recording. Swipe page 1 now, then press Done."
+    },
+    {
+      "at": "2026-10-04T07:40:39.886Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T07:40:49.582Z",
+      "who": "fix-nav-morph",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "loading",
+      "note": "Loading page 2 on the phone, about 30 seconds."
+    },
+    {
+      "at": "2026-10-04T07:41:15.259Z",
+      "who": "fix-nav-morph",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready",
+      "note": "Page 2 is loaded. Press Start when ready."
+    },
+    {
+      "at": "2026-10-04T07:41:20.413Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T07:41:32.131Z",
+      "who": "fix-nav-morph",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording",
+      "note": "Recording. Swipe page 2 now, then press Done."
+    },
+    {
+      "at": "2026-10-04T07:42:00.658Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T07:42:04.709Z",
+      "who": "user",
+      "action": "restart",
+      "part": 1,
+      "epoch": 1,
+      "attempts": [
+        2,
+        2
+      ]
+    },
+    {
+      "at": "2026-10-04T07:43:52.698Z",
+      "who": "user",
+      "action": "skip"
+    }
+  ],
+  "startedAt": "2026-10-04T07:39:59.172Z",
+  "epoch": 1,
+  "skippedAt": "2026-10-04T07:43:52.698Z"
+}

@@ -1,0 +1,35 @@
+{
+  "id": "T-258",
+  "title": "iPhone free for 10 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-08T23:02:22.598Z",
+  "updatedAt": "2026-10-08T23:32:23.909Z",
+  "rev": 2,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-08T23:02:22.598Z",
+      "by": "lead",
+      "text": "The iPhone has had no holder for 10 min (since 22:51Z; released by fix-menu-layers (process hold ended)). The limit is 5 min.\nWaiting on the status board: sticky-walk (owner fix-scrollcb-g0; its next step names the phone (unmarked)).\nWhat unblocks it: the next of fix-scrollcb-g0 takes it (node tools/lock.mjs acquire iphone --owner <you> ...).\nNo steward on duty (mgmt-devices is parked): the lead handles this thread (I-175).\nOne message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105)."
+    }
+  ],
+  "reads": {
+    "lead": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-08T23:32:23.909Z",
+      "who": "lead",
+      "action": "close",
+      "note": "taken by fix-scrollcb-g0"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-08T23:02:22.598Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

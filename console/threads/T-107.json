@@ -1,0 +1,141 @@
+{
+  "id": "T-107",
+  "title": "Comment on the Best build page \"Today’s best build\": I was try access this website. The hero section and end of page morph is better. I found new elements that…",
+  "anchor": {
+    "page": "build",
+    "item": "part:page",
+    "quote": "Try it: http://192.168.0.56:60238/ · server: best-br2",
+    "label": "Today’s best build"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T10:52:19.661Z",
+  "updatedAt": "2026-10-04T20:50:15.271Z",
+  "rev": 29,
+  "assignees": [
+    "mgmt-desk-1",
+    "fix-nav-morph",
+    "fix-accent-ca",
+    "fix-hero-exit-threaded",
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T10:52:19.661Z",
+      "by": "user",
+      "text": "I was try access this website. \nThe hero section and end of page morph is better.\n\nI found new elements that we could optimize them is \n\n- Join waitlist button on nav morph and lang button is laggy. i think we can optimize them with gpu optimization\n\n- People still need people title, the people word that contain avatar is quite laggy. i think we can optimize them with gpu optimization and image optimization.\n\nLet's investigate and ask team to do this."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T10:52:49.008Z",
+      "by": "mgmt-desk-1",
+      "text": "Thanks, good to hear the hero and the end-of-page menu feel better. Both new spots go to the team; first they find the slow frames in our own data, then propose a fix.\n\n| what you saw | likely cause (to check) | who looks |\n|---|---|---|\n| Join waitlist + language buttons lag during the menu animation | they live inside the animated menu, which reshapes every frame; Safari can't hand its rounded clip to the GPU | the two menu agents (fix-morph-gpu, fix-nav-morph) |\n| \"People still need people\" title, the word with the avatars | the avatar group swaps and moves on timers, plus image cost | the GPU-lessons research agent, with the image-cost study |\n\n- Both are already on the GPU research list; your report moves them up.\n- Each will answer here: where the slow frames are, and what can move to the GPU without changing the look.\n\nWhat you need to do: nothing. I've asked the lead to assign them."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T10:53:29.714Z",
+      "by": "lead",
+      "text": "Assigned both spots at 10:55Z. Each agent first finds the slow frames in our own data, then proposes a fix.\n\n| spot | who | first answer |\n|---|---|---|\n| Join waitlist + language buttons in the top-bar animation | the top-bar agent (after its current count, ~20 min) | where it lags and what can move to the GPU |\n| \"People\" word with avatars | the hero accent agent (its own work paused) | where it lags, GPU and image options |\n\n- Both answer here, with tables. No look changes without your OK.\n- Good to hear the hero and end-of-page menu feel better.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T10:57:50.351Z",
+      "by": "lead",
+      "text": "Update 10:58Z: to stay under your usage limit, both traces (the buttons and the \"People\" word) start right after your reset at 7:20pm (12:20Z). Nothing is dropped. What you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T11:10:51.466Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "The 'People' word with avatars is now mine (the hero accent agent stays paused).\n- Start: 12:20Z (7:20pm), after your usage reset, as the lead said.\n- First I find where it lags: which frames, how many are slow, and why (paint, image decode, or layout).\n- Then I answer here with a small table and a proposal. Nothing on the page changes without your OK.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T12:42:37.892Z",
+      "by": "fix-nav-morph",
+      "text": "(Join waitlist + language buttons) Where it lags, from our recordings and probes. No new phone test yet.\n\n- Where: the first 3 frames when the top bar starts turning into the end-of-page menu. In those frames, Join waitlist blurs, fades and shrinks. It finishes after 1/5 of the animation, about 50 ms.\n- Phone, earlier test of the same top bar: those 3 frames take 35, 49 and 63 ms (smooth is 17 ms). The menu panel also starts in those frames, so the button is a strong suspect, not proven (OBSERVED).\n- Redraws on the Simulator, 2 opens and 2 closes:\n\n| part | redraws now | with the button's blur and mask off |\n|---|---|---|\n| bar row holding Join waitlist | 123-128 | 38 |\n| language button | 84-88 | 84-88 (its own blur is not the cause) |\n\n- Why Join waitlist costs: script recomputes its blur, fade and slide every frame, so the phone redraws it on the main processor. Its width also shrinks, which moves the other buttons, and that shrink keeps running for 0.68 s.\n- GPU fix with the same look: run the blur, fade and slide as one GPU animation on the button's own layer. Safari's GPU can do blur (CONFIRMED, WebKit source, research/gpu-props). The width shrink has no exact GPU form, so changing it would be a proposal with a Try-it.\n- Language button: it is already on its own GPU layer, but it still redraws every frame. The cause is not found yet.\n- Chrome on the Mac: the buttons add no measurable time (OBSERVED).\n\nWhat you need to do: nothing. The lead decides whether I build the same-look Join waitlist version next."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T12:43:28.996Z",
+      "by": "fix-nav-morph",
+      "text": "(Join waitlist) Update: the fix is being built.\n\n- What I found: when the top bar starts turning into the end-of-page menu, the Join waitlist button is blurred, faded and slid by script on every frame, so the phone redraws it each time. That happens in the first frames of the menu opening, the moment you felt.\n- What I'm building: the same blur, fade and slide run by the phone's graphics chip on the button's own layer. It should look exactly the same. I'll check that with frozen frames before you see it.\n- Not in this version: its width shrink. Changing that would change the motion slightly, so it would come to you as a separate proposal with a Try-it.\n- Language button: still looking for why it redraws.\n\nWhat you need to do: nothing for now. You'll get a Try-it when it's ready."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T12:48:46.859Z",
+      "by": "fix-nav-morph",
+      "text": "(Join waitlist) Correction: the button is not what makes the menu's first frames lag.\n\n- New data: in the first frame of the menu opening, the phone redraws large page areas behind the menu (about 2 million pixels). The Join waitlist button is only a small part of that (about 28 thousand pixels).\n- The button does cost something just after that: its width shrinks over 0.68 s and is redrawn every frame. It's real work, but it's not the moment you felt.\n- What we do instead:\n  - The large first-frame redraw belongs to the end-of-page menu agent, who is tracing it now.\n  - I won't build the button change I mentioned (#7): it wouldn't fix the lag you felt.\n  - Later I'll send you a proposal with a Try-it to make the button's width shrink cheaper. It changes the motion slightly, so it needs your OK.\n- Language button: no change. It redraws every frame, but it isn't the first-frame cost either.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T13:17:53.322Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "(People word with the avatars) The avatar \"O\" is cheap by itself. It stutters because only the main processor can animate it, and that processor is busy on every frame at this spot.\n\n- Where: the O in \"People\". 1.3 s after the title comes into view, the avatars stack in and the O widens over about 0.9 s. When you scroll away it shrinks, and coming back replays it.\n- Why it can't use the GPU: the O widens by changing its layout width (its columns, its height, and each avatar's width and margins). Browsers run size changes on the main processor only, never on the GPU (CONFIRMED in Chrome and WebKit source; see research/gpu-props).\n- Why the main processor is busy: at that spot the iOS Simulator re-lays out the whole screen about once per frame, and the O is not the cause (counts only, OBSERVED):\n\n| 2 s at the People title (Simulator) | full-screen layouts |\n|---|---|\n| as it is now | 56-73 |\n| O's animation off | 70 |\n| all page animations paused | 5 |\n\n- What causes those layouts: animations from the hero, which is still on screen above the title (the accent word's stroke, the button glow and others). Which one is not pinned down yet. On the phone a layout at this spot takes about 13 ms (fix-toolbar-resize's data), against 17 ms per frame.\n- Images: the 6 avatar photos are 480-730 px wide but are shown at 108 px (about 300 KB in total). Smaller files would download faster and use less memory, but would not make the motion smoother: they are decoded once (OBSERVED in Chrome).\n- Phone: we have no recording of the O opening yet. The robot and finger runs pass the title in 0.1-0.3 s, too fast for it to open.\n\nProposal idea, needs your OK and a Try-it: widen the O with GPU moves (the avatars slide and scale inside a clip) instead of changing its width, and serve right-sized avatar images. The start and end look the same; the in-between frames differ slightly.\n\nWhat you need to do: nothing now. The lead decides whether I build that Try-it."
+    }
+  ],
+  "reads": {
+    "user": 9,
+    "mgmt-desk-1": 2,
+    "lead": 4,
+    "fix-accent-ca": 1,
+    "fix-nav-morph": 8,
+    "fix-hero-exit-threaded": 9,
+    "mgmt-desk-2": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T10:52:19.661Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-1 (the desk)"
+    },
+    {
+      "at": "2026-10-04T10:52:49.153Z",
+      "who": "mgmt-desk-1",
+      "action": "escalate",
+      "note": "User (on best-br2 Try-it) finds 2 laggy spots: (1) Join waitlist + lang buttons in nav morph -> fix-morph-gpu/fix-nav-morph (gpu-lessons rows 19-20, clip blocker); (2) People title avatar word -> arch-gpu-lessons rows 12-13 + image cost. Please assign; trace first."
+    },
+    {
+      "at": "2026-10-04T10:53:29.836Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-nav-morph"
+    },
+    {
+      "at": "2026-10-04T10:53:29.952Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-accent-ca"
+    },
+    {
+      "at": "2026-10-04T11:10:30.066Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-hero-exit-threaded"
+    },
+    {
+      "at": "2026-10-04T14:04:51.038Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    },
+    {
+      "at": "2026-10-04T20:50:15.271Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-1": "2026-10-04T10:52:49.153Z",
+    "lead": "2026-10-04T10:57:50.351Z",
+    "fix-accent-ca": "2026-10-04T10:53:32.298Z",
+    "fix-nav-morph": "2026-10-04T12:48:46.859Z",
+    "fix-hero-exit-threaded": "2026-10-04T13:17:53.322Z",
+    "mgmt-desk-2": "2026-10-04T14:04:52.241Z"
+  },
+  "histSeen": {
+    "lead": 4
+  }
+}

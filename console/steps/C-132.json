@@ -1,0 +1,289 @@
+{
+  "id": "C-132",
+  "by": "fix-scrollcb-g0",
+  "topic": "sticky-walk",
+  "kind": "swipe-pair",
+  "title": "Blind swipe: which page follows your finger better while you drag down toward the end? (pair 1 of 2)",
+  "instructions": "On each page, swipe down from the top all the way to the end with your finger. Then pick the page that follows your finger better, or 'same' if you feel no difference.",
+  "url": "http://192.168.0.57:55445/",
+  "showUrl": false,
+  "meta": {
+    "ticket": "sw-swipe",
+    "pair": "VC",
+    "n": 1,
+    "key": {
+      "1": "V",
+      "2": "C"
+    },
+    "pins": {
+      "C": "g0.0i 9162843e750f/adb875d94c1f",
+      "V": "g0.0j 9162843e750f/bee7fce9ad56"
+    }
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ]
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.57:55445/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-09T03:25:48.751Z",
+        "ready": "2026-10-09T03:25:53.481Z",
+        "started": "2026-10-09T03:25:55.579Z",
+        "recording": "2026-10-09T03:26:17.162Z",
+        "done": "2026-10-09T03:27:33.038Z"
+      },
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-09T03:21:57.887Z",
+            "ready": "2026-10-09T03:22:07.267Z",
+            "started": "2026-10-09T03:22:13.191Z",
+            "recording": "2026-10-09T03:22:34.437Z",
+            "done": "2026-10-09T03:23:42.537Z"
+          },
+          "ended": "restart",
+          "by": "user",
+          "endedAt": "2026-10-09T03:25:48.115Z"
+        }
+      ],
+      "attempt": 2,
+      "message": "not recorded; swipe and judge anyway"
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.57:55446/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-09T03:27:33.764Z",
+        "ready": "2026-10-09T03:27:38.559Z",
+        "started": "2026-10-09T03:27:43.057Z",
+        "recording": "2026-10-09T03:28:04.219Z",
+        "done": "2026-10-09T03:28:49.416Z"
+      },
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-09T03:23:42.939Z",
+            "ready": "2026-10-09T03:23:47.650Z",
+            "started": "2026-10-09T03:23:52.017Z",
+            "recording": "2026-10-09T03:24:22.482Z",
+            "done": "2026-10-09T03:25:24.741Z"
+          },
+          "ended": "restart",
+          "by": "user",
+          "endedAt": "2026-10-09T03:25:48.115Z"
+        }
+      ],
+      "attempt": 2,
+      "message": "not recorded; swipe and judge anyway"
+    }
+  ],
+  "createdAt": "2026-10-09T03:21:57.790Z",
+  "queuedAt": "2026-10-09T03:21:57.790Z",
+  "updatedAt": "2026-10-09T03:31:06.905Z",
+  "rev": 23,
+  "history": [
+    {
+      "at": "2026-10-09T03:21:57.790Z",
+      "who": "fix-scrollcb-g0",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-09T03:21:57.887Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-09T03:22:07.267Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-09T03:22:13.191Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-09T03:22:34.437Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording",
+      "note": "not recorded; swipe and judge anyway"
+    },
+    {
+      "at": "2026-10-09T03:23:42.537Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-09T03:23:42.939Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-09T03:23:47.650Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-09T03:23:52.017Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-09T03:24:22.482Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording",
+      "note": "not recorded; swipe and judge anyway"
+    },
+    {
+      "at": "2026-10-09T03:25:24.741Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-09T03:25:48.115Z",
+      "who": "user",
+      "action": "restart",
+      "part": 1,
+      "epoch": 1,
+      "attempts": [
+        2,
+        2
+      ]
+    },
+    {
+      "at": "2026-10-09T03:25:48.751Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-09T03:25:53.481Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-09T03:25:55.579Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-09T03:26:17.162Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 1,
+      "attempt": 2,
+      "state": "recording",
+      "note": "not recorded; swipe and judge anyway"
+    },
+    {
+      "at": "2026-10-09T03:27:33.038Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-09T03:27:33.764Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-09T03:27:38.559Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-09T03:27:43.057Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-09T03:28:04.219Z",
+      "who": "fix-scrollcb-g0",
+      "action": "ack",
+      "part": 2,
+      "attempt": 2,
+      "state": "recording",
+      "note": "not recorded; swipe and judge anyway"
+    },
+    {
+      "at": "2026-10-09T03:28:49.416Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 2
+    },
+    {
+      "at": "2026-10-09T03:31:06.905Z",
+      "who": "user",
+      "action": "answer",
+      "value": "1"
+    }
+  ],
+  "queueSeq": 91,
+  "startedAt": "2026-10-09T03:22:13.191Z",
+  "epoch": 1,
+  "result": {
+    "value": "1",
+    "notes": "I don't know, is it my bias ? both pages are smooth. it hard to decide which one is smoother.\nbut I was see the people section blink on page 2 more than page 1. so i judge the page 1 is better",
+    "at": "2026-10-09T03:31:06.905Z"
+  }
+}

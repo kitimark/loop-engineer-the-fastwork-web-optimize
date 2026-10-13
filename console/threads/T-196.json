@@ -1,0 +1,47 @@
+{
+  "id": "T-196",
+  "title": "Optimize the token",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T12:36:08.331Z",
+  "updatedAt": "2026-10-05T12:40:15.368Z",
+  "rev": 11,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T12:36:08.331Z",
+      "by": "user",
+      "text": "Lead, Can you look back our team, can we optimize them still efficient with cheaper models than opus 5.5 ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T12:37:47.522Z",
+      "by": "lead",
+      "text": "Yes: about a fifth of today's usage can move to cheaper models without risking the results; the fix design and the result checks stay on Opus.\n- Today almost everything runs on Opus 5.5 (over 99 % of this window). Biggest users: the lead, ops, the combined build, the phone runner.\n- Much of the cost is not thinking but re-reading: each time a waiting agent wakes, it re-reads its whole long history.\n\n| work | today | proposed |\n|---|---|---|\n| fix design, combined builds, reviews, ops checks before and after data | Opus | stays Opus |\n| phone runner (runs signed, scripted test kits; the gates decide validity) | Opus | Sonnet |\n| small tool bugs outside measurement code; claim checks against docs | Opus | Sonnet |\n| ops bookkeeping: digests, records, relaying plans | Opus | Sonnet clerk |\n| lookups, log summaries, routine status checks | mixed | Haiku |\n\n- Also cheaper: agents with nothing to do get parked instead of waiting, so they stop waking and re-reading.\n- When: from now on for new agents; the phone runner switches after the current phone tests, never mid-test.\n- Note: the earlier account hit its weekly limit at about 12:30 UTC; one agent stopped and is resumed; no data was lost.\nWhat you need to do: nothing, unless you want something kept on Opus; reply here and I'll adjust."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T12:39:28.684Z",
+      "by": "user",
+      "text": "Let's plan to cut-off the agents and switch the models."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T12:40:14.767Z",
+      "by": "lead",
+      "text": "Plan: each Opus agent hands over at its next safe point (never mid-test) and a fresh, cheaper agent takes the scripted work; Opus stays only for judgement.\n\n| agent today (Opus) | cut point | after |\n|---|---|---|\n| iphone-runner (phone tests) | P-137 ends, about 12:55 UTC | new phone runner on Sonnet |\n| toolbar, countdown clock, nav fade, nav colour owners | their signed test kits are queued | one Sonnet runner works the Simulator queue; owners park |\n| mgmt-ops-10 (ops) | after its next handover note | Sonnet clerk for records; a fresh Opus reader only per result check |\n| int-v8 (combined build) | its P-134 plan goes to ops | parks; fresh agent for the next build |\n| fix-hero-exit-threaded, fix-end-bg | ranked list / P-137 read done | park; write-ups on Sonnet |\n\n- Why it saves: fresh agents start with short notes instead of re-reading hours of history, and Sonnet costs less per word.\n- Safety: every handover is a written note in the repo; results are still checked by an Opus reader before anything lands.\n- A parked owner is resumed on Opus only if its test fails or needs a decision.\n- I start now with the handover notes; the first switch is the phone runner after P-137.\nWhat you need to do: nothing, unless you want an agent kept on Opus; tell me here."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "lead": 4
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-05T12:40:14.767Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

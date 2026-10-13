@@ -1,0 +1,182 @@
+{
+  "id": "T-076",
+  "title": "Comment on the Best build page \"Today’s best build\": Can you build the current best build and start server me to access to see the result? i'd like to try to p…",
+  "anchor": {
+    "page": "build",
+    "item": "part:page",
+    "quote": "Best build (T-046): st6-rb2 plus the idle-animation and menu display fixes The best build since 15:48Z 2026-10-03 · 10 fixes in it Every landed fix in one build: today's base (st6-rb2) plus the idle-animation fix and the menu display fix; checked by identity, pixels and function, not timed as a who…",
+    "label": "Today’s best build"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T05:50:12.215Z",
+  "updatedAt": "2026-10-04T10:13:48.064Z",
+  "rev": 46,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T05:50:12.215Z",
+      "by": "user",
+      "text": "Can you build the current best build and start server me to access to see the result? i'd like to try to playing them."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T05:50:35.365Z",
+      "by": "mgmt-ops-10",
+      "text": "Got it. I've passed this to the lead, who will start a server with the current best build (all 10 landed fixes) and post the link here so you can try it. The link may take a few minutes. A note: the bigger 'GPU preview' build (best build plus the hero, end-of-page and countdown GPU fixes) is still being put together, so this link will be today's best build without those three."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T05:51:37.492Z",
+      "by": "user",
+      "text": "I got it. actually, if it possible, put the baseline link and all of best build each versions. i'd like to try them.",
+      "forLead": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T05:51:50.748Z",
+      "by": "mgmt-ops-10",
+      "text": "Noted. I've passed this on to the lead: you'd like a link for the baseline (the untouched site) plus one for each best-build version, so you can try them side by side. The lead will post the links here when the servers are up."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T05:54:25.892Z",
+      "by": "lead",
+      "text": "Lead: done. Six servers on this Mac, one per version, oldest first. Open them in a browser on the Mac. For the phone-sized page, use a narrow window or the browser's device mode.\n\n1. Original page (baseline, no fixes): http://localhost:56937/\n2. st6-rb, 2 Oct (wave-1 base plus six fixes, ending with the avatar carousel): http://localhost:57724/\n3. st6-rb + shell-hold-c, 2 Oct evening (adds the people-section shrink fix): http://localhost:57726/\n4. st6-rb2, 3 Oct (the base the later builds sit on): http://localhost:57728/\n5. Today's best build, since 3 Oct 15:48Z (st6-rb2 plus the idle-animation and menu display fixes, 10 fixes): http://localhost:57725/\n6. GPU preview, NEW and not yet passed (today's best plus the hero, end-of-page morph, countdown roll and countdown strip GPU fixes): http://localhost:57727/\n   Its pixel and function checks are still running, so a visual glitch there is possible. Please tell me here if you see one.\n\nEvery server was checked: it sends exactly the build its write-up names (file hashes match). They stay up until you say you're done.\n\nOn the iPhone: not right now. The end-of-page morph phone test is running until about 06:13Z, then your two swipe tests come. After those I can post a console step that opens any of these on the phone for you."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T05:55:58.165Z",
+      "by": "user",
+      "text": "Can you give me the ip link. i have another iphone device on the same wi-fi to try them."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T05:56:41.632Z",
+      "by": "mgmt-ops-10",
+      "text": "Understood: you want links your other iPhone can open over the same Wi-Fi. Right now the six servers only accept connections from this Mac itself, so they need to be restarted to listen on the network. Only the lead runs them, so I've passed this on. The lead will post the network links here, in this thread only."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T05:58:24.486Z",
+      "by": "lead",
+      "text": "Lead: here are the links for your second iPhone. It must be on the same Wi-Fi as the Mac. Plain http, so there's no certificate warning. They change if the Mac reconnects to Wi-Fi; tell me here and I'll post new ones.\n\n1. Original page (no fixes): <link>\n2. st6-rb (2 Oct): <link>\n3. st6-rb + people-section shrink (2 Oct evening): <link>\n4. st6-rb2 (3 Oct): <link>\n5. Today's best build (10 fixes): <link>\n6. GPU preview (NEW, checks still running): <link>\n\nPlease leave the test iPhone alone: a timed phone test is running on it until about 06:13Z."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T05:58:38.190Z",
+      "by": "user",
+      "text": "<link> ?"
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T05:59:14.162Z",
+      "by": "mgmt-ops-10",
+      "text": "Sorry, that's our tool's fault. To protect privacy, the console hides any network address written in a thread and shows it as '<link>'. That's why all six came through empty. I've told the lead and logged the problem (I-119). The lead will send you the links another way, most likely as an item under 'Your steps', where network links are allowed."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T05:59:55.981Z",
+      "by": "lead",
+      "text": "Lead: sorry, the thread hides Wi-Fi addresses on purpose (privacy), so my links showed as <link>. They are now in your console steps as C-036, 'Try the six versions on your second iPhone': one button per version. Open them on the second iPhone only."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T06:09:29.731Z",
+      "by": "user",
+      "text": "Ok. let's investigate and fix this.",
+      "forLead": true
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T06:09:55.348Z",
+      "by": "mgmt-ops-10",
+      "text": "Got it. I've asked the lead to put a toolsmith on it now (it's logged as I-119). The plan: let a reply in a thread carry a Wi-Fi link the same way your steps already do. The address is never stored; it's filled in only when the page shows it to you. That keeps the privacy rule and gives you clickable links here. Until then, C-036 under 'Your steps' has all six links. I'll post here when the fix is live."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T06:10:11.723Z",
+      "by": "lead",
+      "text": "Lead: on it. A tool-fix agent (ts-i119) now teaches threads the same safe trick your console steps use. Messages store only the word 'lan' plus the port, never the address. The console fills in the Mac's current Wi-Fi address when it shows the link, so the links work and still nothing private is saved. Until it lands, use the buttons in C-036. I'll tell you here when it's live."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-04T07:02:43.451Z",
+      "by": "lead",
+      "text": "Fixed: phone links now work in threads. Tap a link below on any phone on the same Wi-Fi as the Mac.\n\nOldest first:\n• Original site (nothing changed): http://lan:56937/\n• v1 st6-rb (first best build): http://lan:57724/\n• v2 +shell-hold-c: http://lan:57726/\n• v3 st6-rb2: http://lan:57728/\n• v4 today's best build: http://lan:57725/\n• GPU preview (best build + 3 GPU fixes, still being checked): http://lan:57727/\n\nNotes:\n• The links follow the Mac's Wi-Fi address, so they keep working if it changes.\n• What each version improved will show on the Best build page (T-079), coming soon.\n\nNothing needed from you. Tell me when you're done and I'll stop these servers."
+    }
+  ],
+  "reads": {
+    "user": 15,
+    "mgmt-ops-10": 13,
+    "lead": 15
+  },
+  "history": [
+    {
+      "at": "2026-10-04T05:50:12.215Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T05:50:35.298Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User asks for a server running the current best build (st6-rb2 + idle-anim + menu fix, 10 fixes) to try it on their own. Ops can't serve builds. Please start a Try-it server, or assign the integrator, and post the URL in T-076."
+    },
+    {
+      "at": "2026-10-04T05:51:50.645Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User extends T-076 (#3): wants Try-it links for the baseline AND every best-build version (each past best build, not only today's), to try them side by side. Needs servers per build; please assign."
+    },
+    {
+      "at": "2026-10-04T05:56:41.553Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User #6: wants LAN links for the 6 Try-it servers to open on a second iPhone on the same Wi-Fi (not the test phone). Servers are localhost-only and only you may restart them; post the lan URLs in the thread only, never in a committed file."
+    },
+    {
+      "at": "2026-10-04T06:09:55.265Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User #12 'let's investigate and fix this' = I-119 (thread links hidden as <link>). This raises I-119 from low/unowned to wanted now: please assign a toolsmith (ts-i103 owns console threads?) for lan links stored as 'lan', resolved when shown."
+    },
+    {
+      "at": "2026-10-04T07:54:41.614Z",
+      "who": "mgmt-ops-10",
+      "action": "close",
+      "note": "Merged into T-066 (best build and what lands next), one thread per topic at your request (T-024 #13). Related: T-035, T-046, T-066, T-067, T-072, T-076, T-079."
+    },
+    {
+      "at": "2026-10-04T10:13:48.064Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "into T-066: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T06:09:55.348Z",
+    "lead": "2026-10-04T07:02:43.451Z"
+  },
+  "histSeen": {
+    "lead": 5
+  },
+  "merged": {
+    "into": "T-066",
+    "at": "2026-10-04T10:13:48.064Z",
+    "by": "mgmt-ops-10",
+    "closed": false
+  },
+  "related": [
+    {
+      "id": "T-066",
+      "kind": "merged-into",
+      "at": "2026-10-04T10:13:48.064Z",
+      "by": "mgmt-ops-10"
+    }
+  ]
+}

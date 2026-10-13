@@ -1,0 +1,66 @@
+{
+  "id": "T-232",
+  "title": "Comment on PR-032 \"End of the page: the Join button leaves on a short timed fa…\": queue me, iphone",
+  "anchor": {
+    "page": "proposals",
+    "item": "PR-032",
+    "label": "End of the page: the Join button leaves on a short timed fade, nothing on it follows your finger"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-07T04:41:42.553Z",
+  "updatedAt": "2026-10-07T04:45:03.565Z",
+  "rev": 10,
+  "assignees": [
+    "arch-compositor-morph"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-07T04:41:42.553Z",
+      "by": "user",
+      "text": "queue me, iphone",
+      "later": [
+        "arch-compositor-morph"
+      ]
+    },
+    {
+      "n": 2,
+      "at": "2026-10-07T04:42:24.237Z",
+      "by": "lead",
+      "text": "The iPhone is yours now, for 15 minutes; the robot test of the menu-open fix waits until you finish.\n| Page | Link on the iPhone |\n|---|---|\n| A: v11 (today's build) | http://lan:6431/ |\n| B: rev 3 (timed fade, nothing follows your finger) | http://lan:6435/ |\n- Scroll to the end of the page and open the menu slowly past 20 % and back; watch the Join button and the EN pill.\n- The phone is cool (33 °C) and has no heat setting on; the links also sit on the Proposals page.\nWhat you need to do: try A and B, then decide on the Join button change (PR-032) and reply here \"done with the phone\"."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-07T04:44:39.730Z",
+      "by": "user",
+      "text": "done, release iphone"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-07T04:44:47.459Z",
+      "by": "lead",
+      "text": "Thanks: the Join button change (PR-032 rev 3) is accepted and goes into the next build.\n- The next robot iPhone test now checks the full next build, not v11 alone: v11 + the People title slide + the menu-open fix + this Join button change.\n- It starts when you are done with the phone (your time ends 04:57Z at the latest).\n- If it is no worse than today's best, that build becomes the new best and I update the best-builds list.\nWhat you need to do: reply \"done with the phone\" here when you finish, or nothing and it ends by itself at 04:57Z."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "lead": 4,
+    "arch-compositor-morph": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-07T04:41:42.553Z",
+      "who": "console",
+      "action": "assign",
+      "note": "arch-compositor-morph (author of PR-032)"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-07T04:44:47.459Z",
+    "arch-compositor-morph": "2026-10-07T04:44:41.162Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

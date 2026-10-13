@@ -1,0 +1,93 @@
+{
+  "id": "T-102",
+  "title": "Comment on T-096 #10 \"PR-017 accepted: landing and what to research next #10\": Can we research this how to handle this more proper. Let's understand the framew…",
+  "anchor": {
+    "page": "threads",
+    "item": "thread:T-096/msg:10",
+    "quote": "- At the start, Safari gets the whole movement path up front for every digit tile. That's up to 6,000 small steps on a 10-second tick, and Safari prepares each one before the roll can begin.",
+    "label": "PR-017 accepted: landing and what to research next #10"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T09:57:30.393Z",
+  "updatedAt": "2026-10-04T20:22:25.090Z",
+  "rev": 18,
+  "assignees": [
+    "mgmt-ops-10",
+    "arch-gpu-lessons",
+    "fix-cd-roll-ca"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T09:57:30.393Z",
+      "by": "user",
+      "text": "Can we research this how to handle this more proper. Let's understand the framework likes svelte, react and vue framework. how they handle these more proper."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T09:57:54.898Z",
+      "by": "mgmt-ops-10",
+      "text": "Yes, good question. We'll research how Svelte, React and Vue handle this, and whether a lighter roll is possible. I've asked the lead to give it to the research agent that wrote the GPU lessons (arch-gpu-lessons).\n\nWhat the research will answer:\n- How each framework animates. Svelte is what this page is built with; React and Vue are the comparison. Does each give the browser a few key positions and let it fill in the rest, or does it compute every step itself?\n- Why our roll sends up to 6,000 small steps per tick, and whether the same look works with far fewer, e.g. one short movement per digit.\n- Which approach is cheapest on Safari, checked against Safari's own source and docs, not only our tests.\n\nThe countdown agent then tests the best idea on the computer first, counting work only (no phone).\n\nWhat you need to do: nothing. The answer comes in this thread."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T09:58:22.770Z",
+      "by": "lead",
+      "text": "Confirmed: the research agent that wrote the GPU lessons takes this now. The countdown agent is already building a lighter roll: the same movement with 4-5x fewer steps. The research checks it against what Svelte, React and Vue do.\n\nWhat you need to do: nothing. Answers come here."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T10:08:29.630Z",
+      "by": "fix-cd-roll-ca",
+      "text": "Short answer: the big frameworks don't solve this better. The ones that hand the motion to Safari either send many steps too, or use a format Safari can't run off the main thread. Our planned fix keeps the motion off the main thread and cuts the steps.\n- Svelte: its built-in transitions send Safari one step per 1/60 s frame, close to what we do now. Its spring and tween helpers move things from JavaScript every frame, like the original countdown. (Checked in Svelte's source.)\n- React: react-spring moves things from JavaScript every frame too. (Checked in its docs and source.)\n- Vue and React with the Motion library (formerly Framer Motion): it sends Safari 2 steps plus a curve made of points, one point every 10 ms. (Checked in Motion's source.)\n- Safari's source says a curve made of points can't run on the separate animation thread. It runs on the main thread, where scrolling also runs. Newer Safari code has an exception, but whether iOS 26.6 uses it is not known yet. (Checked in WebKit's source.)\n- Our fix (\"K\"): it describes the same path with smooth curve pieces that Safari can run off the main thread. That is about 5 times fewer steps, and the look stays exactly the same. Building it now, then checked in the simulator and with a short iPhone check.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T10:18:27.154Z",
+      "by": "arch-gpu-lessons",
+      "text": "The frameworks don't have a better trick for this. They all draw one smooth curve. Our countdown has to copy the original's stepped spring exactly, and the countdown agent's new version (K) does that with the fewest steps possible.\n\nHow each framework hands an animation to the browser (checked in each library's source and in Safari's and Chrome's source):\n\n| way | who uses it | steps per moving thing | Safari: off the main thread? |\n|---|---|---|---|\n| start + end + one curve | CSS, Vue Transition, React with CSS, Motion tweens | 2 | yes |\n| one step per 1/60 s | Svelte transitions | about 31 per 0.5 s | yes |\n| points curve, linear() | Motion springs (React, Vue) | 2 + about 50 points | no |\n| script every frame | Svelte spring, react-spring | none (all script) | no |\n| our roll now (PR-017) | countdown | 144-343 per digit tile | yes |\n| K, being built | countdown | 52-66 per digit tile | yes |\n\n- **Why we need more than 2 steps.** The original roll jumps a different amount depending on exactly when the tick lands within a 1/60 s frame. One smooth curve misses it by 1 px on a one-digit roll and 12 px on a 0 to 9 roll.\n- **Why K is the floor.** The original's path changes shape twice in every 1/60 s, so an exact copy needs one curve piece per shape. K uses exactly that.\n- **Fewer steps would change the look**, by about as much as the original itself changes between a 60 Hz and a 120 Hz screen. If K's start still costs something, that could be a separate proposal for you to try later.\n- **A side note on a newer Safari.** Its code has a new animation path, turned on 2026-09-26 but not in any Safari release yet. It would play these animations at 60 frames per second instead of 80-120, so part of the smoothness you felt may shrink in a future Safari. Unknown for now.\n- **Correction to #4:** in Safari, scrolling itself runs separately. The points curve (Motion's linear()) runs on the main thread beside layout and script.\n- Full write-up: research/gpu-lessons/frameworks.md.\n\nWhat you need to do: nothing. The countdown agent counts K's work next. Reply here if you'd like the \"fewer steps, slightly different look\" version to try later."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "mgmt-ops-10": 2,
+    "lead": 3,
+    "fix-cd-roll-ca": 4,
+    "arch-gpu-lessons": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-04T09:57:30.393Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T09:57:54.975Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User asks for research: how Svelte/React/Vue handle many-keyframe rolls (PR-017 sends up to 6k keyframes per tick). Suggest: assign to arch-gpu-lessons (framework survey + WebKit refs), fix-cd-roll-ca then counts a lean-keyframe variant. Please assign/confirm."
+    },
+    {
+      "at": "2026-10-04T09:58:22.696Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "arch-gpu-lessons,fix-cd-roll-ca"
+    },
+    {
+      "at": "2026-10-04T20:22:25.090Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T09:57:54.975Z",
+    "lead": "2026-10-04T09:58:22.770Z",
+    "fix-cd-roll-ca": "2026-10-04T10:08:29.630Z",
+    "arch-gpu-lessons": "2026-10-04T10:18:27.154Z"
+  },
+  "histSeen": {
+    "lead": 3
+  }
+}

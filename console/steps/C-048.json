@@ -1,0 +1,49 @@
+{
+  "id": "C-048",
+  "by": "int-v8",
+  "topic": "v8",
+  "kind": "choice",
+  "title": "Mac Safari check of the new best build (v8), about 2 minutes",
+  "instructions": "Does v8 look and behave the same as v7 in Safari on this Mac?\n- Open v8 (the link above) in Safari, scroll slowly to the bottom and back up, wide window and then narrow.\n- Then open v7 at http://localhost:51493/ and compare.",
+  "url": "http://localhost:51482/",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "v8 looks the same as v7",
+      "something looks broken in v8"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-04T18:39:48.218Z",
+  "queuedAt": "2026-10-04T18:39:48.218Z",
+  "updatedAt": "2026-10-04T18:43:31.433Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-04T18:39:48.218Z",
+      "who": "int-v8",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-04T18:39:58.797Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-04T18:43:31.433Z",
+      "who": "user",
+      "action": "answer",
+      "value": "v8 looks the same as v7"
+    }
+  ],
+  "queueSeq": 7,
+  "startedAt": "2026-10-04T18:39:58.797Z",
+  "result": {
+    "value": "v8 looks the same as v7",
+    "notes": "v8 is SOOO SMOOTHHHHH.\n\nyou're almost achieve our goal. do you have any improvement. \n\nI'd like to know about rendering time each element at v8 page.\nCan you open the thread to catch up this ?",
+    "at": "2026-10-04T18:43:31.433Z"
+  }
+}

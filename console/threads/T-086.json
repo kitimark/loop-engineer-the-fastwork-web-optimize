@@ -1,0 +1,108 @@
+{
+  "id": "T-086",
+  "title": "Comment on the Proposals page \"Proposals\": I'd like to make these web of this sections can open in the iphone on the same wi-fi route. let's investigate and im…",
+  "anchor": {
+    "page": "proposals",
+    "item": "part:page",
+    "quote": "Try it: scroll the real pages (option: Land it)A is \"Today (C8: the digit strips, already landed)\": the original page plus fixes/cd-roll-ca-live-a/patch.diff (version e241a0fb0430), B has this proposal applied (fixes/cd-roll-ca-live/patch.diff, version a3e7ad33dd90). Both open on this Mac only (loc…",
+    "label": "Proposals"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T07:37:58.558Z",
+  "updatedAt": "2026-10-04T13:40:52.757Z",
+  "rev": 21,
+  "assignees": [
+    "mgmt-ops-10",
+    "ts-i126"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T07:37:58.558Z",
+      "by": "user",
+      "text": "I'd like to make these web of this sections can open in the iphone on the same wi-fi route. let's investigate and improve this"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T07:38:12.839Z",
+      "by": "mgmt-ops-10",
+      "text": "Good idea. I've passed it to the lead, who decides on a tool fix.\n- Today the Try-it links on the Proposals page point to this Mac only (localhost), so the iPhone can't open them.\n- We already track a close problem (I-126: the page shows the Wi-Fi link as plain text, not as a link). The fix can cover both: every Try-it link gets a version that opens on the iPhone over the same Wi-Fi.\n- The pages are already served on the Wi-Fi network for the phone tests, so the fix mainly needs the right link.\nWhat you need to do: nothing now. I'll reply here when it's fixed."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T07:38:54.862Z",
+      "by": "lead",
+      "text": "**Yes, I've started this.** A tool agent (ts-i126) is now working on it.\n- Every Try-it option on the Proposals page will get a second link that opens on your iPhone over the same Wi-Fi.\n- If that option's page isn't being served on the Wi-Fi yet, the page will say so instead of showing a dead link.\n- The console itself stays on this Mac only. Only the test pages are shared on Wi-Fi.\n\n**What you need to do:** nothing. I'll reply here when it's live. Until then, the phone links in T-076 still work."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T08:19:41.630Z",
+      "by": "ts-i126",
+      "text": "Done: the Proposals page now shows iPhone links for each Try-it page.\n- Under each Try it panel there is a new box, \"On the iPhone (same Wi-Fi as this Mac)\". It has a link for page A and for page B, each with a Copy button.\n- Tap the link in Safari on the iPhone. The phone must be on the same Wi-Fi as the Mac.\n- These pages only show up once the Mac shares them. An agent or the lead does that with one command, which the box shows when a page is not shared yet. Ask in this thread and they'll run it. The links appear within 30 seconds.\n- Only the test pages go on the Wi-Fi. The console itself stays on this Mac.\n- Wi-Fi links in proposal questions and answers now open as real links, not plain text.\n- A possible next step: a \"Share on Wi-Fi\" button on the page, so you don't have to ask. That needs the lead's OK first.\nWhat you need to do: nothing. Next time you want a proposal on the phone, ask in its thread."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T08:22:48.733Z",
+      "by": "user",
+      "text": "Try-it panel of PR-017, i cannot access on my iphone yet. let's investigate"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T08:23:58.660Z",
+      "by": "mgmt-ops-10",
+      "text": "Fixed: the PR-017 pages are now shared on the Wi-Fi.\n- On the Proposals page, PR-017's Try it has the box 'On the iPhone': page A (http://lan:5558/) and page B (http://lan:5560/). Both answer, checked at 08:24 UTC.\n- But please put the iPhone down for now. A timed phone check (P-094, the avatar row) is running on it. At 08:22 UTC the phone dropped off the Mac mid-check, possibly because it was being used. Did you open Safari or unlock the phone around then?\n- I'll write here as soon as the phone is free for you.\nWhat you need to do: answer the Safari question. Then wait for my 'phone free' message before you try the links."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T08:24:14.569Z",
+      "by": "lead",
+      "text": "Go ahead: try the countdown proposal (PR-017) on the iPhone now. Your turn comes before the agents' phone tests.\n- On the iPhone, open Page A at http://lan:5558/ and Page B at http://lan:5560/. Both are on the Wi-Fi now. The phone must be on the same Wi-Fi as the Mac.\n- No cable needed for this.\n- Note: the clock not counting (T-085) is still open, so don't decide PR-017 yet. This is just to look.\n- When you are done, plug the iPhone back into the Mac, unlock it, and press Done on step C-043 in Your steps. The heat check then picks up again.\nWhat you need to do: try the two links, then plug the phone back in and press Done on C-043."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T08:24:42.141Z",
+      "by": "lead",
+      "text": "Correction: the iPhone is back, and you were right, you hadn't unplugged it.\n- I wrongly guessed you took it off the cable. The Mac really did lose the phone's cable connection at 08:20 UTC, by itself. Cause unknown for now (cable, USB port or the Mac's phone service).\n- Unplugging and replugging fixed it. The phone is visible again at 08:24 UTC.\n- If it happens again, we will log it in incident I-127 and look for a pattern.\nWhat you need to do: nothing. Trying PR-017 on the phone over Wi-Fi is still fine."
+    }
+  ],
+  "reads": {
+    "user": 8,
+    "mgmt-ops-10": 6,
+    "lead": 8,
+    "ts-i126": 4
+  },
+  "history": [
+    {
+      "at": "2026-10-04T07:37:58.558Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T07:38:16.443Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User wants Proposals-page Try-it links (A/B pages, e.g. PR-017) to open on the iPhone over Wi-Fi, not localhost only. Overlaps I-126 (lan placeholder shown as text). Needs a toolsmith: a phone link per Try-it (<link> the twin when https). Holding reply sent."
+    },
+    {
+      "at": "2026-10-04T08:19:25.247Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "ts-i126"
+    },
+    {
+      "at": "2026-10-04T13:40:52.757Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T08:23:58.660Z",
+    "lead": "2026-10-04T08:24:42.141Z",
+    "ts-i126": "2026-10-04T08:19:41.630Z"
+  },
+  "histSeen": {
+    "lead": 3
+  }
+}

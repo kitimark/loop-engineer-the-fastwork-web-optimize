@@ -1,0 +1,57 @@
+{
+  "id": "T-064",
+  "title": "Comment on status ops \"Ops hub: predictions, progress summary, handover, land batc…\": What do i need to do ?",
+  "anchor": {
+    "page": "status",
+    "item": "status:ops",
+    "quote": "waiting for a user reply in a console thread or a proposal decision since 03:44Z (22 min, timeout 58 min)",
+    "label": "Ops hub: predictions, progress summary, handover, land batches"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T04:06:34.515Z",
+  "updatedAt": "2026-10-04T11:14:49.585Z",
+  "rev": 7,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T04:06:34.515Z",
+      "by": "user",
+      "text": "What do i need to do ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T04:06:58.892Z",
+      "by": "mgmt-ops-10",
+      "text": "Nothing for you right now.\n\nThat line on the ops row is wrong. It shows my own background listener (the one that watches for your messages) as if I were waiting on you. It's a known display bug, I-108, and a fix is queued.\n\nWhat's open, all optional:\n- **PR-015** (hero photo sharpness, T-053) waits for your choice, keep or match, whenever you have time. Its Try-it is on the keep option. The match option will get a note saying it can't be built.\n- **Phone:** the robot-finger test P-091 is running now. No finger step for you."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "mgmt-ops-10": 2,
+    "lead": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T04:06:34.515Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (owner of ops)"
+    },
+    {
+      "at": "2026-10-04T04:42:43.896Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T04:06:58.892Z",
+    "lead": "2026-10-04T11:14:49.585Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

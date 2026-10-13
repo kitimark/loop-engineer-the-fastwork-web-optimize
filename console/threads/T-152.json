@@ -1,0 +1,69 @@
+{
+  "id": "T-152",
+  "title": "Should all agents run long runtime command in the background ?",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T19:06:43.501Z",
+  "updatedAt": "2026-10-04T20:43:13.867Z",
+  "rev": 17,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T19:06:43.501Z",
+      "by": "user",
+      "text": "Should all agents run long runtime command in the background ? \n\nI was see like some agents run test command likes `npm run test:unit`\nSo it took time to run. but some thread might related to them and i ask they couldn't response me cause. it was blocked by another long time command.\n\nlead, how to improve this ?",
+      "forLead": true
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T19:07:21.809Z",
+      "by": "lead",
+      "text": "Yes: anything that takes over about a minute should run in the background. A command running in the foreground means the agent can't read messages until it ends. The tools can enforce this; I need your OK for one guard.\n\n- Why: an agent only reads new messages between its commands. The full test run (4-5 min), a Mac lock wait (up to 10+ min) or a timing run in the foreground makes it deaf for that long. `test:unit` itself is short (about 5 s).\n- Already fixed today (eba686eb): a question to a busy agent now goes to a free one (me or a helper) instead of waiting.\n- Proper fix: a Claude Code guard refuses known long commands in the foreground (full npm test, lock holds and waits, timing runs) and says \"run it in the background\".\n- That guard is part of the protected safety layer, so it needs your OK. A tool-builder writes it with tests.\n- Until then I add the rule to the agent guide and tell every running agent now.\n\nWhat you need to do: answer here: OK to add the background-only guard? (yes / no)",
+      "ask": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T19:09:40.749Z",
+      "by": "user",
+      "text": "Some thread it direct to worker agent, not management agent or lead. actually the fixed today was check by time to not response. can it improve from check what's agent are doing and stuck on long runtime command or not. \n\nOr any improvement you can reply me on this thread.",
+      "forLead": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T19:10:18.634Z",
+      "by": "lead",
+      "text": "Yes, it can: the router will check what the agent is doing right now, not only how long it has been silent.\n\n- New: if the agent is stuck in a long command in the foreground (over 30 s), your message goes at once to a free agent or me. The busy agent gets a copy to read later.\n- The status board will show it, e.g. \"busy in npm test for 3 min\".\n- Tool-builder ts-board builds it with tests (incident I-169). I post here when it lands.\n- Plus the background-only guard from #2, if you say yes. Together: fewer stuck agents, and none blocks your question.\n\nWhat you need to do: answer #2 (yes / no to the guard).",
+      "ask": true
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T19:11:04.178Z",
+      "by": "user",
+      "text": "yes, is it improve at our tools, isn't it ?"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T19:11:37.062Z",
+      "by": "lead",
+      "text": "Yes, both changes are in our tools, so they work for every agent without anyone remembering a rule.\n\n- Guard (your yes): a new Claude Code check refuses long commands in the foreground and tells the agent to run them in the background. Tool-builder ts-fg-guard builds it with tests now.\n- Routing (I-169): the message router sees when an agent is stuck in a long command and sends your message to a free agent at once. ts-board builds it.\n- I post here when each one lands.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T20:42:57.048Z",
+      "by": "lead",
+      "text": "Yes, the command guard (I-170) hardens `wait.mjs file` too. It lands once its last test passes.\n- Moved here from the agent-waits thread (T-109), where you asked: \"This command take long runtime as well `node tools/wait.mjs file <file-path>`. did you consider to harden that ?\"\n- Cause: agents ran the wait in the foreground, so they couldn't hear you while it ran.\n- Fix: Claude Code then refuses long waits in the foreground, and only waits of 60 s or less are allowed there.\n- Status: one console test file is re-running; if it passes, I land the guard and say so here.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 7,
+    "lead": 7
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-04T20:42:57.048Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

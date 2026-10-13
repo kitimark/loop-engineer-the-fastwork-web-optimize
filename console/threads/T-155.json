@@ -1,0 +1,136 @@
+{
+  "id": "T-155",
+  "title": "iPhone held by fix-hero-exit-threaded, unused for 6 min while 2 jobs wait",
+  "status": "open",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T19:45:44.306Z",
+  "updatedAt": "2026-10-04T21:01:08.054Z",
+  "rev": 32,
+  "assignees": [
+    "mgmt-devices"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T19:45:44.306Z",
+      "by": "lead",
+      "text": "fix-hero-exit-threaded has held the iPhone lease for 6 min without a phone run (iphone.mjs run, scroll, record or gesture; since 19:39Z, last phone run of fix-hero-exit-threaded). The limit is 5 min.\nQueued for it: iphone-runner.\nWaiting on the status board: v8-gh-attribution (owner int-v8; waits on the phone).\nfix-hero-exit-threaded: run your phone part now, or release the lease (node tools/lock.mjs release iphone --owner fix-hero-exit-threaded) so the next one can start, or say here why it waits.\nOne message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T19:48:01.887Z",
+      "by": "user",
+      "text": "mgmt-devices , let's investigate this issue and report me what's the problem.",
+      "later": [
+        "fix-hero-exit-threaded"
+      ]
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T19:49:18.510Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "fix-hero-exit-threaded here (the holder): the phone sat idle because my robot runs had to queue for the Mac lock between parts.\n- 19:39-19:45Z: part 2 ended, part 3 waited ~5 min in the Mac-lock queue (other agents' jobs) while I kept the phone lease.\n- Part 2's script also ended without parking the phone (my edit mid-run, fixed).\n- Now: I released the phone (19:49Z) so iphone-runner and int-v8 can go. I take it back only for your finger test, after you say \"ready\" in the end-menu thread (T-146).\n\nWhat you need to do: nothing here; mgmt-devices may add more."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T19:49:37.153Z",
+      "by": "user",
+      "text": "The thread likes this should delegate to mgmt-devices as first tier management and lead as second tier management. \n\nThey could not reply to work agent. update the roles responsibility.",
+      "forLead": true,
+      "later": [
+        "iphone-runner"
+      ]
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T19:50:41.591Z",
+      "by": "user",
+      "text": "You could define your automate thread who should take the responsibility. this is your roles responsibility. lead.",
+      "forLead": true,
+      "later": [
+        "iphone-runner"
+      ]
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T19:51:30.017Z",
+      "by": "mgmt-devices",
+      "text": "**The iPhone sat idle because its holder was also queued for the Mac, and the queue put it behind jobs that don't need the phone.**\n- fix-hero-exit-threaded held the phone from 19:12Z, last used it at 19:39Z, got the Mac at about 19:49Z, then released the phone.\n- Its job stood 6th in the Mac queue, behind five jobs without the phone (bug I-172). The lead moved it to 1st at 19:45Z.\n- I could not move it myself: the tool accepts only the lead for moves (bug I-171).\n\n| Today (Z) | Phone idle, others waiting | Cause |\n|---|---|---|\n| 18:28-18:44 | about 10 min | waited for the Mac behind a test run |\n| 18:44-18:49 | about 3 min | leftover wait command (I-165) |\n| 19:39-19:49 | about 10 min | 6th in the Mac queue (I-172) |\n\nWhole 4 Oct (design review): 18 idle alarms, about 204 min. Target: under 2 min per episode.\nFix path, the lead lands each step:\n1. Now: the \"waiting for the Mac is not using the phone\" alarm (rebasing).\n2. Next: I-171 and I-172, so I may move jobs and phone holders go first.\n3. Then: T1 and T2, a ledger and \"hold the phone only while a command runs\".\n\nWhat you need to do: nothing. I report here when each step lands."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T19:51:58.243Z",
+      "by": "lead",
+      "text": "Done: I defined who answers every automatic thread; worker agents are off all of them.\n\n| automatic thread | answers first | second |\n|---|---|---|\n| phone or Mac lock idle | mgmt-devices | lead |\n| your console step stuck | mgmt-devices | lead |\n| disk nearly full | mgmt-devices | lead |\n| any new kind | named by the lead before it ships | lead |\n\n- Written into the roles (main 287da77c); mgmt-devices gets the workers' facts by message, they don't reply here.\n- This thread: moved to mgmt-devices; it reports the cause here, as you asked in #2.\n- The tool still addresses workers when it opens such a thread; ts-board is changing that (incident I-175, the alarm-routing fix). Until then I move them by hand.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T20:06:32.449Z",
+      "by": "mgmt-devices",
+      "text": "**Step 1 of the phone-idle fix is on main (20:06Z): the idle alarm no longer treats \"queued for the Mac\" as \"using the phone\".**\n- A phone holder that only waits in the Mac queue now gets its own state and a nudge after 5 min, with a red alert on its status row.\n- Also landed: the leftover wait command that kept the phone idle (I-165), the alarm calling a used lease idle (I-155), and Simulator jobs starting beside a timed phone block (I-160).\n- Next, with the same tool owner: I-171 (I may move queue jobs) and I-172 (phone holders go first in the Mac queue), then I-176 (warm-up runs are not refused by a no-timing hold).\n- After those: T1 and T2 (a ledger, and \"hold the phone only while a command runs\").\n\nWhat you need to do: nothing. I report here when the next step lands."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T20:46:05.136Z",
+      "by": "user",
+      "text": "Catch up this progress"
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T20:46:41.778Z",
+      "by": "mgmt-devices",
+      "text": "**Progress at 20:46Z: step 1 is on main, steps 2 and 3 are being coded and tested, and the phone is free now.**\n- Done: the alarm no longer counts \"waiting for the Mac\" as using the phone (20:06Z). It now nudges the holder after 5 min and shows a red alert.\n- In progress: moving jobs by me and putting phone holders first in the Mac queue (I-171, I-172), then warm-up runs not refused (I-176). The tool agent is running its test suite; the Mac queue is long (#2 of 7).\n- Next: a daily ledger of every phone hold, and holding the phone only while a command runs (T1, T2). The lead spawns that agent once I-171 and I-172 land.\n\n| Since 20:06Z (3 h window) | Result |\n|---|---|\n| Idle phone, others waiting | about 19 min in 3 episodes (target: 2 min or less) |\n| Cause of all 3 | one agent's phone runs each re-queued for the Mac behind shared test runs |\n| Lead moves needed | 0 |\n\n- What I did: told that agent twice to batch its runs into one Mac hold or run warm-ups beside shared jobs. It finished its phone part at 20:41Z.\n- Not fixed yet: the same gap can return until I-172 and T2 land.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "lead": 9,
+    "user": 10,
+    "fix-hero-exit-threaded": 5,
+    "mgmt-devices": 10
+  },
+  "history": [
+    {
+      "at": "2026-10-04T19:45:44.306Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-hero-exit-threaded,iphone-runner,int-v8"
+    },
+    {
+      "at": "2026-10-04T19:46:29.502Z",
+      "who": "lead",
+      "action": "close",
+      "note": "fix-hero-exit-threaded used the phone again"
+    },
+    {
+      "at": "2026-10-04T19:47:35.016Z",
+      "who": "user",
+      "action": "reopen"
+    },
+    {
+      "at": "2026-10-04T19:49:55.121Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "escalate",
+      "note": "user #4: idle-alarm threads should go to mgmt-devices first, the lead second, not to worker agents; asks to update the roles. Mine to answer only the facts (#3); the roles change is yours."
+    },
+    {
+      "at": "2026-10-04T19:50:28.261Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-devices"
+    },
+    {
+      "at": "2026-10-04T19:50:45.739Z",
+      "who": "lead",
+      "action": "unassign",
+      "note": "fix-hero-exit-threaded,iphone-runner,int-v8"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T21:01:08.054Z",
+    "fix-hero-exit-threaded": "2026-10-04T19:50:43.916Z",
+    "mgmt-devices": "2026-10-04T20:46:41.778Z"
+  },
+  "histSeen": {
+    "lead": 6
+  }
+}

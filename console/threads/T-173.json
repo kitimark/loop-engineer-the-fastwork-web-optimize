@@ -1,0 +1,44 @@
+{
+  "id": "T-173",
+  "title": "iPhone free for 12 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-05T00:54:35.254Z",
+  "updatedAt": "2026-10-05T01:00:35.487Z",
+  "rev": 3,
+  "assignees": [
+    "mgmt-devices"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T00:54:35.254Z",
+      "by": "lead",
+      "text": "The iPhone has had no holder for 12 min (since 00:42Z; released by lead). The limit is 5 min.\nWaiting on the status board: v9-best (owner lead; its next step names the phone (unmarked)).\nWhat unblocks it: the next owner takes it (node tools/lock.mjs acquire iphone --owner <you> ...).\nSteward (mgmt-devices): answer the user here; the lead is the second tier (I-175).\nOne message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105)."
+    }
+  ],
+  "reads": {
+    "lead": 1,
+    "user": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-05T00:54:35.254Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-devices"
+    },
+    {
+      "at": "2026-10-05T01:00:35.487Z",
+      "who": "lead",
+      "action": "close",
+      "note": "taken by int-v8"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T00:54:35.254Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

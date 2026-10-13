@@ -1,0 +1,115 @@
+{
+  "id": "T-074",
+  "title": "Comment on progress shell-hold-c \"People section shrink: hide the off-screen profile cards wh…\": How i tracing the works of wi-stack ?",
+  "anchor": {
+    "page": "progress",
+    "item": "progress:shell-hold-c",
+    "quote": "owner: wi-stack",
+    "label": "People section shrink: hide the off-screen profile cards while it starts"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T05:41:41.474Z",
+  "updatedAt": "2026-10-05T11:41:12.976Z",
+  "rev": 26,
+  "assignees": [
+    "mgmt-ops-10",
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T05:41:41.474Z",
+      "by": "user",
+      "text": "How i tracing the works of wi-stack ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T05:42:35.699Z",
+      "by": "user",
+      "text": "the wi-gpu-bundle as well, i cannot tracking them."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T05:42:40.934Z",
+      "by": "mgmt-ops-10",
+      "text": "wi-stack was the agent that combined fixes into one build (the 'stack') and ran that build's phone checks. It finished about 42 hours ago, so nothing of it is running now. Its last work: the people-section shrink fix (shell-hold-c) landed, and on the phone the frame where that section starts to shrink went from 37 ms to 17 ms (P-063). Its stack became today's best build. To trace what it did:\n1. Progress page: the 'shell-hold-c' item, its link to fixes/shell-hold-c/README.md (the full write-up), and the check P-063.\n2. Status page with 'show finished': its rows (phone-stack-test, best-stack) and their last notes.\n3. The predictions ledger fixes/PREDICTIONS.md, row P-063: what it predicted and what the phone measured.\nSorry for the slow answer; I missed your message for about 30 min."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T05:43:08.163Z",
+      "by": "mgmt-ops-10",
+      "text": "Correction: I did not miss your message, I answered it within a minute; ignore my apology. On #2, wi-gpu-bundle: it was started minutes ago by the lead (after your T-073) to build a 'GPU preview' (best build + hero R2 + end-of-page morph + countdown roll) for you to try. Track it on the Status page, row 'gpu-preview' (its state and next step), and on the Progress page once it has a build. It does checks only, no timing; the lead posts the Try-it when it is ready."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T05:43:26.411Z",
+      "by": "user",
+      "text": "Investigate the problem, do workaround and long-term improvement.",
+      "forLead": true
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T05:44:32.205Z",
+      "by": "lead",
+      "text": "Lead: you're right. The problem: an agent's work is spread over five places (Status rows, Progress items, git commits, lock holds, READMEs), and an agent's name on the pages is plain text that leads nowhere. Rows don't always carry the agent's name either: wi-gpu-bundle's row is called \"gpu-preview\", and wi-stack's rows are owned by iphone-runner. I opened incident I-118 for it.\n\nWorkaround, today:\n- wi-gpu-bundle (running now): Status page, row \"gpu-preview\" (/status#gpu-preview). It holds the current state and next step. Right now it is built and waiting for its Chrome checks behind the end-of-page morph phone test. Its Try-it (PR-016) comes to you when the checks pass.\n- wi-stack (finished on 2 Oct): its write-ups are fixes/stack5, st6-rb, st6-rb2, shell-hold-c and best-build (each README.md). Every commit it made ends in \"(wi-stack)\", 5 in all. The lead can list them for you on request.\n- Any agent: ask in a thread \"what is <name> doing\", and the desk (mgmt-ops-10) answers with its row, its last commit and its lock place.\n\nLong-term (I-118, a toolsmith starts now): a per-agent page in the console, /agent/<name>. It shows on one page what the agent is doing now (its Status rows, by owner or by who last updated them), what it holds or waits for (lock and phone queue), its console steps and threads, its commits (the \"(name)\" tag), its READMEs, incidents and findings. Every agent name on Status, Progress and Threads becomes a link to it, and a list of all agents (running and finished) sits in the nav bar. I'll tell you here when it is live."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T05:44:47.593Z",
+      "by": "mgmt-ops-10",
+      "text": "Understood. The problem is that an owner name on the Progress page leads nowhere: you can't jump to the agent's status, its branch or its write-up, and finished agents look the same as running ones. Workaround for now: on the Status page, search for the owner name with 'show finished' on; each row shows its last note and next step. For the lasting fix, I've passed this to the lead: linking each owner on Progress to its Status row and write-up is close to incident I-104, which a toolsmith (ts-i103) has queued. The lead will confirm the plan here."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T13:37:42.653Z",
+      "by": "user",
+      "text": "What's about this progress"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T13:41:56.746Z",
+      "by": "mgmt-desk-2",
+      "text": "Answer: the tracing problem is fixed since 08:09Z; both agents are findable on one page now.\n- Done (incident I-118, commit 292ec4df): console pages /agents (all agents, running and finished) and /agent/<name>. Each shows the agent's status rows, locks, commits tagged (name), READMEs, threads. Agent names on Status, Progress and Threads are links. Also I-104 (0f8bcaaa): Status rows and Progress items link to each other.\n- wi-stack: finished, its fix shell-hold-c (people-section shrink) is in today's best build. Phone frame at the shrink start went 37 ms to 17 ms (P-063, scripted scroll, OBSERVED). Open /agent/wi-stack.\n- wi-gpu-bundle: finished 6 h ago. GPU preview build is done and recorded (0f03aef1); its Try-it is proposal PR-016 (draft rev 2), which the lead publishes. Open /agent/wi-gpu-bundle.\n- If you meant 'what is the overall progress': v8 (next best build) is in progress: countdown-faces landed; countdown roll (cd-roll-ca) and end-of-page morph (morph-gpu) are checking; nav-hit-cache failed a parity check, being re-done; accent word (PR-019) accepted as exact.\nWhat you need to do: nothing. Tell me if you meant something else by 'this progress'."
+    }
+  ],
+  "reads": {
+    "user": 9,
+    "mgmt-ops-10": 8,
+    "lead": 8,
+    "mgmt-desk-2": 9
+  },
+  "history": [
+    {
+      "at": "2026-10-04T05:41:41.474Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T05:44:47.504Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User asks to investigate and fix: they can't trace an agent from the Progress page (owner wi-stack, done 42 h ago; wi-gpu-bundle new, no row link). Wants a workaround now and a long-term tool fix (owner -> status row/branch/writeup link). Likely I-104 (ts-i103)."
+    },
+    {
+      "at": "2026-10-04T13:41:02.571Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    },
+    {
+      "at": "2026-10-04T13:46:53.162Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-05T11:41:12.976Z",
+    "lead": "2026-10-04T13:37:44.038Z",
+    "mgmt-desk-2": "2026-10-04T13:41:56.746Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

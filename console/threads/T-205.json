@@ -1,0 +1,47 @@
+{
+  "id": "T-205",
+  "title": "Comment on the Best build page \"Today’s best build\": Today best build, didn't update ? the last best build is v9 ?",
+  "anchor": {
+    "page": "build",
+    "item": "part:page",
+    "quote": "Today’s best build Summary 23:18Z (22 h 3 min ago) by lead · live 21:21Z 10 commentsT-066 (closed) · T-072 (closed) · T-076 (closed) · T-079 (closed) · T-099 (closed) · T-101 (closed) · T-103 (closed) · T-106 (closed) · T-107 (closed) · T-111 (closed)",
+    "label": "Today’s best build"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T21:21:56.167Z",
+  "updatedAt": "2026-10-05T22:33:08.812Z",
+  "rev": 7,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T21:21:56.167Z",
+      "by": "user",
+      "text": "Today best build, didn't update ? the last best build is v9 ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T21:22:11.000Z",
+      "by": "lead",
+      "text": "Right: the official best build is still v9 (v9-final). The next one, v9.2, is being tested on the iPhone now and replaces it only if nothing gets worse.\n| | v9-final (today's best) | v9.2 (in test) |\n|---|---|---|\n| contents | all fixes landed up to this morning, plus the menu that follows the finger | v9-final plus skipped scroll callbacks and the menu-close rule |\n| Chrome: page work while scrolling | 289 per second | 187 per second |\n| status | landed | iPhone test 1 of 9 runs done, about an hour left, then your blind swipe test |\n- If v9.2 passes, I'll mark it the best build and tell you here; the menu clock (accepted today) comes next.\nWhat you need to do: nothing now; do the swipe test when it appears in \"Your steps\"."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T22:32:57.371Z",
+      "by": "lead",
+      "text": "v9-final stays today's best build: v9.2 did not pass its iPhone test, so it does not replace v9.\n- A reviewer re-ran the scoring and confirmed it: 9 of 9 runs valid, but v9.2 had 3 frames over 50 ms in 4 fling-and-stop runs (a new build may have 0).\n| | v9-final | v9.2 |\n|---|---|---|\n| nav blinks while flinging back | 0 | 6 |\n| Chrome page work while scrolling | 289 per second | 187 per second |\n- Caveat: v9.2's flings travelled farther back up the page than v9's, so part of the gap may be the path, not the build (seen in our data only).\n- Next: v9.2's three changes get tested one at a time on the iPhone to find the culprit, after the menu clock test.\n- The menu clock (accepted today) runs next on v9-final, right after the current pictures test.\nWhat you need to do: nothing; the best-build page keeps showing v9-final."
+    }
+  ],
+  "reads": {
+    "user": 3,
+    "lead": 3
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-05T22:32:57.371Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

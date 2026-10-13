@@ -1,0 +1,90 @@
+{
+  "id": "T-079",
+  "title": "Comment on the Best build page \"Today’s best build\": I'd like to ask you list baseline and all of best build version including improvement detail. let's invest…",
+  "anchor": {
+    "page": "build",
+    "item": "part:page",
+    "quote": "Today’s best build",
+    "label": "Today’s best build"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T06:39:16.191Z",
+  "updatedAt": "2026-10-04T10:13:48.235Z",
+  "rev": 11,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T06:39:16.191Z",
+      "by": "user",
+      "text": "I'd like to ask you list baseline and all of best build version including improvement detail. let's investigate and plan to do this."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T06:39:32.192Z",
+      "by": "mgmt-ops-10",
+      "text": "Good idea. Right now the page only shows today's build, so the history isn't anywhere you can see it. My proposal to the lead:\n(1) I write down the full history: the original page, then each best build in order (st6-rb, st6-rb plus the people-section fix, st6-rb2, today's best build, and the GPU preview that is still being checked). For each one: which fixes it added and what each fix improved, in plain words, with the measured numbers where we have them.\n(2) A tools agent adds a 'Versions' section to the Best build page that shows that list, with the same six versions you can try from your Try-it links (C-036).\nThe lead decides and will confirm the plan here."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T06:45:02.543Z",
+      "by": "lead",
+      "text": "Good idea. Here's the plan.\n\nWhat you'll see: a \"Versions\" section on the Best build page, oldest first:\n• Baseline: the original site, nothing changed\n• Each best build since then, with:\n  – what it improved, in one plain line\n  – the result: what got smoother, or \"no worse\" when it only does less work\n  – what it costs, if anything\n  – a Try-it link to open that version on your phone\n\nWho does it:\n1. The ops agent writes the version history: the 5 versions so far, each with its changes and results.\n2. A tools agent adds the section to the page.\n3. Each new best build adds its own line when it's made, so the list stays current.\n\nAlready there: the Try-it servers for the baseline and every version are still running (from T-076), so the links will work.\n\nI'll post here when the section is live, in about 1 hour."
+    }
+  ],
+  "reads": {
+    "user": 3,
+    "mgmt-ops-10": 2,
+    "lead": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-04T06:39:16.191Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T06:39:42.331Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User wants the Best build page to list baseline + every best-build version (st6-rb, +shell-hold-c, st6-rb2, best 65052c4a, gpu-preview c0c8ad4e) with what each improved. Proposal: ops writes a versions history in PROGRESS.json; a toolsmith adds the page section."
+    },
+    {
+      "at": "2026-10-04T07:54:41.684Z",
+      "who": "mgmt-ops-10",
+      "action": "close",
+      "note": "Merged into T-066 (best build and what lands next), one thread per topic at your request (T-024 #13). Related: T-035, T-046, T-066, T-067, T-072, T-076, T-079."
+    },
+    {
+      "at": "2026-10-04T10:13:48.235Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "into T-066: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T06:39:42.331Z",
+    "lead": "2026-10-04T06:45:02.543Z"
+  },
+  "histSeen": {
+    "lead": 2
+  },
+  "merged": {
+    "into": "T-066",
+    "at": "2026-10-04T10:13:48.235Z",
+    "by": "mgmt-ops-10",
+    "closed": false
+  },
+  "related": [
+    {
+      "id": "T-066",
+      "kind": "merged-into",
+      "at": "2026-10-04T10:13:48.235Z",
+      "by": "mgmt-ops-10"
+    }
+  ]
+}

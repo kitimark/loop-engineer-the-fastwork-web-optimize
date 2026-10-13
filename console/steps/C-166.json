@@ -1,0 +1,57 @@
+{
+  "id": "C-166",
+  "by": "lead",
+  "kind": "action",
+  "title": "Review what changed in the release since build b (one local page)",
+  "instructions": "Open ~/fw-release/build-2026-10-13e/review-delta.html in your browser (Finder: Go > Go to Folder, paste ~/fw-release/build-2026-10-13e, double-click review-delta.html). It shows only what is new or changed since the page you reviewed: 168 new pictures (the 65 with text found come first), 12 new and 2 changed texts, and the README. Tick anything that should not be public, press Copy flagged list and paste it here, or write: nothing flagged.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-13T13:43:29.658Z",
+        "done": "2026-10-13T13:43:43.167Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-13T13:40:22.338Z",
+  "queuedAt": "2026-10-13T13:40:22.338Z",
+  "updatedAt": "2026-10-13T13:43:43.167Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-13T13:40:22.338Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-13T13:43:29.658Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-13T13:43:43.167Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 125,
+  "startedAt": "2026-10-13T13:43:29.658Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-13T13:43:43.167Z"
+  }
+}

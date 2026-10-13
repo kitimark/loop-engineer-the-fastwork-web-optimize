@@ -1,0 +1,57 @@
+{
+  "id": "T-166",
+  "title": "iPhone held by iphone-runner, unused for 5 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T22:14:20.265Z",
+  "updatedAt": "2026-10-04T22:23:20.520Z",
+  "rev": 7,
+  "assignees": [
+    "iphone-runner",
+    "mgmt-devices"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T22:14:20.265Z",
+      "by": "lead",
+      "text": "iphone-runner has held the iPhone lease for 5 min without a phone run (iphone.mjs run, scroll, record or gesture; since 22:08Z, a phone run seen by the idle alarm). The limit is 5 min.\nWaiting on the status board: double-drive-fix (owner lead; its note names the phone).\niphone-runner: run your phone part now, or release the lease (node tools/lock.mjs release iphone --owner iphone-runner) so the next one can start, or say here why it waits.\nOne message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T22:16:22.715Z",
+      "by": "lead",
+      "text": "Known and in hand: the phone is held on purpose while iphone-runner fixes the heat-check script. It is editing now; its last change was at 22:14Z.\n- Cause: with Xcode's Serious setting on, the script mis-reads the phone's heat state, so the double-drive test would void itself at its start.\n- Next: I land the fix as soon as it's committed, and the double-drive test (P-118) starts at once.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "lead": 2,
+    "user": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-04T22:14:20.265Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "iphone-runner"
+    },
+    {
+      "at": "2026-10-04T22:16:22.562Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-devices"
+    },
+    {
+      "at": "2026-10-04T22:23:20.520Z",
+      "who": "lead",
+      "action": "close",
+      "note": "iphone-runner used the phone again"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T22:16:22.715Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

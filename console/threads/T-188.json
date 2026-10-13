@@ -1,0 +1,50 @@
+{
+  "id": "T-188",
+  "title": "PR-023: revision 5 is 0 min past its expected time",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-05T08:46:43.634Z",
+  "updatedAt": "2026-10-05T08:55:43.913Z",
+  "rev": 4,
+  "assignees": [
+    "lead"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T08:46:43.634Z",
+      "by": "lead",
+      "text": "For you: fix-hero-exit-threaded expected revision 5 of PR-023 (\"End-of-page menu: a long swipe back up leaves the end in one go (rev 7d, phones)\") by 08:46Z; it is 0 min late. Its last step: \"Rev 5 by fix-hero-exit-threaded: starts when the final v9 lands (about 3-4 h); A = final v9, B = final v9 + rev 7d\". The lead has been told and will check; nothing for you to do.\nLead: ask fix-hero-exit-threaded where it stands; a new mark with a new expected time closes this: node tools/console.mjs proposal revising PR-023 --by fix-hero-exit-threaded --note \"<the step it is on>\" --eta +<N>m\nOne message per overdue period; this thread closes by itself when the revision is marked again or posted, or the decision changes (tools/idle.mjs, I-177)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T08:55:12.532Z",
+      "by": "lead",
+      "text": "The menu-morph proposal's next revision (PR-023 rev 5) is late because the final v9 build it starts from is not landed yet; new estimate 10:55Z.\n- v9's phone test finished at 08:41Z with every run valid; scoring and the ops check are under way now.\n- Once v9 lands, fix-hero-exit-threaded builds rev 5: A = final v9, B = final v9 with the 7d menu change, both with Try-it pages.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "lead": 2,
+    "user": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-05T08:46:43.634Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    },
+    {
+      "at": "2026-10-05T08:55:43.913Z",
+      "who": "lead",
+      "action": "close",
+      "note": "PR-023: the revision is marked or posted, or the decision changed"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T08:55:12.532Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

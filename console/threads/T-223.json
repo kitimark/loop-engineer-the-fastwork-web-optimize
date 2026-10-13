@@ -1,0 +1,92 @@
+{
+  "id": "T-223",
+  "title": "Comment on PR-030 \"End of the page: the menu card opens on the graphics chip (…\": queue me, iphone",
+  "anchor": {
+    "page": "proposals",
+    "item": "PR-030",
+    "label": "End of the page: the menu card opens on the graphics chip (a third of the painting), looks slightly different"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-06T15:42:16.672Z",
+  "updatedAt": "2026-10-07T04:01:04.432Z",
+  "rev": 19,
+  "assignees": [
+    "arch-compositor-morph",
+    "lead"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-06T15:42:16.672Z",
+      "by": "user",
+      "text": "queue me, iphone"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-06T15:45:10.355Z",
+      "by": "lead",
+      "text": "The iPhone is yours now, booked for you from 15:42Z for 15 min (until 15:57Z); no agent will touch it.\n- Nobody was using it, so there was no wait; the v10 phone check waits until you are done.\n- The GPU-morph Try-it pages from the GPU-morph proposal (PR-030) are still served for the phone, if you want to try them.\nWhat you need to do: use the phone, then write \"done\" here so I release it (I'll extend the booking if you need longer)."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-06T15:47:04.379Z",
+      "by": "user",
+      "text": "done,"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-06T15:47:22.860Z",
+      "by": "lead",
+      "text": "Released: the iPhone is no longer booked for you, as of 15:47Z.\n- The v10 phone check (today's page vs v10, about 45 min) takes it next.\nWhat you need to do: please keep off the phone during that check."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-06T15:49:56.820Z",
+      "by": "lead",
+      "text": "Great news, thank you: the GPU-morph version (PR-030) goes into the v10 best build, as you decided at 15:49Z.\n- I stopped the v10 phone check that had just started: it measured v10 without the GPU-morph version, so its numbers would not describe your build.\n- The v10 builder (int-v8) now adds the GPU-morph version on top, with its author (arch-compositor-morph) helping where the two touch the same end-of-page code.\n- Then the new v10 gets its pixel check, Simulator counts and the phone no-worse check, then your finger test.\n- Still open for you: the fade-pause revision 3 (PR-029), which sits on top of the GPU-morph version; decide it when you like.\n- Next for the GPU-morph author: the 3-6 slow frames still at the very end of the page.\nWhat you need to do: nothing now; I'll post the new v10's time here."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-06T15:51:10.225Z",
+      "by": "lead",
+      "text": "The new v10 (with the GPU-morph version) should be ready for your finger test at about 18:15Z.\n| Step | Expected done |\n|---|---|\n| Build v10 + GPU-morph, check the code matches | about 16:30Z |\n| Pixel check and Simulator work counts | about 17:30Z |\n| Phone no-worse check (about 45 min) | about 18:15Z |\n- The stopped phone check had recorded no runs, so nothing was lost; the phone is free until about 17:30Z.\nWhat you need to do: nothing now; the finger test comes to you as a console step."
+    }
+  ],
+  "reads": {
+    "user": 6,
+    "lead": 6,
+    "arch-compositor-morph": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-06T15:42:16.672Z",
+      "who": "console",
+      "action": "assign",
+      "note": "arch-compositor-morph (author of PR-030)"
+    },
+    {
+      "at": "2026-10-06T15:42:31.245Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    },
+    {
+      "at": "2026-10-06T15:50:17.014Z",
+      "who": "user",
+      "action": "close"
+    },
+    {
+      "at": "2026-10-06T15:51:10.137Z",
+      "who": "lead",
+      "action": "reopen"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-06T15:51:10.225Z",
+    "arch-compositor-morph": "2026-10-07T04:01:04.432Z"
+  },
+  "histSeen": {
+    "lead": 4
+  }
+}

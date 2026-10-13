@@ -1,0 +1,165 @@
+{
+  "id": "C-146",
+  "by": "cap-finger-hero",
+  "topic": "cap-finger-hero",
+  "kind": "action",
+  "phone": true,
+  "title": "iPhone: scroll the hero cards with your own finger (original, then g0.0m)",
+  "instructions": "Two short recordings. Each page opens at the top; when the page says swipe, scroll down slowly through the hero cards with one finger, the way you normally would, for about 10-15 seconds, then press Done.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1: the original",
+      "instructions": "When it says swipe: scroll slowly down through the hero cards with one finger, about 10-15 s, then Done.",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-10T10:44:05.601Z",
+        "ready": "2026-10-10T10:44:14.429Z",
+        "started": "2026-10-10T10:45:13.796Z",
+        "recording": "2026-10-10T10:45:20.822Z",
+        "done": "2026-10-10T10:45:40.486Z"
+      },
+      "message": "recording: swipe now, about 10-15 s, then press Done"
+    },
+    {
+      "label": "Page 2: g0.0m",
+      "instructions": "The same again on this build: from the top, scroll the hero cards the same way, about 10-15 s, then Done.",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-10T10:45:51.571Z",
+        "ready": "2026-10-10T10:46:31.568Z",
+        "started": "2026-10-10T10:46:34.605Z",
+        "recording": "2026-10-10T10:46:37.417Z",
+        "done": "2026-10-10T10:47:03.908Z"
+      },
+      "message": "recorded (22 s)"
+    }
+  ],
+  "createdAt": "2026-10-10T10:44:05.321Z",
+  "queuedAt": "2026-10-10T10:44:05.321Z",
+  "updatedAt": "2026-10-10T10:47:03.908Z",
+  "rev": 13,
+  "history": [
+    {
+      "at": "2026-10-10T10:44:05.321Z",
+      "who": "cap-finger-hero",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-10T10:44:05.601Z",
+      "who": "cap-finger-hero",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading",
+      "note": "opening the page at the top (about 20 s)"
+    },
+    {
+      "at": "2026-10-10T10:44:14.429Z",
+      "who": "cap-finger-hero",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready",
+      "note": "ready: press Start (don't swipe until it says swipe)"
+    },
+    {
+      "at": "2026-10-10T10:45:13.796Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-10T10:45:14.505Z",
+      "who": "cap-finger-hero",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "note": "starting the recorders (about 10 s), don't swipe yet"
+    },
+    {
+      "at": "2026-10-10T10:45:20.822Z",
+      "who": "cap-finger-hero",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording",
+      "note": "recording: swipe now, about 10-15 s, then press Done"
+    },
+    {
+      "at": "2026-10-10T10:45:40.486Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-10T10:45:51.571Z",
+      "who": "cap-finger-hero",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "loading",
+      "note": "opening the page at the top (about 20 s)"
+    },
+    {
+      "at": "2026-10-10T10:46:31.568Z",
+      "who": "cap-finger-hero",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready",
+      "note": "ready: press Start (don't swipe until it says swipe)"
+    },
+    {
+      "at": "2026-10-10T10:46:34.605Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-10T10:46:34.872Z",
+      "who": "cap-finger-hero",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "note": "starting the recorders (about 10 s), don't swipe yet"
+    },
+    {
+      "at": "2026-10-10T10:46:37.417Z",
+      "who": "cap-finger-hero",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording",
+      "note": "recording: swipe now, about 10-15 s, then press Done"
+    },
+    {
+      "at": "2026-10-10T10:47:03.908Z",
+      "who": "cap-finger-hero",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "done",
+      "note": "recorded (22 s)"
+    }
+  ],
+  "queueSeq": 105,
+  "startedAt": "2026-10-10T10:45:13.796Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-10T10:47:03.908Z"
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "id": "T-094",
+  "title": "Comment on PR-017 \"Countdown roll on the graphics chip: same at rest, a little…\": Why you don't direct update the links into \"Try it: scroll the real pages\" se…",
+  "anchor": {
+    "page": "proposals",
+    "item": "PR-017",
+    "label": "Countdown roll on the graphics chip: same at rest, a little different while digits roll. Land or park?"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T08:59:17.275Z",
+  "updatedAt": "2026-10-04T21:01:08.042Z",
+  "rev": 16,
+  "assignees": [
+    "fix-cd-roll-ca",
+    "ts-i131",
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T08:59:17.275Z",
+      "by": "user",
+      "text": "Why you don't direct update the links into \"Try it: scroll the real pages\" section ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T09:00:17.969Z",
+      "by": "user",
+      "text": "Leader, let's investigate this, do workaround more proper and find the longer-term fixes.",
+      "forLead": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T09:02:59.535Z",
+      "by": "lead",
+      "text": "Found a likely cause; a tool fix is under way.\n- Cause: our page server marks the changed countdown stylesheet as 'never changes, keep it for a year'. On a port that served an earlier version, Arc keeps the old copy, even after a reload. Fresh ports have no old copy, so they work. Best guess (not proven on your Arc), but the header is real: I checked it.\n- Workaround now: use the 5422/5423 links in the PR text. The Try-it button moves to fresh, correct pages with the fix.\n- Long-term fix (ts-i131, incident I-131): the server stops sending 'keep for a year' for any file that can change between builds, and pages that already went stale get cleared. It also checks whether any iPhone test loaded a stale file.\n- Why the links weren't simply swapped: the Try-it section serves its pages through the console's own servers, which take no typed-in link. The fix makes those servers right instead.\nWhat you need to do: nothing. I'll reply here when it's live."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T14:50:48.706Z",
+      "by": "user",
+      "text": "any update ?"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T14:51:11.980Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes, it is fixed, and live since 11:12Z.\n\n- Cause: our page server told the browser 'keep this file for a year'. On a reused port, Arc kept the old build's files.\n- Fix (incident I-131, commit c7427cd0e9): the server now asks the browser to re-check every file, and a new port is used for each Try-it page.\n- Also landed 11:1xZ+: Try-it pages are now served by one on-demand host (commit 51fb199f, from your T-106).\n- Side effect: phone reload runs re-check about 51 files, so phone numbers from before and after do not compare.\n\nWhat you need to do: if a Try-it page still looks old, tell me the page and I will check it."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "fix-cd-roll-ca": 2,
+    "lead": 4,
+    "ts-i131": 2,
+    "mgmt-desk-2": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-04T08:59:17.275Z",
+      "who": "console",
+      "action": "assign",
+      "note": "fix-cd-roll-ca (author of PR-017)"
+    },
+    {
+      "at": "2026-10-04T09:02:59.430Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "ts-i131"
+    },
+    {
+      "at": "2026-10-04T14:50:48.706Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    },
+    {
+      "at": "2026-10-04T14:51:41.072Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "fix-cd-roll-ca": "2026-10-04T09:06:50.109Z",
+    "lead": "2026-10-04T21:01:08.042Z",
+    "ts-i131": "2026-10-04T09:07:03.041Z",
+    "mgmt-desk-2": "2026-10-04T14:51:11.980Z"
+  },
+  "histSeen": {
+    "lead": 4
+  },
+  "triaged": [
+    2
+  ]
+}

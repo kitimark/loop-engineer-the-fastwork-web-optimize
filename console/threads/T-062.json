@@ -1,0 +1,62 @@
+{
+  "id": "T-062",
+  "title": "Comment on PR-014 \"Avatar row and counters: keep the less-work change (not exa…\": Can you add the web try-it section ?",
+  "anchor": {
+    "page": "proposals",
+    "item": "PR-014",
+    "label": "Avatar row and counters: keep the less-work change (not exact under reduced motion) or drop it"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T03:51:38.622Z",
+  "updatedAt": "2026-10-04T10:59:03.833Z",
+  "rev": 8,
+  "assignees": [
+    "fix-rest-script"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T03:51:38.622Z",
+      "by": "user",
+      "text": "Can you add the web try-it section ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T03:55:26.185Z",
+      "by": "fix-rest-script",
+      "text": "Added. Each option now has a Try it panel. Keep: A is the current best build (st6-rb2), B is the same build plus this change (the same bytes we measured and scored). Drop: A and B are both the current best build, so they should look and behave the same. Look at the avatar row under \"Start selling\" (\"people showcasing their work\"). The change only matters while that row is off screen, so on screen they should look the same. The one known difference is under reduced motion (Settings > Accessibility > Reduce Motion): the still row is at most 4 shades apart, which you are unlikely to see by eye."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T04:05:26.380Z",
+      "by": "lead",
+      "text": "Update: you chose 'keep' on PR-014. Next, fix-rest-script prepares one short iPhone check that it isn't worse (no finger test needed for a less-work fix). It is 5th in the phone queue; after it passes, I land it."
+    }
+  ],
+  "reads": {
+    "user": 3,
+    "fix-rest-script": 2,
+    "lead": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-04T03:51:38.622Z",
+      "who": "console",
+      "action": "assign",
+      "note": "fix-rest-script (author of PR-014)"
+    },
+    {
+      "at": "2026-10-04T10:59:03.833Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "fix-rest-script": "2026-10-04T03:55:26.185Z",
+    "lead": "2026-10-04T04:05:26.380Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

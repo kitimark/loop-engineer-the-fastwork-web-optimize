@@ -1,0 +1,41 @@
+{
+  "id": "T-189",
+  "title": "iPhone free for 25 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-05T09:33:26.002Z",
+  "updatedAt": "2026-10-05T09:42:26.471Z",
+  "rev": 3,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T09:33:26.002Z",
+      "by": "lead",
+      "text": "The iPhone has had no holder for 25 min (since 09:08Z; released by ts-thermal-own). The limit is 5 min.\nWaiting on the status board: device-plan (owner lead; startable: P-130).\nWhat unblocks it: the next owner takes it (node tools/lock.mjs acquire iphone --owner <you> ...).\nNo steward on duty (mgmt-devices is parked): the lead handles this thread (I-175).\nOne message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T09:34:55.277Z",
+      "by": "lead",
+      "text": "False alarm: the phone is free on purpose; both waiting phone tests need the Serious heat condition back first.\n- The next phone test (P-129) and the one after it (P-130) are staged and checked; neither can start at the wrong heat.\n- My board row now says it waits on your Xcode heat step (C-065), so the alarm is clear.\nWhat you need to do: start Serious in Xcode and press Done on that step (C-065)."
+    }
+  ],
+  "reads": {
+    "lead": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-05T09:42:26.471Z",
+      "who": "lead",
+      "action": "close",
+      "note": "taken by iphone-runner"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T09:34:55.277Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

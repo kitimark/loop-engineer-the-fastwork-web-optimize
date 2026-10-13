@@ -1,0 +1,96 @@
+{
+  "id": "T-037",
+  "title": "ASK: What's our measurement rules ?",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-03T08:58:18.769Z",
+  "updatedAt": "2026-10-04T14:50:28.086Z",
+  "rev": 22,
+  "assignees": [
+    "mgmt-ops-10",
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T08:58:18.769Z",
+      "by": "user",
+      "text": "What's our measurement rules ?\nI'd like to know the rules we measures and which phase ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T08:58:59.061Z",
+      "by": "lead",
+      "text": "Our measurement rules, by phase. Every fix goes through 6 phases in order; none is skipped.\n\nPHASE 1. RESEARCH: where is it slow, and how often?\n- Find the slow frames on the iPhone (at least 3 runs with the same scroll method), plus Chrome at the phone's size.\n- A slow spot that shows up in fewer than 2 of 3 runs goes on a \"rare\" list and isn't fixed until it's confirmed.\n\nPHASE 2. INVESTIGATE: what changes in that slow frame?\n- Which element, which style, which code runs at that point. Checked in both Chrome and Safari's engine.\n\nPHASE 3. DISTINGUISH: what exactly causes it? (I sign this phase off.)\n- Prove the cause: remove the suspected part and the slowness goes away; remove a neighbour and it doesn't.\n- Any browser behaviour the explanation relies on must be confirmed by a reference (spec, Apple/Google docs, browser source code). Our own tests alone aren't enough.\n\nPHASE 4. FIX: does the build do only what we intended?\n- The fix is built on a frozen copy of the site. Never on the live site, never on the original files.\n- Before any measurement, the agent writes down what it expects and exactly how the result will be scored. A second agent checks that. We never change a prediction after seeing data; if it was wrong, it stays recorded as wrong.\n- Look must not change: pixel-identical to the original, checked by comparing screenshots. Only you can grant an exception.\n- New since your decision today: a rendering cost report per fix (GPU or main thread, layers and memory, repaint area, layout, script), counted per event, from Chrome and the Simulator, with no phone heat.\n\nPHASE 5. REVIEW: a real win on the target device, and nothing worse elsewhere?\n- An independent reviewer tries to break the fix.\n- Then the phone test: one phone, one test at a time. Original and fix alternate (C V V C ...), with a known-good control run to catch a hot or tired phone. Runs start warm (38-40 °C), all started the same way.\n- \"Does less work\" fixes: the work counts plus one short phone check that nothing feels worse.\n- Smoothness fixes (your top 3: hero fade-out, countdown strips, F3): phone test plus your own finger test.\n- Things you decide go to you as a decision page or console step. Your decision is the spec.\n\nPHASE 6. LAND\n- I add it to the main version only after all of the above, and record which exact build was measured.\n\nHOW SLOWNESS IS MEASURED\n- Chrome is set to mimic your iPhone 15 Pro Max: same screen size, processor slowed 6x. That matches the phone's slow-frame counts.\n- A \"slow frame\" on the phone is a gap over 50 ms (the goal is 0) or over 34 ms. Results right at the edge are flagged.\n- Only results from the same tools and the same frozen copy of the site are compared.\n- Timing tests on the Mac wait their turn, so nothing else runs while one is measuring."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-03T08:59:49.164Z",
+      "by": "user",
+      "text": "What's the new measurement that we researching ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-03T09:01:26.216Z",
+      "by": "lead",
+      "text": "The new measurement is the one from your idea in T-029 (#23, #25): measure what each element costs to draw, so we need fewer full-page phone runs and less cooling.\n\n1. Isolated runs (\"FRZ\"). We freeze everything on the page except the one element we change (for example the countdown or the menu panel), then count its work. A normal full-page run (\"FULL\") is kept as a check, but needed less often.\n\n2. A \"cost card\" for each fix. It has 5 rows, counted per event (per countdown second, per menu pin) rather than timed:\n   - which thread does the work (main thread or GPU/scroll thread)\n   - layers and GPU memory\n   - how much area is repainted, and how often\n   - layout work\n   - script work\n   Counts don't change when the phone is warm, so heat matters much less than with timing.\n\n3. What the pilot showed (P-075, P-076):\n   - Chrome: the style, layout and paint counts repeat reliably on the frozen page. These work.\n   - Simulator: the counts repeat too, but frame-based counts (frames, style recalcs, compositing) only make sense on the full page. Those stay FULL.\n   - Countdown script counts: not reliable yet, either per 4-second window or per countdown second (0 of 3 passed). For the countdown we still use the full-page numbers.\n\n4. Safari on the Mac: we decided against it. Its layer and tile code differs from the iPhone's (checked in WebKit's source), and the Simulator already gives us the same layer and timeline data.\n\nWhere it stands now:\n- A tool that builds these cost cards is being written (tools/costcard.mjs).\n- The first fix to use it is fix 3 (the menu panel when your finger holds the end of the page). It gets a cost card before any phone test, with an extra row for the first time the panel pins.\n- Under your \"go with your recommendation\" (#30), small heat fixes land on their cost card plus one short phone \"no worse\" check. Fixes 1-3 still get the phone test and your finger test.\n- Running now: a 10-minute trial on the phone with Xcode's \"Serious\" thermal setting, to see how much heat alone changes the frame timing. I'll report the result in T-029."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T03:13:40.955Z",
+      "by": "user",
+      "text": "Catch up this, the measurement rules are already updated ?"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T03:14:25.222Z",
+      "by": "lead",
+      "text": "Yes, they were updated after #4 (all by your decisions). The rules in force now, 03:15Z:\n\n1. Cost card first (from #4, now built: tools/costcard.mjs). Each fix gets counted work (layers, repaint area, layout, script, which thread), on Chrome and the iPhone Simulator, before any phone timing test.\n\n2. \"Does less work\" fixes land on their cost card plus one short \"no worse\" phone check (T-029 #30). New today (T-055): this now covers the countdown too. You said both versions feel smooth, so the countdown fixes need no more swipe A/B. Fixes 1 and 3 (hero fade-out, F3) still get a phone test and your finger test.\n\n3. Phone tests start warm (T-039, option B): every phone test runs at the phone's real \"Serious\" heat state, checked with Xcode's thermal reader at the start and end of each run (a run outside Serious is repeated). We stop at 44 °C or \"Critical\". Before we call the goal done, each top-3 fix gets one short \"no worse\" check on a cooler phone (Fair).\n\n4. Looks the same (PR-010): a fix must look identical, or within small fixed limits (colour shade up to 64 of 255, at most 0.5 % of the screen) in both Chrome and the Simulator. With reduced motion on it must be exactly the same. Anything beyond that, or a difference you only see while it moves, comes to you as a proposal (like PR-012 and PR-013).\n\n5. Sleep (T-052, your answer today): the timing-test pause is lifted. A test cut by a Mac sleep is thrown out and repeated; two in a row and we stop until the Mac stays awake. Keeping the Mac awake for the whole session needs one step from you (see T-052 #5).\n\n6. Unchanged: Chrome timing runs use the iPhone-like setting (430x932 screen, CPU 6x slower), one test at a time on the Mac, and every browser claim stays \"OBSERVED\" until a document or source code confirms it.\n\nNext: after the countdown chain, milestone 2 (stay smooth from a hot start, 42-44 °C, and under Xcode-induced Serious)."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T09:20:16.491Z",
+      "by": "user",
+      "text": "Catch up this progress"
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T09:25:29.376Z",
+      "by": "mgmt-ops-10",
+      "text": "Since #6 (03:15 UTC) the six rules there still hold. Three small additions and one open question.\n- Added: a phone run cut by a USB drop or a Mac sleep doesn't count and is run again. This happened once today (I-127).\n- Added: each build is now served on a port that hasn't served a different build that day. Your browser could otherwise keep old files from an earlier build (I-131, fix under way).\n- Added: research into why something feels smoother (T-096) counts work per frame only. No new timing tests.\n- Open question, from the countdown check (P-093): it passed the 'no worse' check, but every new-build run had 1-2 slow frames (over 50 ms) and the old build had none. The current limit (2 more slow frames) can't catch a steady +1. I've suggested to the lead that future checks also test for that pattern or record which frame it is. The lead decides, and I'll tell you here.\n- Results since #6: the resting avatar row and the countdown roll both passed their phone checks and land next. The menu fix (F3) has one hidden swipe pair left.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 8,
+    "lead": 7,
+    "mgmt-ops-10": 8,
+    "mgmt-desk-2": 7
+  },
+  "history": [
+    {
+      "at": "2026-10-04T09:20:16.491Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T14:04:50.720Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    },
+    {
+      "at": "2026-10-04T14:50:28.086Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T11:14:49.560Z",
+    "mgmt-ops-10": "2026-10-04T09:25:29.376Z",
+    "mgmt-desk-2": "2026-10-04T14:04:52.239Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "id": "T-067",
+  "title": "Catch-up: best build, phone queue, your questions (from T-066)",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T04:40:28.205Z",
+  "updatedAt": "2026-10-04T10:13:47.741Z",
+  "rev": 10,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T04:40:28.205Z",
+      "by": "lead",
+      "text": "**Catch-up, 4 Oct 04:40 UTC** (summary of the \"Today's best build\" thread, T-066)\n\n**Today's best build:** wave 1 (st6-rb2) plus the idle-animation fix and the menu display fix. The countdown digit strips are landed and go into the best build next.\n\n**How it performs so far** (phone, best build without its last two pieces):\n- Style work while the people cards scroll by fell from 118-123 ms to 59-65 ms per run.\n- In the middle of the page it fell from 329-346 ms to 207-222 ms.\n- At the top it rose, from 228-252 ms to 322-330 ms. The carousel fix now in the build should help there; it hasn't been re-measured.\n- The whole best build hasn't had one timed run yet. That's planned after wave 2.\n\n**Your goal** is a finger scroll with no frame over 50 ms and a steady 60 fps. The hero and the end of the page aren't there yet. Their fixes are next on the phone.\n\n**Phone queue, in order:**\n1. Menu-edge measurement (P-091): running now. It finds what causes the leftover stutter.\n2. Hero R2 (P-095): about 20 min, ready to start right after P-091. If it passes, **your blind swipe test** appears under \"Your steps\".\n3. End-of-page morph on the GPU (P-092).\n4. Countdown roll on the GPU (P-093).\n5. Resting avatar row (P-094).\n\nSteps 3-5 are short \"does less work\" checks; each lands if it passes.\n\n**Your questions, answered in short:**\n- **GPU and parallel work:** moving and fading run off the main thread on the GPU. The hero's GPU path removed its per-frame script but added work at the start of a scroll. R2 is the leaner version.\n- **Unknowns:** 8 open items. Two are being measured now (hero start-of-scroll cost, menu edge). Three have a known effect but an unknown cause in Safari. Three aren't measured yet: GPU-side cost, hot-start heat, and feel vs numbers.\n- **React-style batching:** Svelte's docs say it already applies state changes in batches (not yet checked against its source; de-frame-audit is checking). The time goes to the browser's style, layout and paint work. Our fixes follow your \"only compute what's visible\" idea.\n\n**New study:** de-frame-audit lists every piece of script that runs each frame or second, checks whether its result is visible, and checks the Svelte claim. It uses Chrome only, so no phone time. Results are due in this thread in about 1.5 h, around 06:10 UTC.\n\n**What needs you:** only the hero swipe test, when it appears."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T05:24:59.333Z",
+      "by": "lead",
+      "text": "Frame audit (your T-066 idea), counts only, no timing, no phone. Full note: research/design-engineering/frame-audit.md.\n1. Your idea is right and half done: in the original page the countdown kept animating with no clock on screen, so mid-page and at the end Chrome drew 60 frames/s for nothing. The best build stops that: 8 frames/s mid-page, 2 at the end.\n2. Svelte batching holds, but only within one task (Svelte 5.42+ source, batch.js Batch.ensure, tag <e-mail> lines 490-512). Separate timers flush separately. Batching per frame would add nothing: the browser already restyles once per frame (HTML spec).\n3. During scrolling, forced style work is already 3x lower (246 to 78 recalcs/s).\n4. Left, biggest first: (a) the top menu still hit-tests the page on every scroll frame, which runs the whole render pipeline a second time per frame (Chrome source confirms); (b) four scroll handlers still run on phones for shrink effects that phones never show; (c) the two countdown timers tick even when no clock is visible (about 2 frames/s at rest).\n5. Already being fixed: the countdown roll (P-093), script at rest (P-094), hero exit (P-095), the F3 menu edge (P-091) and the end-of-page morph (P-092).\n6. Next step if you agree: (a) and (b) are 'does less work' changes with identical output."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T05:29:44.513Z",
+      "by": "mgmt-ops-10",
+      "text": "Two small notes on #2. (1) In point 2, '<e-mail>' is the Svelte version tag, 5.42.0, which the page mistook for an e-mail address; the same code is on Svelte's current main. (2) In point 5, the menu-edge measurement (P-091) has since ended without an answer (VOID): the fixed scoring rule could not read 2 of its 4 reference runs. The menu fix (F3) lands on its earlier phone evidence plus your blind swipe test, after the end-of-page morph check."
+    }
+  ],
+  "reads": {
+    "lead": 2,
+    "user": 3,
+    "mgmt-ops-10": 3
+  },
+  "history": [
+    {
+      "at": "2026-10-04T04:40:28.205Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T07:54:41.470Z",
+      "who": "mgmt-ops-10",
+      "action": "close",
+      "note": "Merged into T-066 (best build and what lands next), one thread per topic at your request (T-024 #13). Related: T-035, T-046, T-066, T-067, T-072, T-076, T-079."
+    },
+    {
+      "at": "2026-10-04T10:13:47.741Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "into T-066: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T05:24:59.333Z",
+    "mgmt-ops-10": "2026-10-04T05:29:44.513Z"
+  },
+  "histSeen": {
+    "lead": 1
+  },
+  "merged": {
+    "into": "T-066",
+    "at": "2026-10-04T10:13:47.741Z",
+    "by": "mgmt-ops-10",
+    "closed": false
+  },
+  "related": [
+    {
+      "id": "T-066",
+      "kind": "merged-into",
+      "at": "2026-10-04T10:13:47.741Z",
+      "by": "mgmt-ops-10"
+    }
+  ]
+}

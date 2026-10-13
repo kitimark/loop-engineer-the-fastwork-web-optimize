@@ -1,0 +1,184 @@
+{
+  "id": "C-036",
+  "by": "lead",
+  "topic": "t-076",
+  "kind": "action",
+  "title": "Try the six versions on your second iPhone (optional, T-076)",
+  "instructions": "Open each link on your second iPhone, on the same Wi-Fi as the Mac, in any order. Leave the test iPhone alone. Press Done when you've finished; comments go in T-076.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 6,
+  "parts": [
+    {
+      "label": "1. Original page (no fixes)",
+      "url": "http://192.168.0.56:56937/",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-04T06:09:59.863Z",
+        "done": "2026-10-04T06:10:22.169Z"
+      }
+    },
+    {
+      "label": "2. st6-rb (2 Oct)",
+      "url": "http://192.168.0.56:57724/",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-04T06:10:23.471Z",
+        "done": "2026-10-04T06:10:38.084Z"
+      }
+    },
+    {
+      "label": "3. st6-rb + people-section shrink (2 Oct evening)",
+      "url": "http://192.168.0.56:57726/",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-04T06:10:39.800Z",
+        "done": "2026-10-04T06:10:59.222Z"
+      }
+    },
+    {
+      "label": "4. st6-rb2 (3 Oct)",
+      "url": "http://192.168.0.56:57728/",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-04T06:11:00.879Z",
+        "done": "2026-10-04T06:11:33.940Z"
+      }
+    },
+    {
+      "label": "5. Today's best build (10 fixes)",
+      "url": "http://192.168.0.56:57725/",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-04T06:12:13.886Z",
+        "done": "2026-10-04T06:12:15.168Z"
+      }
+    },
+    {
+      "label": "6. GPU preview (NEW, checks still running)",
+      "url": "http://192.168.0.56:57727/",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-04T06:12:17.771Z",
+        "done": "2026-10-04T06:14:53.319Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-04T05:59:48.997Z",
+  "queuedAt": "2026-10-04T05:59:48.997Z",
+  "updatedAt": "2026-10-04T06:14:53.319Z",
+  "rev": 13,
+  "history": [
+    {
+      "at": "2026-10-04T05:59:48.997Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-04T06:09:59.863Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T06:10:22.169Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T06:10:23.471Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T06:10:38.084Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T06:10:39.800Z",
+      "who": "user",
+      "action": "start",
+      "part": 3,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T06:10:59.222Z",
+      "who": "user",
+      "action": "done",
+      "part": 3,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T06:11:00.879Z",
+      "who": "user",
+      "action": "start",
+      "part": 4,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T06:11:33.940Z",
+      "who": "user",
+      "action": "done",
+      "part": 4,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T06:12:13.886Z",
+      "who": "user",
+      "action": "start",
+      "part": 5,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T06:12:15.168Z",
+      "who": "user",
+      "action": "done",
+      "part": 5,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T06:12:17.771Z",
+      "who": "user",
+      "action": "start",
+      "part": 6,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T06:14:53.319Z",
+      "who": "user",
+      "action": "done",
+      "part": 6,
+      "attempt": 1
+    }
+  ],
+  "startedAt": "2026-10-04T06:09:59.863Z",
+  "result": {
+    "value": "done",
+    "notes": "I was compare the gpu preview and baseline original page. \nThe hero card and end of page of gpu is smoother than original.\n\nThat's our breakthrough, keep doing your good progress.",
+    "at": "2026-10-04T06:14:53.319Z"
+  }
+}

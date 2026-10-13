@@ -1,0 +1,52 @@
+{
+  "id": "T-136",
+  "title": "Comment on status morph-gpu \"End-of-page morph on the GPU\": Status ?",
+  "anchor": {
+    "page": "status",
+    "item": "status:morph-gpu",
+    "quote": "parked",
+    "label": "End-of-page morph on the GPU"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T14:52:48.118Z",
+  "updatedAt": "2026-10-04T21:01:08.050Z",
+  "rev": 5,
+  "assignees": [
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T14:52:48.118Z",
+      "by": "user",
+      "text": "Status ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T14:54:26.847Z",
+      "by": "mgmt-desk-2",
+      "text": "Status: the fix is finished and waits for the v8 build. I corrected the row just now.\n\n- The row said 'parked', which hid that. It now says done, waits for build.\n- Fix: rev 3, one CSS line, goes into v8.\n- Still open: a short phone check inside v8's phone block, and the slow first opening after 17:20Z.\n- Agent: stopped; nothing is running on it.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "mgmt-desk-2": 2,
+    "lead": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T14:52:48.118Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-2": "2026-10-04T14:54:26.847Z",
+    "lead": "2026-10-04T21:01:08.050Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "id": "T-129",
+  "title": "iPhone held by user-try, unused for 5 min while 2 jobs wait",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T14:18:18.848Z",
+  "updatedAt": "2026-10-04T14:19:18.890Z",
+  "rev": 2,
+  "assignees": [
+    "mgmt-desk-2",
+    "user-try",
+    "iphone-runner",
+    "cd-roll-ca"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T14:18:18.848Z",
+      "by": "lead",
+      "text": "user-try has held the iPhone lease for 5 min without a phone run (iphone.mjs run, scroll, record or gesture; since 14:13Z, lease taken by user-try). The limit is 5 min.\nQueued for it: iphone-runner, cd-roll-ca.\nuser-try: run your phone part now, or release the lease (node tools/lock.mjs release iphone --owner user-try) so the next one can start, or say here why it waits. Desk (mgmt-desk-2): please make sure the phone is used.\nOne message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111)."
+    }
+  ],
+  "reads": {
+    "lead": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T14:18:18.848Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2,user-try,iphone-runner,cd-roll-ca"
+    },
+    {
+      "at": "2026-10-04T14:19:18.890Z",
+      "who": "lead",
+      "action": "close",
+      "note": "taken by iphone-runner"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T14:18:18.848Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

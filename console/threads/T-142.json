@@ -1,0 +1,50 @@
+{
+  "id": "T-142",
+  "title": "iPhone free for 5 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T16:42:50.932Z",
+  "updatedAt": "2026-10-04T16:55:50.851Z",
+  "rev": 3,
+  "assignees": [
+    "mgmt-desk-2",
+    "iphone-runner"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T16:42:50.932Z",
+      "by": "lead",
+      "text": "The iPhone has had no holder for 5 min (since 16:37Z; released by iphone-runner). The limit is 5 min.\nWaiting on the status board: phone-queue (owner iphone-runner; its note names the phone).\nOwners: take it now (node tools/lock.mjs acquire iphone --owner <you> ...), or say here why not. Desk (mgmt-desk-2): please make sure the next one starts.\nOne message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T16:43:44.789Z",
+      "by": "lead",
+      "text": "The iPhone is free on purpose, not stuck.\n\n- Two short Simulator jobs (toolbar-resize, then scroll-cb) run first, about 20 min, so the Mac is quiet for the next phone test.\n- Then the phone runs v8's final check (P-114), or the v7 fast-flick checks if P-114 isn't ready.\n- I fixed the board note that made the alarm count this as idle.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "lead": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-04T16:42:50.932Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2,iphone-runner"
+    },
+    {
+      "at": "2026-10-04T16:55:50.851Z",
+      "who": "lead",
+      "action": "close",
+      "note": "taken by iphone-runner"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T16:43:44.789Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

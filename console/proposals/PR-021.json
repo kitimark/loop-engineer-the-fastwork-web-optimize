@@ -1,0 +1,277 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-021",
+  "by": "fix-nav-earn",
+  "title": "Join waitlist button: the original's own timing back at both places, without moving the layout each frame",
+  "area": "whole",
+  "topic": "nav-earn",
+  "thread": "T-158",
+  "problem": "Rev 3, answering your notes on rev 2 (and thread T-158):\n- \"the animation lost during the end-of-page\": yes, rev 1 and 2 made the button follow the panel. Rev 3 brings back the original's timed hide: the width closes over 0.68 s, the fade takes 0.32 s after 0.12 s.\n- \"the start of the page is not optimize but gpu yet ?\": correct. In the original, the grow and shrink change the button's width and the gap, so the whole bar is laid out again every frame for 0.68 s.\n- \"i still see lag ... when it reveal and un-reveal at the start of the page\": rev 3 keeps the same look and timing but draws it without that per-frame layout (numbers below).\n- T-158 \"could not depends on scroll velocity\": agreed. Rev 3 does not follow the scroll at all. The bar flips at 72 % of the hero as in the original, and the button then runs on the original's 0.68 s timer.\n- Extra (finding F-243, a code from our findings board): at the end of the close, the bar no longer restarts its own width animation about 5 times in the last 68 ms.",
+  "idea": "Same look and timing as the original, drawn without moving the layout:\n1. The button keeps its full width in the bar all the time. The dark pill inside it is cut to the original's width at each moment, and the language switch slides over by the same amount.\n2. Each change (hidden to shown, or back) starts one short animation of that cut and slide on the original's 0.68 s curve. The fade and the text sweep are the original's own.\n3. At the end of the page the button hides on the original's timer once the panel is 20 % open, and comes back the same way when it closes.\nNo script runs per frame while it plays.",
+  "looksSame": "Frame by frame it is the same picture as today's best build (v8).\n- Top of the page, stills every 50-150 ms: at most 0.4 % of the bar's pixels differ, all on the edges of the moving language switch.\n- At rest: identical.\n- End of the page: the logo slides instead of jumping (rev 1, which you kept).",
+  "risk": "Medium-low: about 90 lines of script and 70 of CSS on top of v8.\n- The button gets an inner box for the dark pill (new markup); the click area is the same.\n- Safari draws the cut of the pill on the main thread (paint only, no layout); the slide and the fade can run on the GPU (WebKit source, CONFIRMED). Safari numbers from the iOS Simulator follow in the comments.\n- Reduced motion: no animation, as before.\n- Not checked on the real iPhone; not timed (the numbers count layouts, not frame times).",
+  "visualDiff": [
+    "Top of the page: nothing intended. The button grows and shrinks on the same timer and curve as today.",
+    "End of the page: the original's timed hide is back (rev 1 and 2 had removed it). Rev 1's logo slide stays.",
+    "While the language switch slides, the edges of its letters can differ by a fraction of a pixel."
+  ],
+  "gain": [
+    {
+      "what": "Top reveal: layouts per frame",
+      "before": "0.34",
+      "after": "0.02",
+      "tag": "OBSERVED",
+      "how": "Chrome page probe at phone size (430x775), not a timing test.\n- Layouts counted by the browser over the window, divided by frames.\n- The 0.7 s after the bar flips at 72 %: 43 layouts before, 2 after.",
+      "better": "better"
+    },
+    {
+      "what": "Top un-reveal: layouts per frame",
+      "before": "1.02",
+      "after": "0.07",
+      "tag": "OBSERVED",
+      "how": "Chrome page probe at phone size (430x775), not a timing test.\n- Layouts counted by the browser over the window, divided by frames.\n- The 0.7 s after scrolling back into the hero: 43 layouts before, 3 after.",
+      "better": "better"
+    },
+    {
+      "what": "Hero to people scroll, down: layouts per frame",
+      "before": "0.30",
+      "after": "0.03",
+      "tag": "OBSERVED",
+      "how": "Chrome page probe at phone size (430x775), not a timing test.\n- Layouts counted by the browser over the window, divided by frames.\n- A 1 s glide from 50 % to 80 % of the hero: 47 layouts before, 5 after.",
+      "better": "better"
+    },
+    {
+      "what": "People to hero scroll, up: layouts per frame",
+      "before": "0.15",
+      "after": "0.02",
+      "tag": "OBSERVED",
+      "how": "Chrome page probe at phone size (430x775), not a timing test.\n- Layouts counted by the browser over the window, divided by frames.\n- The same glide back: 47 before, 6 after.",
+      "better": "better"
+    },
+    {
+      "what": "End of page, close: layouts per frame",
+      "before": "0.31",
+      "after": "0.16",
+      "tag": "OBSERVED",
+      "how": "Chrome page probe at phone size (430x775), not a timing test.\n- Layouts counted by the browser over the window, divided by frames.\n- 1.5 s: 83 before, 43 after; what is left is the panel's own change of size.",
+      "better": "better"
+    },
+    {
+      "what": "End of page, open: layouts per frame",
+      "before": "0.25",
+      "after": "0.23",
+      "tag": "OBSERVED",
+      "how": "Chrome page probe at phone size (430x775), not a timing test.\n- Layouts counted by the browser over the window, divided by frames.\n- 1.5 s: 45 before, 41 after; the panel's own change of size.",
+      "better": "same"
+    },
+    {
+      "what": "Style work per frame, all of the above",
+      "before": "0.33-1.39",
+      "after": "same",
+      "tag": "OBSERVED",
+      "how": "Same probe. The page restyles every frame for its other animations in both builds; rev 3 adds no per-frame writes.",
+      "better": "same"
+    }
+  ],
+  "live": {
+    "patch": "fixes/nav-earn/patch.diff",
+    "ref": "HEAD",
+    "blob": "2a647fb305bd1cc5ef890077cb4766c9317cf6f7",
+    "base": "site-pretty",
+    "files": [
+      "_app/immutable/assets/2.gBuqKVzi.css",
+      "_app/immutable/nodes/2.DyWL8TcE.js"
+    ],
+    "a": {
+      "patch": "fixes/v8-best/patch.diff",
+      "ref": "HEAD",
+      "blob": "a220797b973dec7cd2b55edee4150b492b5b5509",
+      "base": "site-pretty",
+      "files": [
+        "_app/immutable/assets/2.gBuqKVzi.css",
+        "_app/immutable/nodes/2.DyWL8TcE.js"
+      ]
+    }
+  },
+  "compare": {
+    "a": {
+      "label": "Today's best build (v8)"
+    },
+    "b": {
+      "label": "v8 + rev 3"
+    },
+    "view": "side",
+    "shots": [
+      {
+        "caption": "End of page, phone, top bar frame by frame from the grow start (unchanged from rev 1)",
+        "a": "r2-a-1.webp",
+        "aSize": [
+          810,
+          2435
+        ],
+        "b": "r2-b-1.webp",
+        "bSize": [
+          810,
+          2435
+        ]
+      },
+      {
+        "caption": "End of page, desktop 1440 px, frame by frame from the grow start (unchanged from rev 1)",
+        "a": "r2-a-2.webp",
+        "aSize": [
+          810,
+          927
+        ],
+        "b": "r2-b-2.webp",
+        "bSize": [
+          810,
+          927
+        ]
+      },
+      {
+        "caption": "End of page, phone, whole screen 50 ms into the grow (unchanged from rev 1)",
+        "a": "r2-a-3.webp",
+        "aSize": [
+          1290,
+          2325
+        ],
+        "b": "r2-b-3.webp",
+        "bSize": [
+          1290,
+          2325
+        ]
+      }
+    ]
+  },
+  "state": "accepted",
+  "rev": 3,
+  "decision": {
+    "value": "accepted",
+    "notes": "It's SOOOO ULTRA SMOOOOTH, LET'S DO IT REAL QUICK. I'D LOVIN IT.",
+    "at": "2026-10-04T21:39:30.072Z",
+    "who": "user",
+    "rev": 3
+  },
+  "decisions": [
+    {
+      "value": "changes-requested",
+      "notes": "I'd lovin it. it's SOOOO ULTRA SMOOTH on the end of page appear and disappear. try to to swipe up and down between open and close.\n\nI'd like to ask you research more the animation at the start page. the button will appear when we scroll down. it still lag a bit. i guess you didn't apply this on the scroll on the top of page, doesn't it ? \n\nLet's open new thread for catch up this.",
+      "at": "2026-10-04T19:42:03.060Z",
+      "who": "user",
+      "rev": 1
+    },
+    {
+      "value": "changes-requested",
+      "notes": "I found the animation lost during the end-of-page is appearing. so the original they have transition animation to hidden the Join waitlist button on top of nav bar. \n\nAnd the start of the page is not optimize but gpu yet ? i still see lag of join waitlist button on the top of nav bar. when it reveal and un-reveal at the start of the page. during scroll the hero section to people and reverse that. \n\nDid you miss it ? open the thread for catch up this.",
+      "at": "2026-10-04T20:31:31.091Z",
+      "who": "user",
+      "rev": 2
+    },
+    {
+      "value": "accepted",
+      "notes": "It's SOOOO ULTRA SMOOOOTH, LET'S DO IT REAL QUICK. I'D LOVIN IT.",
+      "at": "2026-10-04T21:39:30.072Z",
+      "who": "user",
+      "rev": 3
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-04T19:36:41.719Z",
+      "by": "fix-nav-earn",
+      "note": "first version"
+    },
+    {
+      "rev": 2,
+      "at": "2026-10-04T20:26:07.357Z",
+      "by": "fix-nav-earn",
+      "note": "Rev 2 answers your note: the Join button at the top now follows your scroll as it does at the end of the page.\n- End of page: rev 1's two rules, unchanged.\n- Top: the button grows while the hero goes from 58 % to 72 % scrolled, full when the bar changes (before: 0.6 s late, text sweep to 1.5 s).\n- S"
+    },
+    {
+      "rev": 3,
+      "at": "2026-10-04T21:33:05.930Z",
+      "by": "fix-nav-earn",
+      "note": "Rev 3: the original timers at both places, drawn without per-frame layout; nothing follows the scroll (T-158)."
+    }
+  ],
+  "createdAt": "2026-10-04T19:36:41.719Z",
+  "updatedAt": "2026-10-04T21:39:30.072Z",
+  "proposedAt": "2026-10-04T21:33:05.930Z",
+  "history": [
+    {
+      "at": "2026-10-04T19:36:41.719Z",
+      "who": "fix-nav-earn",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-04T19:42:03.060Z",
+      "who": "user",
+      "action": "decided",
+      "value": "changes-requested",
+      "rev": 1,
+      "note": "I'd lovin it. it's SOOOO ULTRA SMOOTH on the end of page appear and disappear. try to to swipe up and down between open and close.\n\nI'd like to ask you research more the animation at the start page. the button will appear when we scroll down. it still lag a bit. i guess you didn't apply this on the scroll on the top of page, doesn't it ? \n\nLet's open new thread for catch up this."
+    },
+    {
+      "at": "2026-10-04T20:11:13.560Z",
+      "who": "lead",
+      "action": "held",
+      "rev": 1,
+      "note": "Rev 2 is in progress: the Join button at the top of the page now follows your scroll too. It is built; its last Chrome and Simulator checks run next (expected by about 20:35Z, Bangkok 03:35). This note goes away when rev 2 is posted for your review.",
+      "decision": "changes-requested"
+    },
+    {
+      "at": "2026-10-04T20:26:07.357Z",
+      "who": "fix-nav-earn",
+      "action": "revised",
+      "rev": 2,
+      "note": "Rev 2 answers your note: the Join button at the top now follows your scroll as it does at the end of the page.\n- End of page: rev 1's two rules, unchanged.\n- Top: the button grows while the hero goes from 58 % to 72 % scrolled, full when the bar changes (before: 0.6 s late, text sweep to 1.5 s).\n- S"
+    },
+    {
+      "at": "2026-10-04T20:26:07.357Z",
+      "who": "fix-nav-earn",
+      "action": "unheld",
+      "rev": 2,
+      "note": "released by the revision"
+    },
+    {
+      "at": "2026-10-04T20:31:31.091Z",
+      "who": "user",
+      "action": "decided",
+      "value": "changes-requested",
+      "rev": 2,
+      "note": "I found the animation lost during the end-of-page is appearing. so the original they have transition animation to hidden the Join waitlist button on top of nav bar. \n\nAnd the start of the page is not optimize but gpu yet ? i still see lag of join waitlist button on the top of nav bar. when it reveal and un-reveal at the start of the page. during scroll the hero section to people and reverse that. \n\nDid you miss it ? open the thread for catch up this."
+    },
+    {
+      "at": "2026-10-04T20:34:55.246Z",
+      "who": "lead",
+      "action": "held",
+      "rev": 2,
+      "note": "Rev 3 in progress (owner fix-nav-earn): original end-of-page hide timer back, top-of-page reveal on the GPU, both directions checked. Answer in T-158.",
+      "decision": "changes-requested"
+    },
+    {
+      "at": "2026-10-04T21:33:05.930Z",
+      "who": "fix-nav-earn",
+      "action": "revised",
+      "rev": 3,
+      "note": "Rev 3: the original timers at both places, drawn without per-frame layout; nothing follows the scroll (T-158)."
+    },
+    {
+      "at": "2026-10-04T21:33:05.930Z",
+      "who": "fix-nav-earn",
+      "action": "unheld",
+      "rev": 3,
+      "note": "released by the revision"
+    },
+    {
+      "at": "2026-10-04T21:39:30.072Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 3,
+      "note": "It's SOOOO ULTRA SMOOOOTH, LET'S DO IT REAL QUICK. I'D LOVIN IT."
+    }
+  ]
+}

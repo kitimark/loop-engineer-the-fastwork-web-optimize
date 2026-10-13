@@ -1,0 +1,35 @@
+{
+  "id": "T-164",
+  "title": "Monitor bash is error",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T21:48:03.309Z",
+  "updatedAt": "2026-10-04T21:49:48.802Z",
+  "rev": 4,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T21:48:03.309Z",
+      "by": "user",
+      "text": "I was see the lead monitor bash return this error. let's investigate, do workaround and do long-term fix\n\n⏺ Monitor event: \"lead triage listener (thread wait --monitor, I-147): user threads needing the lead, escalations, proposal decisions\"\n  Cannot destructure property 'news' of 'split(...)' as it is null.\n  WAKE listener-exit rc=1\nMessage queued for delivery to mgmt-devices at its next tool round.\nAllowed by auto mode classifier"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T21:49:48.001Z",
+      "by": "lead",
+      "text": "It's a crash in the listener tool, and no message was lost. The other listener had already delivered each one.\n- Cause: I run two listeners as the same reader, \"lead\", as a workaround for the earlier missed messages.\n- When you post, the faster one marks the message as read. The slower one then finds nothing new, and a code slip makes it crash (console.mjs line 410) instead of carrying on.\n- Which cases: only when two listeners share one reader. Today that is only the lead. Workers run one listener each.\n- Workaround (in place): each listener restarts itself after 30 s, and the other one keeps delivering. Every message so far reached me, this one included.\n- Long-term fix: ts-i181, the tool-fix agent already working on the missed-messages bug (I-181). It makes the slower listener skip quietly, with a test for two listeners. I land it as soon as it's ready, then run one listener again.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "lead": 2
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-04T21:49:48.001Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

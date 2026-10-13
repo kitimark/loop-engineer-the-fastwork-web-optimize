@@ -1,0 +1,310 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-009",
+  "by": "fix-platform-idle",
+  "title": "Platform section at rest: sweep and dash glint on the GPU (not pixel-identical: dash edge differs on iPhone WebKit)",
+  "area": "end",
+  "topic": "platform-idle",
+  "problem": "Not pixel-identical, first: on iPhone WebKit (Simulator) the grey dashes' bottom edge pixels differ by up to 17 of 255 the WHOLE TIME the glint is mounted, not only while it passes (first picture). The problem: at the bottom of the page (the #platform section) the page never rests. The colour sweep inside the four titles re-runs style every frame, and the glint on the dashed line repaints every frame. Pre-registered counts at rest (P-077), per 4 s sweep cycle: Chrome style 240 -> 8, paints about 481 -> 33; Simulator style about 478 -> 8, layouts about 237 -> 8, paints about 952 -> 4.",
+  "idea": "Both effects move as GPU transforms of the same gradient: the sweep as a band behind a text-shaped mask, the glint as a gradient strip clipped to the dash's exact shape. Same timing, same 1 s start delay, same stop when scrolled away, reduced motion unchanged.",
+  "looksSame": "Same colours, same speed, same shape and timing; the differences are sub-pixel edge and phase shades (numbers below), measured on frozen frames at the same moment.",
+  "risk": "Pixel rule exception needed (look-alike). The dash-edge shade on WebKit is permanent while the glint is mounted. Before landing, the lead runs one short phone no-worse check after your choice.",
+  "visualDiff": [],
+  "gain": [],
+  "compare": {
+    "a": {
+      "label": "today (st6-rb2)"
+    },
+    "shots": []
+  },
+  "options": [
+    {
+      "name": "both",
+      "label": "Sweep + glint on the GPU",
+      "idea": "Both changes (G1 + G3). The platform tail stops causing redraws at rest.",
+      "risk": "Pixel-rule exception (look-alike): the WebKit dash-edge shade stays while the glint is mounted. Lands only after the lead's short phone no-worse check.",
+      "visualDiff": [
+        "iPhone WebKit: the grey dashes' bottom edge row is up to 17/255 different the whole time the glint is mounted (the dash gets its own GPU layer)",
+        "Glint edges while it passes: up to 64/255 in Chrome, 33/255 in WebKit, top and bottom edge pixels only; the inside is the same",
+        "Colour sweep inside the titles: shifted by under a third of a device pixel; up to 9/255 on phones, 23/255 on a 1440 px desktop, 10/255 in WebKit",
+        "Reduced motion: identical"
+      ],
+      "gain": [
+        {
+          "what": "Chrome style recalcs per sweep cycle (4 s), page bottom at rest",
+          "before": "240",
+          "after": "8",
+          "tag": "OBSERVED",
+          "how": "P-077 pre-registered counts, 2 loads per arm, headless Chrome 430x932 DPR 3, 20 s windows (5 sweep / 4 glint cycles)"
+        },
+        {
+          "what": "Chrome paints per sweep cycle (4 s), page bottom at rest",
+          "before": "about 481",
+          "after": "about 33",
+          "tag": "OBSERVED",
+          "how": "same P-077 runs"
+        },
+        {
+          "what": "Simulator layouts per sweep cycle (4 s), page bottom at rest",
+          "before": "about 237",
+          "after": "8",
+          "tag": "OBSERVED",
+          "how": "P-077 Simulator Timeline counts, 2 loads per arm"
+        },
+        {
+          "what": "Simulator paints per sweep cycle (4 s), page bottom at rest",
+          "before": "about 952",
+          "after": "4",
+          "tag": "OBSERVED",
+          "how": "same P-077 Simulator runs"
+        },
+        {
+          "what": "Simulator style recalcs per sweep cycle (4 s)",
+          "before": "about 478",
+          "after": "8",
+          "tag": "OBSERVED",
+          "how": "same P-077 runs; with this build the Simulator page goes nearly idle at the bottom (rendering frames about 240 -> 8-12 per 4 s)"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "both on the GPU"
+        },
+        "shots": [
+          {
+            "caption": "iPhone WebKit (Sim), left dash at REST (glint away): grey dash bottom edge differs, max 17/255",
+            "a": "r1-o1-a-1.webp",
+            "aSize": [
+              1200,
+              216
+            ],
+            "b": "r1-o1-b-1.webp",
+            "bSize": [
+              1200,
+              216
+            ]
+          },
+          {
+            "caption": "iPhone WebKit (Sim), left dash, glint passing (0.5 s): max 33/255",
+            "a": "r1-o1-a-2.webp",
+            "aSize": [
+              1200,
+              216
+            ],
+            "b": "r1-o1-b-2.webp",
+            "bSize": [
+              1200,
+              216
+            ]
+          },
+          {
+            "caption": "Chrome phone 430 px, glint passing (0.5 s), 8x: max 56/255 on edge rows",
+            "a": "r1-o1-a-3.webp",
+            "aSize": [
+              1536,
+              192
+            ],
+            "b": "r1-o1-b-3.webp",
+            "bSize": [
+              1536,
+              192
+            ]
+          },
+          {
+            "caption": "Chrome phone 430 px, 'Earn' sweep at 2 s, 3x: max 8/255",
+            "a": "r1-o1-a-4.webp",
+            "aSize": [
+              621,
+              387
+            ],
+            "b": "r1-o1-b-4.webp",
+            "bSize": [
+              621,
+              387
+            ]
+          },
+          {
+            "caption": "Chrome desktop 1440 px, 'Earn' sweep at 2 s, 3x: max 10/255 here (23 worst title)",
+            "a": "r1-o1-a-5.webp",
+            "aSize": [
+              564,
+              348
+            ],
+            "b": "r1-o1-b-5.webp",
+            "bSize": [
+              564,
+              348
+            ]
+          }
+        ]
+      },
+      "live": {
+        "patch": "fixes/platform-idle/patch.diff",
+        "ref": "HEAD",
+        "blob": "ec8bb4051a9c365d52fdea200ec464ebddbd44d8",
+        "base": "site-pretty",
+        "files": [
+          "_app/immutable/assets/2.gBuqKVzi.css",
+          "_app/immutable/nodes/2.DyWL8TcE.js"
+        ]
+      }
+    },
+    {
+      "name": "sweep-only",
+      "label": "Sweep on the GPU, glint as today",
+      "idea": "Only G3. The dashed line and its glint stay exactly as today (no dash-edge difference anywhere).",
+      "risk": "Pixel-rule exception for the sweep only (sub-pixel phase shades). About half the saving: the glint keeps repainting every frame. Phone no-worse check before landing.",
+      "visualDiff": [
+        "Colour sweep inside the titles: up to 9/255 on phones, 23/255 on a 1440 px desktop, 10/255 in WebKit",
+        "Dash and glint: identical (unchanged code)"
+      ],
+      "gain": [
+        {
+          "what": "Chrome style recalcs per 2 s, page bottom at rest",
+          "before": "120",
+          "after": "about 5",
+          "tag": "estimate",
+          "how": "exploratory census ablation on st6-rb2 (sweeps paused); main frames stay about 120 and paints about 360 per 2 s, because the glint keeps repainting"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "sweep on the GPU"
+        },
+        "shots": [
+          {
+            "caption": "Chrome phone 430 px, 'Earn' sweep at 2 s, 3x",
+            "a": "r1-o2-a-1.webp",
+            "aSize": [
+              621,
+              387
+            ],
+            "b": "r1-o2-b-1.webp",
+            "bSize": [
+              621,
+              387
+            ]
+          },
+          {
+            "caption": "Chrome desktop 1440 px, 'Earn' sweep at 2 s, 3x",
+            "a": "r1-o2-a-2.webp",
+            "aSize": [
+              564,
+              348
+            ],
+            "b": "r1-o2-b-2.webp",
+            "bSize": [
+              564,
+              348
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "glint-only",
+      "label": "Glint on the GPU, sweep as today",
+      "idea": "Only G1. The titles' colour sweep stays exactly as today.",
+      "risk": "Pixel-rule exception for the glint, including the permanent WebKit dash-edge shade. Saving not measured alone: the sweep keeps style running every frame. Phone no-worse check before landing.",
+      "visualDiff": [
+        "iPhone WebKit: the grey dashes' bottom edge row is up to 17/255 different the whole time the glint is mounted",
+        "Glint edges while it passes: up to 64/255 in Chrome, 33/255 in WebKit, edge pixels only",
+        "Sweep: identical (unchanged code)"
+      ],
+      "gain": [
+        {
+          "what": "Chrome paints per 2 s, page bottom at rest",
+          "before": "240",
+          "after": "unknown; style recalcs and frames stay about 120",
+          "tag": "UNRESOLVED",
+          "how": "not measured on its own: the sweep keeps style running every frame; only the both-paused ablation (paints 0) exists"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "glint on the GPU"
+        },
+        "shots": [
+          {
+            "caption": "iPhone WebKit (Sim), left dash at REST: grey dash bottom edge, max 17/255",
+            "a": "r1-o3-a-1.webp",
+            "aSize": [
+              1200,
+              216
+            ],
+            "b": "r1-o3-b-1.webp",
+            "bSize": [
+              1200,
+              216
+            ]
+          },
+          {
+            "caption": "Chrome phone 430 px, glint passing (0.5 s), 8x",
+            "a": "r1-o3-a-2.webp",
+            "aSize": [
+              1536,
+              192
+            ],
+            "b": "r1-o3-b-2.webp",
+            "bSize": [
+              1536,
+              192
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "recommended": {
+    "option": "both",
+    "why": "Only both together let the platform tail rest (style and paints near zero at the page bottom); each alone leaves the other redrawing every frame."
+  },
+  "state": "accepted",
+  "rev": 1,
+  "decision": {
+    "value": "accepted",
+    "notes": "It's interesting proposal, for the visual it looks like as the same. i'd like to ask you investigate more about the measurement of pixel-identical. how you measure them? and how much of diff % of both compare. \n\nI think we can use this proposal for add new rules for widen for optimization acceptable about pixel-identical diff. \n\nCan you open the new thread for catch up this? \nAnd you may have to improve the thread support image posting. i'm not the tool is ready to support this feature. \nAnd investigate more can we apply these technique on anther elements for better animation performance rendering.",
+    "at": "2026-10-03T10:31:04.378Z",
+    "who": "user",
+    "rev": 1,
+    "option": "both"
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "notes": "It's interesting proposal, for the visual it looks like as the same. i'd like to ask you investigate more about the measurement of pixel-identical. how you measure them? and how much of diff % of both compare. \n\nI think we can use this proposal for add new rules for widen for optimization acceptable about pixel-identical diff. \n\nCan you open the new thread for catch up this? \nAnd you may have to improve the thread support image posting. i'm not the tool is ready to support this feature. \nAnd investigate more can we apply these technique on anther elements for better animation performance rendering.",
+      "at": "2026-10-03T10:31:04.378Z",
+      "who": "user",
+      "rev": 1,
+      "option": "both"
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-03T10:23:05.585Z",
+      "by": "fix-platform-idle",
+      "note": "first version"
+    }
+  ],
+  "createdAt": "2026-10-03T10:23:05.585Z",
+  "updatedAt": "2026-10-03T10:31:04.378Z",
+  "proposedAt": "2026-10-03T10:23:05.585Z",
+  "history": [
+    {
+      "at": "2026-10-03T10:23:05.585Z",
+      "who": "fix-platform-idle",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-03T10:31:04.378Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 1,
+      "note": "It's interesting proposal, for the visual it looks like as the same. i'd like to ask you investigate more about the measurement of pixel-identical. how you measure them? and how much of diff % of both compare. \n\nI think we can use this proposal for add new rules for widen for optimization acceptable about pixel-identical diff. \n\nCan you open the new thread for catch up this? \nAnd you may have to improve the thread support image posting. i'm not the tool is ready to support this feature. \nAnd investigate more can we apply these technique on anther elements for better animation performance rendering.",
+      "option": "both"
+    }
+  ]
+}

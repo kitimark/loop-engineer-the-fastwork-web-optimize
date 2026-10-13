@@ -1,0 +1,87 @@
+{
+  "id": "T-165",
+  "title": "Comment on the Progress page \"Fix progress\": Why chrome land display free ?",
+  "anchor": {
+    "page": "progress",
+    "item": "part:page",
+    "quote": "free",
+    "label": "Fix progress"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T22:07:40.101Z",
+  "updatedAt": "2026-10-05T00:57:25.509Z",
+  "rev": 19,
+  "assignees": [
+    "mgmt-devices"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T22:07:40.101Z",
+      "by": "user",
+      "text": "Why chrome land display free ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T22:08:13.992Z",
+      "by": "lead",
+      "text": "It showed \"free\" because the Mac lane sat empty from 22:04 to 22:07Z while 11 jobs waited. It's in use again now (iphone-runner since 22:07:41Z).\n- Cause: the first job in line (fix-toolbar-resize) is a timing test. A timing test may start only on a quiet Mac, and the Mac was busy (CPU 47 %, limit 25 %). Nobody may pass the first in line, so the lane stayed free.\n- Which cases: a timing hold first in line on a busy Mac. Here it was worse, because that job only counts frames on the Simulator and needs no quiet Mac at all (I-184, the tool forces such counts into a timing hold).\n- Workaround (done 22:07Z): I moved the phone's quiet-free job to the front, so the lane is used.\n- Long-term fixes (owner mgmt-devices, which spawns the tool-fix agents):\n  - count-only Simulator gestures get their own no-wait lane (I-184);\n  - a gated job lets the next job pass after 2 min (I-185).\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T22:09:10.723Z",
+      "by": "user",
+      "text": "You could update status more proper ?"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T22:09:57.102Z",
+      "by": "mgmt-devices",
+      "text": "Yes: the page told you \"free\" when it should have said \"waiting for a quiet Mac\". I am fixing the wording and the cause.\n- What was wrong: the lane was empty 22:04-22:07Z because the first job in line waited for a quiet Mac; the page still said just \"free\" and hid the reason in small grey text.\n- Fix 1 (incident I-188, a tool fixer is on it): when jobs wait on a stalled lane the page says \"Waiting for a quiet Mac\", who is next, why, and how many are in line.\n- Fix 2 (already started): a job stuck at that gate for 2 min lets the next job pass (I-185), and count-only Simulator tests stop needing the quiet-Mac gate (I-184).\n- My own board rows were also stale at 22:07Z (they still waited on your finished Xcode step); I fixed them and now update them at every change.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T22:09:58.745Z",
+      "by": "lead",
+      "text": "Yes. The page will say what is really happening instead of a bare \"free\".\n- Cause: the lock box prints \"free\" in large type whenever nobody holds the Mac, even with jobs in line. The real reason (waiting for a quiet Mac) was only in the small grey line under it.\n- Which cases: any time the first job in line can't start yet (Mac busy, or the job not answering) while others wait.\n- Workaround: the lane is in use now (iphone-runner). The small grey line under \"free\" already names who it hands over to and why.\n- Long-term fix: ts-board, the tool-fix agent that built the board, is on it (I-187, the misleading \"free\").\n  - New text, for example: \"Idle, 11 jobs waiting: fix-toolbar-resize waits for a quiet Mac since 22:04 (3 min)\".\n  - Amber after 2 min idle, red after 5.\n  - \"Free\" only when nobody waits.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T22:10:34.005Z",
+      "by": "lead",
+      "text": "A correction: you got two answers here. mgmt-devices owns this thread, and I should have stayed out of it.\n- One fix goes ahead: mgmt-devices' tool-fix agent (I-188, the clearer lane status). My duplicate (I-187) is closed, and nothing was done twice.\n- mgmt-devices answers this thread from now on.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-05T00:56:39.800Z",
+      "by": "mgmt-devices",
+      "text": "The clearer lane status is now in place (I-188, landed today).\n\n- The Progress page no longer says plain \"free\" while jobs wait. It now says, for example: \"Idle, 3 jobs waiting: fix-toolbar-resize waits for a quiet Mac since 22:04Z (3 min)\".\n- Colour: amber after 2 min idle, red after 5.\n- \"Free\" only appears when nobody is waiting.\n- The command line shows the same text.\n\n| Before | Now |\n|---|---|\n| \"free\" while the lane was stalled at the quiet-Mac check | \"Idle, N jobs waiting: <who> waits for a quiet Mac since <time> (N min)\" |\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 7,
+    "lead": 6,
+    "mgmt-devices": 7
+  },
+  "history": [
+    {
+      "at": "2026-10-04T22:08:24.315Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-devices"
+    },
+    {
+      "at": "2026-10-05T00:57:25.509Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T22:10:34.005Z",
+    "mgmt-devices": "2026-10-05T00:56:39.800Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

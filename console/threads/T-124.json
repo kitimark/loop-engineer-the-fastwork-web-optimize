@@ -1,0 +1,93 @@
+{
+  "id": "T-124",
+  "title": "Comment on progress illusion-proposals \"Cheaper look-alike effects (user priority 2)\": status is done, can you make these task like this more clearer. \"now: do…",
+  "anchor": {
+    "page": "progress",
+    "item": "progress:illusion-proposals",
+    "label": "Cheaper look-alike effects (user priority 2)"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T13:52:54.234Z",
+  "updatedAt": "2026-10-04T17:51:02.302Z",
+  "rev": 20,
+  "assignees": [
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T13:52:54.234Z",
+      "by": "user",
+      "text": "status is done, can you make these task like this more clearer. \"now: done\"\n\nbut the stage feel like is not done."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T13:53:28.233Z",
+      "by": "mgmt-desk-2",
+      "text": "You are right: 'done' on this row means the agent finished its job, not that a fix shipped.\n\n- Status row: 'done' = the agent closed the topic 39 h ago (the last check, the word-alone test, found no slow frames from the accent word).\n- Progress item: still stage 'R' (research), state 'diagnosing', not in the best build.\n- Result: no look-alike swap beat today's drawing, so the topic ends with nothing to build. 'Done' hides that.\n- Fix idea: show 'done, no fix' or 'closed, nothing to build' next to the word. That changes the console tool, so the lead decides.\n\nWhat you need to do: nothing; I sent this to the lead."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T13:54:32.247Z",
+      "by": "user",
+      "text": "Can you investigate all of progresses, i saw a lot of progresses display like this. it hard to distinguish between in-progress and already done."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T13:54:55.948Z",
+      "by": "lead",
+      "text": "**Agreed: \"done\" is misleading here. A topic closed without a fix will now say \"closed, no fix\".**\n\n- **What happened:** the look-alike study found that the accent word alone causes no slow frames, so nothing was built. The topic was closed, not shipped.\n- **The change:** a tools helper (the status-board fixer) is adding the label to the status and progress pages, so every closed-without-fix topic reads the same way.\n- I'll post here when it's live.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T13:55:12.912Z",
+      "by": "mgmt-desk-2",
+      "text": "Yes, I checked all 32 Progress items against their Status rows: 7 disagree, so your confusion is real.\n\n| Item | Progress says | Status row says |\n|---|---|---|\n| illusion-proposals | still researching | done |\n| r4-v3 | diagnosing | landed |\n| countdown-ca | diagnosing | landed |\n| fwreskip | dropped | landed |\n| anim-transform | diagnosing | dropped |\n| hero-exit-threaded | landed | still measuring |\n| morph-gpu | landed | still testing |\n\n- Cause: two separate labels written by different people at different times. Nothing compares them.\n- 'Landed' on Progress can mean 'a first version is in', while the owner still tests a newer one.\n- 'Done' on Status means 'the agent finished', not 'it shipped'.\n- Same family as the stale 'waiting on you' row you reported in T-122.\n\nI sent the lead a proposal: one combined label per item, plus an automatic warning when the two disagree.\n\nWhat you need to do: nothing; the lead decides the fix."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T13:55:53.408Z",
+      "by": "lead",
+      "text": "**Decided: both pages will show one label per item, made by the tools, so they can't disagree again.**\n\n- **One label:** an item that is in a build and still being improved will read like \"v1 in build, rev 2 in testing\". A topic closed without a fix will read \"closed, no fix\".\n- **Automatic warning:** if the two pages ever disagree again, a check flags it right away.\n- **The 7 wrong items** the desk found get fixed in the same change.\n- A tools helper (the status-board fixer) is building it now. I'll post here when it's live.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T16:07:26.174Z",
+      "by": "mgmt-desk-2",
+      "text": "The new row labels are live on the Status and Progress pages. Reload them.\n\n- Every row now shows one plain label read from the Progress page, for example \"in best build (v7)\", \"done, waits for build v8\", \"closed, no fix\" or \"dropped\".\n- \"Finished (nothing to land)\" is gone. A row that disagrees with Progress shows a red \"does not match\".\n- A parked row says why it waits and what restarts it, or shows a red \"needs review\".\n- Both pages have one legend that explains each label.\n- Checked on the live page just now: no red mismatch and no \"needs review\" on the rows we talked about.\n\nWhat you need to do: reload the pages and tell me if any row still reads wrong."
+    }
+  ],
+  "reads": {
+    "user": 7,
+    "mgmt-desk-2": 7,
+    "lead": 6
+  },
+  "history": [
+    {
+      "at": "2026-10-04T13:52:54.234Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    },
+    {
+      "at": "2026-10-04T13:53:29.242Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User: Status row 'now: done' for illusion-proposals reads as shipped but Progress shows stage R, not in build (closed with no fix). Asks for clearer wording, e.g. 'closed, no fix'. Needs a tool/label change (toolsmith) or your call."
+    },
+    {
+      "at": "2026-10-04T13:55:23.180Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User #3: Progress vs Status labels confuse. 7 of ~20 pairs disagree (see my #5 table). Your #4 adds 'closed, no fix'. Also needed: clean the other 6 labels and a mismatch flag? (cf I-145)"
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-2": "2026-10-04T16:07:26.174Z",
+    "lead": "2026-10-04T13:55:53.408Z"
+  },
+  "histSeen": {
+    "lead": 3
+  }
+}

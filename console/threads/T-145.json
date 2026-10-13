@@ -1,0 +1,52 @@
+{
+  "id": "T-145",
+  "title": "Comment on status hero-exit-threaded \"Hero fade-out on Safari's scroll thread (GPU, identical)\": What's the problem ?",
+  "anchor": {
+    "page": "status",
+    "item": "status:hero-exit-threaded",
+    "quote": "does not match: Progress hero-exit-threaded: in best build (v7); status row: being diagnosed (status.mjs sync sets it done)",
+    "label": "Hero fade-out on Safari's scroll thread (GPU, identical)"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T18:04:28.669Z",
+  "updatedAt": "2026-10-04T21:01:08.052Z",
+  "rev": 5,
+  "assignees": [
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T18:04:28.669Z",
+      "by": "user",
+      "text": "What's the problem ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T18:05:20.102Z",
+      "by": "mgmt-desk-2",
+      "text": "The problem was a mix-up of two jobs on one row. It is fixed now.\n\n- The hero fade-out fix landed and is in the best build (v7). The board's red line said the row disagreed with that.\n- The owner had reused the same row for a new job: the end-of-page menu (PR-018 rev 7), \"being diagnosed\". So the row told two stories.\n- I gave the new job its own row, pr-018-menu-morph, and set the hero row to done. The board check is now clean.\n- Cause: a follow-up job on a landed fix. The long-term fix is a tool rule that refuses it, with ts-board.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "mgmt-desk-2": 2,
+    "lead": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T18:04:28.669Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-2 (the desk)"
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-2": "2026-10-04T18:05:20.102Z",
+    "lead": "2026-10-04T21:01:08.052Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

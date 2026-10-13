@@ -1,0 +1,114 @@
+{
+  "id": "T-034",
+  "title": "ASK: these optimization consider test on another breakpoint ?",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-03T07:29:38.032Z",
+  "updatedAt": "2026-10-05T11:41:12.974Z",
+  "rev": 27,
+  "assignees": [
+    "mgmt-ops-10",
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T07:29:38.032Z",
+      "by": "user",
+      "text": "ASK: these optimization consider test on another breakpoint ?\n\nI'd expect our optimization could apply properly on any breakpoint"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T07:30:32.156Z",
+      "by": "lead",
+      "text": "Honest answer: only partly. Almost all our checks ran at your phone's size (430 px wide, iPhone 15 Pro Max) and some at a big desktop (1440 px). The page has many more breakpoints: at 600, 640, 720, 860, 1000, 1030 and 1200 px, plus a separate \"touch device up to 1200 px\" mode (iPads), and the \"reduce motion\" setting. Tablets, small phones (375 px), phone landscape and the 600-1200 px range are mostly untested.\n\nWhat I've started (agent de-breakpoints):\n1. A code audit: for every landed and in-progress fix, which breakpoint-specific code it touches, and which sizes that affects.\n2. A check of today's best build against the original at 375, 430, 600, 601, 768 (touch), 1024 (touch and mouse), 1280 and 1440 px, phone landscape, and with \"reduce motion\": the same look in frozen screenshots, no new errors, and no extra layout/repaint work at rest and while scrolling.\n3. A \"breakpoint gate\" every fix must pass before it lands, so this is covered from now on.\n\nThese are correctness and work-count checks, not timing tests, so they don't use the phone. I'll post the findings here, and anything that looks different at some size comes back to you before it lands."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-03T10:03:32.282Z",
+      "by": "lead",
+      "text": "Screen-size check: results (T-034). The full write-up is on main at research/breakpoints/README.md.\n\n1. Before this, almost every test ran at phone width (430 px). Now the landed fixes have been compared with the original page in Chrome at 11 widths from 375 to 1920 px, with and without touch, in phone landscape, and with \"reduce motion\" on at 430 and 1440.\n2. No errors at any width. The page looks the same as the original in 13 of 14 setups. The few flags left were the hero's rotating word caught at a different moment.\n3. One real difference: at 1440 px with \"reduce motion\" on, the tilted hero photos and the \"EN\" label come out slightly SHARPER with the fixes (3 % of the pixels). Layout and styles are identical. The cause is not confirmed (best guess: Chrome keeps an older image resolution for those layers). Your rule is pixel-identical, so I'm flagging it. The check that settles the cause is small; I'll run it unless you say a slightly sharper image is fine there.\n4. The savings hold at every width: about 90 % fewer layout passes at rest, and fewer layout and style passes while scrolling. The known costs (more painting at rest, 15-23 more layers) also show at every width. No width turns a gain into a loss. This was checked for 9 of 15 setups; the rest were parked to save usage.\n5. Fix 1 (hero-exit), wide screens: it matches in Chrome. In the iPhone Simulator laid out at 980 px, the tilted orbit cards differ slightly in pixels while scrolling. Its owner is tracking this down now; fix 1 won't land until it's identical or you OK it.\n6. Proposed rule: every fix passes a short \"screen-size gate\" before landing (the 14-setup pixel check, live resizes across the 600/860/1000 px breakpoints, and a count check per device class)."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T07:59:01.752Z",
+      "by": "mgmt-ops-10",
+      "text": "This is now the one thread for other screen widths (breakpoints: tablet, desktop), at your request in T-024 #13.\n- Merged here and closed: T-040 (Safari-engine check at 980 px wide), T-053 (sharper hero photos on desktop with reduced motion), T-063 (Try-it for proposal PR-015). You can still read them or reopen them.\nWhat you need to do: nothing. Ask here about any screen width."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T13:39:11.628Z",
+      "by": "user",
+      "text": "What's about this progress"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T13:41:56.976Z",
+      "by": "mgmt-desk-2",
+      "text": "Answer: the other-screen-width check is done, and one part is still open.\n- Done (de-breakpoints, finished 9 h ago): landed fixes compared with the original at 11 widths (375 to 1920 px), touch and mouse, phone landscape, Reduce Motion. No errors. Look matches in 13 of 14 setups. Savings hold at every width. Write-up: research/breakpoints/README.md.\n- The one real difference (sharper hero photos on desktop with Reduce Motion) was PR-015: you chose 'keep'. Merged here: T-040, T-053, T-063.\n- Still open: the iPhone Simulator at 980 px wide showed small pixel differences in the tilted hero cards for fix 1 (hero-exit); T-040 closed that line.\n- The proposed 'screen-size gate' (a short width check every fix passes before landing) is written up in the README, but I cannot find it in the landing checklist (fixes/LEAD.md). I sent that question to the lead.\nWhat you need to do: nothing; tell me if you want a specific width tested."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T13:42:10.444Z",
+      "by": "mgmt-desk-2",
+      "text": "Correction to my last reply: T-040 was merged into this thread, not settled. Its 980 px Simulator check was a stopgap; the real iPad Simulator (820/1024 px) and Mac Safari checks were planned (T-040 #2) and I find no result for them yet. So the open items are: (1) iPad and Mac Safari checks, (2) the screen-size gate rule. I have asked the lead for their status.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T13:42:26.630Z",
+      "by": "lead",
+      "text": "**Short answer: the screen-size check was done once (11 widths, phones to desktop, on the build before v6) and the fixes held. But it is not yet a fixed step for every new build, and the iPad Simulator and Mac Safari checks I promised in T-040 were not done. That's my miss.**\n\n| check | state |\n|---|---|\n| 11 widths, 375-1920, touch, landscape, reduced motion | done once (st6 stack): no errors, same look, gains held at every width |\n| Same check on v6/v7 | not done |\n| iPad Simulator, Mac Safari | not done (promised in T-040) |\n\n**Decision now:**\n- Every best build from v8 on gets the full width check plus the iPad Simulator and Mac Safari before it is called \"best\". The v8 integrator runs it.\n- v7 gets the same check now in Chrome (light, runs beside other work), so we know today's best build holds on every screen.\n\nWhat you need to do: nothing; results come to this thread."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T15:52:51.605Z",
+      "by": "lead",
+      "text": "**v7 passes the screen-size check: no errors, and no unexplained picture change at any of the 14 screen setups.**\n\n| check | result |\n|---|---|\n| errors | none at 11 widths, landscape, reduced motion, iPad Simulator |\n| pictures | same as before, except known moving parts (accent word, a counter mid-count, the hero photo you accepted) |\n| layout work while scrolling | 33-48 % less than the original page |\n\n- One cost: at rest, v7 paints a little more and uses ~40 more layers than the original. Cause not found yet; v8 paints about 40 % less than v7.\n- Not tested yet: Mac Safari, iPad landscape and live window resizing. They run after the phone test (~17:15Z).\n- Full write-up: research/breakpoints/v7-check.md.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 9,
+    "lead": 9,
+    "mgmt-ops-10": 5,
+    "mgmt-desk-2": 7
+  },
+  "history": [
+    {
+      "at": "2026-10-04T07:58:44.455Z",
+      "who": "mgmt-ops-10",
+      "action": "assign",
+      "note": "mgmt-ops-10"
+    },
+    {
+      "at": "2026-10-04T13:41:03.038Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    },
+    {
+      "at": "2026-10-04T13:41:57.078Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User asks (#5) about progress on breakpoints; is the screen-size gate adopted in LEAD.md landing checklist? I find it only in research/breakpoints/README.md. Please confirm/decide."
+    },
+    {
+      "at": "2026-10-04T13:42:10.597Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "Also: status of the real iPad Simulator and Mac Safari checks promised in T-040 #2? I find no result."
+    },
+    {
+      "at": "2026-10-04T17:51:26.140Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-05T11:41:12.974Z",
+    "lead": "2026-10-04T15:52:51.605Z",
+    "mgmt-desk-2": "2026-10-04T13:42:10.597Z"
+  },
+  "histSeen": {
+    "lead": 4
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "id": "C-140",
+  "by": "lead",
+  "kind": "action",
+  "title": "iPhone: unlock it and re-plug the cable (test driver can't start)",
+  "instructions": "1. Unlock the iPhone and leave it on the home screen. 2. Check Settings > Developer > Enable UI Automation is on. 3. Unplug the iPhone cable from the Mac, wait 5 seconds, plug it back in, then press Done here.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-10T02:48:43.393Z",
+        "done": "2026-10-10T02:49:20.196Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-09T15:08:39.331Z",
+  "queuedAt": "2026-10-09T15:08:39.331Z",
+  "updatedAt": "2026-10-10T02:49:20.196Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-09T15:08:39.331Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-10T02:48:43.393Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-10T02:49:20.196Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 99,
+  "startedAt": "2026-10-10T02:48:43.393Z",
+  "result": {
+    "value": "done",
+    "notes": "My phone ask me the passcode.",
+    "at": "2026-10-10T02:49:20.196Z"
+  }
+}

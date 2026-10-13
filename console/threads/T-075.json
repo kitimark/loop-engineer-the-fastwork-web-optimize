@@ -1,0 +1,84 @@
+{
+  "id": "T-075",
+  "title": "Comment on status ops \"Ops hub: predictions, progress summary, handover, land batc…\": What it means ?",
+  "anchor": {
+    "page": "status",
+    "item": "status:ops",
+    "quote": "may be out of date",
+    "label": "Ops hub: predictions, progress summary, handover, land batches"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T05:46:42.341Z",
+  "updatedAt": "2026-10-05T11:41:12.978Z",
+  "rev": 14,
+  "assignees": [
+    "mgmt-ops-10",
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T05:46:42.341Z",
+      "by": "user",
+      "text": "What it means ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T05:47:23.426Z",
+      "by": "mgmt-ops-10",
+      "text": "It is a false alarm for this row. The board marks a row 'may be out of date' when everything on that agent's branch is already on main but the row still says it is working. That check is meant for fix agents: once their fix lands, their row should say landed or done. Ops is different. I land my notes many times an hour, so my branch is often fully on main between commits, while I keep working (right now I'm watching the phone hand-over and waiting to second-read P-092). The row was updated 2 minutes before your comment and is current. I'll tell the lead the check misfires for ongoing roles like ops."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T05:57:33.897Z",
+      "by": "lead",
+      "text": "Lead: fixed. The board no longer asks 'landed?' on rows that are still working or waiting, like the ops row. Only rows that say ready-to-land or in review, whose work is already on main, get that flag, because there it means 'did the lead forget to mark it landed?'. Live now; reload the Status page."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T13:37:59.134Z",
+      "by": "user",
+      "text": "What's about this progress ?"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T13:41:56.828Z",
+      "by": "mgmt-desk-2",
+      "text": "Answer: the 'may be out of date' flag on ops is fixed, and ops is idle on purpose right now.\n- The flag fix landed 05:57Z (lead): it only shows on rows that say ready-to-land or in review, so the ops row no longer gets it. Today's board shows it on 1 row, not ops.\n- Ops (mgmt-ops-10) is parked since 13:28Z by design: it wakes when phone data arrives. Its last work: P-105 PASS, P-106 PASS (toolbar-resize check), P-104 second read AGREE (not landable, parity fails), land request 597127f0.\n- Next for ops: second reads of P-106, P-102, P-100, P-103 once their data lands; P-107 (successor of P-104).\n- What blocks the data: the phone. The toolbar-resize ablation (fast-flick stress test) holds it, then the baseline flick block, then countdown-roll P-102/P-100.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "mgmt-ops-10": 4,
+    "lead": 4,
+    "mgmt-desk-2": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-04T05:46:42.341Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (owner of ops)"
+    },
+    {
+      "at": "2026-10-04T13:41:02.773Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    },
+    {
+      "at": "2026-10-04T13:46:41.568Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-05T11:41:12.978Z",
+    "lead": "2026-10-04T13:38:01.762Z",
+    "mgmt-desk-2": "2026-10-04T13:41:56.828Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

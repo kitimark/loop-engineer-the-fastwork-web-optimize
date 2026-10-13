@@ -1,0 +1,53 @@
+{
+  "id": "T-038",
+  "title": "IDEA: all answer panel could show this answer will sent to who",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-03T09:09:00.908Z",
+  "updatedAt": "2026-10-03T10:09:24.950Z",
+  "rev": 12,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T09:09:00.908Z",
+      "by": "user",
+      "text": "IDEA: all answer panel could show this answer will sent to who\n\nMy pain point is when i have to answer. i didn't know which agents will get direct receive this message.\n\nIt's kind of hard to tracing back for me. can you improve this ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T09:09:43.628Z",
+      "by": "lead",
+      "text": "Good idea. I've asked a tool agent (ts-recipient) to add it now, as incident I-084.\n\nWhat you'll see:\n- Every place you answer shows 'Your answer goes to: <agent>' next to the answer button:\n  - console steps go to the agent that posted them;\n  - thread replies go to the lead, plus any agent the thread is assigned to;\n  - proposal decisions go to the proposal's owner and the lead.\n- The step and thread lists get a small 'to: <agent>' tag, so you can trace back who got which answer.\n- After you send, the confirmation names the recipient too.\n\nIt doesn't touch any measurement. When it passes its tests I'll land it and restart the console, then tell you here. Until then: every console step comes from the agent named at its top (the poster), and every thread reply reaches me (the lead) first."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-03T09:20:41.734Z",
+      "by": "lead",
+      "text": "Related to your C-031 note: answers and news now go into threads, not 'Your steps'. The heat test and its research moved to T-039."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-03T10:07:34.549Z",
+      "by": "lead",
+      "text": "Done: your idea is live (console restarted at 10:08Z). Every answer box now says who receives it: steps show 'Your answer goes to: <agent>', thread replies show 'Your reply goes to: lead, …', and proposals show 'Your decision goes to: <author>, lead'. After you answer, a short message confirms who got it, and the lists show a 'to: …' chip on each item. The stray 'nullnull' text above some answer buttons is fixed too. Reload the console page to see it."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-03T10:09:23.804Z",
+      "by": "user",
+      "text": "Good, thanks"
+    }
+  ],
+  "reads": {
+    "user": 5,
+    "lead": 5
+  },
+  "history": [
+    {
+      "at": "2026-10-03T10:09:24.735Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

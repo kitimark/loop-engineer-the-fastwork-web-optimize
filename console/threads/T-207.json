@@ -1,0 +1,83 @@
+{
+  "id": "T-207",
+  "title": "I'd like to disconnect the phone",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T22:45:04.012Z",
+  "updatedAt": "2026-10-06T03:41:56.018Z",
+  "rev": 24,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T22:45:04.012Z",
+      "by": "user",
+      "text": "I'd like to disconnect the phone, do you have any plan to use it yet ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T22:45:29.906Z",
+      "by": "lead",
+      "text": "Yes, you can disconnect the iPhone now: nothing needs it for at least the next 45 minutes.\n- The end-of-page morph work runs on the Simulator and Chrome first (fix A's checks, the toolbar-step counts).\n- The next iPhone use is fix A's short \"no worse\" test on today's best build, once those checks pass.\n- After that: the second try of the pictures-versus-titles test, then the AVIF pictures test.\n- When the iPhone is needed again, I'll post a \"reconnect the iPhone\" step in \"Your steps\"; no test starts without it.\nWhat you need to do: disconnect it whenever you like; reconnect when that step appears."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T23:39:34.792Z",
+      "by": "user",
+      "text": "connected."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T23:39:57.008Z",
+      "by": "lead",
+      "text": "Thanks, the iPhone is back; I'm restarting its robot-finger tool now so the first test can't fail on it.\n- Next on the phone: fix A's short test (P-152), as soon as its plan review ends and I sign it, likely within 20-30 minutes.\n- Right after it: fix B's test (P-153), which ends with a blind swipe step for you on the end-of-page morph.\n- Until then the phone stays free; please keep it plugged in and unlocked.\nWhat you need to do: nothing now; do the swipe step when it appears in \"Your steps\"."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-05T23:41:23.919Z",
+      "by": "user",
+      "text": "what's P-153 for blind swipe ?"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-05T23:41:36.672Z",
+      "by": "lead",
+      "text": "P-153 is <device-name>; its last part is a blind swipe where you compare two pages at the end of the page only.\n- Fix B is the menu reveal you accepted in PR-012: the menu opens as a moving clip instead of repainting the photo wall each frame.\n- Page 1 and page 2 are today's build with fix A, one of them also with fix B; you won't know which is which.\n- You swipe down into the end section on each page, opening and closing the menu, and pick the one that follows your finger better (or \"same\").\n- Before that, the robot finger runs the same test 8 times by itself; you don't touch the phone then.\n- P-152 (fix A's test) is robot-only, no swipe from you.\nWhat you need to do: nothing now; the swipe step will appear in \"Your steps\" with these instructions."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-05T23:41:57.180Z",
+      "by": "lead",
+      "text": "The iPhone test for fix B (P-153) ends with a blind swipe: you compare two pages at the end of the page only.\n- Fix B is the menu reveal you accepted in PR-012: the menu opens as a moving clip instead of repainting the photo wall each frame.\n- Page 1 and page 2 are today's build with fix A, one of them also with fix B; you won't know which is which.\n- You swipe down into the end section on each page, opening and closing the menu, and pick the one that follows your finger better (or \"same\").\n- Before that, the robot finger runs the same test 8 times by itself; you don't touch the phone then.\n- The test for fix A (P-152) is robot-only, no swipe from you.\nWhat you need to do: nothing now; the swipe step will appear in \"Your steps\" with these instructions."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-06T03:41:16.567Z",
+      "by": "user",
+      "text": "I was reconnect the iphone. fyi"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-06T03:41:37.466Z",
+      "by": "lead",
+      "text": "Thanks, the Mac sees the iPhone again (03:41Z, battery 36.2 °C), and <device-name>(P-153) is starting now.\n- It runs by robot finger in parts with heat checks between them; then fix A's last block follows.\nWhat you need to do: leave the iPhone alone (no touches) until I say the checks are done."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-06T03:41:55.715Z",
+      "by": "lead",
+      "text": "Correction: the hidden words above read \"the phone check for fix B\" (P-153); our privacy filter blanked them by mistake (known issue I-139).\nWhat you need to do: nothing; leave the iPhone alone until the checks are done."
+    }
+  ],
+  "reads": {
+    "user": 10,
+    "lead": 10
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-06T03:41:55.715Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

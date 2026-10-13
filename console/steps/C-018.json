@@ -1,0 +1,55 @@
+{
+  "id": "C-018",
+  "by": "lead",
+  "kind": "action",
+  "title": "fwreskip G1: open a QuickTime recording window for the iPhone",
+  "instructions": "On the Mac open QuickTime Player > File > New Movie Recording (allow camera access if asked). Click the small arrow next to the red record button: Camera = the iPhone, Quality = Maximum. Leave the window open and do NOT press record; we start and stop it from a script. Keep the iPhone unlocked, plugged in and untouched for about 20 min. Press Done when the window shows the iPhone screen.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-02T06:43:22.085Z",
+        "done": "2026-10-02T06:43:58.513Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-02T06:42:34.151Z",
+  "queuedAt": "2026-10-02T06:42:34.151Z",
+  "updatedAt": "2026-10-02T06:43:58.513Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-02T06:42:34.151Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-02T06:43:22.085Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-02T06:43:58.513Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    }
+  ],
+  "startedAt": "2026-10-02T06:43:22.085Z",
+  "result": {
+    "value": "done",
+    "notes": "I was decline the camera access that iTerm was request. We might to restart the iTerm for apply the new permission",
+    "at": "2026-10-02T06:43:58.513Z"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "T-243",
+  "title": "check iphone still connect ?",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-07T19:25:46.664Z",
+  "updatedAt": "2026-10-07T19:26:07.348Z",
+  "rev": 5,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-07T19:25:46.664Z",
+      "by": "user",
+      "text": "check iphone still connect ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-07T19:26:05.666Z",
+      "by": "lead",
+      "text": "Yes, the iPhone is still connected (checked 19:25Z).\n\n| Check | Result |\n|---|---|\n| USB cable | connected since 18:45Z, no drop since |\n| Safari remote debugging | works: iOS 26.6.1, our page open |\n| Cable watcher | running; posts a re-plug step if the cable drops |\n| Phone slot | free; no agent is ready for a phone test yet |\n\nWhat you need to do: nothing; leave the phone plugged in and unlocked when you can."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "lead": 2
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-07T19:26:05.666Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

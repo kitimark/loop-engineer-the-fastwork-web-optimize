@@ -1,0 +1,420 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-011",
+  "by": "lead",
+  "title": "Hero exit on Safari's own scroll animations: two small motion-only pixel differences",
+  "area": "hero",
+  "topic": "hero-exit-threaded",
+  "thread": "T-030",
+  "problem": "On the iPhone, while you scroll through the hero, the page's script runs on every frame. It reads the hero's position and writes a new fade value, and Safari then restyles and repaints the hero. On the phone this ran on about 80 % of moving hero frames (P-074, C1 0.81, C2 0.79). The fix moves the hero's exit fade to Safari's built-in scroll-driven animations, so the per-frame script and most of the repaint go away. In every frame at rest it draws exactly what the original draws. Two small differences remain, and they need your decision because the rule is \"pixel-identical in every frame\":\n(1) While the page is moving (and for up to 0.3 s after it stops), a few edge pixels of the headline and the \"Scroll down\" cue are 1-17 colour levels off.\n(2) After a jump back to the top while the page is still moving, the side photo cards show their settled look at once. The original first shows a slightly different drawing for about 0.12-0.3 s.\nWhere the numbers come from: Simulator frozen frames, iPhone 15 Pro Max size (1290x2796 device px), each frame compared to the original at the same moment. A true A/A (the original against itself, same session) differs by 0 px in every area shown.",
+  "idea": "Safari only, phone-width layouts (600 px wide or less), motion allowed. While the hero scrolls, its exit fade (opacity, slide, blur) runs as CSS scroll-driven animations instead of a per-frame script. The page switches between two modes:\n- At rest: when the scroll stops for 0.3 s, or at the very top (the first 30 px), the page parks and the original code draws the hero. Parked frames are pixel-identical (0 px).\n- Live: while scrolling.\nChrome, desktop-width layouts and reduced motion run the original code unchanged.",
+  "looksSame": "At rest the page is the original code's frame, 0 px different (checked at the top, at rest mid-hero, and 300 / 700 / 1500 ms after a return to the top). While it moves, the CSS animations compute the same values as the script, so the shapes, positions, text and colours are the same. What differs is how Safari draws a few anti-aliased edges and a blurred glow, by 1-2 levels at most positions.\nPR-010 tiers (your pixel-tolerance choice is still open):\n- Item 1, live bits. Under option B: T2 by B's area rule (pixels over 8 levels: y306 0 %, y57 0 %, y36 0.059 % = 235 CSS px², max 17), or T3 if area counts every changed pixel (0.15-0.24 % > 0.1 %). Under option C: T2 either way.\n- Item 2, R6: T3 under both options (max 88 > 64; over-8 area 0.148 %, 592 CSS px²).",
+  "risk": "- The phone timing check (P-081) has not run yet. The gains below are Simulator counts plus the earlier phone block on the previous build.\n- The cause of item 2 in the original is UNRESOLVED. A candidate only: WebKit draws an image whose drawn size changed recently at lower interpolation quality, then redraws it at full quality on a timer (ImageQualityController, 500 ms threshold; the mechanism is in WebKit's source, but nothing shows it is what happens here).\n- Parking costs one repaint when the scroll stops (shown in the gain rows); it is the accepted trade-off.\n- There is no \"Try it\" for this proposal: the panel can't compare against st6-rb2, and the new code only runs in Safari at phone width.",
+  "visualDiff": [],
+  "gain": [],
+  "compare": {
+    "a": {
+      "label": "Original (st6-rb2)"
+    },
+    "view": "side",
+    "shots": []
+  },
+  "options": [
+    {
+      "name": "accept-both",
+      "label": "Accept both differences",
+      "idea": "Land the fix as it is. Item 1: the motion-only edge bits show only while the page moves and up to 0.3 s after it stops. Item 2, option (a): after a jump back to the top while moving, the photo cards show the original's own settled frame up to about 0.3 s early.",
+      "risk": "- If the phone block (P-081) misses, the fix goes back to the build stage whatever you decide here.\n- If you later want item 2 exact, there is no known way to copy the original's transient (option reproduce-r6).",
+      "visualDiff": [
+        "Moving at y306 (frames 1-2 after going live): 5,476 px differ (0.152 % of the screen), every one by 1 level of 255. Headline letter edges (1,058 px) and the \"Scroll down\" cue's glow (4,418 px). 0 px over 8 levels.",
+        "Moving at y57: 5,884 px (0.163 %) on the cue, max 2 levels, 0 px over 8 levels.",
+        "Moving at y36: 8,565 px (0.237 %) on the cue. The label and chevron edges reach up to 17 levels (2,119 px over 8 levels = 0.059 %, 235 CSS px²); the fill is at most 2.",
+        "All three show only while the page moves, up to 300 ms after the last scroll. Every parked frame is 0 px.",
+        "Back at the top while live, frames 1 to at least 120 ms: the side photo cards differ by 57,584 px (1.6 %), max 88 levels, on photo detail and card edges. From 300 ms on: 0 px.",
+        "The original's own 120 ms frame vs its 300 ms frame differs by the same 57,584 px, max 88: the fix shows the original's settled look early.",
+        "A/A (the original vs itself, same session): 0 px in every area above.",
+        "Whole-screen pairs are shown at actual phone size (430 px wide). In both of their difference maps the status-bar clock and the countdown digits show red: the frames were taken seconds apart. That is not the fix."
+      ],
+      "gain": [
+        {
+          "what": "Page script writing the hero fade, share of moving hero frames (iPhone)",
+          "before": "0.81 / 0.79",
+          "after": "0 / 0 (previous build); F: P-081 pending",
+          "tag": "OBSERVED",
+          "how": "P-074 phone Timeline block, driver G, real thermal Serious, scored by score074; the F build's own block P-081 is registered, not run",
+          "needsPhone": true
+        },
+        {
+          "what": "Paint area during a 1 s drag mid-hero (move2)",
+          "before": "14.9 M CSS px²",
+          "after": "0.83 M CSS px²",
+          "tag": "OBSERVED",
+          "how": "Simulator (WebKit) cost card, Timeline, full page, C vs F7 with an A/A arm (costcard-f7.md)"
+        },
+        {
+          "what": "Paints / style recalcs during that drag (move2)",
+          "before": "81 / 61",
+          "after": "42 / 43",
+          "tag": "OBSERVED",
+          "how": "same cost card"
+        },
+        {
+          "what": "Paint area during the first drag from the top (move)",
+          "before": "3.91 M CSS px²",
+          "after": "1.25 M CSS px²",
+          "tag": "OBSERVED",
+          "how": "same cost card"
+        },
+        {
+          "what": "Style recalcs at touchstart (top)",
+          "before": "0",
+          "after": "0 (previous build: 4)",
+          "tag": "OBSERVED",
+          "how": "same cost card; the P-074 phone miss fixed"
+        },
+        {
+          "what": "Cost when the scroll stops mid-hero (rest, once): style recalcs / paints / paint area",
+          "before": "5 / 5 / 0.39 M",
+          "after": "11 / 10 / 0.68 M",
+          "tag": "OBSERVED",
+          "how": "same cost card; the parking repaint, the accepted trade-off"
+        },
+        {
+          "what": "Cost when the scroll stops past the hero end (rest2, once): style recalcs / paints",
+          "before": "0 / 0",
+          "after": "5 / 6 (0.32 M)",
+          "tag": "OBSERVED",
+          "how": "same cost card; the trade-off"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "Fix (F build)"
+        },
+        "shots": [
+          {
+            "caption": "Item 1, moving at y36: whole screen, actual size (A = original, B = fix)",
+            "a": "r1-o1-a-1.webp",
+            "aSize": [
+              430,
+              932
+            ],
+            "b": "r1-o1-b-1.webp",
+            "bSize": [
+              430,
+              932
+            ]
+          },
+          {
+            "caption": "Item 1, y36: whole screen, actual size, difference maps (A = original vs itself, B = fix vs original)",
+            "a": "r1-o1-a-2.webp",
+            "aSize": [
+              430,
+              932
+            ],
+            "b": "r1-o1-b-2.webp",
+            "bSize": [
+              430,
+              932
+            ]
+          },
+          {
+            "caption": "Item 1, moving at y306: headline, zoomed (1 level of 255 on letter edges)",
+            "a": "r1-o1-a-3.webp",
+            "aSize": [
+              700,
+              600
+            ],
+            "b": "r1-o1-b-3.webp",
+            "bSize": [
+              700,
+              600
+            ]
+          },
+          {
+            "caption": "Item 1, y306: headline, zoomed, difference maps (A/A vs fix; red = differs, brighter = more)",
+            "a": "r1-o1-a-4.webp",
+            "aSize": [
+              700,
+              600
+            ],
+            "b": "r1-o1-b-4.webp",
+            "bSize": [
+              700,
+              600
+            ]
+          },
+          {
+            "caption": "Item 1, moving at y36: \"Scroll down\" cue, zoomed (edges up to 17 levels)",
+            "a": "r1-o1-a-5.webp",
+            "aSize": [
+              410,
+              240
+            ],
+            "b": "r1-o1-b-5.webp",
+            "bSize": [
+              410,
+              240
+            ]
+          },
+          {
+            "caption": "Item 1, y36: cue, zoomed, difference maps (A/A vs fix)",
+            "a": "r1-o1-a-6.webp",
+            "aSize": [
+              410,
+              240
+            ],
+            "b": "r1-o1-b-6.webp",
+            "bSize": [
+              410,
+              240
+            ]
+          },
+          {
+            "caption": "Item 2, back at the top while live, 120 ms: whole screen, actual size (A = original, B = fix)",
+            "a": "r1-o1-a-7.webp",
+            "aSize": [
+              430,
+              932
+            ],
+            "b": "r1-o1-b-7.webp",
+            "bSize": [
+              430,
+              932
+            ]
+          },
+          {
+            "caption": "Item 2, 120 ms: whole screen, actual size, difference maps (A = original vs itself, B = fix vs original)",
+            "a": "r1-o1-a-8.webp",
+            "aSize": [
+              430,
+              932
+            ],
+            "b": "r1-o1-b-8.webp",
+            "bSize": [
+              430,
+              932
+            ]
+          },
+          {
+            "caption": "Item 2, 120 ms: side photo cards, zoomed (A = original, B = fix)",
+            "a": "r1-o1-a-9.webp",
+            "aSize": [
+              1290,
+              420
+            ],
+            "b": "r1-o1-b-9.webp",
+            "bSize": [
+              1290,
+              420
+            ]
+          },
+          {
+            "caption": "Item 2, 120 ms: photo cards, zoomed, difference maps (A/A vs fix)",
+            "a": "r1-o1-a-10.webp",
+            "aSize": [
+              1290,
+              420
+            ],
+            "b": "r1-o1-b-10.webp",
+            "bSize": [
+              1290,
+              420
+            ]
+          },
+          {
+            "caption": "Item 2 evidence, zoomed: original at 120 ms (A) vs original at 300 ms (B), the same 57,584 px",
+            "a": "r1-o1-a-11.webp",
+            "aSize": [
+              1290,
+              420
+            ],
+            "b": "r1-o1-b-11.webp",
+            "bSize": [
+              1290,
+              420
+            ]
+          },
+          {
+            "caption": "Item 2, 300 ms, zoomed: original (A) vs fix (B), 0 px differ",
+            "a": "r1-o1-a-12.webp",
+            "aSize": [
+              1290,
+              420
+            ],
+            "b": "r1-o1-b-12.webp",
+            "bSize": [
+              1290,
+              420
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "reproduce-r6",
+      "label": "Accept item 1, make item 2 exact (no known way yet)",
+      "idea": "Accept the motion-only edge bits (item 1, as in accept-both). For item 2, option (b): find a way for the fix to draw the original's 0.12-0.3 s transient on the photo cards too. That would mean degrading the fix's drawing on purpose. The cause in the original is UNRESOLVED, so the first step would be finding it (the original's paint records over the cards 120-500 ms after the return), with no promise of a way to copy it.",
+      "risk": "- There may be no way to do this. It delays the fix by at least one research round.\n- Copying a drawing transient on purpose may cost paint work of its own.",
+      "visualDiff": [
+        "Item 1 as in accept-both: up to 8,565 px (0.237 %) on the cue and headline edges, only while moving and up to 0.3 s after.",
+        "Item 2: the goal would be 0 px. Today it is 57,584 px (1.6 %), max 88, for about 0.12-0.3 s after a jump back to the top while moving."
+      ],
+      "gain": [
+        {
+          "what": "Paint area during a 1 s drag mid-hero (move2)",
+          "before": "14.9 M CSS px²",
+          "after": "0.83 M CSS px² (if a way is found; unknown cost)",
+          "tag": "estimate",
+          "how": "same as accept-both; the reproduction's own cost is unknown"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "Target: the original's own 120 ms frame"
+        },
+        "shots": [
+          {
+            "caption": "Item 2, back at the top while live, 120 ms: whole screen, actual size (A = original, B = today's fix)",
+            "a": "r1-o2-a-1.webp",
+            "aSize": [
+              430,
+              932
+            ],
+            "b": "r1-o2-b-1.webp",
+            "bSize": [
+              430,
+              932
+            ]
+          },
+          {
+            "caption": "Item 2, 120 ms: whole screen, actual size, difference maps (A = original vs itself, B = fix vs original)",
+            "a": "r1-o2-a-2.webp",
+            "aSize": [
+              430,
+              932
+            ],
+            "b": "r1-o2-b-2.webp",
+            "bSize": [
+              430,
+              932
+            ]
+          },
+          {
+            "caption": "Item 2, zoomed: what (b) would have to copy, original at 120 ms (A) vs original at 300 ms (B)",
+            "a": "r1-o2-a-3.webp",
+            "aSize": [
+              1290,
+              420
+            ],
+            "b": "r1-o2-b-3.webp",
+            "bSize": [
+              1290,
+              420
+            ]
+          },
+          {
+            "caption": "Item 2, 120 ms, zoomed: original (A) vs today's fix (B)",
+            "a": "r1-o2-a-4.webp",
+            "aSize": [
+              1290,
+              420
+            ],
+            "b": "r1-o2-b-4.webp",
+            "bSize": [
+              1290,
+              420
+            ]
+          },
+          {
+            "caption": "Item 1 as in accept-both, moving at y36: whole screen, actual size",
+            "a": "r1-o2-a-5.webp",
+            "aSize": [
+              430,
+              932
+            ],
+            "b": "r1-o2-b-5.webp",
+            "bSize": [
+              430,
+              932
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "recommended": {
+    "option": "accept-both",
+    "why": "Both differences show only in motion or right after it. Item 2 is the original's own settled frame shown early, not a new look. The A/A is 0 px everywhere, and the fix removes the per-frame script and about 94 % of the paint area during a drag in the Simulator. Gains on the phone are pending P-081."
+  },
+  "state": "accepted",
+  "rev": 1,
+  "decision": {
+    "value": "accepted",
+    "notes": "Same as PR-10, I think the user carousel, we can investigate in the parallel. there might be console issue.",
+    "at": "2026-10-03T15:23:14.221Z",
+    "who": "user",
+    "rev": 1,
+    "option": "accept-both"
+  },
+  "decisions": [
+    {
+      "value": "changes-requested",
+      "notes": "Can you put the \"Try it: scroll the real pages\" section for ask me to review.",
+      "at": "2026-10-03T14:44:13.424Z",
+      "who": "user",
+      "rev": 1
+    },
+    {
+      "value": "accepted",
+      "notes": "Same as PR-10, I think the user carousel, we can investigate in the parallel. there might be console issue.",
+      "at": "2026-10-03T15:23:14.221Z",
+      "who": "user",
+      "rev": 1,
+      "option": "accept-both"
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-03T14:03:29.967Z",
+      "by": "lead",
+      "note": "first version"
+    }
+  ],
+  "createdAt": "2026-10-03T14:03:29.967Z",
+  "updatedAt": "2026-10-03T15:23:14.221Z",
+  "proposedAt": "2026-10-03T14:03:29.967Z",
+  "history": [
+    {
+      "at": "2026-10-03T14:03:29.967Z",
+      "who": "lead",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-03T14:44:13.424Z",
+      "who": "user",
+      "action": "decided",
+      "value": "changes-requested",
+      "rev": 1,
+      "note": "Can you put the \"Try it: scroll the real pages\" section for ask me to review."
+    },
+    {
+      "at": "2026-10-03T15:22:41.900Z",
+      "who": "user",
+      "action": "undecided",
+      "was": "changes-requested",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-03T15:23:14.221Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 1,
+      "note": "Same as PR-10, I think the user carousel, we can investigate in the parallel. there might be console issue.",
+      "option": "accept-both"
+    }
+  ]
+}

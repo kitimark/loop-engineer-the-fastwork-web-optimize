@@ -1,0 +1,42 @@
+{
+  "id": "T-174",
+  "title": "iPhone free for 59 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-05T02:08:39.039Z",
+  "updatedAt": "2026-10-05T02:13:39.183Z",
+  "rev": 4,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T02:08:39.039Z",
+      "by": "lead",
+      "text": "The iPhone has had no holder for 59 min (since 01:09Z; released by int-v8). The limit is 5 min.\nWaiting on the status board: pr-018-menu-morph (owner fix-hero-exit-threaded; its next step names the phone (unmarked)).\nWhat unblocks it: the next of fix-hero-exit-threaded takes it (node tools/lock.mjs acquire iphone --owner <you> ...).\nNo steward on duty (mgmt-devices is parked): the lead handles this thread (I-175).\nOne message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T02:12:45.074Z",
+      "by": "lead",
+      "text": "**Answer:** the idle was by design; the phone job could start only after my signature at 02:10Z.\n- The GO went to fix-hero-exit-threaded; it takes the phone at its next step.\n- I check again in a few minutes.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "lead": 2,
+    "user": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-05T02:13:39.183Z",
+      "who": "lead",
+      "action": "close",
+      "note": "taken by fix-hero-exit-threaded"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T02:12:45.074Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

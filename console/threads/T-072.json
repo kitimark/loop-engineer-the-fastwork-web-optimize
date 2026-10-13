@@ -1,0 +1,84 @@
+{
+  "id": "T-072",
+  "title": "Comment on the Best build page \"Today’s best build\": Catch up this progresses ?",
+  "anchor": {
+    "page": "build",
+    "item": "part:page",
+    "quote": "4 new result(s) arrived after the summary was written (marked \"new result\").",
+    "label": "Today’s best build"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T05:12:00.265Z",
+  "updatedAt": "2026-10-04T11:14:49.589Z",
+  "rev": 9,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T05:12:00.265Z",
+      "by": "user",
+      "text": "Catch up this progresses ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T05:17:23.668Z",
+      "by": "mgmt-ops-10",
+      "text": "Catch-up (05:17Z). The '4 new results' note was a false alarm on my side: 4 rows in our results ledger had blank cells that the page read as results. They are fixed, and the page part is reported as I-116. None of those checks had a result then. What did happen since the summary:\n1. Menu-edge measurement (P-091) finished at 05:16Z with all 9 runs. The phone got too hot once, so 3 runs were redone. The fixed scoring rule says VOID, which means no answer either way: the reference runs did not pass the rule's own check, because Safari's timeline records part of each frame in a place the rule does not look. The owner is writing it up now. Nothing changes in your build.\n2. The hero's slimmer version (R2) passed its pixel check before the phone test, and its phone check (P-095) is starting now. If it passes, you get a blind swipe test.\n3. After it come, on the phone: the end-of-page morph (P-092), the countdown roll (P-093) and the resting avatar row (P-094). Each is a short no-worse check before it lands.\nThe summary on the page is updated (05:15Z)."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T05:17:30.997Z",
+      "by": "mgmt-ops-10",
+      "text": "Correction to point 1: the menu-edge measurement has 8 counted runs plus 2 heat-check runs, not 9 runs. The rest stands."
+    }
+  ],
+  "reads": {
+    "user": 3,
+    "mgmt-ops-10": 3,
+    "lead": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T05:12:00.265Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T07:54:41.543Z",
+      "who": "mgmt-ops-10",
+      "action": "close",
+      "note": "Merged into T-066 (best build and what lands next), one thread per topic at your request (T-024 #13). Related: T-035, T-046, T-066, T-067, T-072, T-076, T-079."
+    },
+    {
+      "at": "2026-10-04T10:13:47.896Z",
+      "who": "mgmt-ops-10",
+      "action": "merge",
+      "note": "into T-066: one thread per topic (user T-024 #13); backfill of the manual merge by mgmt-ops-10"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T05:17:30.997Z",
+    "lead": "2026-10-04T11:14:49.589Z"
+  },
+  "merged": {
+    "into": "T-066",
+    "at": "2026-10-04T10:13:47.896Z",
+    "by": "mgmt-ops-10",
+    "closed": false
+  },
+  "related": [
+    {
+      "id": "T-066",
+      "kind": "merged-into",
+      "at": "2026-10-04T10:13:47.896Z",
+      "by": "mgmt-ops-10"
+    }
+  ],
+  "histSeen": {
+    "lead": 3
+  }
+}

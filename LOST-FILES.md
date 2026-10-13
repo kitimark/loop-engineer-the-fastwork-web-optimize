@@ -1,0 +1,105 @@
+# Lost files
+
+These files were deleted before the release. The write-ups that cite them link to nothing: the links below are broken in the published text.
+
+## Pictures and videos (11)
+
+- out/iphone-screen/L.mov
+- out/lead/medium-visuals/v01-...png
+- out/people-blink/phone-frames/sheet-V.png
+- out/people-blink/s8/sheet-A1-land1.png
+- out/people-blink/s8/sheet-A1-land2.png
+- out/people-blink/s8/sheet-A1-slow.png
+- out/people-blink/s8/sheet-P1-land1.png
+- out/people-blink/s8/sheet-P1-land2.png
+- out/people-blink/s8/sheet-P1-slow.png
+- out/people-blink/s8/sheet-Q1-land1.png
+- out/people-blink/s8/sheet-Q1-slow.png
+
+## Other files (85)
+
+- out/ab/_aa/2026-09-30T21-11-55-249Z/results-aa.json
+- out/ab/_aa/2026-10-01T04-37-10-678Z/results-aa.json
+- out/ab/all-wave1/2026-10-01T04-44-16-825Z/verify.json
+- out/ab/commission-forced-layout/2026-09-30T21-15-46-797Z/verify.json
+- out/ab/commission-forced-layout/2026-09-30T21-43-59-092Z
+- out/ab/commission-forced-layout/2026-09-30T21-43-59-092Z/verify.json
+- out/ab/commission-forced-layout/2026-09-30T22-23-39-420Z/verify.json
+- out/ab/countdown-idle-raf/2026-09-30T21-17-34-202Z/verify.json
+- out/ab/large-area-blur/2026-09-30T21-19-11-624Z
+- out/ab/large-area-blur/2026-09-30T21-57-48-945Z/verify.json
+- out/ab/layout-animations/2026-09-30T21-22-59-766Z
+- out/ab/layout-animations/2026-09-30T23-08-20-081Z/verify.json
+- out/ab/morph-panel-lazy-mount/2026-09-30T22-51-30-017Z
+- out/ab/nav-hit-test/2026-09-30T21-19-14-853Z
+- out/ab/nav-hit-test/2026-09-30T21-19-14-853Z/verify.json
+- out/ab/nav-morph-all-v2/2026-09-30T23-50-22-142Z
+- out/ab/nav-morph-all-v2/2026-09-30T23-50-22-142Z/verify.json
+- out/ab/nav-morph-all/2026-09-30T23-32-00-597Z
+- out/ab/nav-morph-all/2026-09-30T23-32-00-597Z/verify.json
+- out/ab/pain-offscreen-notes/2026-09-30T21-15-27-113Z/verify.json
+- out/ab/pain-offscreen-notes/2026-09-30T21-21-54-731Z
+- out/ab/pain-offscreen-notes/2026-09-30T22-57-08-660Z
+- out/ab/phone-invisible-shrink/2026-09-30T21-16-44-132Z/verify.json
+- out/ab/phone-invisible-shrink/2026-09-30T21-34-23-618Z/verify.json
+- out/ab/phone-invisible-shrink/results-desktop.json
+- out/ab/scene-scope/2026-10-01T19-28-27-400Z/verify.json
+- out/ab/scroll-engine/2026-09-30T22-22-05-405Z
+- out/ab/scroll-engine/2026-09-30T22-22-05-405Z/verify.json
+- out/ab/se10c-aw1/2026-10-01T05-39-19-690Z/verify.json
+- out/ab/se10d-aw1/2026-10-01T09-57-26-616Z/verify.json
+- out/ab/user-b/2026-10-01T17-30-27-845Z/verify.json
+- out/ab/user-bplus/2026-10-01T17-37-55-323Z/verify.json
+- out/ab/vendor-scrollend/2026-10-01T05-05-00-740Z/verify.json
+- out/ab/wave1-partial/2026-09-30T23-41-49-790Z/verify.json
+- out/article-video/imgur-links.tsv
+- out/people-blink/phone-frames
+- out/people-blink/phone-frames/plan.json
+- out/people-blink/rp-v1
+- out/people-blink/snap-k/A
+- out/people-blink/snap-k3
+- out/snapshots/bdrive-afd388b8945a
+- out/snapshots/best-A-65052c4a3902
+- out/snapshots/best-BFb-2aca1672e74e
+- out/snapshots/best-BN-1c3bacf36fcd
+- out/snapshots/best-BR2-8018ce062d30
+- out/snapshots/c-7bf7c4657d21
+- out/snapshots/endbg-C-e1359ab9994a
+- out/snapshots/endbg-P-a9fd8338d8ed
+- out/snapshots/endbg-T-8f4d806323a9
+- out/snapshots/endbg-V-38679ce9de15
+- out/snapshots/f3a-st6rb2
+- out/snapshots/gpu-c0c8ad4e36cb
+- out/snapshots/hext-Fb-71f8872877e7
+- out/snapshots/hext-N-dab6ad826209
+- out/snapshots/hext-R-e3b6fd558dbf
+- out/snapshots/hext-R2-924be86afac8
+- out/snapshots/hext-V-8e43f3792dbf
+- out/snapshots/hext-V-d48d224adcd4
+- out/snapshots/mi-7c61fe7d0662
+- out/snapshots/ms-0b87602cab0c
+- out/snapshots/ms-16f618ba68dc
+- out/snapshots/ms-29c0d537e0c9
+- out/snapshots/ms-428961bda278
+- out/snapshots/ms-49c2317ecf98
+- out/snapshots/ms-5372c2d68c7d
+- out/snapshots/ms-654da079999d
+- out/snapshots/ms-ba256c2a48f8
+- out/snapshots/ms-be590dd3766d
+- out/snapshots/ms-d5ddd1b9d9c2
+- out/snapshots/ms-d661831b8797
+- out/snapshots/ms-dc66f2b2edc3
+- out/snapshots/msbase-3e3e94cb6e9f
+- out/snapshots/msbase-8c90da217745
+- out/snapshots/msgpu-f2c8261f080e
+- out/snapshots/nhcu2-c7435c24dc56
+- out/snapshots/nhcv9f7d-1b2eecc66011
+- out/snapshots/nsc-e8d8323f674b
+- out/snapshots/rv-372b99478871
+- out/snapshots/rv2a-ef9d1c9d5fca
+- out/snapshots/rv2ahook-5bf004426809
+- out/snapshots/scb-27f23f6a3878
+- out/snapshots/st6rb2-C-7bf7c4657d21
+- out/snapshots/v8-3e3e94cb6e9f
+- out/snapshots/v8sc-4c48e372ecdd
+- out/tryit/best-br2

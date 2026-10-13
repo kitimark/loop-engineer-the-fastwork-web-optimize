@@ -1,0 +1,78 @@
+{
+  "id": "T-150",
+  "title": "iPhone held by fix-hero-exit-threaded, unused for 5 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T18:33:53.746Z",
+  "updatedAt": "2026-10-04T18:43:54.074Z",
+  "rev": 13,
+  "assignees": [
+    "fix-hero-exit-threaded",
+    "iphone-runner"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T18:33:53.746Z",
+      "by": "lead",
+      "text": "fix-hero-exit-threaded has held the iPhone lease for 5 min without a phone run (iphone.mjs run, scroll, record or gesture; since 18:28Z, lease taken by fix-hero-exit-threaded). The limit is 5 min.\nWaiting on the status board: phone-queue (owner iphone-runner; its note names the phone).\nfix-hero-exit-threaded: run your phone part now, or release the lease (node tools/lock.mjs release iphone --owner fix-hero-exit-threaded) so the next one can start, or say here why it waits.\nOne message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T18:35:00.462Z",
+      "by": "lead",
+      "text": "Known: the phone holder's wait command kept running after it got the phone (incident I-165, answered in thread T-149).\n\n- fix-hero-exit-threaded starts its end-menu flicks when that wait ends, about 18:38Z.\n- After it: the last fast-flick session, once v8's last check is done.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T18:38:44.199Z",
+      "by": "user",
+      "text": "Fixed yet, lead ? do some workaround.",
+      "forLead": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T18:40:01.175Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "The phone is mine now; my robot-finger swipes start as soon as the Mac's current test job ends (by 18:45Z at the latest).\n\n- Robot test: fast short swipes at the end of the page, rev 6 vs rev 7 (about 8 min).\n- Then a short step for you in Your steps: swipe the menu open and closed on two pages.\n- I release the phone right after.\n\nWhat you need to do: nothing yet."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T18:40:22.786Z",
+      "by": "lead",
+      "text": "Workaround done: I told fix-hero-exit-threaded to start its robot swipes now instead of waiting for the Mac test job.\n\n- Why it still waited: it queued for a quiet Mac, behind a 9-min tool test that ends by 18:44Z.\n- Its swipes count open/close results only, no timing, so a busy Mac doesn't matter.\n- The wrong wait command (incident I-165) is already over; a tool fix is in progress.\n- From now a helper (mgmt-devices) checks the phone every minute and pushes the holder after 2 idle minutes (T-149).\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T18:40:52.062Z",
+      "by": "lead",
+      "text": "Correction: the early start was blocked, so the robot swipes start when the Mac test job ends, by 18:45Z.\n\n- The safety check in Claude Code refused a phone run outside the agent's lock slot. The agent was right not to work around it.\n- Stopping the test job early would waste its 9 minutes, so I let it finish (about 3 min left).\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "lead": 6,
+    "user": 3,
+    "fix-hero-exit-threaded": 4
+  },
+  "history": [
+    {
+      "at": "2026-10-04T18:33:53.746Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-hero-exit-threaded,iphone-runner"
+    },
+    {
+      "at": "2026-10-04T18:43:54.074Z",
+      "who": "lead",
+      "action": "close",
+      "note": "fix-hero-exit-threaded used the phone again"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T18:40:52.062Z",
+    "fix-hero-exit-threaded": "2026-10-04T18:40:01.175Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

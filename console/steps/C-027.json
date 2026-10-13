@@ -1,0 +1,45 @@
+{
+  "id": "C-027",
+  "by": "lead",
+  "kind": "choice",
+  "title": "Heat test (P-068): set up the phone before it starts",
+  "instructions": "Please set: Auto-Lock Never; Auto-Brightness off with a fixed brightness; Low Power Mode off; leave True Tone, Night Shift, Wi-Fi and Bluetooth as they are; close other apps. Lay the phone flat in its usual spot (same surface, same case), on the cable, and don't touch it during the test (two sessions of about 1 h). Keep the room and air conditioning as they are now.",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "all set",
+      "something can't be set (see notes)"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-02T23:49:57.823Z",
+  "queuedAt": "2026-10-02T23:49:57.823Z",
+  "updatedAt": "2026-10-02T23:51:52.827Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-02T23:49:57.823Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-02T23:50:18.522Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-02T23:51:52.827Z",
+      "who": "user",
+      "action": "answer",
+      "value": "all set"
+    }
+  ],
+  "startedAt": "2026-10-02T23:50:18.522Z",
+  "result": {
+    "value": "all set",
+    "at": "2026-10-02T23:51:52.827Z"
+  }
+}

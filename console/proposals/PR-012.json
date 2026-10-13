@@ -1,0 +1,429 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-012",
+  "by": "fix-morph-gpu",
+  "title": "End-of-page menu morph, rev 2: the reveal you accepted, moved onto today's build (2 options)",
+  "area": "end",
+  "topic": "end-morph-p1",
+  "problem": "Safari repaints the whole end-of-page panel on every frame of the menu morph.\n- The morph: at the end of the page the small nav pill grows into the full dark panel.\n- On phones every frame resizes the nav, so Safari repaints the title, photo columns, veil, footer and bar each frame.\nWhy you see this again:\n- You accepted rev 1 on 2026-10-04. It was built on that day's best build.\n- Today's build is v9-final, so the same reveal code was moved onto it.\n- Today's build lays out the nav row a little differently, so a few edge pixels differ from rev 1.\n- That is over our 'looks the same' limit, so you decide again.",
+  "idea": "Two options, both on today's build v9-final.\n- A: today's look, plus fix A only. Fix A is the end-of-page morph fix that repaints less. It changes nothing you can see.\n- B: option A plus rev 1's reveal, the same code byte for byte.\n- How the reveal works: on phones, while the morph moves, the panel is placed at full size once.\n- Today's box is then cut out of it with a growing clip shape; text slides by a GPU transform.\nTry it on the Mac now. The phone Try-it pages come after the current phone test ends.",
+  "visualDiff": [],
+  "gain": [],
+  "compare": {
+    "a": {
+      "label": "Today (best build v9-final)"
+    },
+    "view": "side",
+    "shots": []
+  },
+  "state": "accepted",
+  "rev": 3,
+  "decision": {
+    "value": "accepted",
+    "notes": "Mark as highest priority.",
+    "at": "2026-10-06T03:21:22.445Z",
+    "who": "user",
+    "rev": 3,
+    "option": "b"
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "at": "2026-10-04T02:56:15.549Z",
+      "who": "user",
+      "rev": 1,
+      "staleAt": "2026-10-06T00:23:30.201Z",
+      "staleOnRev": 2
+    },
+    {
+      "value": "accepted",
+      "notes": "Mark as highest priority.",
+      "at": "2026-10-06T03:21:22.445Z",
+      "who": "user",
+      "rev": 3,
+      "option": "b"
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-03T18:24:06.364Z",
+      "by": "fix-morph-gpu",
+      "note": "first version"
+    },
+    {
+      "rev": 2,
+      "at": "2026-10-06T00:23:30.201Z",
+      "by": "fix-end-morph-p1",
+      "note": "Rev 2 by fix-end-morph-p1: the same reveal, moved onto today's build v9-final.\n- Option B is the reveal; option A is today's look with fix A only.\n- New: the base (today's nav layout moves a few edge pixels against rev 1), shots, numbers, Try-it pages.\n- Phone Try-it pages follow after the current p"
+    },
+    {
+      "rev": 3,
+      "at": "2026-10-06T00:24:52.303Z",
+      "by": "fix-end-morph-p1",
+      "note": "Rev 3: labels only, on the lead's review before you saw rev 2.\n- Option A's gain rows are repaint counts (they said restyle count).\n- Option A says its Try-it left page is today (v9-final), the right page today + fix A.\n- Nothing else changed: same builds, shots and Try-it pages."
+    }
+  ],
+  "createdAt": "2026-10-03T18:24:06.364Z",
+  "updatedAt": "2026-10-06T03:21:22.445Z",
+  "history": [
+    {
+      "at": "2026-10-03T18:24:06.364Z",
+      "who": "fix-morph-gpu",
+      "action": "drafted",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-03T18:24:23.957Z",
+      "who": "lead",
+      "action": "published",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-04T02:56:15.549Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-06T00:23:30.201Z",
+      "who": "fix-end-morph-p1",
+      "action": "revised",
+      "rev": 2,
+      "note": "Rev 2 by fix-end-morph-p1: the same reveal, moved onto today's build v9-final.\n- Option B is the reveal; option A is today's look with fix A only.\n- New: the base (today's nav layout moves a few edge pixels against rev 1), shots, numbers, Try-it pages.\n- Phone Try-it pages follow after the current p"
+    },
+    {
+      "at": "2026-10-06T00:23:30.201Z",
+      "who": "fix-end-morph-p1",
+      "action": "decision-stale",
+      "rev": 2,
+      "was": "accepted",
+      "wasRev": 1,
+      "note": "Rev 2 by fix-end-morph-p1: the same reveal, moved onto today's build v9-final.\n- Option B is the reveal; option A is today's look with fix A only.\n- New: the base (today's nav layout moves a few edge pixels against rev 1), shots, numbers, Try-it pages.\n- Phone Try-it pages follow after the current p"
+    },
+    {
+      "at": "2026-10-06T00:24:52.303Z",
+      "who": "fix-end-morph-p1",
+      "action": "revised",
+      "rev": 3,
+      "note": "Rev 3: labels only, on the lead's review before you saw rev 2.\n- Option A's gain rows are repaint counts (they said restyle count).\n- Option A says its Try-it left page is today (v9-final), the right page today + fix A.\n- Nothing else changed: same builds, shots and Try-it pages."
+    },
+    {
+      "at": "2026-10-06T03:21:22.445Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 3,
+      "note": "Mark as highest priority.",
+      "option": "b"
+    }
+  ],
+  "proposedAt": "2026-10-06T00:24:52.303Z",
+  "recommended": {
+    "option": "b",
+    "why": "The same reveal you accepted in rev 1.\n- It paints about half to a third as much while the menu opens and closes, and it is exact at rest.\n- It lands only if the phone check after your decision shows it is no worse than option A."
+  },
+  "options": [
+    {
+      "name": "a",
+      "label": "A: today's look (fix A only)",
+      "idea": "Keep the morph as it is today. Only fix A is added. It repaints less and changes no pixels.\n- Try-it: the left page is today (v9-final), the right page is option A (today + fix A).",
+      "looksSame": "Chrome at phone size (430x775): equal to today within today's own noise at every step checked, from 0.1 to fully open and closed again.\n- Fix A's own checks in Chrome and in the iOS Simulator passed our 'looks the same' limit (accepted by the lead).",
+      "risk": "Low. Fix A's own phone check (no worse than today) runs now; it lands only if that check passes.",
+      "visualDiff": [
+        "None beyond noise in our checks.",
+        "One detail, one run each, cause unknown:\n- Right after a close, today's build drew the 'Join waitlist' label 1 css px off in an older run.\n- In option A's run it was in place."
+      ],
+      "gain": [
+        {
+          "what": "Repaints, open panel at rest (Chrome)",
+          "before": "122",
+          "after": "4",
+          "tag": "OBSERVED",
+          "how": "Chrome at phone size, paint counts per phase, from fix A's own checks (by the end-of-page morph fix owner), as the lead accepted them.",
+          "better": "better"
+        },
+        {
+          "what": "Repaints, halfway open (Chrome)",
+          "before": "121",
+          "after": "10",
+          "tag": "OBSERVED",
+          "how": "Same checks.",
+          "better": "better"
+        },
+        {
+          "what": "Repaints, lift and settle (Chrome)",
+          "before": "378",
+          "after": "159",
+          "tag": "OBSERVED",
+          "how": "Same checks.",
+          "better": "better"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "A: today's look + fix A"
+        },
+        "shots": [
+          {
+            "caption": "Chrome, phone size, halfway (m 0.5)",
+            "a": "r3-o1-a-1.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r3-o1-b-1.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "Chrome, nearly open (m 0.99)",
+            "a": "r3-o1-a-2.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r3-o1-b-2.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "Where A differs from today, m 0.8 (red: shade over 8, yellow: 1-8)",
+            "a": "r3-o1-a-3.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r3-o1-b-3.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "Noise only: today against today, m 0.8 (red: shade over 8, yellow: 1-8)",
+            "a": "r3-o1-a-4.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r3-o1-b-4.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          }
+        ]
+      },
+      "live": {
+        "patch": "fixes/end-morph-p1-a/patch.diff",
+        "ref": "worktree-agent-a7de74f340a8c769e",
+        "blob": "f2d41ed10c900da3b6a4c3cb1137be7d0d7120e0",
+        "base": "site-pretty",
+        "files": [
+          "_app/immutable/nodes/2.DyWL8TcE.js",
+          "_app/immutable/assets/2.gBuqKVzi.css"
+        ],
+        "a": {
+          "patch": "fixes/v9-best/patch.diff",
+          "ref": "main",
+          "blob": "3cae54bb8254317e774612bb1cf74a8c5408e537",
+          "base": "site-pretty",
+          "files": [
+            "_app/immutable/nodes/2.DyWL8TcE.js",
+            "_app/immutable/assets/2.gBuqKVzi.css"
+          ]
+        }
+      }
+    },
+    {
+      "name": "b",
+      "label": "B: A plus the reveal (rev 1's change)",
+      "idea": "Option A plus the reveal you accepted in rev 1, the same code byte for byte.\n- Phones only (640 px wide or less), and only while the morph moves.\n- When it settles (fully open or closed), the extra styles are removed and the nav is exactly today's.",
+      "looksSame": "At rest it is exact.\n- Closed pill, open panel, and after closing again: 0 css px beyond noise against today.\n- Checked in Chrome (430x775 and 430x932) and in the iOS Simulator.\n- Desktop and reduced motion: exact; the reveal never runs there.",
+      "risk": "The first open after a page load may cost a few ms on the phone.\n- Rev 1 cost about 6.5 ms more there (one test, ranges overlapping).\n- Not measured on today's build yet; the phone check after your decision reads it.\n- Not tested, as in rev 1: turning the phone, Android Chrome, lower pixel density phones, re-entering while the morph moves.\n- Rev 1's Safari workaround (a one-frame blur switch when the panel finishes opening) is kept; its cause is still unknown.",
+      "visualDiff": [
+        "During the motion, text and logo edges in the panel sit up to about 1 device pixel off from today, as in rev 1. Largest shade 236, on text edges.",
+        "Size against option A (Chrome, 430x775, pixels over 8 shades):\n- halfway (m 0.5): about 1,000 css px (0.3 % of the screen)\n- m 0.8: about 10,000 (3 %); m 0.99: about 6,400 (1.9 %)\n- today against itself: 0 to 44 css px",
+        "Against rev 1: today's logo sits about 8 css px further left.\n- So the edge differences land in slightly other places.\n- New against rev 1: at most 492 css px (0.13 % of the screen).\n- Shades up to 224 on edges; our limit is 64 fill / 128 edge.",
+        "Part of those new pixels is the countdown digits: a tool artifact.\n- Our two screenshot tools freeze the clock at different times, so the digits differ between the two checks.\n- It is not a page difference.",
+        "Per area (nav row, panel), the area and the largest shade of the differences are within a few percent of rev 1's at every step checked.",
+        "After closing, the nav snaps to the pill, where today it eases a 0.2 px width change over 0.68 s (same as rev 1). It looks the same.",
+        "Not checked on the real iPhone yet: a short phone check and a blind swipe A/B for you follow your decision."
+      ],
+      "gain": [
+        {
+          "what": "Repaints while the menu opens (Simulator)",
+          "before": "442",
+          "after": "208",
+          "tag": "OBSERVED",
+          "how": "iOS Simulator, paint counts over a 30-step open, today's build v9-final without and with the reveal (fix A not in this run). Simulator timing is not judged.",
+          "better": "better"
+        },
+        {
+          "what": "Painted area while opening (Simulator)",
+          "before": "34.6 million css px",
+          "after": "13.3 million css px",
+          "tag": "OBSERVED",
+          "how": "Same run; sum of painted areas over the open.",
+          "better": "better"
+        },
+        {
+          "what": "Repaints while the menu closes (Simulator)",
+          "before": "399",
+          "after": "117",
+          "tag": "OBSERVED",
+          "how": "Same run, 30-step close.",
+          "better": "better"
+        },
+        {
+          "what": "Raster tasks while opening (Chrome)",
+          "before": "581",
+          "after": "270",
+          "tag": "OBSERVED",
+          "how": "Chrome at phone size (430x775), 40-step open, touch held, 2 runs per build, counts only.",
+          "better": "better"
+        },
+        {
+          "what": "Layouts while opening (Simulator)",
+          "before": "138",
+          "after": "138",
+          "tag": "OBSERVED",
+          "how": "Same Simulator run. The gain is painting only.",
+          "better": "same"
+        },
+        {
+          "what": "Smoothness on the iPhone",
+          "before": "not measured",
+          "after": "pending",
+          "tag": "UNRESOLVED",
+          "how": "A short phone check (no worse than option A, warm phone) and a blind swipe A/B for you, after your decision, through the lead.",
+          "better": "same"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "B: A + the reveal"
+        },
+        "shots": [
+          {
+            "caption": "Chrome, phone size, a quarter open (m 0.25). Left: option A (looks as today)",
+            "a": "r3-o2-a-1.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r3-o2-b-1.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "Halfway (m 0.5)",
+            "a": "r3-o2-a-2.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r3-o2-b-2.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "Mostly open (m 0.8)",
+            "a": "r3-o2-a-3.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r3-o2-b-3.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "Nearly open (m 0.99)",
+            "a": "r3-o2-a-4.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r3-o2-b-4.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "Where B differs from option A, m 0.8 (red: shade over 8, yellow: 1-8)",
+            "a": "r3-o2-a-5.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r3-o2-b-5.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "Noise only: today against today, m 0.8 (red: shade over 8, yellow: 1-8)",
+            "a": "r3-o2-a-6.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r3-o2-b-6.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "Closed again after the open (m 0): the same as option A",
+            "a": "r3-o2-a-7.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r3-o2-b-7.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          }
+        ]
+      },
+      "live": {
+        "patch": "fixes/end-morph-p1-b/patch.diff",
+        "ref": "worktree-agent-a7de74f340a8c769e",
+        "blob": "23c01f0386da884b605abf957d9c1e7420e01b8b",
+        "base": "site-pretty",
+        "files": [
+          "_app/immutable/nodes/2.DyWL8TcE.js",
+          "_app/immutable/assets/2.gBuqKVzi.css"
+        ],
+        "a": {
+          "patch": "fixes/v9-best/patch.diff",
+          "ref": "main",
+          "blob": "3cae54bb8254317e774612bb1cf74a8c5408e537",
+          "base": "site-pretty",
+          "files": [
+            "_app/immutable/nodes/2.DyWL8TcE.js",
+            "_app/immutable/assets/2.gBuqKVzi.css"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "id": "C-107",
+  "by": "fix-end-morph",
+  "kind": "action",
+  "title": "Xcode: set the iPhone's Thermal State to Serious (test profile serious)",
+  "instructions": "On the Mac, in Xcode choose Window > Devices and Simulators, click Devices and select the iPhone; under Device Conditions set Condition to Thermal State and Profile to Serious, then click Start. Leave it on (keep the cable in: it ends when the phone disconnects from Xcode). The serious profile wants the phone at Serious induced by Xcode. Then click Done here; fix-end-morph runs again.",
+  "showUrl": true,
+  "meta": {
+    "phoneProfile": {
+      "owner": "fix-end-morph",
+      "profile": "serious",
+      "fix": "set-serious",
+      "incident": "I-186",
+      "read": {
+        "state": "Nominal",
+        "induced": "No",
+        "condition": null
+      }
+    }
+  },
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "cancelled",
+  "cur": 0,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "waiting",
+      "at": {}
+    }
+  ],
+  "createdAt": "2026-10-07T11:57:31.070Z",
+  "queuedAt": "2026-10-07T11:57:31.070Z",
+  "updatedAt": "2026-10-07T11:58:36.643Z",
+  "rev": 2,
+  "history": [
+    {
+      "at": "2026-10-07T11:57:31.070Z",
+      "who": "fix-end-morph",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-07T11:58:36.643Z",
+      "who": "lead",
+      "action": "cancel",
+      "note": "Not needed: no manual Xcode heat steps (user T-228 #15); the agent sets the heat state with our tool instead"
+    }
+  ],
+  "queueSeq": 66
+}

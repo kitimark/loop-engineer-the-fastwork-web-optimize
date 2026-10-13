@@ -1,0 +1,52 @@
+{
+  "id": "T-250",
+  "title": "Comment on C-124 \"May I restart Xcode's device service on the Mac? (fixes the…\": What's the problem ?",
+  "anchor": {
+    "page": "steps",
+    "item": "step:C-124",
+    "label": "May I restart Xcode's device service on the Mac? (fixes the phone test tool)"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-08T11:53:38.139Z",
+  "updatedAt": "2026-10-08T11:55:17.611Z",
+  "rev": 10,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-08T11:53:38.139Z",
+      "by": "user",
+      "text": "What's the problem ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-08T11:53:58.749Z",
+      "by": "lead",
+      "text": "Fixed: Xcode's device service on the Mac had kept an old error, so the tool that drives the iPhone in our tests could not start.\n\n- Since about 11:15Z that tool (WebDriverAgent) failed every start with \"previously reported preparation errors\", although the iPhone was plugged in, unlocked and Xcode's window showed no problem.\n- The service had run for 7 days; restarting it (your yes at 11:52Z) cleared it: the tool started in 8 s.\n- The phone test that finds the code behind the two slow spots (P-166) restarted at 11:54Z and runs about 1 hour.\n- The earlier hung temperature reads may have the same cause (not confirmed).\n\nWhat you need to do: nothing; keep the iPhone plugged in and don't touch it until about 12:55Z."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-08T11:54:41.497Z",
+      "by": "user",
+      "text": "Ok, let's note it as incident and workaround."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-08T11:55:17.130Z",
+      "by": "lead",
+      "text": "Done: noted as an incident, \"Xcode device service kept an old error\" (I-251), with the workaround.\n\n- Sign: the phone test tool fails every start with \"previously reported preparation errors\", though the iPhone is plugged in and unlocked.\n- Workaround: with your OK, restart Xcode's device service on the Mac, then start the tool again; a re-plug or unlock does not help.\n- Long-term: a toolsmith will make our tools spot this error and print the hint (never restart the service without your OK).\n- The phone test is running now; the temperature reads work again too.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "lead": 4
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-08T11:55:17.130Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "id": "C-015",
+  "by": "iphone-runner",
+  "kind": "swipe-pair",
+  "title": "Hero avatar row: do two pages look the same?",
+  "instructions": "Scroll down to the row of small round avatars that changes every few seconds and watch it slide through several changes on each page. Do the avatars look the same on both pages (size, sharpness, fade) and move the same way, with no flash, jump or stutter?",
+  "url": "http://192.168.0.55:5932/",
+  "showUrl": false,
+  "meta": {
+    "key": {
+      "1": "A st6 (fix-scroll-engine) :5932 JS 268a68962d18 CSS 7e40587580d3",
+      "2": "C aw1-10e control :5933 JS 3e2f599a1632 CSS c6aad94b455f"
+    },
+    "order": "A first (random)",
+    "check": "finger correctness, no timing"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ]
+  },
+  "status": "answered",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.55:5932/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-01T20:42:06.056Z",
+        "ready": "2026-10-01T20:42:18.936Z",
+        "started": "2026-10-01T20:42:22.880Z",
+        "recording": "2026-10-01T20:42:33.911Z",
+        "done": "2026-10-01T20:42:50.641Z"
+      }
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.55:5933/",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-01T20:42:59.419Z",
+        "ready": "2026-10-01T20:43:12.281Z",
+        "started": "2026-10-01T20:43:15.339Z",
+        "recording": "2026-10-01T20:43:28.387Z",
+        "done": "2026-10-01T20:43:38.903Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-01T20:41:56.099Z",
+  "queuedAt": "2026-10-01T20:41:56.099Z",
+  "updatedAt": "2026-10-01T20:43:56.662Z",
+  "rev": 12,
+  "history": [
+    {
+      "at": "2026-10-01T20:41:56.099Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-01T20:42:06.057Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-01T20:42:18.937Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-01T20:42:22.880Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T20:42:33.912Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-01T20:42:50.641Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T20:42:59.419Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "state": "loading"
+    },
+    {
+      "at": "2026-10-01T20:43:12.281Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-01T20:43:15.339Z",
+      "who": "user",
+      "action": "start",
+      "part": 2
+    },
+    {
+      "at": "2026-10-01T20:43:28.388Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-01T20:43:38.903Z",
+      "who": "user",
+      "action": "done",
+      "part": 2
+    },
+    {
+      "at": "2026-10-01T20:43:56.662Z",
+      "who": "user",
+      "action": "answer",
+      "value": "1"
+    }
+  ],
+  "startedAt": "2026-10-01T20:42:22.880Z",
+  "result": {
+    "value": "1",
+    "at": "2026-10-01T20:43:56.662Z"
+  }
+}

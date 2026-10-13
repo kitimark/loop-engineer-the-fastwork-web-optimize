@@ -1,0 +1,41 @@
+{
+  "id": "T-233",
+  "title": "Comment on the Progress page \"Fix progress\": i already done my job, and ask you already why status, won't change ?",
+  "anchor": {
+    "page": "progress",
+    "item": "part:page",
+    "quote": "On the phoneuser has not said what it runs (no job description, no status-board row)Run by user, since 04:42Z.In line after it: arch-compositor-morph",
+    "label": "Fix progress"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-07T04:51:23.136Z",
+  "updatedAt": "2026-10-07T04:52:06.273Z",
+  "rev": 5,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-07T04:51:23.136Z",
+      "by": "user",
+      "text": "i already done my job, and ask you already why status, won't change ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-07T04:52:00.734Z",
+      "by": "lead",
+      "text": "Sorry, fixed now: the iPhone is released from you (04:52Z), and the Progress page no longer says you are on it.\n- Why it stuck: I gave you a 15-min phone slot for the Join button try-out and waited for a separate \"done\" reply; your decision on the Join button should have ended it.\n- From now on I end your phone slot as soon as you decide or press Done, without asking for an extra reply.\n- Next on the phone: the robot test of the next build (v12), once its Mac check finishes.\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "lead": 2
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-07T04:52:00.734Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

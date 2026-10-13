@@ -1,0 +1,355 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-024",
+  "by": "fix-people-word",
+  "title": "The 'people' word in the People section: start it when the card is fully shown, so you see it on the phone (2 options)",
+  "area": "middle",
+  "topic": "people-word",
+  "thread": "T-192",
+  "problem": "On the iPhone the \"people\" word animation is over before its card fades in.\n- The word: in \"People still need people\", the \"o\" turns into a row of faces and opens out (about 2 s).\n- What starts the word today: the title being 35 % on screen. The card is still invisible then.\n- The card's fade-in starts about 560 px further down (Chrome, phone size) and takes 0.9 s.\n- At a gentle scroll (about 300 px a second) the word opened 0.65 s before the fade-in even started (Chrome check).\n- The original site does the same; our fixes did not change it.",
+  "idea": "Start the word when the card's fade-in has ended: the card fully shown, blur gone. The browser reports that moment itself, so there is no guessed timer.\n- No extra wait after that: the 0.9 s fade-in is the time you see the text first.\n- The title must be at least 35 % on screen, as before.\n- Mirror for the reset: when the card starts to fade out (you scroll back up), the word closes again; the next fade-in plays it again.\nTry it on the iPhone after the current phone tests; the lead tells you when.",
+  "looksSame": "The word's own motion is the same: same steps, same speed, same closing motion.\n- Reduced motion: the same (the word shows open at once).\n- Scrolling away past the title and back still replays the word, as before.\n- Nothing else on the page changes; no style change.",
+  "visualDiff": [],
+  "gain": [],
+  "compare": {
+    "a": {
+      "label": "Today (best build v9-final)"
+    },
+    "view": "side",
+    "shots": []
+  },
+  "options": [
+    {
+      "name": "a",
+      "label": "A: every width",
+      "idea": "At every width the word starts when the card's fade-in has ended, and closes when the card starts to fade out.\n- On desktop it also waits for the fade-in now: at a brisk scroll about 0.2 s later than today.",
+      "risk": "Low: about 50 lines of script, no style change.\n- A timing change you decide on: the word plays when the card is fully shown and closes when it fades out.\n- The word's widening lays out its line for 0.9 s, as before; it now runs where you see it, right after the fade-in. Phone smoothness of that second is not measured yet (the phone is busy with tests).\n- Desktop changes too: the word waits for the fade-in end and closes on the fade-out.",
+      "visualDiff": [
+        "Phone and desktop: the \"o\" opens into faces right when the card is fully shown (0.9 s after the fade-in starts).\nBefore, it started 1.3 s after the title came in, often while the card was still invisible.",
+        "Scrolling back up until the card fades out: the word closes (its own closing motion) and plays again on the next fade-in. Before, it stayed open.",
+        "A quick scroll into the card and straight back out no longer plays the word unseen."
+      ],
+      "gain": [
+        {
+          "what": "Word starts after the card is fully shown",
+          "before": "no: open before the fade-in",
+          "after": "yes: when the fade-in ends",
+          "tag": "OBSERVED",
+          "how": "Chrome page check at phone size (430x932), not a timing test.\n- Gentle (about 300 px a second) and brisk (about 900) stepped scrolls, first scroll and replay.\n- The fade-in end is the browser's own end-of-transition signal; the word started 0-1 ms after it, 0.90-0.93 s after the fade-in began.",
+          "better": "better"
+        },
+        {
+          "what": "Word closes when the card fades out",
+          "before": "no: stays open",
+          "after": "yes: at the fade-out start",
+          "tag": "OBSERVED",
+          "how": "Same check: scrolled back up until the card faded out, title still on screen.\n- Rev 3 closed the word within 1 ms; it played again at the next fade-in end.",
+          "better": "better"
+        },
+        {
+          "what": "Frame callbacks during the same scroll",
+          "before": "616",
+          "after": "618",
+          "tag": "OBSERVED",
+          "how": "Chrome, phone size, counts only. No new scroll listener; one watcher on the card's fade-in class and one end-of-transition listener on the card.",
+          "better": "same"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "A: starts when the card is fully shown"
+        },
+        "shots": [
+          {
+            "caption": "0.5 s after the card starts to fade in: today the word is already open; rev 3 waits (text still blurred)",
+            "a": "r3-o1-a-1.webp",
+            "aSize": [
+              1290,
+              720
+            ],
+            "b": "r3-o1-b-1.webp",
+            "bSize": [
+              1290,
+              720
+            ]
+          },
+          {
+            "caption": "0.9 s: the fade-in has ended, the text is sharp; rev 3 starts the word now",
+            "a": "r3-o1-a-2.webp",
+            "aSize": [
+              1290,
+              720
+            ],
+            "b": "r3-o1-b-2.webp",
+            "bSize": [
+              1290,
+              720
+            ]
+          },
+          {
+            "caption": "1.2 s: the faces come in",
+            "a": "r3-o1-a-3.webp",
+            "aSize": [
+              1290,
+              720
+            ],
+            "b": "r3-o1-b-3.webp",
+            "bSize": [
+              1290,
+              720
+            ]
+          },
+          {
+            "caption": "3.0 s: both open",
+            "a": "r3-o1-a-4.webp",
+            "aSize": [
+              1290,
+              720
+            ],
+            "b": "r3-o1-b-4.webp",
+            "bSize": [
+              1290,
+              720
+            ]
+          }
+        ]
+      },
+      "live": {
+        "patch": "fixes/people-word-a/patch.diff",
+        "ref": "HEAD",
+        "blob": "a4ca80faee6af7beb2a6111d23a0d1da63aca655",
+        "base": "site-pretty",
+        "files": [
+          "_app/immutable/assets/2.gBuqKVzi.css",
+          "_app/immutable/nodes/2.DyWL8TcE.js"
+        ],
+        "a": {
+          "patch": "fixes/morph-scroll-v9try/patch.diff",
+          "ref": "HEAD",
+          "blob": "c53656376fb3c49ac1029ef84a02b2b1cf1920b7",
+          "base": "site-pretty",
+          "files": [
+            "_app/immutable/assets/2.gBuqKVzi.css",
+            "_app/immutable/nodes/2.DyWL8TcE.js"
+          ]
+        }
+      }
+    },
+    {
+      "name": "a-phone",
+      "label": "A-phone: phones and tablets only",
+      "idea": "Only at the page's own phone layout (860 px wide and narrower): the word starts when the card's fade-in has ended and closes when the card starts to fade out.\n- Wider screens keep today's timing exactly.",
+      "risk": "Low: about 50 lines of script, no style change.\n- A timing change you decide on: on phones the word plays when the card is fully shown and closes when it fades out.\n- The word's widening lays out its line for 0.9 s, as before; it now runs where you see it. Phone smoothness of that second is not measured yet (the phone is busy with tests).\n- Two rules: phone and desktop widths behave differently (desktop unchanged).",
+      "visualDiff": [
+        "Phone and tablet (860 px and narrower): as option A.",
+        "Desktop (wider than 860 px): no change. The word still starts 1.3 s after the title comes in (checked: the same times, within 2 ms)."
+      ],
+      "gain": [
+        {
+          "what": "Word starts after the card is fully shown",
+          "before": "no: open before the fade-in",
+          "after": "yes: when the fade-in ends",
+          "tag": "OBSERVED",
+          "how": "Chrome page check at phone size (430x932), not a timing test.\n- Gentle (about 300 px a second) and brisk (about 900) stepped scrolls, first scroll and replay.\n- The fade-in end is the browser's own end-of-transition signal; the word started 0-1 ms after it, 0.90-0.93 s after the fade-in began.",
+          "better": "better"
+        },
+        {
+          "what": "Word closes when the card fades out",
+          "before": "no: stays open",
+          "after": "yes: at the fade-out start",
+          "tag": "OBSERVED",
+          "how": "Same check: scrolled back up until the card faded out, title still on screen.\n- Rev 3 closed the word within 1 ms; it played again at the next fade-in end.",
+          "better": "better"
+        },
+        {
+          "what": "Desktop word timing vs today (1440x900)",
+          "before": "1.30 s after the title",
+          "after": "1.30 s after the title",
+          "tag": "OBSERVED",
+          "how": "Chrome page check at 1440x900, first scroll, replay, quick in-and-out and the fade-out: every step within 2 ms of today's build.",
+          "better": "same"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "A-phone: phones only"
+        },
+        "shots": [
+          {
+            "caption": "0.5 s after the card starts to fade in (stills of A: same as A-phone at phone size)",
+            "a": "r3-o2-a-1.webp",
+            "aSize": [
+              1290,
+              720
+            ],
+            "b": "r3-o2-b-1.webp",
+            "bSize": [
+              1290,
+              720
+            ]
+          },
+          {
+            "caption": "0.9 s: the fade-in has ended, the text is sharp; rev 3 starts the word now",
+            "a": "r3-o2-a-2.webp",
+            "aSize": [
+              1290,
+              720
+            ],
+            "b": "r3-o2-b-2.webp",
+            "bSize": [
+              1290,
+              720
+            ]
+          },
+          {
+            "caption": "1.2 s: the faces come in",
+            "a": "r3-o2-a-3.webp",
+            "aSize": [
+              1290,
+              720
+            ],
+            "b": "r3-o2-b-3.webp",
+            "bSize": [
+              1290,
+              720
+            ]
+          },
+          {
+            "caption": "3.0 s: both open",
+            "a": "r3-o2-a-4.webp",
+            "aSize": [
+              1290,
+              720
+            ],
+            "b": "r3-o2-b-4.webp",
+            "bSize": [
+              1290,
+              720
+            ]
+          }
+        ]
+      },
+      "live": {
+        "patch": "fixes/people-word-aphone/patch.diff",
+        "ref": "HEAD",
+        "blob": "642b2b5e9661d90a06f2c2b9a4a821915bcc047d",
+        "base": "site-pretty",
+        "files": [
+          "_app/immutable/assets/2.gBuqKVzi.css",
+          "_app/immutable/nodes/2.DyWL8TcE.js"
+        ],
+        "a": {
+          "patch": "fixes/morph-scroll-v9try/patch.diff",
+          "ref": "HEAD",
+          "blob": "c53656376fb3c49ac1029ef84a02b2b1cf1920b7",
+          "base": "site-pretty",
+          "files": [
+            "_app/immutable/assets/2.gBuqKVzi.css",
+            "_app/immutable/nodes/2.DyWL8TcE.js"
+          ]
+        }
+      }
+    }
+  ],
+  "recommended": {
+    "option": "a",
+    "why": "One rule everywhere: the word plays when you can see the text and closes when the card fades out. On desktop it starts about 0.2 s later at a brisk scroll."
+  },
+  "state": "accepted",
+  "rev": 3,
+  "decision": {
+    "value": "accepted",
+    "notes": "Cool",
+    "at": "2026-10-05T11:42:48.549Z",
+    "who": "user",
+    "rev": 3,
+    "option": "a"
+  },
+  "decisions": [
+    {
+      "value": "changes-requested",
+      "notes": "My idea; when we do too slow scroll, the animation was run before you see them. i think my idea it could run when something is trigger point. \n\nlikes opacity could be 1, then trigger (you could use better measurement that related the user can see the text display first then animation show). and use the same as reset animation in opposite.",
+      "at": "2026-10-05T11:08:04.354Z",
+      "who": "user",
+      "rev": 2
+    },
+    {
+      "value": "accepted",
+      "notes": "Cool",
+      "at": "2026-10-05T11:42:48.549Z",
+      "who": "user",
+      "rev": 3,
+      "option": "a"
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-05T10:57:15.358Z",
+      "by": "fix-people-word",
+      "note": "first version"
+    },
+    {
+      "rev": 2,
+      "at": "2026-10-05T11:00:06.515Z",
+      "by": "fix-people-word",
+      "note": "Base checked; no content change.\n- Try-it A is today's best build; B is A plus only this change.\n- All differences between the two script files are in the word's own code (lines 7001-7043); nothing of today's build is missing.\n- The post's warning about 4 lines was a tool false alarm (I-206, a tool "
+    },
+    {
+      "rev": 3,
+      "at": "2026-10-05T11:34:24.880Z",
+      "by": "fix-people-word",
+      "note": "Rev 3 answers your change request on rev 2 point by point. Your note, in full:\n\"My idea; when we do too slow scroll, the animation was run before you see them. i think my idea it could run when something is trigger point. likes opacity could be 1, then trigger (you could use better measurement that "
+    }
+  ],
+  "createdAt": "2026-10-05T10:57:15.358Z",
+  "updatedAt": "2026-10-05T11:42:48.549Z",
+  "proposedAt": "2026-10-05T11:34:24.880Z",
+  "history": [
+    {
+      "at": "2026-10-05T10:57:15.358Z",
+      "who": "fix-people-word",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-05T11:00:06.515Z",
+      "who": "fix-people-word",
+      "action": "revised",
+      "rev": 2,
+      "note": "Base checked; no content change.\n- Try-it A is today's best build; B is A plus only this change.\n- All differences between the two script files are in the word's own code (lines 7001-7043); nothing of today's build is missing.\n- The post's warning about 4 lines was a tool false alarm (I-206, a tool "
+    },
+    {
+      "at": "2026-10-05T11:08:04.354Z",
+      "who": "user",
+      "action": "decided",
+      "value": "changes-requested",
+      "rev": 2,
+      "note": "My idea; when we do too slow scroll, the animation was run before you see them. i think my idea it could run when something is trigger point. \n\nlikes opacity could be 1, then trigger (you could use better measurement that related the user can see the text display first then animation show). and use the same as reset animation in opposite."
+    },
+    {
+      "at": "2026-10-05T11:09:21.152Z",
+      "who": "fix-people-word",
+      "action": "revising",
+      "rev": 2,
+      "note": "rev 3: the word starts when the card is fully shown, resets when it starts to fade out; building and checking in Chrome",
+      "eta": "2026-10-05T12:39:00.000Z"
+    },
+    {
+      "at": "2026-10-05T11:34:24.880Z",
+      "who": "fix-people-word",
+      "action": "revised",
+      "rev": 3,
+      "note": "Rev 3 answers your change request on rev 2 point by point. Your note, in full:\n\"My idea; when we do too slow scroll, the animation was run before you see them. i think my idea it could run when something is trigger point. likes opacity could be 1, then trigger (you could use better measurement that "
+    },
+    {
+      "at": "2026-10-05T11:42:48.549Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 3,
+      "note": "Cool",
+      "option": "a"
+    }
+  ]
+}

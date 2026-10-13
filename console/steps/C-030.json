@@ -1,0 +1,45 @@
+{
+  "id": "C-030",
+  "by": "iphone-runner",
+  "kind": "question",
+  "title": "Answer to your C-028 question: can a CLI verify the thermal condition?",
+  "instructions": "No. Xcode 26.6's devicectl has no command to read or set device conditions, and 'devicectl device info details' (checked between runs) has no thermal field, so the Xcode panel is the only direct record. Indirect check (OBSERVED): with Serious on, Safari's frame rate stayed 59 Hz (not 30) and the frame counts stayed in the normal spread: N1 / SER1 / SER2 / N2 scroll 53.5 / 52.3 / 52.4 / 52.6 fps, over-50 ms frames 6 / 5 / 5 / 7; battery 38.0-38.2 C throughout. Nothing for you to do; tap 'got it'.",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "got it"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-03T09:13:05.624Z",
+  "queuedAt": "2026-10-03T09:13:05.624Z",
+  "updatedAt": "2026-10-03T09:16:21.348Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-03T09:13:05.624Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-03T09:14:57.965Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-03T09:16:21.348Z",
+      "who": "user",
+      "action": "answer",
+      "value": "got it"
+    }
+  ],
+  "startedAt": "2026-10-03T09:14:57.965Z",
+  "result": {
+    "value": "got it",
+    "notes": "for cli, do you try to research the xcode document or related yet. i'd like to ask team to research in the parallel. we'll find more findings",
+    "at": "2026-10-03T09:16:21.348Z"
+  }
+}

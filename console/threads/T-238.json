@@ -1,0 +1,59 @@
+{
+  "id": "T-238",
+  "title": "I'd like to use my phone",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-07T16:10:02.913Z",
+  "updatedAt": "2026-10-07T16:39:29.511Z",
+  "rev": 15,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-07T16:10:02.913Z",
+      "by": "user",
+      "text": "I'd like to use my phone"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-07T16:10:10.076Z",
+      "by": "user",
+      "text": "Re-plan your works"
+    },
+    {
+      "n": 3,
+      "at": "2026-10-07T16:10:13.914Z",
+      "by": "lead",
+      "text": "Yes, the phone is yours: no test needs it for the next 4-6 hours.\n- Nothing is booked on it; ignore any \"re-plug the cable\" step, I withdraw those.\n- The next phone use is the g0 Try-it (v14 vs the original end-of-page on the GPU); I will ask first.\n\nWhat you need to do: nothing; plug it back in when you are done."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-07T16:10:36.383Z",
+      "by": "lead",
+      "text": "Re-planned: all work now runs without your phone; it needs the phone again only for the final timing test, and only when you hand it back.\n\n| Order | Work | Runs on | Needs your phone |\n|---|---|---|---|\n| 1 | g0.0: v14 with the original end-of-page | Chrome + Simulator | no |\n| 2 | g0.1: that end-of-page on the GPU | Chrome + Simulator | no |\n| 3 | Try-it pages A (v14) / B (g0) / original | your phone over Wi-Fi, no cable | only to look, when you like |\n| 4 | Timing test g0 vs v14 on the cable | iPhone | yes, after you say \"phone free\" |\n\n- The paused v14-based design test (P-163) stays parked; g0 replaces that line.\n- Re-plug steps from the USB watch are withdrawn while you use the phone.\n\nWhat you need to do: nothing; say \"phone free\" here when the phone can go back on the cable."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-07T16:39:00.751Z",
+      "by": "user",
+      "text": "connected. continue"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-07T16:39:27.977Z",
+      "by": "lead",
+      "text": "Thanks: the iPhone is back on the cable (connection #138) and the USB watch is back to normal.\n- No phone test is due yet: g0.0 (v14 with the original end-of-page) is in its pixel checks, g0.1 (its GPU version) is fixing one extra memory layer in Safari.\n- Next phone use: the g0 Try-it (v14 / g0 / original), then the timing test; I will post both as steps.\n\nWhat you need to do: nothing; you may keep using the phone until a step appears."
+    }
+  ],
+  "reads": {
+    "user": 6,
+    "lead": 6
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-07T16:39:27.977Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

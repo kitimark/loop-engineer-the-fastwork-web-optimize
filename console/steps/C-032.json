@@ -1,0 +1,47 @@
+{
+  "id": "C-032",
+  "by": "iphone-runner",
+  "kind": "choice",
+  "title": "Xcode: stop the iPhone's 'Thermal State' condition",
+  "instructions": "In Xcode, open Window > Devices and Simulators, select the iPhone, and under Device Conditions click Stop if a Thermal State condition is running. Then tell me whether it was running.",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "It was running",
+      "now stopped",
+      "It was already off",
+      "Not sure"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-03T10:00:26.179Z",
+  "queuedAt": "2026-10-03T10:00:26.179Z",
+  "updatedAt": "2026-10-03T10:01:43.450Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-03T10:00:26.179Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-03T10:01:12.811Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-03T10:01:43.450Z",
+      "who": "user",
+      "action": "answer",
+      "value": "It was already off"
+    }
+  ],
+  "startedAt": "2026-10-03T10:01:12.811Z",
+  "result": {
+    "value": "It was already off",
+    "at": "2026-10-03T10:01:43.450Z"
+  }
+}

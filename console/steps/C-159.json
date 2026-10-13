@@ -1,0 +1,58 @@
+{
+  "id": "C-159",
+  "by": "lead",
+  "kind": "action",
+  "title": "Deploy the 2 demo gates (checkbox notice page) to Cloudflare",
+  "instructions": "1. In the Cloudflare dashboard, turn off Cloudflare Access (login) for both demo Workers. 2. In Terminal: cd out/cf-review/original && npx wrangler secret put COOKIE_KEY (paste the output of: openssl rand -hex 32) && npx wrangler deploy. 3. Same in out/cf-review/optimized with its own new random value. 4. Run the curl lines in out/cf-review/POST-DEPLOY-CHECK.txt section 1, then open each link in a browser: you should see the notice page first. Tap Done when finished, or write what failed.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-13T08:48:54.585Z",
+        "done": "2026-10-13T08:53:07.019Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-13T08:46:12.938Z",
+  "queuedAt": "2026-10-13T08:46:12.938Z",
+  "updatedAt": "2026-10-13T08:53:07.019Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-13T08:46:12.938Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-13T08:48:54.585Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-13T08:53:07.019Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 118,
+  "startedAt": "2026-10-13T08:48:54.585Z",
+  "result": {
+    "value": "done",
+    "notes": "step 2 and 3, can you prepare the script for run them easier ?",
+    "at": "2026-10-13T08:53:07.019Z"
+  }
+}

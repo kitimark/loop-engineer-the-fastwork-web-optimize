@@ -1,0 +1,54 @@
+{
+  "id": "C-007",
+  "by": "lead",
+  "kind": "action",
+  "title": "Wi-Fi check, step 2 of 2: unplug the cable",
+  "instructions": "Unlock the iPhone, keep Safari open on the screen, and unplug the USB cable. Click Done here, then leave the phone unlocked and on the screen for about 2 minutes while the Mac checks.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-01T16:50:02.126Z",
+        "done": "2026-10-01T16:50:11.045Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-01T16:49:56.362Z",
+  "queuedAt": "2026-10-01T16:49:56.362Z",
+  "updatedAt": "2026-10-01T16:50:11.045Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-01T16:49:56.362Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-01T16:50:02.126Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T16:50:11.045Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    }
+  ],
+  "startedAt": "2026-10-01T16:50:02.126Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-01T16:50:11.045Z"
+  }
+}

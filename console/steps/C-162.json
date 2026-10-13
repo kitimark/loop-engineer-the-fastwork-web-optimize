@@ -1,0 +1,58 @@
+{
+  "id": "C-162",
+  "by": "lead",
+  "kind": "action",
+  "title": "Deploy the 2 demo gates again, on this Mac (the last run did not reach the live links)",
+  "instructions": "In Terminal on this Mac, in the project folder: 1) npx wrangler login  2) bash out/cf-review/deploy.sh . Tap Done only after it prints ALL PASS; if any line says FAIL, paste the last 5 lines here.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-13T08:59:36.745Z",
+        "done": "2026-10-13T08:59:51.876Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-13T08:58:03.607Z",
+  "queuedAt": "2026-10-13T08:58:03.607Z",
+  "updatedAt": "2026-10-13T08:59:51.876Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-13T08:58:03.607Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-13T08:59:36.745Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-13T08:59:51.876Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 121,
+  "startedAt": "2026-10-13T08:59:36.745Z",
+  "result": {
+    "value": "done",
+    "notes": "$ bash out/cf-review/deploy.sh\n== 0. local checks before deploy\nPASS  same worker.js in both\nPASS  original: gate runs first\nPASS  original: no canonical link\nPASS  original: no local test key\nPASS  optimized: gate runs first\nPASS  optimized: no canonical link\nPASS  optimized: no local test key",
+    "at": "2026-10-13T08:59:51.876Z"
+  }
+}

@@ -1,0 +1,245 @@
+{
+  "id": "C-045",
+  "by": "iphone-runner",
+  "kind": "action",
+  "title": "Fast flicks on today's best build (about 5 min)",
+  "instructions": "First: open Settings > Battery and check that Low Power Mode is off, then come back to Safari. Then 3 short parts: press Start, wait until this page says \"swipe now\", do the flicks, press Done. At the end, pick the answer that fits and write in the notes where you felt lag (part 1, 2 or 3), if anywhere.",
+  "showUrl": false,
+  "meta": {
+    "job": "T-113",
+    "build": "v7 best (JS 8c90da217745, CSS 308f0da70c3a)",
+    "port": 6139,
+    "by": "iphone-runner"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "Low Power Mode off; I felt lag",
+      "Low Power Mode off; no lag",
+      "Low Power Mode was on"
+    ]
+  },
+  "status": "skipped",
+  "cur": 2,
+  "parts": [
+    {
+      "label": "1. Fresh load, then flick right away",
+      "instructions": "After Start the page reloads by itself. When this page says \"swipe now\", flick up fast right away, from the top through the first big section (the cards), as you did on the other phone. Then press Done.",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-04T12:41:08.154Z",
+        "ready": "2026-10-04T12:41:18.292Z",
+        "started": "2026-10-04T12:41:25.391Z",
+        "recording": "2026-10-04T12:41:32.600Z",
+        "done": "2026-10-04T12:42:12.857Z"
+      },
+      "message": "Time is up for this part; thanks."
+    },
+    {
+      "label": "2. Fast flicks through the top section",
+      "instructions": "When it says \"swipe now\": flick fast down through the top section and the cards, then flick back up to the top. Do this 3-4 times, then press Done.",
+      "record": true,
+      "gate": true,
+      "state": "done",
+      "at": {
+        "loading": "2026-10-04T12:42:14.320Z",
+        "ready": "2026-10-04T12:42:28.578Z",
+        "started": "2026-10-04T12:42:35.265Z",
+        "recording": "2026-10-04T12:42:37.944Z",
+        "done": "2026-10-04T12:42:57.959Z"
+      },
+      "message": "Recording: swipe now, then press Done."
+    },
+    {
+      "label": "3. Fast flicks at the end of the page",
+      "instructions": "When it says \"swipe now\": flick fast down to the very end of the page, then flick up and down over the last two screens a few times. Then press Done.",
+      "record": true,
+      "gate": true,
+      "state": "waiting",
+      "at": {},
+      "message": "That part was not recorded (the phone connection dropped). Please do this part again.",
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "loading": "2026-10-04T12:43:23.382Z",
+            "ready": "2026-10-04T12:43:32.443Z",
+            "started": "2026-10-04T12:43:35.194Z",
+            "recording": "2026-10-04T12:43:37.631Z",
+            "done": "2026-10-04T12:43:58.807Z"
+          },
+          "ended": "redo",
+          "by": "iphone-runner",
+          "endedAt": "2026-10-04T12:44:36.920Z"
+        }
+      ],
+      "attempt": 2
+    }
+  ],
+  "createdAt": "2026-10-04T12:40:58.682Z",
+  "queuedAt": "2026-10-04T12:40:58.682Z",
+  "updatedAt": "2026-10-04T12:49:03.041Z",
+  "rev": 19,
+  "history": [
+    {
+      "at": "2026-10-04T12:40:58.682Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-04T12:41:08.154Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "loading",
+      "note": "Getting the iPhone ready, one moment."
+    },
+    {
+      "at": "2026-10-04T12:41:18.292Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready",
+      "note": "Ready. Press Start: the page on the iPhone reloads, then this page says \"swipe now\"."
+    },
+    {
+      "at": "2026-10-04T12:41:25.391Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T12:41:32.600Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording",
+      "note": "Recording: swipe now, then press Done."
+    },
+    {
+      "at": "2026-10-04T12:42:12.857Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "done",
+      "note": "Time is up for this part; thanks."
+    },
+    {
+      "at": "2026-10-04T12:42:14.320Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "loading",
+      "note": "Getting the iPhone ready, one moment."
+    },
+    {
+      "at": "2026-10-04T12:42:28.578Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready",
+      "note": "The page is open on the iPhone. Press Start when you are ready."
+    },
+    {
+      "at": "2026-10-04T12:42:35.265Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T12:42:37.944Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording",
+      "note": "Recording: swipe now, then press Done."
+    },
+    {
+      "at": "2026-10-04T12:42:57.959Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T12:43:23.382Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 3,
+      "attempt": 1,
+      "state": "loading",
+      "note": "Getting the iPhone ready, one moment."
+    },
+    {
+      "at": "2026-10-04T12:43:32.443Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 3,
+      "attempt": 1,
+      "state": "ready",
+      "note": "The page is open on the iPhone. Press Start when you are ready."
+    },
+    {
+      "at": "2026-10-04T12:43:35.194Z",
+      "who": "user",
+      "action": "start",
+      "part": 3,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T12:43:37.631Z",
+      "who": "iphone-runner",
+      "action": "ack",
+      "part": 3,
+      "attempt": 1,
+      "state": "recording",
+      "note": "Recording: swipe now, then press Done."
+    },
+    {
+      "at": "2026-10-04T12:43:58.807Z",
+      "who": "user",
+      "action": "done",
+      "part": 3,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-04T12:44:12.806Z",
+      "who": "user",
+      "action": "answer",
+      "value": "Low Power Mode off; I felt lag"
+    },
+    {
+      "at": "2026-10-04T12:44:36.920Z",
+      "who": "iphone-runner",
+      "action": "redo",
+      "part": 3,
+      "epoch": 1,
+      "attempts": [
+        1,
+        1,
+        2
+      ],
+      "note": "That part was not recorded (the phone connection dropped). Please do this part again."
+    },
+    {
+      "at": "2026-10-04T12:49:03.041Z",
+      "who": "user",
+      "action": "skip"
+    }
+  ],
+  "queueSeq": 4,
+  "startedAt": "2026-10-04T12:41:25.391Z",
+  "epoch": 1,
+  "skippedAt": "2026-10-04T12:49:03.041Z"
+}

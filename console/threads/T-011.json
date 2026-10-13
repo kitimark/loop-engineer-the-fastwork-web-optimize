@@ -1,0 +1,65 @@
+{
+  "id": "T-011",
+  "title": "I'd like to disconnect my iphone device.",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-01T22:04:11.762Z",
+  "updatedAt": "2026-10-01T22:13:12.999Z",
+  "rev": 15,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-01T22:04:11.762Z",
+      "by": "user",
+      "text": "I'd like to disconnect my iphone device. let's ask agents who need to use them before i do."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-01T22:04:37.860Z",
+      "by": "lead",
+      "text": "Asking now: iphone-runner (on the phone now, measuring the cooling curve), ts-gesture (robot finger fix), fix-scene-scope and fix-scroll-engine (your two new fix picks). The two fix owners work on the Simulator, so they shouldn't need the phone until a fix is found. I'll post here within a few minutes when the phone is released and safe to unplug."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-01T22:05:45.562Z",
+      "by": "user",
+      "text": "Ok, let's note for agent do measure later then."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-01T22:06:15.811Z",
+      "by": "lead",
+      "text": "Noted. Phone checks waiting for when you plug it back in:\n1. the full cooling curve from rest (T-009); the partial result comes now;\n2. the platform-switch fix: the rotator fix you already picked (st6), measured at the switch on the phone, after its Simulator check;\n3. the 2990 px fix, once fix-scroll-engine has a candidate;\n4. the robot-finger tool check (I-042), if it needs the device;\n5. the page-end first-slide-in hunt, which you already paused until an active fix lands.\niphone-runner is saving its data, parking Safari on a blank page and releasing the phone. I'll post 'safe to unplug' here in a minute or two."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-01T22:10:35.011Z",
+      "by": "user",
+      "text": "safe to unplug yet ?"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-01T22:12:30.003Z",
+      "by": "lead",
+      "text": "Not yet, give it 2-3 minutes. iphone-runner still holds the phone. It was recording how fast the phone cools down, which you asked for in T-009. I've told it to stop now, park Safari on a blank page and let go. I'll write 'safe to unplug' here as soon as it does."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-01T22:12:57.443Z",
+      "by": "lead",
+      "text": "Safe to unplug now. iphone-runner let go of the phone at 05:12, Safari is on a blank page, and nobody is waiting for it. ts-gesture confirmed its work doesn't need the phone either. These are noted for the next time you plug it in: the rest of the cooldown curve, the platform-switch check (scene-scope), the y≈2990 check (scroll-engine), the gesture tool's G run, and later the morph-start check."
+    }
+  ],
+  "reads": {
+    "user": 7,
+    "lead": 7
+  },
+  "history": [
+    {
+      "at": "2026-10-01T22:13:12.999Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

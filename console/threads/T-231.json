@@ -1,0 +1,41 @@
+{
+  "id": "T-231",
+  "title": "iPhone free for 30 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-07T04:26:13.784Z",
+  "updatedAt": "2026-10-07T04:36:14.492Z",
+  "rev": 3,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-07T04:26:13.784Z",
+      "by": "lead",
+      "text": "The iPhone has had no holder for 30 min (since 03:56Z; the lease of arch-compositor-morph ran out). The limit is 5 min.\nWaiting on the status board: compositor-morph (owner arch-compositor-morph; its next step names the phone (unmarked)).\nWhat unblocks it: the next of arch-compositor-morph takes it (node tools/lock.mjs acquire iphone --owner <you> ...).\nNo steward on duty (mgmt-devices is parked): the lead handles this thread (I-175).\nOne message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-07T04:28:52.344Z",
+      "by": "lead",
+      "text": "False alarm: no phone job could start. The GPU-menu agent's status text mentioned its future iPhone check, so the alarm counted it as waiting now.\n- I marked that check as \"not startable yet\": it needs the menu-open fix (c2) built and passing Chrome and Simulator first.\n- The alarm clears with that; the iPhone stays connected, free and cool (33 °C).\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "lead": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-07T04:36:14.492Z",
+      "who": "lead",
+      "action": "close",
+      "note": "a new idle period started"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-07T04:28:52.344Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "id": "C-112",
+  "by": "lead",
+  "kind": "action",
+  "title": "Re-plug the iPhone's USB cable",
+  "instructions": "The Mac lost the iPhone on USB (the cable is in, but the phone tools cannot reach it). Unplug the cable from the iPhone, wait 3 s, plug it back in, unlock the phone, then press Done. This step closes by itself when the link is back.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-07T18:04:09.674Z",
+        "done": "2026-10-07T18:04:10.634Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-07T18:04:00.852Z",
+  "queuedAt": "2026-10-07T18:04:00.852Z",
+  "updatedAt": "2026-10-07T18:04:10.634Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-07T18:04:00.852Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-07T18:04:09.674Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-07T18:04:10.634Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 71,
+  "startedAt": "2026-10-07T18:04:09.674Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-07T18:04:10.634Z"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "id": "C-067",
+  "by": "lead",
+  "kind": "action",
+  "title": "Try the end-of-page menu proposal (PR-023 rev 5) on the iPhone, A vs B",
+  "instructions": "On the iPhone in Safari, try A then B; press Done here after.\n- A: http://lan:6411/ (v9 as it ships). B: http://lan:6412/ (v9 with the menu change).\n- In each, scroll to the page end and swipe back up.\n- Give your verdict on the Proposals page. Leave Xcode's Serious condition on.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "cancelled",
+  "cur": 0,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "waiting",
+      "at": {}
+    }
+  ],
+  "createdAt": "2026-10-05T10:04:50.215Z",
+  "queuedAt": "2026-10-05T10:04:50.215Z",
+  "updatedAt": "2026-10-05T10:17:15.021Z",
+  "rev": 2,
+  "history": [
+    {
+      "at": "2026-10-05T10:04:50.215Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-05T10:17:15.021Z",
+      "who": "lead",
+      "action": "cancel",
+      "note": "Done: your PR-023 verdict (accepted, 10:15Z) was the result this step asked for. Thank you."
+    }
+  ],
+  "queueSeq": 26
+}

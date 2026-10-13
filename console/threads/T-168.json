@@ -1,0 +1,63 @@
+{
+  "id": "T-168",
+  "title": "Phone is free, i'd like to disconnect then if no used at this time",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T23:06:44.133Z",
+  "updatedAt": "2026-10-05T23:59:37.281Z",
+  "rev": 12,
+  "assignees": [
+    "mgmt-devices"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T23:06:44.133Z",
+      "by": "user",
+      "text": "Phone is free, i'd like to disconnect then if no used at this time"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T23:07:13.295Z",
+      "by": "lead",
+      "text": "Yes, you can disconnect the iPhone now; nothing needs it for at least 15 min.\n\n| | when |\n|---|---|\n| Phone free since | 22:54Z (double-drive test done: no worse) |\n| Next phone test | the v9 best build, at about 23:25Z at the earliest |\n\n- The v9 test waits for its Mac look and function checks (running now) and my sign-off of its plan.\n- When it is ready, the runner posts a step under \"Your steps\": plug in, unlock, and turn on Xcode's Device Conditions, Thermal State Serious again.\n- Disconnecting likely ends the Xcode Serious condition, so the step asks for it again; the test's start check refuses to run without it.\n\nWhat you need to do: disconnect if you like; reconnect when the step appears."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T23:14:22.334Z",
+      "by": "user",
+      "text": "Phone is back with Serious thermal state"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T23:14:45.641Z",
+      "by": "mgmt-devices",
+      "text": "Thanks: that saves a step. I will not post the reconnect step unless the start check finds the Serious condition off.\n- The v9 phone test has not started: its Mac checks are still running and the lead has not signed its plan yet (earliest about 23:25Z).\n- When it starts, the test's own start check reads the phone: it needs Serious with \"induced\" (your Xcode setting) before it runs, and refuses otherwise.\n- If that check fails, I post one step in Your steps (plug in, unlock, Serious on, Done) and nothing runs until you answer.\nWhat you need to do: nothing now; leave the phone connected with Serious on."
+    }
+  ],
+  "reads": {
+    "user": 4,
+    "lead": 2,
+    "mgmt-devices": 4
+  },
+  "history": [
+    {
+      "at": "2026-10-04T23:07:28.570Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-devices"
+    },
+    {
+      "at": "2026-10-05T23:59:37.281Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T23:07:13.295Z",
+    "mgmt-devices": "2026-10-04T23:14:45.641Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

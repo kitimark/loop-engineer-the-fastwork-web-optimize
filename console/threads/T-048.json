@@ -1,0 +1,74 @@
+{
+  "id": "T-048",
+  "title": "TOOLS: talk in proposal.",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-03T15:27:40.067Z",
+  "updatedAt": "2026-10-04T03:29:55.507Z",
+  "rev": 16,
+  "assignees": [
+    "ts-proposal-talk"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-03T15:27:40.067Z",
+      "by": "user",
+      "text": "I'd like to ask you add the feature for allow us to talk in proposal for clarify my question. and understand more about each proposal.\n\nLet's investigate, design, plan and implement"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-03T15:28:33.534Z",
+      "by": "lead",
+      "text": "Got it. A toolsmith (ts-proposal-talk) is on it now: investigate, design, plan and implement in one go. It will post its design here in a few minutes, in plain words: what you'll see on a proposal page and how you ask a question there. Then it goes straight on to build it. Reply here if you want anything different. Asking a question will never count as a decision: only Accept or Request changes decide a proposal."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-03T15:31:53.445Z",
+      "by": "ts-proposal-talk",
+      "text": "Design for talking inside a proposal (plain words):\n\nWhat works today: on a proposal you can click Comment (or select some text) on the whole card, an option or a screenshot. That starts a thread for the lead, and the item shows a small \"1 comment\" marker that links to the Threads page. The answer only shows on the Threads page.\n\nWhat's new:\n1. A \"Questions and answers\" box on each proposal page, above \"Your decision\". It shows every question and comment on that proposal, with the answers (pictures too) right there. Each one has its own reply box, so you can keep asking in place.\n2. \"Ask a question\" at the top of that box, with \"About:\" (the whole proposal, the option on screen, or a part such as \"What it saves\", \"Risk\", \"What looks different\"). The Comment button works on those parts now too.\n3. Your question goes to the agent who wrote the proposal, and to the lead. The page says who. The author answers, or the lead when nobody owns it any more.\n4. A question is never a decision. Nothing changes until you press Accept, Reject or Request change. If an answer says \"I'll fix that in the next revision\", that only happens after you request the change.\n\nFor agents: questions are ordinary console threads, so `thread wait` wakes the author and the lead, and they answer with `thread reply`. New: `proposal talk <id>` lists the questions on one proposal. I'm building it now; reply here if you want it different."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-03T15:34:29.586Z",
+      "by": "user",
+      "text": "My idea; just talk likes this threads. so, if your propose is not take a lot of time to implement. it'd be ok."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-03T15:34:46.249Z",
+      "by": "ts-proposal-talk",
+      "text": "Yes, that's what it is: each question is a small thread, shown right under the proposal, with the agent's answers and a reply box, like here. It reuses the threads you already have, so it's quick to build. I'll tell you here when it's ready."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-03T18:05:59.085Z",
+      "by": "ts-proposal-talk",
+      "text": "It's built and all tests pass. It goes live as soon as the lead adds it and restarts the console, and I'll post here when that's done.\n\nWhat you'll see on a proposal:\n- Under each proposal, a \"Questions and answers\" box. Every question on that proposal is a small thread there, with the agent's answers and a reply box, like this page.\n- \"Ask a question\" at the top of the box. You can also press Comment on a part of the proposal, such as \"What it saves\" or \"Risk\", and the question names that part.\n- The box says who reads your question: the agent who wrote the proposal, and the lead.\n- In the proposals list, a proposal with questions shows a small count.\n- Asking is never a decision. Nothing changes until you press Accept, Reject or Request change."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-03T18:08:24.740Z",
+      "by": "ts-proposal-talk",
+      "text": "It's live now. Open any proposal on the Proposals page and you'll see the \"Questions and answers\" box under it. Ask there, or press Comment on a part of the proposal. The agent who wrote it is woken and answers right there, and the lead sees it too. Reply here if anything feels off."
+    }
+  ],
+  "reads": {
+    "user": 7,
+    "lead": 4,
+    "ts-proposal-talk": 7
+  },
+  "history": [
+    {
+      "at": "2026-10-03T15:28:33.414Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "ts-proposal-talk"
+    },
+    {
+      "at": "2026-10-04T03:29:55.507Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

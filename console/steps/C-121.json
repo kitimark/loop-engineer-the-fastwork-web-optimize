@@ -1,0 +1,57 @@
+{
+  "id": "C-121",
+  "by": "lead",
+  "kind": "action",
+  "title": "Re-plug the iPhone's USB cable (the phone test is stopped)",
+  "instructions": "Xcode can no longer read the iPhone's temperature (the cable link itself works), so the phone test stopped. Unplug the cable from the iPhone, wait 3 s, plug it back in, unlock the phone, then press Done.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-08T11:39:25.866Z",
+        "done": "2026-10-08T11:39:26.886Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-08T11:31:41.568Z",
+  "queuedAt": "2026-10-08T11:31:41.568Z",
+  "updatedAt": "2026-10-08T11:39:26.886Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-08T11:31:41.568Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-08T11:39:25.866Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-08T11:39:26.886Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 80,
+  "startedAt": "2026-10-08T11:39:25.866Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-08T11:39:26.886Z"
+  }
+}

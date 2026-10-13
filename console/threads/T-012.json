@@ -1,0 +1,35 @@
+{
+  "id": "T-012",
+  "title": "Why you stop the console ?",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-02T06:19:48.757Z",
+  "updatedAt": "2026-10-02T08:41:06.741Z",
+  "rev": 6,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-02T06:19:48.757Z",
+      "by": "user",
+      "text": "Why you stop the console ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-02T06:20:32.111Z",
+      "by": "lead",
+      "text": "Nobody stopped it on purpose. It was my mistake. I ran the console as a Claude Code background job, and those are killed after at most 2 hours. The last run started 06:50 (+07) and was killed at 08:50 (+07). I never noticed, so the console was down from about 08:50 until you asked me to start it at 13:17 (+07), about 4.5 hours.\nFix: since 13:20 (+07) it runs as a separate process (nohup, log in out/console-serve.log), so the 2-hour cap no longer applies. Same address, http://localhost:5559/. I now check that it is up in every lead check-in.\nWhile it was down, no answers were lost (nothing was waiting on a running server). Still open for you: the PR-001 rev 2 decision and the two fwreskip questions in T-005 #19."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "lead": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-02T08:41:06.741Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

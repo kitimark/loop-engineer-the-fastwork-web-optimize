@@ -1,0 +1,47 @@
+{
+  "id": "C-066",
+  "by": "art-worst-cases",
+  "kind": "choice",
+  "title": "Review the full set: six iPhone screen clips, original vs v8",
+  "instructions": "Open the link on the Mac and watch all six clips (left original, right v8), then answer OK or not OK, naming any clip that is wrong in the note. Four clips carry a short clock or pick note under them.",
+  "url": "http://127.0.0.1:5871/review3.html",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "OK",
+      "not OK"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-05T09:20:52.018Z",
+  "queuedAt": "2026-10-05T09:20:52.018Z",
+  "updatedAt": "2026-10-05T09:43:59.985Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-05T09:20:52.018Z",
+      "who": "art-worst-cases",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-05T09:43:58.810Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-05T09:43:59.985Z",
+      "who": "user",
+      "action": "answer",
+      "value": "OK"
+    }
+  ],
+  "queueSeq": 25,
+  "startedAt": "2026-10-05T09:43:58.810Z",
+  "result": {
+    "value": "OK",
+    "at": "2026-10-05T09:43:59.985Z"
+  }
+}

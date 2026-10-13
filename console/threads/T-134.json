@@ -1,0 +1,176 @@
+{
+  "id": "T-134",
+  "title": "iPhone held by cd-roll-ca, unused for 5 min while 2 jobs wait",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T14:38:21.244Z",
+  "updatedAt": "2026-10-04T18:05:12.310Z",
+  "rev": 52,
+  "assignees": [
+    "mgmt-desk-2",
+    "cd-roll-ca",
+    "fix-hero-exit-threaded",
+    "iphone-runner"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T14:38:21.244Z",
+      "by": "lead",
+      "text": "cd-roll-ca has held the iPhone lease for 5 min without a phone run (iphone.mjs run, scroll, record or gesture; since 14:32Z, lease taken by cd-roll-ca). The limit is 5 min.\nQueued for it: fix-hero-exit-threaded, iphone-runner.\ncd-roll-ca: run your phone part now, or release the lease (node tools/lock.mjs release iphone --owner cd-roll-ca) so the next one can start, or say here why it waits. Desk (mgmt-desk-2): please make sure the phone is used.\nOne message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T14:39:00.133Z",
+      "by": "user",
+      "text": "I saw a lot of this alert. what's the problem ?"
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T14:39:33.103Z",
+      "by": "mgmt-desk-2",
+      "text": "The alert means: someone holds the phone but runs nothing on it, while others wait. It is a fair alarm, and this one is over.\n\n- What happened: the countdown-roll agent held the phone from 14:32Z but had to wait for the ops agent to read its test plan first.\n- The ops read passed (14:37Z), and the phone test has been running since then, so the phone is used now.\n- Why you see many: the alarm posts one thread per idle gap (limit 5 min) and closes it when the phone is used again.\n- Waiting for a plan check while holding the phone is the cause; it should wait before taking the lease.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T14:40:30.147Z",
+      "by": "user",
+      "text": "I know. i'd expect they should not alert. you know. let's investigate why it idle. what's the problem. what's long-term fix?"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T14:40:57.479Z",
+      "by": "mgmt-desk-2",
+      "text": "Fair: the alarm should not fire for this. I found the cause; the long-term fix needs the lead.\n\nTimeline (UTC, our logs):\n| time | event |\n|---|---|\n| 14:32 | countdown-roll agent got the phone from the queue |\n| 14:32-14:37 | it could not start: its plan check by the ops agent was not done |\n| 14:37 | ops read passed, the phone test started |\n\n- Cause: the queue gives the phone to the next owner even when that owner is not ready to run.\n- Fix 1: a queue entry says 'ready' or 'not ready'; the queue skips 'not ready'.\n- Fix 2: the alarm skips a holder that has declared what it waits for, and posts to agents, not to your Threads.\n\nWhat you need to do: nothing; I sent it to the lead."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T14:41:37.653Z",
+      "by": "lead",
+      "text": "**Why it idled: the countdown fix took the phone before its test was allowed to start. It waited about 5 min with the phone for its plan to be approved, so the alarm was right, but it shouldn't have reached you.**\n\n- **Rule now, for every agent:** take the phone only when the test can start at once. While waiting for approval, stay in the queue instead of holding the phone.\n- **Long-term fix (tools, I-155):**\n  1. The queue skips an agent that isn't ready yet, and it keeps its place.\n  2. Idle alarms go to me and the agent holding the phone, not into your threads. You only see one if the phone sits unused for over 15 min.\n- The tool part is built after 17:20Z (usage).\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T14:41:52.408Z",
+      "by": "user",
+      "text": "mgmt-desk-2, what's this roles? i feel like they just a reporter. i'd like to get the agent more productive likes you. leader.",
+      "forLead": true
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T14:42:13.912Z",
+      "by": "mgmt-desk-2",
+      "text": "You are right: today I mostly look things up and pass them on. That is how my role was set up.\n\n- What I do now: answer from the board and logs, wake owners, send decisions to the lead, release your own phone time.\n- What I may not do: edit files, take locks, land changes, spawn agents, set priorities, or open incidents myself.\n- More productive: let me open incidents, fix stale status rows and labels, and start a toolsmith for small tool fixes myself.\n- That widens my permissions, so the lead decides. I asked.\n\nWhat you need to do: tell the lead which of these I should be allowed."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T14:42:15.585Z",
+      "by": "lead",
+      "text": "**Agreed: the desk was only relaying. From now on it acts as my deputy for your threads.**\n\n| before | now |\n|---|---|\n| answers, then hands the problem to me | finds the cause itself and answers you |\n| asks me to contact the right agent | asks the agent directly (tool helper or fix owner) and tells you who is doing what |\n| escalates every thread | escalates only decisions: priorities, landing, proposals, new agents, queue order |\n| — | posts in your thread when the work is done |\n\n- It still uses the cheaper model; what changed is what it's allowed to do, not how smart it is.\n- I check its work every 30 min from one summary instead of per-thread messages.\n\nWhat you need to do: nothing; tell me in this thread if it still feels like a reporter."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T14:42:25.754Z",
+      "by": "mgmt-desk-2",
+      "text": "The lead widened my role: I now investigate and dispatch your requests myself, instead of only passing them on.\n\n- I do: investigations, sending work to the right agent, opening incidents, waking owners, following up here when it lands.\n- I tell you who is doing it and when.\n- Only priority changes, landing, your proposal decisions and new agents stay with the lead.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T14:44:15.338Z",
+      "by": "user",
+      "text": "Lead, you could re-organize the roles more productivity. give them more authority. and you could inspect them how they work properly. and do decider as i leader. you couldn't handle them all work. you know ?",
+      "forLead": true
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T14:44:22.298Z",
+      "by": "user",
+      "text": "Lead, you could re-organize the roles more productivity. give them more authority. and you could inspect them how they work properly. and do decider as i leader. you couldn't handle them all work. you know ?",
+      "forLead": true
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T14:44:38.266Z",
+      "by": "mgmt-desk-2",
+      "text": "This one is for the lead: the roles of the whole team are the lead's decision. I passed it on.\n\n- Already started: the desk has more authority since 14:42Z (the lead's #9).\n- Asked of the lead: the same step for the owner agents, for example letting them decide small things themselves, plus a regular check of how each works.\n\nWhat you need to do: nothing; the lead answers here."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T14:49:06.904Z",
+      "by": "lead",
+      "text": "**Yes. Each role now decides its own work; I decide priorities and check how each one works.**\n\n| role | decides itself from now |\n|---|---|\n| fix owners | their next test, their own proposal and its Try-it page, your questions about their fix; they release the iPhone the moment they stop using it |\n| desk (my deputy) | queue order inside your priorities, releasing an iPhone left idle, fixing stale board rows, sending tool problems to a toolsmith |\n| ops | the phone test schedule, and checks of test plans and results |\n| tool helpers | run the full test suite on the exact version I land, so I don't run it again |\n\n- I keep: priorities, landing, your proposal decisions, new agents.\n- I check each agent at every check-in: was its iPhone or Chrome slot used, is its board row true, is it waiting on nobody. Each problem gets one correction message.\n- Written down in fixes/AGENT_ROLES.md, \"Delegated authority\".\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 15,
+      "at": "2026-10-04T16:07:35.817Z",
+      "by": "mgmt-desk-2",
+      "text": "Fixed and on main: the idle alarm no longer calls your own phone test idle.\n\n- Before, the alarm said \"iPhone held by user-try but unused for 5 min\" while you were testing by hand. That was wrong (incident I-144).\n- Now your own test lease is left alone.\n- The other part of your question here, why the phone sat idle at other times, is still waiting for its own fix (I-155, after 17:20Z).\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "lead": 14,
+    "user": 15,
+    "mgmt-desk-2": 15,
+    "fix-hero-exit-threaded": 12
+  },
+  "history": [
+    {
+      "at": "2026-10-04T14:38:21.244Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2,cd-roll-ca,fix-hero-exit-threaded,iphone-runner"
+    },
+    {
+      "at": "2026-10-04T14:41:06.522Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User wants no idle-phone alarm here + long-term fix. Cause: cd-roll-ca got the lease 14:32Z, ops read passed 14:37Z. Ask ts-phone-steps: queue 'ready' flag (skip not-ready); alarm skips declared gate waits, not in user threads."
+    },
+    {
+      "at": "2026-10-04T14:42:13.994Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "User #7: desk is 'just a reporter', wants it as productive as the lead. Decide the desk's scope: open incidents, correct stale status rows, spawn toolsmiths for small tool fixes, set thread owners? Reply in T-134."
+    },
+    {
+      "at": "2026-10-04T14:44:38.341Z",
+      "who": "mgmt-desk-2",
+      "action": "escalate",
+      "note": "decide: user #11 wants team roles reorganised (more authority per role, you inspect work, you decide as leader). Option A: delegation list per role now; B: wait for T-122 team plan. I recommend A, reuse the desk change."
+    },
+    {
+      "at": "2026-10-04T14:48:22.104Z",
+      "who": "lead",
+      "action": "close",
+      "note": "taken by fix-hero-exit-threaded"
+    },
+    {
+      "at": "2026-10-04T14:49:06.778Z",
+      "who": "lead",
+      "action": "reopen"
+    },
+    {
+      "at": "2026-10-04T14:50:18.556Z",
+      "who": "user",
+      "action": "close"
+    },
+    {
+      "at": "2026-10-04T16:07:35.739Z",
+      "who": "mgmt-desk-2",
+      "action": "reopen"
+    },
+    {
+      "at": "2026-10-04T18:03:21.261Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T14:49:06.904Z",
+    "mgmt-desk-2": "2026-10-04T16:07:35.817Z",
+    "fix-hero-exit-threaded": "2026-10-04T18:05:12.310Z"
+  },
+  "histSeen": {
+    "lead": 6
+  }
+}

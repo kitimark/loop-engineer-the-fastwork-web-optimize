@@ -1,0 +1,239 @@
+{
+  "id": "T-193",
+  "title": "The end of page animation.",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T10:27:53.943Z",
+  "updatedAt": "2026-10-05T12:56:51.059Z",
+  "rev": 78,
+  "assignees": [
+    "lead",
+    "fix-end-bg"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T10:27:53.943Z",
+      "by": "user",
+      "text": "I was request team about optimize the animation of The end of page animation.\nI'd like to know about what your optimization result."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T10:28:39.882Z",
+      "by": "lead",
+      "text": "The end of the page is much lighter now: slow frames over 50 ms in the menu went from 2 to 0 per run on the phone (v8 check, robot finger; OBSERVED, our setup).\n\n| change (all on main) | what it removed |\n|---|---|\n| panel grow-and-fade on the graphics chip | script work every frame; closing 8-22 ms faster, opening start 4.5-6.5 ms slower |\n| countdown digits kept in the panel layer | repaint of ~80 digit layers each time the panel moves |\n| less style work when the panel starts | most of ~700 elements restyled (was 11-14 ms) |\n| touch listeners set once | one 100+ ms hitch, gone in 4 of 4 runs |\n| pin clamp, top-bar fix | the back-and-forth jump; the top bar left behind on iPhone |\n| menu follows your finger (7c, 7d today) | 680 ms spring; a long swipe up now leaves the end in one go (3 of 3, was 0 of 3) |\n\n- Still open: the panel clock roll on the GPU (P-097, signed, runs next); a rare glide back to open (2 of 42 swipes, cause not found yet).\n- Under Serious heat: the phone test running now (P-129) measures the end again; I'll post its result here.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T10:29:27.416Z",
+      "by": "user",
+      "text": "I'd like to know the technical behind them."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T10:30:31.023Z",
+      "by": "lead",
+      "text": "How they work, in short (all OBSERVED in our setup; the article page has the long version):\n- Graphics-chip morph: the panel's grow-and-fade was script writing a CSS variable every frame; now a CSS animation of opacity and transform runs it on Safari's compositor thread.\n- Opacity is capped at 0.9999, so the layer is never dropped and rebuilt at the end.\n- Countdown digits: the ~80 digit layers sat outside the panel's layer, so every panel move repainted them. One CSS rule keeps them inside the panel's own layer, so a move only shifts the finished layer.\n- Less style work: one class change at the panel start made the browser restyle about 700 elements (11-14 ms). The rules now match only the panel's own part.\n- Touch listeners: the panel added its touch listeners when you got close, which cost one 100+ ms frame. They are added once at page load.\n- Pin clamp: the sticky panel's position was computed past the real page end while you pushed further, so the page jumped between two spots. It is clamped to the real end.\n- Top-bar fix: a CSS variable was registered as non-inheriting, which Safari handled differently, so the bar stopped following. It inherits again.\n- Menu follows your finger (7c/7d): an extra screen of scroll sits after the panel; how far it has scrolled in sets the morph, so your finger drives it.\n- At lift-off the finger's speed picks open or closed; 7d lets a fast or long close keep its own momentum.\nWhat you need to do: nothing; ask about any line and I'll go deeper."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-05T10:35:10.735Z",
+      "by": "user",
+      "text": "I wonder we can optimize it more smooth ? is the illusion optimization technique css can help ?"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-05T10:35:39.407Z",
+      "by": "lead",
+      "text": "Yes, likely a bit more, and some illusion techniques can help; fix-hero-exit-threaded is ranking the candidates now.\n- What is left (OBSERVED): the opening start pays 4.5-6.5 ms to set up the graphics-chip layer; the close start and a 200 ms timer after you lift your finger cause small hiccups.\n- Illusion ideas being weighed: prepare the panel's layer before you reach the end; skip drawing the panel's hidden content; show a still picture of the panel while it grows, then swap to the live one.\n- The rule for illusions: they must look identical to the original (checked in Chrome and the Simulator), or they become a proposal you decide on.\n- The heat test running now measures the end of the page again; its frames tell us which of these matters most.\n- I'll post the ranked list here, then start the top one or two.\nWhat you need to do: nothing for now."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-05T10:41:10.682Z",
+      "by": "lead",
+      "text": "Yes, it can get smoother, mostly by making the page do less work; pure look-alike tricks don't fit this panel.\n- 1 (exact, coming in v9.1): hide the closed panel's content while it is fully transparent; fewer repaints when the menu closes.\n- 2 (exact, being built): the step after you lift your finger stops re-measuring the page; may remove one 35-43 ms hiccup.\n- 3 (look change, a proposal later): lay the panel out once at full size and reveal it, instead of re-laying it out every frame. Biggest gain.\n- 4 (look change): swap the moving blur for a fade between a sharp and a blurred copy.\n- Rejected: a still picture or video of the panel. The live clock, the blur and your finger make it differ from the real thing.\n- 3 and 4 first get a Simulator count of how much each saves; then I bring you a Try-it if it is worth it.\nWhat you need to do: nothing for now."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-05T10:47:15.911Z",
+      "by": "lead",
+      "text": "The heat test (P-129) is done and valid: all 6 phone holds passed; here is what it found (OBSERVED, timeline recording on).\n| question | answer |\n|---|---|\n| who is late in slow frames, whole page | mostly the page's script (352 of 641) |\n| end of page, last screen | drawing or mixed work (101 and 142), script never alone (0) |\n| the menu's 200 ms timer after you lift | not the cause (0 of 97 slow frames) |\n| hero still slow after 20 s idle | partly; it depends on the cut-off (30 vs 38 ms) |\n- Caveat: recording the timeline itself adds script work, so \"mostly script\" may be partly the recorder.\n- For the end of the page this backs ideas 3 and 4 (less redrawing); their Simulator count runs now.\n- The trace running on the iPhone now repeats this on today's shipping build.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-05T10:56:11.984Z",
+      "by": "lead",
+      "text": "The two menu ideas from #4 help only a little, so we won't build them now; the bigger lever is page script during the swipe (see T-194 #5).\n\n- Item 2 (cache after scrolling stops): dropped. The 0.2 s timer it targets shows up in none of the slow frames, on the phone or in the earlier test.\n- Items 3 and 4 were checked on the Simulator by counting repaints over a 1.2 s menu open or close (no timing):\n\n| change | close: pixels painted | open: pixels painted |\n|---|---|---|\n| fixed-size menu panel (item 3) | +6 % | +25 % |\n| blur filters off (item 4) | -16 % | -22 % |\n| column drift paused | -22 % | 0 |\n\n- Item 3 paints less often but more area, so it is no win. Item 4 saves about 20 %, with no sign it removes a slow frame.\n- Pausing the column drift would change the look while moving, so it would come to you as a proposal with a Try-it, not a silent fix.\n- Next: fix-hero-exit-threaded now maps the script and layout work at the hero exit to code and proposes one fix per item.\n\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-05T11:11:35.315Z",
+      "by": "user",
+      "text": "My instinct, the cause of lag may came from background images of the end of page ? \n\nWe was optimize the card of hero section before. it could help. let's investigate and research them"
+    },
+    {
+      "n": 11,
+      "at": "2026-10-05T11:12:52.555Z",
+      "by": "lead",
+      "text": "Good instinct, and our data fits it: the slow end-of-page frames are drawing work, which big background images can cause. A new agent, fix-end-bg, is checking now.\n\n- What we know: on the iPhone, the slow frames after lift-off at the page end are mostly drawing (RENDER) or drawing plus script (MIXED), not script alone.\n- When: in bursts within 0.4 s after lift-off, almost always when Safari's toolbar changes height. A background sized from the screen height would be redrawn exactly then.\n- Not proven yet: we haven't tied any one image to those frames. So this is OBSERVED (our data only).\n- What fix-end-bg checks: every background image, gradient and blur in the last screen; its real size against its shown size; and whether it is redrawn when the toolbar moves, counted in Chrome and on the Simulator (no timing).\n- It also looks up what the earlier hero-card change did, to see if the same trick applies here.\n- Then: one verdict per image (cause, contributes, not involved) and ranked fixes. Look-alike fixes stay pixel-identical; anything that changes the look comes to you as a proposal with a Try-it.\n- First report: in about an hour, here.\n\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-05T11:14:50.167Z",
+      "by": "user",
+      "text": "actually, we can do small prove with remove all background then try to swipe. if it significant faster. so it's prove the laggy came from them."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-05T11:15:12.917Z",
+      "by": "fix-end-bg",
+      "text": "Yes, that is a good test, and I'll build it: a copy of today's page with every background image, gradient and blur at the end of the page removed (a test build only, not a fix).\n\n- First, no phone needed: I count how much gets redrawn when the toolbar changes height, with and without the backgrounds, in Chrome and the Simulator. If removing them barely changes that count, they are not the cause.\n- Then your swipe: the iPhone is busy with two other tests now, so I'll ask the lead for a slot and post a blind swipe pair (normal vs no backgrounds) as a step for you.\n- Caveat: a swipe that feels faster without backgrounds proves they cost something, but not which one; the counts tell us which.\n- First results in about an hour, here.\n\nWhat you need to do: nothing now; the swipe step will appear in Your steps when the phone is free."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-05T11:15:52.672Z",
+      "by": "user",
+      "text": "After the experimental, you could write up how to prove with any elements on the doc, let's talk with lead.",
+      "forLead": true
+    },
+    {
+      "n": 15,
+      "at": "2026-10-05T11:16:20.764Z",
+      "by": "fix-end-bg",
+      "text": "Yes: after this test I'll write up the method, so any element on the page can be checked the same way.\n\n- The method: remove or freeze one element (or a group), count what the page redraws in Chrome and the Simulator, then confirm with your blind swipe.\n- I'll agree the write-up with the lead first, so it fits our existing test rules.\n\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 16,
+      "at": "2026-10-05T11:16:23.149Z",
+      "by": "lead",
+      "text": "Yes: after the no-backgrounds test, I'll write a short guide on how to prove any element on the page causes lag, using that test as the worked example.\n\n- The method: remove one element or group (a copy of the page only), count what the browser redraws, then you swipe the two builds blind on the iPhone. If counts drop and the swipe feels smoother, that element is a cause.\n- Why both: the counts say which element and by how much; your swipe says whether you can feel it. Either alone can mislead.\n- The guide also covers picking what to remove first (from our iPhone traces) and when a removal is unfair, e.g. it also removes script work.\n- When: after fix-end-bg's counts and your swipe, about 1.5-2 h from now.\n- Where: a note in our study folder by default, or also a private page you can open from the console. Tell me if you want the page.\n\nWhat you need to do: nothing now; reply \"page\" if you want the shareable version too."
+    },
+    {
+      "n": 17,
+      "at": "2026-10-05T11:17:44.872Z",
+      "by": "user",
+      "text": "For the real prove, you could do experiment on the real device. lead, let's manage them. if you have a lot of work. delegate.",
+      "forLead": true
+    },
+    {
+      "n": 18,
+      "at": "2026-10-05T11:18:37.467Z",
+      "by": "lead",
+      "text": "Agreed: the proof runs on the real iPhone. fix-end-bg designs it, iphone-runner runs it, and I set the order.\n\n- Real-device test: the robot finger swipes to the page end on today's build and on the no-backgrounds copy, in turns, with Xcode's Serious heat on.\n- What it counts: the slow frames (over 34 ms and over 50 ms) in the last screen after lift-off, the ones the earlier trace found.\n- Rules: the \"this proves it\" line is written down before any run. A control run checks the phone is steady, and the coordinating agent reads the result.\n- Your blind swipe pair comes after the robot runs, so you judge by feel.\n- Order on the iPhone: the countdown test (P-130) ends about 11:40Z. Then this test or the next combined build's test (P-134), whichever is ready first.\n- Estimate: the design takes about 45 min, so the robot runs at about 12:15-12:45Z, and your swipe right after.\n- The Mac and Simulator counts still run first, and show which background matters most.\n\nWhat you need to do: nothing now; your swipe step will appear in Your steps."
+    },
+    {
+      "n": 19,
+      "at": "2026-10-05T11:38:12.424Z",
+      "by": "fix-end-bg",
+      "text": "The \"no backgrounds\" phone test is ready and runs once the iPhone is back.\n\n- My guess before the data: backgrounds are probably not the main cause.\n- Test page \"nobg\": your page with every background picture, gradient, grain texture and the photo wall behind the menu switched off. Layout and scripts stay the same.\n- Chrome check: the page does the same work, but the drawing work goes down by about a third. So the test changes only the drawing.\n- Phone test (P-137): a robot swipes to the bottom 4 times on the normal page and 4 times on \"nobg\", taking turns. We count the frames slower than 34 ms after your finger lifts.\n- It waits for the iPhone to be plugged back in, then for another test that is ahead of it in the queue.\n\n| last screen, after the finger lifts | slow frames per run |\n|---|---|\n| normal page (earlier test T-194) | 19 |\n| \"backgrounds are the cause\" if nobg is at most | 9 |\n\n- Prediction (not a result yet): 16 of those 19 slow frames happen while the Safari toolbar grows or shrinks. So the toolbar step is the more likely cause. I put \"no clear difference\" at 57 % and \"backgrounds are the cause\" at 8 %.\n\nWhat you need to do: nothing now. After the robot test I'll ask you for a blind swipe A/B on the phone."
+    },
+    {
+      "n": 20,
+      "at": "2026-10-05T11:42:31.884Z",
+      "by": "fix-end-bg",
+      "text": "The \"no backgrounds\" phone test starts at about 12:05 UTC, now that the iPhone is back.\n\n- It runs right after the last two parts of the test already on the phone.\n- The robot needs about an hour: 8 counted swipe runs, plus warm-up and check runs.\n- My guess is unchanged and still only a guess: backgrounds are probably not the main cause.\n- I'll post the result here when it is read.\n\nWhat you need to do: nothing during the robot test. Please don't touch the phone while it runs. After it, I'll post the blind swipe A/B as one of your steps."
+    },
+    {
+      "n": 21,
+      "at": "2026-10-05T11:43:15.192Z",
+      "by": "user",
+      "text": "Mark as highest priority"
+    },
+    {
+      "n": 22,
+      "at": "2026-10-05T11:46:38.849Z",
+      "by": "lead",
+      "text": "Done: the end-of-page backgrounds work is now the top priority on the board and on the iPhone.\n- Board: the end-bg row is #1; its Chrome check moved to the front of the Mac queue.\n- iPhone: the no-backgrounds robot test (P-137, about 25 min) runs right after the heat test that is on the phone now (P-130, last 2 parts, about 15 min).\n- I did not stop P-130: its heat check just passed after your Serious step, and stopping it would waste that and gain only about 15 min.\n- If P-130 fails its heat check again, P-137 goes first instead.\n- After P-137: fix-end-bg posts the result here, then your blind swipe pair (normal vs no backgrounds).\n\nWhat you need to do: nothing now. Please don't touch the phone while the robot runs."
+    },
+    {
+      "n": 23,
+      "at": "2026-10-05T12:09:01.166Z",
+      "by": "user",
+      "text": "did you research to optimize images of start-selling-morph-col class yet ?"
+    },
+    {
+      "n": 24,
+      "at": "2026-10-05T12:12:16.989Z",
+      "by": "fix-end-bg",
+      "text": "Yes: I mapped all the photo wall images (start-selling-morph-col), and the phone test running now covers them.\n\n- 21 photos in 5 columns, 138 px wide on screen (414 real pixels on the iPhone), loaded only once the end panel shows.\n- Together: 5.4 MB to download, about 62 MB of memory once unpacked.\n- Only 7 are bigger than needed (the 5 \"roles\" pictures and 2 work photos, 1.2 to 1.9 times). 12 are already smaller than the screen needs.\n- Resizing those 7 would save about 16 MB of memory (62 to 46). Turning the PNG photos into JPEG/WebP would save download, not memory.\n- Chrome check: the pictures are unpacked once, never again while scrolling. The wall redraws on every toolbar step with or without pictures.\n- The phone test now running hides these photos fully. That is the most any image change could gain.\n\n| if the phone test shows | then image work on the wall |\n|---|---|\n| no clear difference | will not fix the lag (still saves memory and data) |\n| a clear drop | gets a fix card, checked to look pixel-identical first |\n\nWhat you need to do: nothing now. I'll post the phone result here."
+    },
+    {
+      "n": 25,
+      "at": "2026-10-05T12:13:56.825Z",
+      "by": "user",
+      "text": "for the breakpoint, they didn't display all of column in the visual screen. they might a good hint."
+    },
+    {
+      "n": 26,
+      "at": "2026-10-05T12:15:40.762Z",
+      "by": "fix-end-bg",
+      "text": "Good hint, and it checks out: on a phone only 10 of the 21 wall photos can ever be seen.\n\n- Below 640 px wide the page hides columns 4 and 5 (8 photos, 2.1 MB). The phone still downloads them, because they load at once, not on demand.\n- In the 3 shown columns, the last photo of each never scrolls into the window on a phone (the menu is at most 791 px tall).\n- Hidden columns cost no drawing. The 3 cut-off photos sit inside the moving column strips, which are redrawn on every toolbar step.\n\n| idea | what it saves | looks the same? |\n|---|---|---|\n| don't load columns 4-5 on phones | 2.1 MB download | yes, they are hidden |\n| drop the never-seen last photos | strip drawing area | only up to 791 px; a taller screen shows some |\n| shrink the one oversized visible photo | 2 MB memory | needs a pixel check |\n\n- The robot test is about a quarter done; its verdict decides whether any of this matters for the lag.\n\nWhat you need to do: nothing now. I'll post the phone result here."
+    },
+    {
+      "n": 27,
+      "at": "2026-10-05T12:48:16.128Z",
+      "by": "fix-end-bg",
+      "text": "Phone result: the backgrounds ARE the main cause of the slow frames at the end of the page.\n\nThe robot swiped 4 times on each version (the normal page, and the same page with all backgrounds and wall photos hidden), on the real iPhone, warm (Serious).\n\n| slow frames after the finger lifts, last screen | normal page | no backgrounds |\n|---|---|---|\n| over 34 ms, per swipe run | 14 to 30 (middle 16) | 2 to 5 (middle 3) |\n| over 50 ms | 0 to 15 (middle 2.5) | 0 to 1 |\n| average fps there | 54 to 55 | 57 |\n\n- Every normal run was worse than every no-background run, at 30, 34 and 38 ms alike. By our rule that is CAUSE.\n- What vanished: \"mixed\" slow frames, where the phone was partly busy drawing (49 of 76 normal, 1 of 13 without).\n- So redrawing these pictures costs far more on the iPhone than Chrome showed (our data; the WebKit reason is not checked yet).\n- I did not expect this (I gave it 8 %): good that you pushed for the test.\n- This test hid everything at once. Next I find WHICH part it is (wall photos, grain/noise overlays, or the #platform pictures), then fix that part so it looks the same.\n\nWhat you need to do: your blind swipe pair comes next on the phone; I'll post it as a step when the phone is free."
+    },
+    {
+      "n": 28,
+      "at": "2026-10-05T12:51:01.301Z",
+      "by": "user",
+      "text": "i think we could do all image measurement of all website. here's a prove. no need to prove more than this. lead delegate to team for optimize the images. and do proposal for check how it difference.",
+      "forLead": true,
+      "later": [
+        "fix-end-bg"
+      ]
+    },
+    {
+      "n": 29,
+      "at": "2026-10-05T12:52:07.372Z",
+      "by": "lead",
+      "text": "Done: no more proving; the team now optimizes the images and brings you a proposal with Try-it pages.\n- Owner: fix-end-bg (the agent on the end-of-page backgrounds), still the top priority; a cheaper Sonnet helper lists every image.\n- Step 1, whole page: every picture, background and texture, with its file size, its size on a phone screen, and its layers.\n- Step 2, slim them: right-size each to what a phone shows, a lighter format Safari supports, merge the grain layers into the picture where the look stays the same, skip the 11 wall photos a phone never shows.\n- Step 3, proposal: the normal page and the optimized page side by side as Try-it pages, with the difference in plain words: file sizes, any look change, slow frames.\n- Re-encoded pictures change pixels slightly, so it comes as a proposal for you to judge, not a silent change.\n- The blind swipe pair in Your steps still stands if you want it; you can also skip it.\nWhat you need to do: nothing now; you get the proposal in Your steps when it is ready."
+    },
+    {
+      "n": 30,
+      "at": "2026-10-05T12:52:43.156Z",
+      "by": "fix-end-bg",
+      "text": "Got it: no more proving. I now measure and optimize every image on the page, and bring it to you as a proposal. ETA: about 3 hours.\n\n- Step 1, list (now): every picture, background, overlay and texture on the whole page: file type, size in bytes, real size vs what a phone shows, how many a phone can ever see, and the blend/grain/blur layers on top.\n- Step 2, Chrome counts: how often each picture is drawn and unpacked during one scroll (counts only, no timing).\n- Step 3, optimize in my test copy (the real files stay untouched):\n  - shrink each picture to what a phone shows (3x screens);\n  - lighter formats Safari supports (AVIF/WebP), with the source cited;\n  - bake the grain/blend overlays into the picture where it looks the same;\n  - skip pictures a phone never shows (the 11 hidden wall photos);\n  - loading hints.\n- Step 4, proposal with Try-it pages (normal vs optimized on your phone): bytes saved, a pixel check of the look, and Chrome slow-frame counts.\n- New file formats change pixels slightly, so you decide; phone timing only after you pick.\n\nWhat you need to do: finish the swipe pair on the phone when ready (it waits for you). Nothing else now."
+    },
+    {
+      "n": 31,
+      "at": "2026-10-05T12:56:50.513Z",
+      "by": "fix-end-bg",
+      "text": "Your swipe pair agrees with the robot: you picked the page without backgrounds (page 2) as following your finger better.\n\n| page | what it was | your pick |\n|---|---|---|\n| 1 | normal page | |\n| 2 | backgrounds and wall photos hidden | better, difference 3 of 5 |\n\n- The order was a coin flip; page 2 happened to be the one without pictures.\n- This closes the proving part. The image work from #30 is under way (inventory running now).\n\nWhat you need to do: nothing. The phone is free again."
+    }
+  ],
+  "reads": {
+    "user": 31,
+    "lead": 29,
+    "fix-end-bg": 31
+  },
+  "history": [
+    {
+      "at": "2026-10-05T10:28:39.720Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "lead"
+    },
+    {
+      "at": "2026-10-05T11:12:52.632Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "fix-end-bg"
+    },
+    {
+      "at": "2026-10-05T11:43:33.429Z",
+      "who": "fix-end-bg",
+      "action": "escalate",
+      "note": "User #21: mark the end-bg / P-137 work as highest priority. Only the lead sets priority (board and phone order)."
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-05T12:52:07.372Z",
+    "fix-end-bg": "2026-10-05T12:56:50.513Z"
+  },
+  "histSeen": {
+    "lead": 3
+  }
+}

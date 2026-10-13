@@ -1,0 +1,45 @@
+{
+  "id": "C-031",
+  "by": "iphone-runner",
+  "kind": "question",
+  "title": "Your CLI research request (C-030): handed to the team",
+  "instructions": "Research is now with de-thermal-cli: Apple's docs on device conditions, the WebKit source (whether 'Serious' slows Safari), and pymobiledevice3's command-line route. Nothing gets installed without your OK. The answer will come in thread T-029. Nothing for you to do now; tap 'got it'.",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "got it"
+    ]
+  },
+  "status": "answered",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-03T09:17:22.772Z",
+  "queuedAt": "2026-10-03T09:17:22.772Z",
+  "updatedAt": "2026-10-03T09:19:56.403Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-03T09:17:22.772Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-03T09:18:45.423Z",
+      "who": "user",
+      "action": "start"
+    },
+    {
+      "at": "2026-10-03T09:19:56.403Z",
+      "who": "user",
+      "action": "answer",
+      "value": "got it"
+    }
+  ],
+  "startedAt": "2026-10-03T09:18:45.423Z",
+  "result": {
+    "value": "got it",
+    "notes": "This request should not be in Your steps feature. why you don't open the new threads for this. and you can catch up about more information as well.",
+    "at": "2026-10-03T09:19:56.403Z"
+  }
+}

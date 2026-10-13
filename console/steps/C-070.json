@@ -1,0 +1,168 @@
+{
+  "id": "C-070",
+  "by": "int-v8",
+  "topic": "v9-1",
+  "kind": "swipe-pair",
+  "title": "v9.2 check: which page follows your finger better?",
+  "instructions": "Swipe through the whole page on page 1, then on page 2, as you normally would: top to the end and back. Which one follows your finger better?",
+  "url": "http://192.168.0.57:55668/",
+  "showUrl": false,
+  "meta": {
+    "ticket": "P-142 part 3",
+    "coin": 1,
+    "page1": "V",
+    "page2": "C",
+    "C": "v9-final fd2ac7dd 647c9ef2b1e2/e1359ab9994a",
+    "V": "v9.2 = v9.1d 941aa13e5bdf/f1997edf5309"
+  },
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "1",
+      "2",
+      "same"
+    ]
+  },
+  "status": "skipped",
+  "cur": 0,
+  "parts": [
+    {
+      "label": "Page 1",
+      "url": "http://192.168.0.57:55668/",
+      "record": true,
+      "gate": true,
+      "state": "waiting",
+      "at": {},
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "ready": "2026-10-05T22:12:02.024Z",
+            "started": "2026-10-05T22:12:06.100Z",
+            "recording": "2026-10-05T22:12:07.263Z",
+            "done": "2026-10-05T22:12:28.145Z"
+          },
+          "ended": "restart",
+          "by": "user",
+          "endedAt": "2026-10-05T22:13:43.485Z"
+        }
+      ],
+      "attempt": 2,
+      "message": "You started over (try 2)."
+    },
+    {
+      "label": "Page 2",
+      "url": "http://192.168.0.57:55669/",
+      "record": true,
+      "gate": true,
+      "state": "waiting",
+      "at": {},
+      "attempts": [
+        {
+          "n": 1,
+          "at": {
+            "ready": "2026-10-05T22:12:33.132Z",
+            "started": "2026-10-05T22:13:02.589Z",
+            "recording": "2026-10-05T22:13:03.906Z",
+            "done": "2026-10-05T22:13:34.895Z"
+          },
+          "ended": "restart",
+          "by": "user",
+          "endedAt": "2026-10-05T22:13:43.485Z"
+        }
+      ],
+      "attempt": 2
+    }
+  ],
+  "createdAt": "2026-10-05T22:11:57.149Z",
+  "queuedAt": "2026-10-05T22:11:57.149Z",
+  "updatedAt": "2026-10-05T22:14:27.339Z",
+  "rev": 11,
+  "history": [
+    {
+      "at": "2026-10-05T22:11:57.149Z",
+      "who": "int-v8",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-05T22:12:02.024Z",
+      "who": "int-v8",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-05T22:12:06.100Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-05T22:12:07.263Z",
+      "who": "int-v8",
+      "action": "ack",
+      "part": 1,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-05T22:12:28.145Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-05T22:12:33.132Z",
+      "who": "int-v8",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "ready"
+    },
+    {
+      "at": "2026-10-05T22:13:02.589Z",
+      "who": "user",
+      "action": "start",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-05T22:13:03.906Z",
+      "who": "int-v8",
+      "action": "ack",
+      "part": 2,
+      "attempt": 1,
+      "state": "recording"
+    },
+    {
+      "at": "2026-10-05T22:13:34.895Z",
+      "who": "user",
+      "action": "done",
+      "part": 2,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-05T22:13:43.485Z",
+      "who": "user",
+      "action": "restart",
+      "part": 1,
+      "epoch": 1,
+      "attempts": [
+        2,
+        2
+      ]
+    },
+    {
+      "at": "2026-10-05T22:14:27.339Z",
+      "who": "user",
+      "action": "skip"
+    }
+  ],
+  "queueSeq": 29,
+  "startedAt": "2026-10-05T22:12:06.100Z",
+  "epoch": 1,
+  "skippedAt": "2026-10-05T22:14:27.339Z"
+}

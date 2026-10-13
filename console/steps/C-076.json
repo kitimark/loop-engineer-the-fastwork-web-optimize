@@ -1,0 +1,54 @@
+{
+  "id": "C-076",
+  "by": "lead",
+  "kind": "action",
+  "title": "Xcode: stop, then restart the iPhone's Serious thermal condition (test profile serious)",
+  "instructions": "The iPhone reads Critical although Xcode's condition is Serious and the battery is cool (36.19 C). On the Mac, in Xcode choose Window > Devices and Simulators, click Devices and select the iPhone; under Device Conditions click Stop. Wait about 2 minutes (until the phone is below Critical), then set Condition to Thermal State and Profile to Serious, then click Start. Leave it on (keep the cable in). Then click Done here; lead reads it again and runs.",
+  "showUrl": true,
+  "meta": {
+    "phoneProfile": {
+      "owner": "lead",
+      "profile": "serious",
+      "fix": "restart-condition",
+      "incident": "I-186",
+      "read": {
+        "state": "Critical",
+        "induced": "Yes",
+        "condition": "Serious"
+      }
+    }
+  },
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "cancelled",
+  "cur": 0,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "waiting",
+      "at": {}
+    }
+  ],
+  "createdAt": "2026-10-06T04:44:28.322Z",
+  "queuedAt": "2026-10-06T04:44:28.322Z",
+  "updatedAt": "2026-10-06T04:47:17.624Z",
+  "rev": 2,
+  "history": [
+    {
+      "at": "2026-10-06T04:44:28.322Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-06T04:47:17.624Z",
+      "who": "lead",
+      "action": "cancel",
+      "note": "duplicate of C-077 (auto-posted by the profile read); do C-077 instead"
+    }
+  ],
+  "queueSeq": 35
+}

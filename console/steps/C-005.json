@@ -1,0 +1,57 @@
+{
+  "id": "C-005",
+  "by": "iphone-runner",
+  "kind": "action",
+  "title": "iPhone is off the Mac again: please plug it in and unlock it, leave Safari as is",
+  "instructions": "Plug the iPhone's cable back in and unlock it; leave Safari on the 'Done, thank you' page and don't reload it, because round 2's result is saved there. Then tap Done here.",
+  "showUrl": true,
+  "meta": {
+    "why": "iwdp unreachable at 16:33Z right after C-004 answered; fv3-set2 not yet saved"
+  },
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-01T16:35:15.921Z",
+        "done": "2026-10-01T16:35:17.271Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-01T16:34:50.877Z",
+  "queuedAt": "2026-10-01T16:34:50.877Z",
+  "updatedAt": "2026-10-01T16:35:17.271Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-01T16:34:50.877Z",
+      "who": "iphone-runner",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-01T16:35:15.921Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T16:35:17.271Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    }
+  ],
+  "startedAt": "2026-10-01T16:35:15.921Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-01T16:35:17.271Z"
+  }
+}

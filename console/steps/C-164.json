@@ -1,0 +1,58 @@
+{
+  "id": "C-164",
+  "by": "lead",
+  "kind": "action",
+  "title": "Redeploy the 2 demos (their missing images are restored)",
+  "instructions": "In Terminal on this Mac, in the project folder: bash out/cf-review/deploy.sh and answer y. Then reload both demo links. Tap Done when pictures and styles show, or note what still looks wrong.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-13T09:09:29.933Z",
+        "done": "2026-10-13T09:09:42.976Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-13T09:07:32.240Z",
+  "queuedAt": "2026-10-13T09:07:32.240Z",
+  "updatedAt": "2026-10-13T09:09:42.976Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-13T09:07:32.240Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-13T09:09:29.933Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-13T09:09:42.976Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 123,
+  "startedAt": "2026-10-13T09:09:29.933Z",
+  "result": {
+    "value": "done",
+    "notes": "PASS  original tick gives the cookie\nPASS  original forged cookie refused\nPASS  optimized / -> gate\nPASS  optimized /review-guard.js -> gate\nPASS  optimized /_app/version.json -> gate\nPASS  optimized /index.html -> gate\nPASS  optimized /_headers -> gate\nPASS  optimized /th/ -> gate\nPASS  optimized /gate 200\nPASS  optimized /gate noindex\nPASS  optimized gate text\nPASS  optimized robots.txt allows crawling\nPASS  optimized no cookie without the tick\nPASS  optimized tick gives the cookie\nPASS  optimized forged cookie refused\n\nALL PASS. Now do the browser checks in POST-DEPLOY-CHECK.txt section 2.",
+    "at": "2026-10-13T09:09:42.976Z"
+  }
+}

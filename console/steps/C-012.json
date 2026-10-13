@@ -1,0 +1,55 @@
+{
+  "id": "C-012",
+  "by": "lead",
+  "kind": "action",
+  "title": "iPhone: open the test page in Safari",
+  "instructions": "In Safari's address bar on the iPhone, type http://192.168.0.55:5497/ and open it. Wait until the page has loaded, leave it at the top, keep the phone unlocked, then press Done.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-01T17:41:41.155Z",
+        "done": "2026-10-01T17:42:08.526Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-01T17:41:28.766Z",
+  "queuedAt": "2026-10-01T17:41:28.766Z",
+  "updatedAt": "2026-10-01T17:42:08.526Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-01T17:41:28.766Z",
+      "who": "lead",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-01T17:41:41.155Z",
+      "who": "user",
+      "action": "start",
+      "part": 1
+    },
+    {
+      "at": "2026-10-01T17:42:08.526Z",
+      "who": "user",
+      "action": "done",
+      "part": 1
+    }
+  ],
+  "startedAt": "2026-10-01T17:41:41.155Z",
+  "result": {
+    "value": "done",
+    "notes": "can you try to close and open safari by yourself. i already enable the developer mode and allow the gesture mode.",
+    "at": "2026-10-01T17:42:08.526Z"
+  }
+}

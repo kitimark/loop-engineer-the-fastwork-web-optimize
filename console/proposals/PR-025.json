@@ -1,0 +1,395 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-025",
+  "by": "fix-end-bg",
+  "title": "Pictures on the whole page: lighter files, a lighter format, or baked end-screen backgrounds (3 options)",
+  "area": "whole",
+  "topic": "end-bg",
+  "thread": "T-197",
+  "problem": "The end-screen backgrounds cause most of the slow frames after you lift the finger (phone test: 16 per run with them, 3 without).\n- Your blind swipe agreed.\n- The page downloads 89 picture files (10.4 MB) on a phone; 21 of them (3.3 MB) are never drawn there.\n- 27 pictures are bigger than a phone screen can show; 10 photos are stored as PNG, a heavy format for photos.\n- The end screen redraws grain mixed in with a blend effect, and a live-blurred photo, on every toolbar step.",
+  "visualDiff": [],
+  "gain": [],
+  "compare": {
+    "a": {
+      "label": "Today's best build (v9-final + menu scroll 7d)"
+    },
+    "shots": []
+  },
+  "options": [
+    {
+      "name": "lighter-files",
+      "label": "A: lighter files",
+      "idea": "Shrink 22 oversized pictures to exactly what a phone shows, same file type.\n- 3 phone pixels per page pixel, so nothing gets blurry on the iPhone.\n- The menu photo wall loads pictures only when shown: the 8 photos a phone hides are never downloaded.\n- 5 more were left as they are: their shrunk file came out bigger than the original.",
+      "looksSame": "Nearly: a shrunk photo can look a touch softer. In the Chrome check only a few small pictures changed (largest 0.06 % of the screen).",
+      "risk": "Lag effect not measured yet; the phone test after you pick decides.\n- This test build swaps the files for every screen size; a real change would add phone sizes (srcset), so computers keep today's files.\n- The hero intro could not be compared by screenshot: it differs between two loads of the same page.",
+      "visualDiff": [
+        "A few avatars and seller photos, slightly softer at most; nothing moves."
+      ],
+      "gain": [
+        {
+          "what": "Picture download on a phone",
+          "before": "10.4 MB, 89 files",
+          "after": "6.6 MB, 81 files",
+          "tag": "OBSERVED",
+          "how": "Chrome, 430 px wide at 3x, one load and one full scroll per build.",
+          "better": "better"
+        },
+        {
+          "what": "Pictures unpacked while loading",
+          "before": "36",
+          "after": "27",
+          "tag": "OBSERVED",
+          "how": "Chrome trace, same run.",
+          "better": "better"
+        },
+        {
+          "what": "Picture draws per scroll",
+          "before": "about 916",
+          "after": "about 918",
+          "tag": "OBSERVED",
+          "how": "Chrome trace; the draws come from repaints, not from file size.",
+          "better": "same"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "A: lighter files"
+        },
+        "shots": [
+          {
+            "caption": "Commission section avatars, the biggest change in the Chrome check (430 px, 3x)",
+            "a": "r2-o1-a-1.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r2-o1-b-1.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          }
+        ]
+      },
+      "live": {
+        "overlay": "fixes/end-bg-img-a/overlay",
+        "blob": "0e6232397a4f6a18245cf0ad39db26b4641d8a67",
+        "base": "site-pretty",
+        "files": [
+          "_app/immutable/assets/2.gBuqKVzi.css",
+          "_app/immutable/nodes/2.DyWL8TcE.js",
+          "index.html",
+          "selling/commission/avatar-john.jpg",
+          "selling/commission/client-avatar-1.png",
+          "selling/commission/client-avatar-2.png",
+          "selling/commission/client-avatar-3.png",
+          "selling/hero/leobeer-cover.jpg",
+          "selling/hero/mod-avatar.jpg",
+          "selling/hero/mod-cover.jpg",
+          "selling/hero/weng-avatar.jpg",
+          "selling/hero/weng-cover.jpg",
+          "selling/media/service-kitchen.png",
+          "selling/sellers/ai-automation/avatar.jpg",
+          "selling/sellers/ai-video-editor/avatar.jpg",
+          "selling/sellers/graphic-designer/avatar.jpg",
+          "selling/sellers/photographer/avatar.jpg",
+          "selling/sellers/photographer/post-tuna.jpg",
+          "selling/sellers/photographer/service-strawberry.jpg",
+          "selling/sellers/reviewers/r5.jpg",
+          "selling/sellers/sound-composer/avatar.jpg",
+          "selling/sellers/sound-composer/post-maynila.jpg",
+          "selling/sellers/sound-composer/post-orchestra.jpg",
+          "selling/sellers/ux-ui-designer/avatar.jpg",
+          "selling/sellers/web-developer/avatar.jpg"
+        ],
+        "a": {
+          "overlay": "fixes/end-bg/overlay",
+          "blob": "4b81a357d2ed53d5df5563c236813ee6ee5079df",
+          "base": "site-pretty",
+          "files": [
+            "_app/immutable/assets/2.gBuqKVzi.css",
+            "_app/immutable/nodes/2.DyWL8TcE.js"
+          ]
+        }
+      }
+    },
+    {
+      "name": "new-format",
+      "label": "B: A plus AVIF",
+      "idea": "Everything in A, plus 32 pictures re-saved as AVIF.\n- AVIF is a modern photo format Safari reads since iOS 16 (webkit.org, Safari 16.0 notes).\n- The page links to the new files.",
+      "looksSame": "Nearly: AVIF changes pixels slightly. In the Chrome check the largest change outside the hero intro was a small avatar row (0.07 % of the screen).",
+      "risk": "Same as A.\n- AVIF takes a little more phone work to unpack the first time a picture appears; not measured on the phone yet.\n- 3 seller photos whose links are built while the page runs keep their old format (shrunk only).",
+      "visualDiff": [
+        "As A, plus faint compression changes in photos; nothing moves."
+      ],
+      "gain": [
+        {
+          "what": "Picture download on a phone",
+          "before": "10.4 MB, 89 files",
+          "after": "4.5 MB, 89 files",
+          "tag": "OBSERVED",
+          "how": "Chrome, 430 px wide at 3x, one load and one full scroll per build.",
+          "better": "better"
+        },
+        {
+          "what": "Pictures unpacked while loading",
+          "before": "36",
+          "after": "16",
+          "tag": "OBSERVED",
+          "how": "Chrome trace, same run.",
+          "better": "better"
+        },
+        {
+          "what": "Picture draws per scroll",
+          "before": "about 916",
+          "after": "about 918",
+          "tag": "OBSERVED",
+          "how": "Chrome trace.",
+          "better": "same"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "B: lighter files + AVIF"
+        },
+        "shots": [
+          {
+            "caption": "Commission section avatars (430 px, 3x)",
+            "a": "r2-o2-a-1.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r2-o2-b-1.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          }
+        ]
+      },
+      "live": {
+        "overlay": "fixes/end-bg-img-b/overlay",
+        "blob": "57763dc647c652d55cced3ad00c075a981d4675b",
+        "base": "site-pretty",
+        "files": [
+          "_app/immutable/assets/2.gBuqKVzi.css",
+          "_app/immutable/nodes/2.DyWL8TcE.js",
+          "index.html",
+          "selling/commission/avatar-john.avif",
+          "selling/commission/client-avatar-1.avif",
+          "selling/commission/client-avatar-2.avif",
+          "selling/commission/client-avatar-3.avif",
+          "selling/hero/bold-cover.avif",
+          "selling/hero/leobeer-cover.avif",
+          "selling/hero/mod-avatar.avif",
+          "selling/hero/mod-cover.avif",
+          "selling/hero/weng-avatar.avif",
+          "selling/hero/weng-cover.avif",
+          "selling/media/avatar-cat.avif",
+          "selling/media/cover-cafe.avif",
+          "selling/media/post-1.avif",
+          "selling/media/post-2.avif",
+          "selling/media/post-3.avif",
+          "selling/media/service-cafe.avif",
+          "selling/media/service-kitchen.avif",
+          "selling/platform/features/secure/network/portrait-left.avif",
+          "selling/platform/features/secure/network/portrait-right.avif",
+          "selling/profile/portfolio-1.avif",
+          "selling/roles/architect.avif",
+          "selling/roles/graphic-designer.avif",
+          "selling/sellers/ai-automation/avatar.avif",
+          "selling/sellers/ai-video-editor/avatar.avif",
+          "selling/sellers/graphic-designer/avatar.avif",
+          "selling/sellers/photographer/avatar.avif",
+          "selling/sellers/photographer/post-tuna.jpg",
+          "selling/sellers/photographer/service-strawberry.jpg",
+          "selling/sellers/reviewers/r5.avif",
+          "selling/sellers/sound-composer/avatar.avif",
+          "selling/sellers/sound-composer/post-maynila.avif",
+          "selling/sellers/sound-composer/post-orchestra.avif",
+          "selling/sellers/sound-composer/post-you-me-me.avif",
+          "selling/sellers/ux-ui-designer/avatar.avif",
+          "selling/sellers/web-developer/avatar.avif"
+        ],
+        "a": {
+          "overlay": "fixes/end-bg/overlay",
+          "blob": "4b81a357d2ed53d5df5563c236813ee6ee5079df",
+          "base": "site-pretty",
+          "files": [
+            "_app/immutable/assets/2.gBuqKVzi.css",
+            "_app/immutable/nodes/2.DyWL8TcE.js"
+          ]
+        }
+      }
+    },
+    {
+      "name": "baked-backgrounds",
+      "label": "C: baked end-screen backgrounds",
+      "idea": "On phones the 4 end-screen background boxes show one still picture each, made from today's page.\n- Grain with its blend effect, soft gradient and blurred photo are drawn once into the picture, not live on every redraw.\n- Everything on top of them stays live; up to 640 px wide only.",
+      "looksSame": "Nearly: only inside the 4 boxes.\n- Most pixels change by up to 20 of 255 shades (compression of the saved picture on the grain).\n- One spot has about 4,000 pixels that change more.",
+      "risk": "Chrome cannot show the gain; the phone test after you pick decides.\n- It may not remove the whole lag: the phone test also hid the animated colour titles at the end, and they redraw about 100 times per scroll. We are measuring that part separately now.\n- Adds about 1 MB of download.\n- On phones narrower than 430 px the grain is scaled slightly. Computers are unchanged.",
+      "visualDiff": [
+        "The grain dots in the 4 end-screen boxes can sit in slightly different places; colours, sizes and positions are the same."
+      ],
+      "gain": [
+        {
+          "what": "Live blend or blur layers at the end",
+          "before": "5",
+          "after": "0",
+          "tag": "OBSERVED",
+          "how": "2 stage grain blends, the invoice sheet's grain blend and mesh photo, 1 blurred stage photo. The agents panel's grain stays.",
+          "better": "better"
+        },
+        {
+          "what": "Picture download on a phone",
+          "before": "10.4 MB",
+          "after": "11.0 MB",
+          "tag": "OBSERVED",
+          "how": "Chrome, one load and one full scroll.",
+          "better": "worse"
+        },
+        {
+          "what": "Chrome paint events per scroll",
+          "before": "1306",
+          "after": "1368",
+          "tag": "OBSERVED",
+          "how": "One run each; today's build varied 1306-1324 in 3 runs. Chrome blends on its GPU, so it cannot show this option's gain.",
+          "better": "same"
+        }
+      ],
+      "compare": {
+        "b": {
+          "label": "C: baked backgrounds"
+        },
+        "shots": [
+          {
+            "caption": "Two end-screen boxes: live grain and gradient (A) vs baked picture (B), 430 px, 3x",
+            "a": "r2-o3-a-1.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r2-o3-b-1.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          },
+          {
+            "caption": "The blurred-photo box and the invoice sheet (430 px, 3x)",
+            "a": "r2-o3-a-2.webp",
+            "aSize": [
+              1290,
+              2325
+            ],
+            "b": "r2-o3-b-2.webp",
+            "bSize": [
+              1290,
+              2325
+            ]
+          }
+        ]
+      },
+      "live": {
+        "overlay": "fixes/end-bg-img-c/overlay",
+        "blob": "ff2df938c50487a08c3f1eb5bf4e83ce42f08624",
+        "base": "site-pretty",
+        "files": [
+          "_app/immutable/assets/2.gBuqKVzi.css",
+          "_app/immutable/nodes/2.DyWL8TcE.js",
+          "index.html",
+          "selling/baked/invoice-sheet.jpg",
+          "selling/baked/stage-discovered.jpg",
+          "selling/baked/stage-document.jpg",
+          "selling/baked/stage-payment.jpg"
+        ],
+        "a": {
+          "overlay": "fixes/end-bg/overlay",
+          "blob": "4b81a357d2ed53d5df5563c236813ee6ee5079df",
+          "base": "site-pretty",
+          "files": [
+            "_app/immutable/assets/2.gBuqKVzi.css",
+            "_app/immutable/nodes/2.DyWL8TcE.js"
+          ]
+        }
+      }
+    }
+  ],
+  "recommended": {
+    "option": "baked-backgrounds",
+    "why": "C is the only option aimed at the slow frames.\n- It removes the live blend and blur work the phone test pointed at; A and B save download and memory, not redraw work.\n- After you pick, a phone test measures the slow frames; A or B can be added on top."
+  },
+  "state": "accepted",
+  "rev": 2,
+  "decision": {
+    "value": "accepted",
+    "at": "2026-10-05T21:04:30.567Z",
+    "who": "user",
+    "rev": 2,
+    "option": "new-format"
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "at": "2026-10-05T21:04:30.567Z",
+      "who": "user",
+      "rev": 2,
+      "option": "new-format"
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-05T14:48:42.244Z",
+      "by": "fix-end-bg",
+      "note": "first version"
+    },
+    {
+      "rev": 2,
+      "at": "2026-10-05T15:00:56.190Z",
+      "by": "fix-end-bg",
+      "note": "Option A corrected: 5 pictures whose shrunk file came out bigger stay as they are; A now saves 3.8 MB (was shown as 3.0). Option C notes that the animated colour titles may carry part of the lag; measured separately next."
+    }
+  ],
+  "createdAt": "2026-10-05T14:48:42.244Z",
+  "updatedAt": "2026-10-05T21:04:30.567Z",
+  "proposedAt": "2026-10-05T15:00:56.190Z",
+  "history": [
+    {
+      "at": "2026-10-05T14:48:42.244Z",
+      "who": "fix-end-bg",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-05T14:49:33.915Z",
+      "who": "fix-end-bg",
+      "action": "held",
+      "rev": 1,
+      "note": "Option A numbers are being corrected: 6 shrunk pictures came out bigger as files, so they go back to the originals. Back within about 30 minutes; options B and C are unaffected."
+    },
+    {
+      "at": "2026-10-05T15:00:56.190Z",
+      "who": "fix-end-bg",
+      "action": "revised",
+      "rev": 2,
+      "note": "Option A corrected: 5 pictures whose shrunk file came out bigger stay as they are; A now saves 3.8 MB (was shown as 3.0). Option C notes that the animated colour titles may carry part of the lag; measured separately next."
+    },
+    {
+      "at": "2026-10-05T15:00:56.190Z",
+      "who": "fix-end-bg",
+      "action": "unheld",
+      "rev": 2,
+      "note": "released by the revision"
+    },
+    {
+      "at": "2026-10-05T21:04:30.567Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 2,
+      "option": "new-format"
+    }
+  ]
+}

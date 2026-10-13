@@ -1,0 +1,84 @@
+{
+  "id": "T-003",
+  "title": "Hero section: avatar row and background layouts",
+  "topic": "hero-carousel",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-01T20:52:30.691Z",
+  "updatedAt": "2026-10-03T00:15:52.561Z",
+  "rev": 21,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-01T20:52:30.691Z",
+      "by": "lead",
+      "text": "Moved here from T-002 (04:00 +07). Status: the avatar row fix (st6) passed your blind finger check: you said it looks better. It lands once its write-up is committed. On your phone it removed the whole-page layout on 35 of 36 slide changes. Running now: the hunt on the Simulator for a small whole-page layout that happens in about 65 % of frames while the page is at rest; it may also help the page end. Results come here."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-01T20:57:18.469Z",
+      "by": "lead",
+      "text": "The avatar row fix landed (3b43766, 04:03 +07). Background layout hunt, first result (Simulator, 2 runs per version, OBSERVED): pausing the page's animations does NOT remove the small whole-page layout at rest (71-73 % of frames either way), so animations are not the cause. Next suspect: the countdown, which changes its digits about 66 times a second (532 changes in 8 s). The next Simulator run hides it to check."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-01T21:06:41.197Z",
+      "by": "lead",
+      "text": "Simulator result (04:08 +07, 2 runs per version, OBSERVED): the countdown is NOT the cause of the background whole-page layouts. Hiding it cut layers from 118 to 38 but left those layouts unchanged. The accent word isn't the cause either (pausing all animations, which includes its drawing, changed nothing). What we know now: each of those layouts starts inside Safari's own style update, not from the page's scripts. Next: hide parts of the page in turn (the hero, everything but the hero, the nav) to find the part that triggers it. The accent word still costs a small layout every frame inside its own box, so your frame-sequence idea for it (PR-001) stays useful."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-01T21:13:07.167Z",
+      "by": "lead",
+      "text": "Found where it is (04:12 +07, Simulator, OBSERVED): the background whole-page layouts come from inside the hero's moving card track. Hiding that track cut them from 620 to 105 frames (out of about 850 at rest); hiding anything else changed nothing. Leading suspect: the glowing ring that circles the hero's main button. It is animated in a way Safari doesn't list among the page's animations, which is why the earlier pause-everything test missed it. A Simulator run is checking it now."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-01T21:17:37.578Z",
+      "by": "user",
+      "text": "Good"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-01T21:19:10.510Z",
+      "by": "lead",
+      "text": "Hero update (04:20 +07). Simulator check, our own data (OBSERVED): the glowing ring around the hero button is NOT what makes Safari re-lay-out the page in the background. Switching its animation off, or hiding the button, left the count unchanged (about 620 of 850 frames). Hiding the whole hero card strip still drops it to about 105 of 455, so the cause is inside that strip. Next: we switch its parts off one by one on the Simulator to find which one it is. Any fix will keep the look pixel-identical."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-01T21:23:19.422Z",
+      "by": "lead",
+      "text": "Hero update (04:30 +07), Simulator, our own data (OBSERVED): we found the part that keeps Safari re-laying-out the page in the background. It's in the hero's text block. Hiding that block drops these frames from 573 to 1, and total rendered frames from 862 to 248, so it is also what keeps the page redrawing every frame at rest. The ring, the scroll cue, the button and the countdown are all ruled out. A check running now tells which of three parts it is: the hand-drawn accent word (the one in PR-001), the rest of the heading line, or the note under it. If it's the accent word, the image-frames / video version you asked for in PR-001 fixes this too."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-01T21:24:05.897Z",
+      "by": "user",
+      "text": "Good"
+    },
+    {
+      "n": 9,
+      "at": "2026-10-01T21:28:52.310Z",
+      "by": "lead",
+      "text": "Hero update (04:28 +07), Simulator, OBSERVED: it's the hand-drawn accent word. Hiding it drops the background re-layout frames from 572 to 1. Hiding the rest of the heading line or the note changes nothing. The word has two animations: a small wobble at rest (3 drawings that swap) and the draw/erase every 3 s. A check now tells which one. If it's the wobble, the fix is the same trick as the rotator fix you picked (C-015). It keeps the look pixel-identical, and we check that the screenshots match exactly before you see it. The draw/erase is part of PR-001's image-frames / video version."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-01T21:37:47.473Z",
+      "by": "lead",
+      "text": "Hero update (04:37 +07), Simulator, OBSERVED: the cause is the accent word's draw/erase (every 3 s), not the wobble at rest. Switching the draw/erase off drops the background re-layout frames from 622 to 72 (out of about 550-860 frames). Switching the wobble off changes nothing.\nde-illusion-style first tests a fix that keeps the exact same animation: it fences the accent word off from the rest of the page, so its drawing can't trigger page-wide layout. If the screenshots match exactly and the Simulator shows the gain, PR-001's revision will offer both options for your decision: this one and the image-frames / video one you asked for."
+    }
+  ],
+  "reads": {
+    "lead": 10,
+    "user": 10
+  },
+  "history": [
+    {
+      "at": "2026-10-03T00:15:52.561Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

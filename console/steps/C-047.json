@@ -1,0 +1,38 @@
+{
+  "id": "C-047",
+  "by": "int-v8",
+  "topic": "v8",
+  "kind": "choice",
+  "title": "Mac Safari check of the new best build (v8), about 2 minutes",
+  "instructions": "In Safari on this Mac, open the v8 page and scroll slowly from top to bottom and back up, with the window wide and then narrow. Then open the v7 page for comparison. Does v8 look and behave the same as v7?",
+  "url": "http://localhost:51482/",
+  "showUrl": true,
+  "answer": {
+    "mode": "buttons",
+    "options": [
+      "v8 looks the same as v7",
+      "something looks broken in v8"
+    ]
+  },
+  "status": "cancelled",
+  "cur": 0,
+  "parts": [],
+  "createdAt": "2026-10-04T18:39:32.796Z",
+  "queuedAt": "2026-10-04T18:39:32.796Z",
+  "updatedAt": "2026-10-04T18:39:45.070Z",
+  "rev": 2,
+  "history": [
+    {
+      "at": "2026-10-04T18:39:32.796Z",
+      "who": "int-v8",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-04T18:39:45.070Z",
+      "who": "int-v8",
+      "action": "cancel",
+      "note": "reposted with the v7 link and a shorter first line"
+    }
+  ],
+  "queueSeq": 6
+}

@@ -1,0 +1,169 @@
+{
+  "id": "T-106",
+  "title": "Comment on the Best build page \"Today’s best build\": I'm not sure. you have to start the server for serve this all the time even i didn't using them. in the lo…",
+  "anchor": {
+    "page": "build",
+    "item": "part:page",
+    "quote": "Try it: http://192.168.0.56:56937/ · server: baseline",
+    "label": "Today’s best build"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T10:30:47.819Z",
+  "updatedAt": "2026-10-04T14:20:11.429Z",
+  "rev": 43,
+  "assignees": [
+    "mgmt-desk-1",
+    "mgmt-desk-2"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T10:30:47.819Z",
+      "by": "user",
+      "text": "I'm not sure. you have to start the server for serve this all the time even i didn't using them. \n\nin the longer term, if it have many servers to stand-by but not use. it'll impact our resource like cpu and memory ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T10:31:23.144Z",
+      "by": "mgmt-desk-1",
+      "text": "Short answer: today the waiting servers cost little CPU but some memory, and you're right that it grows. Measured now (10:3xZ):\n\n| | now |\n|---|---|\n| page servers running (not counting your own) | 19 |\n| CPU while nobody uses them | 0 % |\n| memory, all together | about 320 MB of 16 GB |\n| running for over 1 hour | 18 of 19 |\n\n- Idle servers just sleep, so they don't slow timing tests. Memory is the real cost: the Mac often runs with little free memory, and every test Chrome needs 1.5-2 GB.\n- About half are Try-it pages; the rest are agents' test servers left running after their checks.\n- Better: a Try-it server stops by itself after some idle time, and starts again when you open its link. I've asked the lead to give that to a tools agent, and to have agents stop their leftover servers now.\n\nWhat you need to do: nothing. I'll post here when it changes."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T10:31:48.074Z",
+      "by": "user",
+      "text": "Do we have any improvement likes one button click for start server ? all bundle them into single server with better way to use less resource ?",
+      "forLead": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T10:32:01.079Z",
+      "by": "mgmt-desk-1",
+      "text": "Yes, both are possible, and together they fix this.\n\n- **One click to start:** each Try-it link gets a Start button. The server starts when you click (a few seconds) and stops itself after, say, 30 min without use.\n- **One server for all builds:** one program can serve every build, one port each. Each build still needs its own port, because every build uses the same file names. Memory would drop from about 320 MB to well under 100 MB, and nothing runs when nobody uses it.\n- Phone links keep working the same way.\n\nI've added both to the request with the lead (a tools-agent job). The lead decides when it's scheduled; I'll post here.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T10:35:18.847Z",
+      "by": "lead",
+      "text": "Yes to both. A tools agent started on it at 10:35Z.\n\n- **One server for all Try-it builds:** one program instead of one per build. Each build keeps its own port, so phone links stay the same.\n- **Start on click:** a build that isn't running shows a Start button; it's ready in a few seconds and stops itself after 30 min unused.\n- **Measurements don't change:** the test servers for timing runs stay as they are; a test proves it.\n\nRight now (10:34Z):\n\n| | count | memory |\n|---|---|---|\n| page servers running | 20 | about 380 MB |\n| Try-it pages (yours) | 7 | about 110 MB |\n| agents' leftovers I asked to stop | 7 | about 60 MB |\n\n- One leftover is 23 h old, from an agent that already finished. The safety check didn't let me stop it, so it's yours to stop if you like (see below).\n\nWhat you need to do: nothing. Optional: to stop that old server, type `! kill 68650` in my terminal."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T10:36:38.444Z",
+      "by": "user",
+      "text": "! kill 68650, was run in the lead session, it quite took time to run. what's the problem ?"
+    },
+    {
+      "n": 7,
+      "at": "2026-10-04T10:36:56.868Z",
+      "by": "mgmt-desk-1",
+      "text": "Done: the old server (68650) is stopped. I checked at 10:37Z: it is no longer running.\n\n- The kill itself takes a split second, so the wait was somewhere around it, not in stopping the server.\n- Most likely cause (not checked yet): the lead's terminal was busy with its own work, so your command waited for its turn there.\n- I've asked the lead to check what held it up; the answer comes here.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-04T10:37:19.170Z",
+      "by": "lead",
+      "text": "The kill itself was instant. Most likely it waited for my turn to finish first.\n\n- A `!` command typed while I'm working is held until my current turn ends, then runs.\n- At that moment I was in the middle of a status check with several commands, which took a few minutes.\n- No permission prompt or slow shell was involved. The server was gone when I checked right after.\n\nWhat you need to do: nothing. Next time, a `!` command typed while I'm idle runs at once."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-04T10:37:27.872Z",
+      "by": "user",
+      "text": "investigate, plan to do more harness for this case."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-04T10:38:07.490Z",
+      "by": "mgmt-desk-1",
+      "text": "Yes. Plan so leftover servers can't pile up and you never need a kill command again:\n\n1. **Every server knows its owner:** which agent started it, for what, and when.\n2. **Auto-stop:** an agent's test server stops by itself when it has been unused for a while (e.g. 30 min), or when its agent finishes. Try-it pages restart on click (already being built).\n3. **A Servers list on the console:** each running server with owner, age, memory and last use, and a Stop button for you.\n4. **Alarm:** a server unused for over 2 hours opens a short note to its owner, like the idle-phone alarm today.\n5. **Tests prove it**, including that timing-test servers are never stopped mid-run.\n\n- The tools agent on Try-it (ts-tryit) has 2 of these; I've asked the lead to add 1, 3, 4 and 5 to its job.\n- Now: 14 page servers running, down from 20.\n\nWhat you need to do: nothing. Progress comes here."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-04T10:38:11.967Z",
+      "by": "user",
+      "text": "the tools could manage our server spawn and reduce the resource using."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-04T10:38:37.705Z",
+      "by": "lead",
+      "text": "Agreed: the tools will manage every page server, not the agents. All 5 points of the desk's plan are now in the tools agent's job (10:40Z).\n\n1. **Try-it pages first:** one program for all builds; start on click, stop after 30 min unused.\n2. **Every server records its owner and purpose.**\n3. **Agents' test servers stop by themselves** after 30 min unused, but never while a timing test or phone test runs.\n4. **A Servers page on the console:** owner, age, memory, last use, and a Stop button for you.\n5. **Alarm:** a server unused over 2 hours sends a note to its owner.\n\nTests prove each point, including \"never stopped mid-test\".\n\nWhat you need to do: nothing. Progress comes here."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-04T10:38:40.790Z",
+      "by": "mgmt-desk-1",
+      "text": "Agreed, that's the plan: one manager tool starts every page server on demand and stops it when unused, for Try-it pages and the agents' test servers alike.\n\n- Agents ask the manager for a server instead of starting their own.\n- It shares one program across builds and keeps memory low; timing tests keep their own quiet server, untouched mid-run.\n- The lead is setting the tools agent's job now.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 14,
+      "at": "2026-10-04T13:33:26.331Z",
+      "by": "user",
+      "text": "Catch up this progress"
+    },
+    {
+      "n": 15,
+      "at": "2026-10-04T13:35:30.342Z",
+      "by": "lead",
+      "text": "**Behind, my fault:** the tools helper for this (ts-tryit) was paused at 10:50Z to save usage and I didn't restart it at 12:20Z. I restarted it at 13:36Z.\n\n| point | state |\n|---|---|\n| 1. Try-it pages start on click, stop after 30 min unused | in progress, lands first |\n| 2. Every server records its owner | lands with point 1 |\n| 3. Agents' test servers stop by themselves (never mid-test) | next |\n| 4. Servers page with a Stop button | next |\n| 5. Alarm for a server unused over 2 h | next |\n\n- Right now 26 page servers run (they use little CPU, but memory adds up).\n- The helper posts its progress here itself.\n\nWhat you need to do: nothing."
+    },
+    {
+      "n": 16,
+      "at": "2026-10-04T14:17:40.628Z",
+      "by": "lead",
+      "text": "**Done: Try-it pages now run in one background process instead of one server each.**\n\n- A page loads when you open it and frees its memory after 30 min unused; your links stay the same.\n- A stopped page shows \"Not served right now\" with a Start button.\n- Moved so far: 6 older pages. The 2 pages you're testing now (PR-018) and the phone runner's page move after you're done, so nothing breaks mid-test.\n- Every server now records who started it and when it was last used; next comes a Servers page with a Stop button.\n\nWhat you need to do: nothing."
+    }
+  ],
+  "reads": {
+    "user": 16,
+    "mgmt-desk-1": 13,
+    "lead": 16,
+    "mgmt-desk-2": 14
+  },
+  "history": [
+    {
+      "at": "2026-10-04T10:30:47.819Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-desk-1 (the desk)"
+    },
+    {
+      "at": "2026-10-04T10:31:23.217Z",
+      "who": "mgmt-desk-1",
+      "action": "escalate",
+      "note": "User: idle Try-it/test servers waste CPU+memory long term. Now 19 serve.mjs, 0% CPU, ~320 MB, 18 older than 1 h (cd-roll-ca snaps 2 h, one 23 h). Ask: (1) owners stop leftovers; (2) toolsmith: Try-it servers idle-stop, start on link open."
+    },
+    {
+      "at": "2026-10-04T10:32:01.158Z",
+      "who": "mgmt-desk-1",
+      "action": "escalate",
+      "note": "User #3 adds: one-click Start per Try-it link, and one server process for all builds (one port each, start on demand, idle-stop). Desk said yes-possible, scheduling is the lead's. Please schedule a toolsmith or say no."
+    },
+    {
+      "at": "2026-10-04T10:38:07.672Z",
+      "who": "mgmt-desk-1",
+      "action": "escalate",
+      "note": "User #9: harness so leftover servers can't pile up. Desk plan #10: owner record per server; idle/owner-end auto-stop (not mid-timing); console Servers list with Stop button; idle.mjs alarm >2 h; tests. Please add to ts-tryit scope or a new toolsmith."
+    },
+    {
+      "at": "2026-10-04T14:04:50.958Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2"
+    },
+    {
+      "at": "2026-10-04T14:20:11.429Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-desk-1": "2026-10-04T10:38:40.790Z",
+    "lead": "2026-10-04T14:17:40.628Z",
+    "mgmt-desk-2": "2026-10-04T14:04:52.240Z"
+  },
+  "histSeen": {
+    "lead": 5
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "id": "T-203",
+  "title": "Comment on the Progress page \"Fix progress\": Catch up this progress, how about performance from chrome or simulator",
+  "anchor": {
+    "page": "progress",
+    "item": "part:page",
+    "quote": "v9.1 build (v9-final + scroll-cb + g11 close): P-142 part 2 resumed from H1a (lead RESUME); thermal profile read first (Xcode Device Conditions), at most 13 min left",
+    "label": "Fix progress"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T21:06:33.073Z",
+  "updatedAt": "2026-10-05T21:13:22.232Z",
+  "rev": 14,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T21:06:33.073Z",
+      "by": "user",
+      "text": "Catch up this progress, how about performance from chrome or simulator"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T21:08:39.351Z",
+      "by": "lead",
+      "text": "Short catch-up: the newest build (v9.2) does less work in Chrome and the Simulator, with nothing worse; the iPhone test of it runs now.\n| what (Chrome or Simulator) | before | now |\n|---|---|---|\n| v9.2: page work per second while scrolling (Chrome) | 289 | 187 (35 % less) |\n| v9.2: layout work per frame (Simulator) | 100 % | about 94 % |\n| nav colour change for v9.3: hit-tests per load (Chrome) | 446 | about 352 |\n| pictures choice B: download (Chrome) | 10.4 MB | 4.5 MB |\n| deck change: layout per frame (Simulator, our probe only) | about 38 ms | about 0.4 ms |\n- Every row is from our own Chrome or Simulator runs; the iPhone decides whether it feels smoother.\n- A fuller table against the original page (frames over 50 ms, per build) follows here in about 15 minutes.\nWhat you need to do: nothing; leave the iPhone alone while the v9.2 test runs."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T21:11:24.855Z",
+      "by": "lead",
+      "text": "Fuller table: we have no slow-frame numbers in Chrome against the original page for the recent builds, because timing tests were paused by your rule (since 10-02); we measured work counts instead.\n| build (Chrome or Simulator) | what we have |\n|---|---|\n| first wave vs original (Chrome, 10-01) | frames over 50 ms: about 3 (was more); fps 94 to 111 |\n| v9-final to v9.2 (Chrome) | page work while scrolling 289 to 187 per s; frames drawn the same (111 per s) |\n| v9-final to v9.2 (Simulator) | layout work per frame about 6 % lower |\n| iPhone checks so far (v8, double-drive, v9-final) | no build was worse; <device-name>|\n- If you want one Chrome slow-frame test, original page vs v9.2, I can run it after the iPhone test (about 15 min, under the measuring lock).\nWhat you need to do: reply \"yes, time it\" if you want that test; otherwise nothing.",
+      "ask": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T21:11:40.057Z",
+      "by": "lead",
+      "text": "Correction to the last row above: our privacy filter cut its end by mistake.\n- It should read: no build was worse; the iPhone test of v9.2 is running now.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-05T21:12:42.412Z",
+      "by": "user",
+      "text": "I'd like to know about the scroll of the end of page performance ? currently, only one visual that feel lag for the user"
+    },
+    {
+      "n": 6,
+      "at": "2026-10-05T21:13:22.106Z",
+      "by": "lead",
+      "text": "The end-of-page lag we can trace is the last screen's backgrounds: on the iPhone, removing them cut slow frames there from 16 to 3 (our test P-137, OBSERVED).\n| end screen, iPhone, frames over 34 ms (median) | count |\n|---|---|\n| today's page | 16 |\n| backgrounds off (pictures, grain and the 3 sweeping title gradients) | 3 |\n- Chrome and the Simulator can't show this cost, so only the iPhone can tell which part is to blame.\n- Next iPhone test (P-145, signed): pictures alone vs the title gradients alone; it runs after the v9.2 and menu clock tests.\n- Your pick B (lighter files plus AVIF) cuts downloads but is not aimed at this lag. Option C (pictures baked into one image) was.\n- If P-145 blames the pictures, I'll bring you C again; if the titles, a separate look-identical fix.\nWhat you need to do: if the lag you feel is not the last screen (for example the menu morph), tell me which part."
+    }
+  ],
+  "reads": {
+    "user": 6,
+    "lead": 6
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-05T21:13:22.106Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

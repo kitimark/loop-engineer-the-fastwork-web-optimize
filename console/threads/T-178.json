@@ -1,0 +1,124 @@
+{
+  "id": "T-178",
+  "title": "Comment on PR-023 \"End-of-page menu: a long swipe back up leaves the end in on…\": queue me for my phone",
+  "anchor": {
+    "page": "proposals",
+    "item": "PR-023",
+    "label": "End-of-page menu: a long swipe back up leaves the end in one go (rev 7d, phones)"
+  },
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-05T04:12:26.423Z",
+  "updatedAt": "2026-10-05T05:03:07.709Z",
+  "rev": 30,
+  "assignees": [
+    "fix-hero-exit-threaded"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-05T04:12:26.423Z",
+      "by": "user",
+      "text": "queue me for my phone"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-05T04:12:52.270Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "The iPhone is free right now, so you can try PR-023 (the end-of-page menu proposal) at once.\n- Nobody holds the phone or waits for it at this moment.\n- Agents can't book the phone in your name, so I'm asking the lead to reserve it for you, so no agent run takes it while you swipe.\n- The phone links for A and B are on the PR-023 card, under Try it.\nWhat you need to do:\n- Open the A and B links on the iPhone and swipe; tell me here when you're done so the phone goes back to the queue."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-05T04:13:33.204Z",
+      "by": "lead",
+      "text": "The iPhone is reserved for you now, until 04:28Z (15 min). No agent can use it in that time.\n- A = rev 7c (today's menu), B = rev 7d (the new long swipe up): links on the PR-023 card under Try it (PR-023 = this end-of-page menu proposal).\n- Both pages are up on the Mac (ports 6405 and 6409).\n- Swipe to the end of the page, open the menu, then swipe back up in one long move, on A and then on B.\n- Need more time? Say so here and I'll extend it.\nWhat you need to do: try A and B on the iPhone, then write \"done\" here (or decide on the PR-023 card)."
+    },
+    {
+      "n": 4,
+      "at": "2026-10-05T04:18:13.956Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "Most likely you felt lag that A and B share: it comes from the page above the menu and from the phone's heat setting, not from the menu change.\n- Our robot runs on your iPhone this morning, A and B alike, 469 slow frames (over 34 ms): top of page (hero) 21 %, middle cards 54 %, end menu 10 %, rest 15 %.\n- Phone heat: since our tests the phone is set in Xcode to act as \"Serious\" (hot, slowed down); the last read at 02:38 said on. Not yet read during your try.\n- The Mac's load only affects how fast the page loads, not how smooth it scrolls.\n- Known causes, all in both A and B:\n  - top-of-page lag when Safari's bottom bar shrinks (open; fix-toolbar-resize works on it);\n  - the nav colour check while scrolling, and the menu's close repaint (both fixed in the next build, v9);\n  - the countdown's work every second.\n- Workaround now: none inside A or B; v9 carries two of these fixes.\n- Long term: v9 (int-v8), the bar-shrink fix (fix-toolbar-resize), then a recorded try of yours to check what is left.\nWhat you need to do:\n- Tap where it lagged in the step \"Where did the menu pages lag?\" under Your steps (one tap).\n- Optional: a 5-minute recorded try, A then B; say \"ready\" here when you want it.",
+      "ask": true
+    },
+    {
+      "n": 5,
+      "at": "2026-10-05T04:20:50.766Z",
+      "by": "lead",
+      "text": "One more likely reason both A and B felt laggy: your iPhone is probably still in Xcode's test heat mode, which slows it on purpose.\n- Our phone tests run with Xcode's Device Conditions > Thermal State set to \"Serious\" (your rule from T-162: tests start warm).\n- It stays on until it is stopped in Xcode; the last read (02:38Z) found it on. Under it the page's timers run on a 30 ms grid instead of 8 ms (OBSERVED).\n- So A and B were both tried on a phone slowed down on purpose. A fair try needs the heat mode off.\n| phone state | what you feel |\n|---|---|\n| heat mode on (Serious) | slower on every page |\n| heat mode off (normal) | what a visitor feels |\nWhat you need to do: in Xcode > Window > Devices and Simulators > your iPhone > Device Conditions, press Stop; then try A and B again (the phone stays yours till 04:28Z)."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-05T04:25:08.408Z",
+      "by": "user",
+      "text": "Can you try to improve this that it can run on heat mode on (Serious) \n\nLet's research, investigate, distinguish. we was adopt many elements use gpu rendering. i think it could help."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-05T04:25:51.484Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "Yes: I'll work on making the menu smooth after you let go, with the heat mode on (Serious).\n- From your own swipes on rev 7c (4 Oct, phone at normal heat): 21 slow frames after you let go, 13 of them 0.19-0.22 s after the lift. Each is one or two missed frames (35-43 ms).\n- Our robot swipes with the heat mode on show the same kind, a bit more often (up to 52 ms).\n- Three likely causes, to tell apart:\n  - the nav's colour check, which runs every frame near the closed end, and its colour switch (page work);\n  - the panel's repaint while it closes (painting work);\n  - the page's own glide after you let go, which replaces the iPhone's own scroll.\n- How I'll tell them apart: list what runs in that frame (Chrome), then Safari's layout and paint records (Simulator).\n- GPU idea, as you suggest: pre-paint the panel and the nav colours once and only move or fade them, so nothing repaints during the glide.\n- Next update, with what runs in that frame: by about 05:30Z.\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 8,
+      "at": "2026-10-05T04:26:19.977Z",
+      "by": "lead",
+      "text": "Yes: a research agent (arch-serious-heat) now works on keeping the page smooth with the heat mode on; first findings in about 1 hour.\n- What we know (OBSERVED): with heat mode on, the page's timers tick about every 30 ms instead of 8 ms, so anything that needs the main thread each frame misses frames.\n- Where the slow frames were in heat mode: 54 % middle cards, 21 % top of page, 10 % end menu (8 robot runs, both menu versions).\n- Your GPU idea: animations run by the GPU alone (moving or fading layers) don't wait for the main thread, so they can stay smooth when it is slowed.\n- To check: heat mode may slow the GPU too; then moving work there helps less. The agent confirms this from Apple and WebKit sources.\n- It then lists each area's remaining main-thread work and a ranked fix plan; anything that looks different comes to you as a proposal.\n- Workaround now: none on the page; for your own tries, Stop the heat mode in Xcode to feel what visitors feel.\nWhat you need to do: nothing now; I post the findings here."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-05T04:28:10.451Z",
+      "by": "user",
+      "text": "phone is done for me"
+    },
+    {
+      "n": 10,
+      "at": "2026-10-05T04:28:35.769Z",
+      "by": "lead",
+      "text": "Thanks: your phone time is closed; the phone has gone to the heat check (fix-hero-exit-threaded), then the real-iPhone clips.\n- Before the clips start, a step will ask you for Do Not Disturb on and the Xcode heat mode stopped.\nWhat you need to do: nothing now."
+    },
+    {
+      "n": 11,
+      "at": "2026-10-05T04:29:21.281Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "Checked: your iPhone was still in the heat mode at 04:28, so your try of A and B ran on a phone slowed on purpose.\n- Read at 04:28, right after your phone time: Xcode's heat mode \"Serious\" was on; battery 37.9 °C.\n- It had been on since our robot tests this morning (read at 02:38).\n- The tool also put a step under Your steps (C-055: stop the heat mode in Xcode). Do it only if you want to try at normal heat; the lead sets the order of phone work.\nWhat you need to do: nothing now; C-055 is optional."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-05T04:31:55.571Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "PR-023 (the menu proposal) rev 3 is up on the Proposals page; it answers your change request.\n- Why both felt laggy: your phone was in heat mode (Serious) during your try, and the lag is shared by A and B.\n- The stutter right after letting go: one or two missed frames about 0.2 s after the lift; cause not known yet, under research by the heat-mode agent.\n- Correction: the menu-close repaint fix is planned for v9, not in it yet.\n- Choosing A or B (long swipe up leaves the end in one go) does not depend on the lag.\nWhat you need to do: decide PR-023 when you like (Try-it A and B are running)."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-05T04:53:42.265Z",
+      "by": "lead",
+      "text": "First heat-mode findings: heat mode mostly slows the phone's graphics side, not its processor, so \"more GPU\" is not a general fix and can make heat mode worse.\n- Where the lag is: mostly in the first ~8 s after the page opens (17 % of frames late), much less later (1 % after 20 s).\n| time after open | late frames |\n|---|---|\n| 0-8 s | 17 % |\n| 8-20 s | 7 % |\n| 20 s+ | 1 % |\n- The Safari toolbar hiding is a small part (about 1 in 7 late frames). It is Safari's own work, not the page's code.\n- The countdown skips a second about once a minute in heat mode (the original page does too). A fix that looks identical is specified; I'm assigning it now.\n- These are from our own recordings (not yet checked against Apple's docs), except the timer step, which WebKit's source confirms.\n- Next: one phone test that tells \"processor late\" from \"graphics late\", then remove graphics work nobody can see. It runs after v9 and the article clips.\nWhat you need to do: nothing now."
+    }
+  ],
+  "reads": {
+    "user": 13,
+    "fix-hero-exit-threaded": 12,
+    "lead": 13
+  },
+  "history": [
+    {
+      "at": "2026-10-05T04:12:26.423Z",
+      "who": "console",
+      "action": "assign",
+      "note": "fix-hero-exit-threaded (author of PR-023)"
+    },
+    {
+      "at": "2026-10-05T04:12:52.458Z",
+      "who": "fix-hero-exit-threaded",
+      "action": "escalate",
+      "note": "User wants the iPhone reserved to try PR-023 now. The phone is free (lock status 04:12Z). Agents can't acquire iphone in the user's name:<device>"
+    }
+  ],
+  "readsAt": {
+    "fix-hero-exit-threaded": "2026-10-05T04:31:55.571Z",
+    "lead": "2026-10-05T04:53:42.265Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

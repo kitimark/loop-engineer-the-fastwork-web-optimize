@@ -1,0 +1,94 @@
+{
+  "id": "T-080",
+  "title": "Comment on T-078 #14 \"Comment on C-037 \"Top bar and next section: which page foll…\": Can you answer me for prettier format. it's quite hard to read and underst…",
+  "anchor": {
+    "page": "threads",
+    "item": "thread:T-078/msg:14",
+    "label": "Comment on C-037 \"Top bar and next section: which page follows your finger be…\": i was click start over, it stuck on Ge…"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T06:41:50.435Z",
+  "updatedAt": "2026-10-04T07:44:09.612Z",
+  "rev": 15,
+  "assignees": [
+    "mgmt-ops-10"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T06:41:50.435Z",
+      "by": "user",
+      "text": "Can you answer me for prettier format. it's quite hard to read and understand them. and propose as a rules for answering me."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T06:42:50.502Z",
+      "by": "mgmt-ops-10",
+      "text": "Sure. Here is the lead's message (T-078 #14) again, laid out more clearly:\n\nWHAT HAPPENS NOW\n1. Top bar swipe test: one step.\n2. Hero swipe test: three short steps.\nTotal: about 15-20 minutes.\n\nWHEN THE FIRST STEP APPEARS\n- An automatic test is using the phone right now. It stops after its current run.\n- Then the first step shows up in \"Your steps\", once page 1 has loaded.\n- Each next step shows up only after you answer the one before.\n\nYOUR PART\n- Wait for the step in \"Your steps\", then follow it.\n\n(Update: another automatic test grabbed the phone first. I've asked it to stop after its current run, so the first step may come a few minutes later than promised.)\n\nPROPOSED RULES FOR ANSWERING YOU\n1. Start with the answer in one line. Details come after.\n2. Short labelled sections (WHAT, WHEN, YOUR PART) instead of one long paragraph.\n3. One idea per line. Use numbered lists for steps you take in order, bullets for everything else.\n4. Plain words. No internal names (agent names, P-/I-/F- ids, file names) unless you asked for them. If one is needed, explain it in a few words.\n5. Times as \"in about 5 minutes\" or a clock time, never a code.\n6. If you must do or answer something, end with a \"YOUR PART\" line saying exactly what. If nothing is needed: \"Nothing needed from you.\"\n7. At most about 10 lines. Longer material goes in a page, with a link.\n\nDoes this format work for you? Change anything you like. The lead will make it a standing rule for every agent that writes to you.",
+      "ask": true
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T06:45:16.233Z",
+      "by": "lead",
+      "text": "Yes, and sorry for the walls of text. Proposed rules for every answer to you (from me and every agent):\n\n1. Answer first. The first line says the answer or the decision.\n2. Short blocks. Bullets or numbered steps, one idea each, no long paragraphs.\n3. Plain words. No internal codes (P-094, I-123, hashes) unless I explain them in a few words, e.g. \"the heat check (P-094)\".\n4. Say what you need to do, or \"nothing needed from you\", on its own line at the end.\n5. Numbers in a small table or list, with what is better: \"62 ms vs 55 ms (7 ms slower)\".\n6. Times in your local time if you prefer. Tell me your time zone, or keep UTC.\n7. At most about 10 lines. If more is needed, short headings, and the details go on the progress page.\n\nSay \"ok\", or change any rule, and I'll make it a standing rule for all agents.",
+      "ask": true
+    },
+    {
+      "n": 4,
+      "at": "2026-10-04T07:39:49.635Z",
+      "by": "user",
+      "text": "ok, let's try"
+    },
+    {
+      "n": 5,
+      "at": "2026-10-04T07:40:03.211Z",
+      "by": "mgmt-ops-10",
+      "text": "Thanks. From now on every answer here uses the new format:\n- the answer first;\n- short bullets in plain words, with codes like P-095 explained;\n- at most about 10 lines;\n- \"What you need to do\" at the end.\nIf an answer is still hard to read, reply on it and we'll adjust.\nWhat you need to do: nothing."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-04T07:40:45.898Z",
+      "by": "lead",
+      "text": "**Done: this is now a standing rule for every agent** (memory/answer-format.md).\n- Answer first, short plain bullets, codes explained, numbers in small tables, about 10 lines at most, and \"What you need to do\" at the end.\n- Times stay in UTC (Z) until you tell me your time zone.\n\n**What you need to do:** nothing. Reply on any answer that is still hard to read."
+    }
+  ],
+  "reads": {
+    "user": 6,
+    "mgmt-ops-10": 5,
+    "lead": 6
+  },
+  "history": [
+    {
+      "at": "2026-10-04T06:41:50.435Z",
+      "who": "router",
+      "action": "assign",
+      "note": "mgmt-ops-10 (the desk)"
+    },
+    {
+      "at": "2026-10-04T06:42:50.581Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User asks for easier-to-read answers and a rule. Desk proposed 7 rules in #2 (answer first line, labelled sections, lists, plain words/no ids, plain times, YOUR PART line, <=10 lines). On user OK: memory note + spawn prompts (rule change is yours)."
+    },
+    {
+      "at": "2026-10-04T07:40:06.465Z",
+      "who": "mgmt-ops-10",
+      "action": "escalate",
+      "note": "User OK'd the answer format (T-080 #4, 'ok, let's try'): answer first, short plain bullets, codes explained, <=10 lines, 'What you need to do' at the end. Please make it a standing memory note for all agents who answer in threads."
+    },
+    {
+      "at": "2026-10-04T07:44:09.612Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "mgmt-ops-10": "2026-10-04T07:40:06.465Z",
+    "lead": "2026-10-04T07:40:45.898Z"
+  },
+  "histSeen": {
+    "lead": 3
+  }
+}

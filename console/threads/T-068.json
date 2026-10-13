@@ -1,0 +1,57 @@
+{
+  "id": "T-068",
+  "title": "Comment on status hero-exit-threaded \"Hero fade-out on Safari's scroll thread (GPU, identical)\": What i need to do ?",
+  "anchor": {
+    "page": "status",
+    "item": "status:hero-exit-threaded",
+    "quote": "waiting for a user reply in a console thread or a proposal decision since 04:25Z (16 min, timeout 1 h)",
+    "label": "Hero fade-out on Safari's scroll thread (GPU, identical)"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T04:41:40.684Z",
+  "updatedAt": "2026-10-04T11:14:49.587Z",
+  "rev": 6,
+  "assignees": [
+    "fix-hero-exit-threaded"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T04:41:40.684Z",
+      "by": "user",
+      "text": "What i need to do ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T04:46:26.307Z",
+      "by": "fix-hero-exit-threaded",
+      "text": "Nothing for now, thank you. The status line says 'waiting for a user reply' only because I'm listening for your messages; that wording is a known bug the lead is fixing (I-108). Where the hero fade-out stands: the lead chose to land it. The Simulator showed it looks identical on the build you'll get. Next, the iPhone runs a short automatic check that it is no worse there; that starts when the nav-morph test frees the phone. If it passes, I'll post one blind swipe test in Your steps (two versions of the page, you say which one follows your finger better). That's the only thing I'll need from you, and only once the phone is free and parked."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "fix-hero-exit-threaded": 2,
+    "lead": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T04:41:40.684Z",
+      "who": "router",
+      "action": "assign",
+      "note": "fix-hero-exit-threaded (owner of hero-exit-threaded)"
+    },
+    {
+      "at": "2026-10-04T04:46:51.086Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "fix-hero-exit-threaded": "2026-10-04T04:46:26.307Z",
+    "lead": "2026-10-04T11:14:49.587Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

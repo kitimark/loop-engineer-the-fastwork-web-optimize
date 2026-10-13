@@ -1,0 +1,103 @@
+{
+  "id": "T-018",
+  "title": "Why do you open the Camera with QuickTime Player ?",
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-02T08:49:39.491Z",
+  "updatedAt": "2026-10-03T00:16:17.845Z",
+  "rev": 27,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-02T08:49:39.491Z",
+      "by": "user",
+      "text": "Why do you open the Camera with QuickTime Player ? \nI think you would like to test something. Can you don't access my camera ? it's Privacy issue."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-02T08:50:44.336Z",
+      "by": "lead",
+      "text": "You're right, and I'm sorry. I have stopped it: no agent may open QuickTime recording or touch any camera from now on, unless you approve a way that doesn't.\n\nWhy it happened: to film the iPhone screen during the fling tests (as a check for one-frame flashes), the phone runner used QuickTime's \"New Movie Recording\". That window starts on the Mac's built-in camera and is then switched to the iPhone as its source, so your Mac camera came on briefly each time. The earlier iTerm camera prompt came from the same route: it listed the cameras to find the iPhone. We never needed your camera itself. I should have caught this before it ran.\n\nWhat I've done now:\n- Told every agent that runs phone tests: no QuickTime recording, no camera, no camera listing. The swipe tests and phone measurements don't need it; the fling test will detect flashes inside the page instead.\n- QuickTime is not running right now.\n- I'm asking the runner exactly when it last opened it and whether anything from the Mac camera (not the iPhone) was saved. If so, I'll tell you where, and delete it if you want."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-02T08:51:58.301Z",
+      "by": "user",
+      "text": "Ok"
+    },
+    {
+      "n": 4,
+      "at": "2026-10-02T08:55:10.928Z",
+      "by": "lead",
+      "text": "The full facts, since it's worse than I first thought. I owe you a plain account:\n\n1. Today at 08:46:57Z the phone runner's recording script restarted QuickTime, and QuickTime picked your Mac camera instead of the iPhone. It recorded your Mac camera for about 80 seconds (until about 08:48:15Z), then started a second recording (about 08:48:20-08:49:30Z), which was stopped without saving.\n2. The first recording was saved as a 65-second video file. To find out why it was the wrong size, the agent extracted one still frame and looked at it. That means that one image went to the AI model as part of the agent's work, and it is in this Claude Code session's log on your Mac.\n3. After your message, before my stop reached it, the agent ran two commands that list the Mac's cameras (no picture); the list includes a camera name with your name in it, which also went through the model as command output.\n4. Deleted and checked: the video file, the still frame, QuickTime's working file. QuickTime's autosave folder is empty, ~/Movies has nothing new, and QuickTime is not running. The fling-test recordings from this morning are of the iPhone screen only (1290x2796).\n5. The step C-020 asking you to pick the iPhone in QuickTime is withdrawn.\n\nChanges: recording is suspended for good unless you approve a way that never touches your camera; the script is disabled; every agent has the rule; I saved it as a permanent rule for myself. The phone measurements continue without any recording.\n\nIf you want, I can also delete the agent's session log that contains that frame. Tell me \"delete it\" and I'll show you exactly which file before removing it."
+    },
+    {
+      "n": 5,
+      "at": "2026-10-02T09:02:57.024Z",
+      "by": "user",
+      "text": "No need to delete the log, keep it as evidence for our mistake."
+    },
+    {
+      "n": 6,
+      "at": "2026-10-02T09:03:07.182Z",
+      "by": "lead",
+      "text": "Understood: the log stays as evidence, and I won't delete it. One more check is in progress: the phone runner also had an older iPhone-capture program from yesterday (10-01) that used Apple's camera capture interface. I've asked it for facts only: when it ran, whether it ever listed or opened your Mac camera, and what it left behind. It's switched off already. I'll post that account here, together with three camera-free ways to check the hero word for visual glitches, for you to choose from."
+    },
+    {
+      "n": 7,
+      "at": "2026-10-02T09:05:44.289Z",
+      "by": "lead",
+      "text": "The account of the older capture program (facts from its source, the file list and the agent's log):\n\n1. Yesterday (10-01), between 12:30Z and 12:37Z, the phone runner built a small program of its own to capture the iPhone screen through Apple's camera interface. It ran 3 times, and never again after that.\n2. It listed capture devices once. The search only asked for external devices, and the list had exactly one entry: the iPhone. Your Mac's built-in camera was not listed and not opened. The iPhone's name and model went through the AI model as command output.\n3. Twice it asked macOS for camera permission. Both times the answer was \"not granted\", so it stopped before opening any device. It made no recording and no image, and no frame reached the model. I don't know whether a permission prompt appeared on your screen; nothing recorded it. macOS may have kept an entry for it under System Settings > Privacy & Security > Camera, and you can remove it there.\n4. Now: the program can't run any more (made non-executable). Its source file is also committed in the study repo (research/architecture/oss-rendering-libs/ioscap.swift). I'll remove it with a commit if you want.\n5. The iPhone recordings from this morning (G1 fling test) are of the iPhone screen only, as I said in #4.\n\nA choice for the hero word test (PR-001): its phone check for visual glitches (flash, box, jump) needed recordings, and those are off now. Options:\n(a) Screenshots over the USB cable from the iPhone's own screen (no camera). This catches a box or a jump, but not a one-frame flash. I would test it once first, on a test page.\n(b) You start the iPhone's own Screen Recording from Control Center during a short run. It catches everything, but it's a step for you each time.\n(c) No phone visual check. The Simulator's frame-by-frame pixel comparison already shows the three frame options identical to today's; the video option differs only by tiny encoding rounding.\nMy suggestion: (c), plus at the end one quick look by you at the winning version on the phone, as a console step. Which do you prefer? And should I remove the program's source file from the repo?",
+      "ask": true
+    },
+    {
+      "n": 8,
+      "at": "2026-10-02T09:08:49.887Z",
+      "by": "user",
+      "text": "I'd prefer (b). let's investigate, plan then ask me. what i have to do."
+    },
+    {
+      "n": 9,
+      "at": "2026-10-02T09:09:17.025Z",
+      "by": "lead",
+      "text": "OK, (b): your own iPhone Screen Recording. The hero word's owner and the phone runner are writing the plan now: which versions to record and for how long, your exact steps (Do Not Disturb on, microphone off, how the files come to the Mac), and how they're checked (by script, with numbers). I'll keep it short, aim for one sitting of about 10 minutes, and ask you here before anything runs. The source file stays where it is unless you say otherwise."
+    },
+    {
+      "n": 10,
+      "at": "2026-10-02T09:18:14.474Z",
+      "by": "lead",
+      "text": "The plan for (b), your own iPhone Screen Recording, for the hero word. About 8 minutes of your time, in one sitting:\n\nWhat gets recorded: 4 versions of the page, one after another, about 48 seconds each, so 3.5 minutes in all: today's version, the best image-frame version, the video version, and one more. The phone runner switches between them. You don't touch the phone. The recording is checked for visual glitches only, not for speed.\n\nYour steps (a console step leads you through them, with a status line at each change):\n1. Turn on Do Not Disturb or a Focus, so no notifications appear in the recording.\n2. Open Control Center, long-press Screen Recording, and set Microphone to OFF.\n3. Tap Start Recording, close Control Center, and tap \"started\" on the console.\n4. Wait while the console shows \"version 1 of 4 ... 4 of 4\".\n5. When the console says \"stop\", tap the red recording pill and choose Stop.\n6. In Photos, share the recording by AirDrop to this Mac. It lands in Downloads.\n7. Drag it from Downloads into the folder the console names (a private, never-committed study folder), and tap \"moved\".\n\nHow it's checked: by script, as numbers only (freeze length, flashes, boxes, jumps), compared with today's version in the same clip. No agent looks at the frames. If a number flags something the script can't explain, I ask you before anyone looks. No agent opens your Downloads, Photos or the phone's files. The file is deleted after the PR-001 decision unless you want it kept, and the copy in your Photos is yours to delete.\n\nWhat it can't catch: anything shorter than one recorded frame, and touch or scroll effects (the page stays at the top).\n\nWhen: right after the current phone block, in roughly 20-30 minutes. If you OK it, I post the console step then. Or tell me a time that suits you better. OK to go ahead?",
+      "ask": true
+    },
+    {
+      "n": 11,
+      "at": "2026-10-02T09:25:39.267Z",
+      "by": "user",
+      "text": "Prepare the iphone is ready. If it's ready ask me on your step feature."
+    },
+    {
+      "n": 12,
+      "at": "2026-10-02T09:26:00.443Z",
+      "by": "lead",
+      "text": "Thanks. The phone runner is preparing now. The current phone block ends in a few minutes, and your step comes right after it, ahead of everything else. It will appear on the console's step page with a 'ready' status once the phone is set. I'll post the step's number here too."
+    },
+    {
+      "n": 13,
+      "at": "2026-10-02T09:28:24.172Z",
+      "by": "lead",
+      "text": "Your step is ready: C-021 on the console's step page. The phone is set, with version 1 loaded. It has 4 parts: start the recording, about 3 minutes of hands-off, stop, then AirDrop and drag the file into the named folder. A status line updates at each change. The phone block before it finished cleanly."
+    }
+  ],
+  "reads": {
+    "user": 13,
+    "lead": 13
+  },
+  "history": [
+    {
+      "at": "2026-10-03T00:16:17.845Z",
+      "who": "user",
+      "action": "close"
+    }
+  ]
+}

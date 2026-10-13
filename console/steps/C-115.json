@@ -1,0 +1,59 @@
+{
+  "id": "C-115",
+  "by": "fix-g0-box",
+  "topic": "g0-box",
+  "kind": "action",
+  "phone": true,
+  "title": "P-165: the iPhone test runs about 2 hours (real heat)",
+  "instructions": "Please don't use the iPhone for about 2 hours and keep it plugged in to the Mac. Unlock it, close any message on screen and leave Safari open. Press Done when the phone is ready; the test starts then.",
+  "showUrl": true,
+  "answer": {
+    "mode": "none",
+    "options": []
+  },
+  "status": "answered",
+  "cur": 1,
+  "parts": [
+    {
+      "label": "Do it",
+      "record": false,
+      "gate": false,
+      "state": "done",
+      "at": {
+        "started": "2026-10-08T06:31:17.095Z",
+        "done": "2026-10-08T06:31:21.862Z"
+      }
+    }
+  ],
+  "createdAt": "2026-10-08T06:30:59.471Z",
+  "queuedAt": "2026-10-08T06:30:59.471Z",
+  "updatedAt": "2026-10-08T06:31:21.862Z",
+  "rev": 3,
+  "history": [
+    {
+      "at": "2026-10-08T06:30:59.471Z",
+      "who": "fix-g0-box",
+      "action": "posted"
+    },
+    {
+      "at": "2026-10-08T06:31:17.095Z",
+      "who": "user",
+      "action": "start",
+      "part": 1,
+      "attempt": 1
+    },
+    {
+      "at": "2026-10-08T06:31:21.862Z",
+      "who": "user",
+      "action": "done",
+      "part": 1,
+      "attempt": 1
+    }
+  ],
+  "queueSeq": 74,
+  "startedAt": "2026-10-08T06:31:17.095Z",
+  "result": {
+    "value": "done",
+    "at": "2026-10-08T06:31:21.862Z"
+  }
+}

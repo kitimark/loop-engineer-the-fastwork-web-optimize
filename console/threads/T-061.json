@@ -1,0 +1,73 @@
+{
+  "id": "T-061",
+  "title": "Comment on status phone-queue \"Phone blocks (timing and attribution on the iPhone)\": What it means ? What i have to do ?",
+  "anchor": {
+    "page": "status",
+    "item": "status:phone-queue",
+    "quote": "waiting for a user reply in a console thread or a proposal decision since 03:42Z (4 min, timeout 1 h 40 min)",
+    "label": "Phone blocks (timing and attribution on the iPhone)"
+  },
+  "status": "closed",
+  "createdBy": "user",
+  "createdAt": "2026-10-04T03:46:51.001Z",
+  "updatedAt": "2026-10-04T18:22:38.522Z",
+  "rev": 10,
+  "assignees": [
+    "iphone-runner"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T03:46:51.001Z",
+      "by": "user",
+      "text": "What it means ? What i have to do ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-04T03:47:07.103Z",
+      "by": "iphone-runner",
+      "text": "Nothing for you to do. That line means I'm listening for any message you send me, so I can answer quickly. It isn't waiting on an answer from you. Right now the phone is running the hero test (P-088): row 1 is done, and rows 2-3 start as soon as the Mac's measurement slot is free. Please don't touch the iPhone until the test finishes. I'll post here when it's done."
+    },
+    {
+      "n": 3,
+      "at": "2026-10-04T04:01:01.730Z",
+      "by": "iphone-runner",
+      "text": "Update: the hero test (P-088) is finished: all 9 runs counted, none had to be redone, and the phone stayed at real Serious throughout. The iPhone has moved on to the next test (the menu morph, fix-nav-morph). There's still nothing you need to do."
+    }
+  ],
+  "reads": {
+    "user": 3,
+    "iphone-runner": 3,
+    "lead": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T03:46:51.001Z",
+      "who": "router",
+      "action": "assign",
+      "note": "iphone-runner (owner of phone-queue)"
+    },
+    {
+      "at": "2026-10-04T04:43:01.929Z",
+      "who": "user",
+      "action": "close"
+    },
+    {
+      "at": "2026-10-04T18:22:37.939Z",
+      "who": "user",
+      "action": "reopen"
+    },
+    {
+      "at": "2026-10-04T18:22:38.522Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "iphone-runner": "2026-10-04T04:01:01.730Z",
+    "lead": "2026-10-04T11:14:49.584Z"
+  },
+  "histSeen": {
+    "lead": 2
+  }
+}

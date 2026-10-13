@@ -1,0 +1,168 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-026",
+  "by": "fix-cd-roll-ca-r4",
+  "title": "End-of-page menu clock rolls like the top clock: about 27x less script; small Safari difference only mid-roll",
+  "area": "end",
+  "topic": "cd-roll-ca",
+  "problem": "Where and when: the countdown clock inside the end-of-page menu, while the menu is open at the bottom of the page. The page rests there with the menu open.\n- Each second the clock ticks and its digits roll for about half a second.\n- Today they roll by a script that moves them every frame (a spring): about 27 animation callbacks per second at rest, and every one of them makes the browser re-style and repaint.\n- The top clock already rolls its digits with browser animations instead (your accepted roll, 'K'). The menu clock was left on the old spring.\nNumbers below: our counts only, no timing.",
+  "idea": "Give the menu clock the same roll as the top clock: the browser moves the digits itself, the script only starts each roll.\n- Only while the menu is fully open or fully closed. While the menu opens or closes (it changes size), the clock keeps the old spring, so a roll never runs during the resize.\n- A roll that is running when the menu starts to move is handed to the spring at its current position (no jump: at most 0.001 px in 12 of 12 checks).\n- About 60 changed lines of script; no style change; the top clock's code is not touched.",
+  "looksSame": "At rest (between rolls) and with reduced motion: the same pixels.\n- Safari (iPhone Simulator): exact in 24 of 24 frozen frames, the same as two loads of today's page.\n- Chrome: 10 pixels on two card corners are off by 1 of 255, in exactly the same way when today's page is loaded twice.\n- Chrome while the digits roll: at most 1 of 255 against today, at the same frozen moment.\n- While the menu opens or closes: nothing changes (same spring, same paint work per frame).",
+  "risk": "Low to medium.\n- The difference while digits roll in Safari (above) is real in the Simulator; the iPhone itself is not checked yet.\n- Measured on v9-final before the menu change rev 7d. Try it is on today's v9-final (with rev 7d): the change applies cleanly there and touches none of rev 7d's lines.\n- Not checked with the next build in the works (v9.1d), which hides the closed menu's parts for 0.75 s after it closes.",
+  "visualDiff": [
+    "Safari only, while a digit rolls (about 0.5 s each second, menu open): the moving digits' edges look a bit different.\n- Frozen 133 ms into a roll: edges up to 92 of 255 lighter or darker.\n- 867 device pixels, about 96 CSS px², 0.024 % of the screen, same in all 6 checks.\n- Gone when the roll ends.",
+    "Likely cause (from a note in the page code, not checked): during a roll the digits sit on their own drawing layer, as on the top clock.\n- Safari smooths letter edges differently on such a layer.\n- In Chrome the same moment differs by at most 1 of 255, so the digits follow the same path.",
+    "Seen in the iPhone Simulator only.\n- The real iPhone is not checked yet: a short phone check that nothing gets worse comes next, only if you accept.",
+    "A difference you can see only in motion, so it is your call.\n- Open Try it, scroll to the bottom so the menu is open, and watch the menu clock for a few seconds."
+  ],
+  "gain": [
+    {
+      "what": "Menu clock: animation callbacks per 4 s",
+      "before": "about 107",
+      "after": "4",
+      "tag": "OBSERVED",
+      "how": "Chrome trace, phone size, page end, menu open.\n- 6 loads per build, plus 6 more of today's page as the noise check.\n- Less in every load: lowest today 103, highest new 4.\n- Measured on v9-final before the menu change rev 7d.",
+      "better": "better"
+    },
+    {
+      "what": "Chrome: frames drawn per second at rest",
+      "before": "27.4",
+      "after": "6",
+      "tag": "OBSERVED",
+      "how": "same runs; today's page loaded twice differs by at most 1 per second",
+      "better": "better"
+    },
+    {
+      "what": "Chrome: style recalculations per second at rest",
+      "before": "27.4",
+      "after": "6",
+      "tag": "OBSERVED",
+      "how": "same runs, median per build",
+      "better": "better"
+    },
+    {
+      "what": "Safari (Simulator): style recalcs per second",
+      "before": "26.5",
+      "after": "6.6",
+      "tag": "OBSERVED",
+      "how": "WebKit Timeline, iPhone Simulator, 6 loads per build; counts only",
+      "better": "better"
+    },
+    {
+      "what": "Safari (Simulator): paint per frame, menu moving",
+      "before": "10.26",
+      "after": "10.17",
+      "tag": "OBSERVED",
+      "how": "Timeline Paint records per frame while the menu opens; within the noise of two loads of today's page",
+      "better": "same"
+    }
+  ],
+  "live": {
+    "patch": "fixes/cd-roll-panel-try/patch.diff",
+    "ref": "HEAD",
+    "blob": "c35dca45af727cdf7412443297d0aebe0ddd6ec5",
+    "base": "site-pretty",
+    "files": [
+      "_app/immutable/assets/2.gBuqKVzi.css",
+      "_app/immutable/nodes/2.DyWL8TcE.js"
+    ],
+    "a": {
+      "patch": "fixes/morph-scroll-v9try/patch.diff",
+      "ref": "HEAD",
+      "blob": "c53656376fb3c49ac1029ef84a02b2b1cf1920b7",
+      "base": "site-pretty",
+      "files": [
+        "_app/immutable/assets/2.gBuqKVzi.css",
+        "_app/immutable/nodes/2.DyWL8TcE.js"
+      ]
+    }
+  },
+  "compare": {
+    "a": {
+      "label": "Today (v9-final with menu rev 7d)"
+    },
+    "b": {
+      "label": "Menu clock rolls like the top clock"
+    },
+    "view": "side",
+    "shots": [
+      {
+        "caption": "iPhone Simulator, menu clock frozen 133 ms into a roll (pre-7d build): A today, B new; edges differ up to 92 of 255",
+        "a": "r1-a-1.webp",
+        "aSize": [
+          1152,
+          288
+        ],
+        "b": "r1-b-1.webp",
+        "bSize": [
+          1152,
+          288
+        ]
+      },
+      {
+        "caption": "Same, at rest after the roll: 0 pixels differ",
+        "a": "r1-a-2.webp",
+        "aSize": [
+          1152,
+          288
+        ],
+        "b": "r1-b-2.webp",
+        "bSize": [
+          1152,
+          288
+        ]
+      }
+    ]
+  },
+  "state": "accepted",
+  "rev": 1,
+  "decision": {
+    "value": "accepted",
+    "notes": "Mark it as highest priority after best build",
+    "at": "2026-10-05T21:03:21.565Z",
+    "who": "user",
+    "rev": 1
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "notes": "Mark it as highest priority after best build",
+      "at": "2026-10-05T21:03:21.565Z",
+      "who": "user",
+      "rev": 1
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-05T17:46:19.513Z",
+      "by": "fix-cd-roll-ca-r4",
+      "note": "first version"
+    }
+  ],
+  "createdAt": "2026-10-05T17:46:19.513Z",
+  "updatedAt": "2026-10-05T21:03:21.565Z",
+  "history": [
+    {
+      "at": "2026-10-05T17:46:19.513Z",
+      "who": "fix-cd-roll-ca-r4",
+      "action": "drafted",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-05T17:48:02.610Z",
+      "who": "fix-cd-roll-ca-r4",
+      "action": "published",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-05T21:03:21.565Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 1,
+      "note": "Mark it as highest priority after best build"
+    }
+  ],
+  "proposedAt": "2026-10-05T17:48:02.610Z"
+}

@@ -1,0 +1,45 @@
+{
+  "id": "T-141",
+  "title": "iPhone held by fix-hero-exit-threaded, unused for 5 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T15:20:22.955Z",
+  "updatedAt": "2026-10-04T15:22:23.002Z",
+  "rev": 2,
+  "assignees": [
+    "mgmt-desk-2",
+    "fix-hero-exit-threaded",
+    "iphone-runner"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T15:20:22.955Z",
+      "by": "lead",
+      "text": "fix-hero-exit-threaded has held the iPhone lease for 5 min without a phone run (iphone.mjs run, scroll, record or gesture; since 15:14Z, lease taken by fix-hero-exit-threaded). The limit is 5 min.\nQueued for it: iphone-runner.\nfix-hero-exit-threaded: run your phone part now, or release the lease (node tools/lock.mjs release iphone --owner fix-hero-exit-threaded) so the next one can start, or say here why it waits. Desk (mgmt-desk-2): please make sure the phone is used.\nOne message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111)."
+    }
+  ],
+  "reads": {
+    "lead": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T15:20:22.955Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-desk-2,fix-hero-exit-threaded,iphone-runner"
+    },
+    {
+      "at": "2026-10-04T15:22:23.002Z",
+      "who": "lead",
+      "action": "close",
+      "note": "fix-hero-exit-threaded used the phone again"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T15:20:22.955Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "schema": "fw-proposal/1",
+  "id": "PR-030",
+  "by": "arch-compositor-morph",
+  "title": "End of the page: the menu card opens on the graphics chip (a third of the painting), looks slightly different",
+  "area": "end",
+  "topic": "compositor-morph",
+  "problem": "At the end of the page the menu card grows from the top bar into a full card as you scroll.\n- Today the phone redraws the card and works out its size again on almost every frame of that grow.\n- On the iPhone that costs about 12 paints and 2.3 size calculations (layouts) per frame. This is the end-of-page lag you flagged as the top priority.",
+  "idea": "The card is drawn once in its final size, and the scroll moves it on the graphics chip.\n- Four nested clipping boxes cut today's shape out of it, scrubbed by the scroll like a video.\n- The page code no longer resizes the card on every frame.\n- Only phones get it (touch screens up to 640 px wide, motion not reduced). Tablets, desktop and Safari on the Mac keep today's version.\n\nIn Try-it, A is today's best build (v9-final) and B is v9-final plus this change.",
+  "looksSame": "The card's size, corners, colours, blur and timing follow today's at every scroll position. The differences are small and listed below.",
+  "risk": "It changes how the card is drawn, so it needs your eye, not only numbers.\n- The look differences above are small but real, mostly while the card is moving.\n- It uses about 14 more graphics layers while the card is open.\n- The phone's frame times did not get clearly better at this heat level; the gain is less work per frame, which matters most when the phone is hot.\n- The phone still shows a few slow frames right at the end, fully open: 3-6 frames over 50 ms per run in a later check. Finding their cause is the next step.",
+  "visualDiff": [
+    "Early in the grow (first 40 %): the top bar's left part looks slightly different.\n- The logo and the bar's edge: 0.6-3 % of the screen, by small amounts.",
+    "From 80 % of the grow on: the whole card's content sits up to about 1 px off.\n- The blurred photos behind it differ a little too.\n- At 80 %: 3.2 % of pixels differ by more than a faint shade, 0.93 % clearly, 0.32 % strongly.",
+    "Fully open and at rest: the same as today on the iPhone engine (0.07-0.11 %).\n- In Chrome (Android) the card's text can look a little softer after a slow scroll to the end: 2 % of pixels, on text edges.\n- After a quick jump to the end it is 0.2 %.",
+    "Known issue, Chrome screenshots only: the card's bottom corners can show as see-through.\n- What the screen actually shows is clean there, and so is the iPhone engine."
+  ],
+  "gain": [
+    {
+      "what": "Paints per grow frame, iPhone",
+      "before": "11.5-12.0",
+      "after": "3.2-3.3",
+      "tag": "OBSERVED",
+      "how": "Real iPhone 15 Pro Max, test robot swipes, warm phone, 4 runs per build (phone block P-157).\n- Measured on the build before two small fixes (v1.1); the Simulator counts show the current build matches it.",
+      "better": "better"
+    },
+    {
+      "what": "Size calculations per grow frame, iPhone",
+      "before": "2.2-2.4",
+      "after": "1.0",
+      "tag": "OBSERVED",
+      "how": "Same phone runs. Not zero as hoped: the rest comes from a scroll-position read in the page code; a follow-up removes most of it.",
+      "better": "better"
+    },
+    {
+      "what": "Smoothness (frame times), iPhone",
+      "before": "17 ms median",
+      "after": "17 ms median",
+      "tag": "OBSERVED",
+      "how": "Same phone runs; the slow-frame shares overlap (no clear difference at this heat level).",
+      "better": "same"
+    },
+    {
+      "what": "Paints while opening, Simulator",
+      "before": "559",
+      "after": "145",
+      "tag": "OBSERVED",
+      "how": "iOS Simulator, the same 40-step opening for both builds; counts only, no timing.",
+      "better": "better"
+    },
+    {
+      "what": "Graphics layers while the card is open",
+      "before": "68 (Chrome)",
+      "after": "82 (Chrome)",
+      "tag": "OBSERVED",
+      "how": "Chrome layer count at half and fully open; about 44 MB more graphics memory (estimate) while the card stands.",
+      "better": "worse"
+    }
+  ],
+  "live": {
+    "overlay": "fixes/compositor-morph/overlay",
+    "blob": "aa889d54fc704570c143b566f1d37d91cdbe9fd3",
+    "base": "site-pretty",
+    "files": [
+      "_app/immutable/assets/2.gBuqKVzi.css",
+      "_app/immutable/nodes/2.DyWL8TcE.js"
+    ],
+    "a": {
+      "overlay": "fixes/cm-a/overlay",
+      "blob": "4cf25725b69c58d0b3fe044aafda0b40a440cf95",
+      "base": "site-pretty",
+      "files": [
+        "_app/immutable/assets/2.gBuqKVzi.css",
+        "_app/immutable/nodes/2.DyWL8TcE.js"
+      ]
+    }
+  },
+  "compare": {
+    "a": {
+      "label": "Today's best build (v9-final)"
+    },
+    "b": {
+      "label": "v9-final + compositor morph (v1.2)"
+    },
+    "view": "side",
+    "shots": [
+      {
+        "caption": "Card half open (Chrome, phone size): 0.55 % of pixels differ",
+        "a": "r1-a-1.webp",
+        "aSize": [
+          1290,
+          2796
+        ],
+        "b": "r1-b-1.webp",
+        "bSize": [
+          1290,
+          2796
+        ]
+      },
+      {
+        "caption": "80 % open (Chrome): content up to ~1 px off, photos behind slightly different",
+        "a": "r1-a-2.webp",
+        "aSize": [
+          1290,
+          2796
+        ],
+        "b": "r1-b-2.webp",
+        "bSize": [
+          1290,
+          2796
+        ]
+      },
+      {
+        "caption": "Fully open (iPhone engine, Simulator): 0.07 %, clean corners",
+        "a": "r1-a-3.webp",
+        "aSize": [
+          1290,
+          2796
+        ],
+        "b": "r1-b-3.webp",
+        "bSize": [
+          1290,
+          2796
+        ]
+      }
+    ]
+  },
+  "state": "accepted",
+  "rev": 2,
+  "decision": {
+    "value": "accepted",
+    "notes": "It's SOOOO ULTRA SMOOTH, we did it.\nI think we can land this into v10 best build.",
+    "at": "2026-10-06T15:49:09.506Z",
+    "who": "user",
+    "rev": 2
+  },
+  "decisions": [
+    {
+      "value": "accepted",
+      "notes": "It's SOOOO ULTRA SMOOTH, we did it.\nI think we can land this into v10 best build.",
+      "at": "2026-10-06T15:49:09.506Z",
+      "who": "user",
+      "rev": 2
+    }
+  ],
+  "revisions": [
+    {
+      "rev": 1,
+      "at": "2026-10-06T15:24:18.778Z",
+      "by": "arch-compositor-morph",
+      "note": "first version"
+    },
+    {
+      "rev": 2,
+      "at": "2026-10-06T15:40:07.374Z",
+      "by": "arch-compositor-morph",
+      "note": "Added one line under risk: the phone still shows a few slow frames right at the end (3-6 over 50 ms per run in a later check); their cause is the next step."
+    }
+  ],
+  "createdAt": "2026-10-06T15:24:18.778Z",
+  "updatedAt": "2026-10-06T15:49:09.506Z",
+  "proposedAt": "2026-10-06T15:40:07.374Z",
+  "history": [
+    {
+      "at": "2026-10-06T15:24:18.778Z",
+      "who": "arch-compositor-morph",
+      "action": "proposed",
+      "rev": 1
+    },
+    {
+      "at": "2026-10-06T15:40:07.374Z",
+      "who": "arch-compositor-morph",
+      "action": "revised",
+      "rev": 2,
+      "note": "Added one line under risk: the phone still shows a few slow frames right at the end (3-6 over 50 ms per run in a later check); their cause is the next step."
+    },
+    {
+      "at": "2026-10-06T15:49:09.506Z",
+      "who": "user",
+      "action": "decided",
+      "value": "accepted",
+      "rev": 2,
+      "note": "It's SOOOO ULTRA SMOOTH, we did it.\nI think we can land this into v10 best build."
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "T-244",
+  "title": "i'd like to disconnect my iphone",
+  "status": "open",
+  "createdBy": "user",
+  "createdAt": "2026-10-07T19:46:08.598Z",
+  "updatedAt": "2026-10-07T19:46:26.179Z",
+  "rev": 5,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-07T19:46:08.598Z",
+      "by": "user",
+      "text": "i'd like to disconnect my iphone, do you have any plan to use them ?"
+    },
+    {
+      "n": 2,
+      "at": "2026-10-07T19:46:25.827Z",
+      "by": "lead",
+      "text": "Yes, you can disconnect it now; no agent needs the iPhone for about the next 2 hours.\n- Next phone use: the timing test of the GPU menu box (fix-g0-box), after its Mac and Simulator checks, about 2 h from now. I'll ask you first in a console step.\n- The Join waitlist proposal (fix-join-fade, about 30 min) can be tried in any browser; its Try-it phone links work over Wi-Fi, no cable needed.\n- I switched off the automatic \"plug the cable back in\" steps, so you won't get reminders meanwhile.\n\nWhat you need to do: unplug whenever you like; plug back in only when I ask."
+    }
+  ],
+  "reads": {
+    "user": 2,
+    "lead": 2
+  },
+  "history": [],
+  "readsAt": {
+    "lead": "2026-10-07T19:46:25.827Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "id": "T-090",
+  "title": "iPhone held by fix-rest-script, unused for 5 min while 2 jobs wait",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-04T08:25:58.479Z",
+  "updatedAt": "2026-10-04T08:26:25.163Z",
+  "rev": 3,
+  "assignees": [
+    "mgmt-ops-10",
+    "fix-rest-script",
+    "cd-roll-ca",
+    "fix-nav-morph"
+  ],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-04T08:25:58.479Z",
+      "by": "lead",
+      "text": "fix-rest-script has held the iPhone lease for 5 min without a phone run (iphone.mjs run, scroll, record or gesture; since 08:20Z, last phone run of fix-rest-script). The limit is 5 min.\nQueued for it: cd-roll-ca, fix-nav-morph.\nfix-rest-script: run your phone part now, or release the lease (node tools/lock.mjs release iphone --owner fix-rest-script) so the next one can start, or say here why it waits. Desk (mgmt-ops-10): please make sure the phone is used.\nOne message per idle period; this thread closes by itself when the phone is used again or released (tools/idle.mjs, I-105, I-111)."
+    }
+  ],
+  "reads": {
+    "lead": 1,
+    "user": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T08:25:58.479Z",
+      "who": "lead",
+      "action": "assign",
+      "note": "mgmt-ops-10,fix-rest-script,cd-roll-ca,fix-nav-morph"
+    },
+    {
+      "at": "2026-10-04T08:26:25.163Z",
+      "who": "user",
+      "action": "close"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-04T08:25:58.479Z"
+  },
+  "histSeen": {
+    "lead": 1
+  }
+}

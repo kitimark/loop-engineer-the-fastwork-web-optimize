@@ -1,0 +1,41 @@
+{
+  "id": "T-210",
+  "title": "iPhone free for 5 min while 1 job waits",
+  "status": "closed",
+  "createdBy": "lead",
+  "createdAt": "2026-10-06T00:49:00.261Z",
+  "updatedAt": "2026-10-06T03:18:34.541Z",
+  "rev": 3,
+  "assignees": [],
+  "messages": [
+    {
+      "n": 1,
+      "at": "2026-10-06T00:49:00.261Z",
+      "by": "lead",
+      "text": "The iPhone has had no holder for 5 min (since 00:43Z; the lease of iphone-runner ran out). The limit is 5 min.\nWaiting on the status board: end-morph (owner fix-end-morph; its wait names the phone).\nWhat unblocks it: the next of fix-end-morph takes it (node tools/lock.mjs acquire iphone --owner <you> ...).\nNo steward on duty (mgmt-devices is parked): the lead handles this thread (I-175).\nOne message per idle period; this thread closes by itself when the slot is taken (tools/idle.mjs, I-105)."
+    },
+    {
+      "n": 2,
+      "at": "2026-10-06T00:55:25.848Z",
+      "by": "lead",
+      "text": "The iPhone is free on purpose: fix A's last block waits for your unlock step (C-071), not for the phone.\n- Cause: the phone locked itself during cooling, so the robot-finger tool (WDA) cannot start. No other job can use a locked phone either.\n- Fix now: I pointed fix A's board row at C-071, so this alarm no longer counts it as ready phone work.\n- Long-term: fix A's kit checks the robot-finger tool right after every cooling wait (incident I-215).\nWhat you need to do: unlock the iPhone, set Auto-Lock to Never, then press Done on C-071."
+    }
+  ],
+  "reads": {
+    "lead": 2
+  },
+  "history": [
+    {
+      "at": "2026-10-06T03:18:34.541Z",
+      "who": "lead",
+      "action": "close",
+      "note": "taken by iphone-runner"
+    }
+  ],
+  "readsAt": {
+    "lead": "2026-10-06T00:55:25.848Z"
+  },
+  "histSeen": {
+    "lead": 0
+  }
+}
