@@ -61,8 +61,8 @@ test('I-269 loadKnown: reads a private file outside any repo; refuses others-rea
 
 test('I-269 buildRules: literals longest first, the generic /Users/<home> and LAN rules, none can match bare hex', () => {
   const rs = rules();
-  assert.deepEqual(rs.map((r) => r.kind), ['literal', 'literal', 'literal', 'literal', 'regex', 'regex', 'regex', 'regex', 'regex', 'regex']);
-  assert.deepEqual(rs.slice(4).map((r) => r.id), ['users-home', 'lan0', 'lan0-dash', 'lan0-pct', 'link-artifact', 'link-medium-draft']);
+  assert.deepEqual(rs.map((r) => r.kind), ['literal', 'literal', 'literal', 'literal', 'regex', 'regex', 'regex', 'regex', 'regex', 'regex', 'regex']);
+  assert.deepEqual(rs.slice(4).map((r) => r.id), ['users-home', 'lan0', 'lan0-dash', 'lan0-pct', 'link-artifact', 'link-claude', 'link-medium-draft']);
   assert.deepEqual(rs.slice(0, 4).map((r) => r.match.length), [22, 15, 12, 6]);
   for (const r of rs) {
     assert.match(r.id, /^[a-z0-9-]+$/);
@@ -113,7 +113,7 @@ test('I-269 scanText: rule ids and 1-based lines, never values; literals in any 
 
 test('I-269 filterRepoExpressions: literal and regex lines for filter-repo (Python \\1 groups)', () => {
   const lines = R.filterRepoExpressions(rules()).trimEnd().split('\n');
-  assert.equal(lines.length, 10);
+  assert.equal(lines.length, 11);
   assert.equal(lines[0], 'literal:zq.person@mail.invalid==><email>');
   assert.ok(lines.every((l) => /^(literal|regex):/.test(l) && l.split('==>').length === 2));
   assert.match(lines[5], /^regex:\\b10\\\.77\\\.3\\\.\(\\d\{1,3\}\)\\b==>192\.168\.0\.\\1$/);
@@ -200,10 +200,26 @@ test('I-270 link-artifact: a claude.ai artifact link without a scheme is scrubbe
   assert.equal(R.scrubText(`see https://claude.ai/artifact/${id}`, rs).text, `see ${T}`, 'with a scheme as before');
 });
 
+test('I-270 claude.ai links: www. and any letter case in the host; chat, project and share links get their own token; test ids stay', () => {
+  const rs = rules();
+  const id = fake('Ab1Cd2Ef3', 'Gh4Ij5Kl6Mn7'), uuid = fake('0a1b2c3d-4e5f-6789', '-abcd-ef0123456789');
+  const A = 'https://claude.ai/artifact/<private-artifact>', L = 'https://claude.ai/<private-link>';
+  const text = `www.claude.ai/artifact/${id} https://WWW.Claude.AI/code/artifact/${id} CLAUDE.AI/artifact/${id}\n`
+    + `chat https://claude.ai/chat/${uuid} project claude.ai/project/${uuid} share www.claude.ai/share/${id}\n`
+    + `kept: x.www.claude.ai/chat/${uuid} myclaude.ai/share/${id} claude.ai/chat/123e4567-e89b-12d3-a456-426614174000 claude.ai/chat/short1 claude.ai/new\n`;
+  const { text: out, hits } = R.scrubText(text, rs);
+  assert.equal(out, `${A} ${A} ${A}\nchat ${L} project ${L} share ${L}\n`
+    + `kept: x.www.claude.ai/chat/${uuid} myclaude.ai/share/${id} claude.ai/chat/123e4567-e89b-12d3-a456-426614174000 claude.ai/chat/short1 claude.ai/new\n`);
+  assert.deepEqual(hits, [{ id: 'link-artifact', count: 3 }, { id: 'link-claude', count: 3 }]);
+  assert.deepEqual(R.scanText(text, rs).map((h) => `${h.id}:${h.line}`), ['link-artifact:1', 'link-claude:2']);
+  assert.equal(R.scrubText(out, rs).text, out, 'idempotent');
+});
+
 test('I-270 the regex rules in Python\'s bytes re (filter-repo --replace-text) replace exactly what the JS rules do', (t) => {
   const rs = rules();
   const id = fake('Ab1Cd2Ef3', 'Gh4Ij5Kl6Mn7');
   const text = `plan claude.ai/artifact/${id} and https://claude.ai/code/artifact/${id}; myclaude.ai/artifact/${id} x.claude.ai/artifact/${id}\n`
+    + `WWW.Claude.AI/artifact/${id} claude.ai/chat/${id} www.claude.ai/share/${id} x.www.claude.ai/project/${id} claude.ai/chat/123e4567-e89b-12d3-a456-426614174000\n`
     + `claude.ai/artifact/123e4567-e89b-12d3-a456-426614174000 draft medium.com/p/${fake('1a2b3c', '4d5e6f')}/edit\n`
     + 'at /Users/zzother/x and 10.77.3.42, 10-77-3-9, 10%2E77%2E3%2E8\n';
   const expr = R.filterRepoExpressions(rs).trimEnd().split('\n').filter((l) => l.startsWith('regex:')).map((l) => l.slice(6).split('==>'));
@@ -216,6 +232,7 @@ test('I-270 the regex rules in Python\'s bytes re (filter-repo --replace-text) r
   const js = rs.filter((r) => r.kind === 'regex').reduce((s, r) => s.replace(new RegExp(r.match, 'g'), r.token), text);
   assert.equal(py.stdout, js);
   assert.match(py.stdout, /^plan https:\/\/claude\.ai\/artifact\/<private-artifact> and https:\/\/claude\.ai\/artifact\/<private-artifact>; myclaude/);
+  assert.match(py.stdout, /\nhttps:\/\/claude\.ai\/artifact\/<private-artifact> https:\/\/claude\.ai\/<private-link> https:\/\/claude\.ai\/<private-link> x\.www\.claude\.ai\/project\/\S+ claude\.ai\/chat\/123e4567-/);
 });
 
 test('I-269 scrubAll: literals in any letter case (text and bytes), then the regexes; redactSecrets: markers no shape matches', () => {

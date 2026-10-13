@@ -147,8 +147,12 @@ export function buildRules(known, { home = homedir() } = {}) {
   // Artifact ids in the history are 22 characters (OBSERVED, 2026-10-13); the tests' made-up ids are shorter or the
   // RFC 4122 example UUID 123e4567-e89b-12d3-a456-…, and stay, so the released tests still pass (as with the LAN net).
   // The scheme is optional ("claude.ai/artifact/<id>" in prose and threads), so the host is anchored: nothing word-like
-  // or a dot right before it (not "myclaude.ai", not "x.claude.ai"); the token always takes the https form
-  rules.push({ kind: 'regex', match: '(?:https?://)?(?<![A-Za-z0-9_.])claude\\.ai/(?:code/)?artifact/(?!(?i:123e4567-e89b-12d3-a456-))[A-Za-z0-9_-]{16,}', token: 'https://claude.ai/artifact/<private-artifact>', id: 'link-artifact' });
+  // or a dot right before it or its optional "www." (not "myclaude.ai", not "x.claude.ai"), the host in any letter
+  // case; the token always takes the https form. Conversation, project and share links are private too: their own token
+  const host = '(?:https?://)?(?<![A-Za-z0-9_.])(?i:(?:www\\.)?claude\\.ai)/';
+  const id = '(?!(?i:123e4567-e89b-12d3-a456-))[A-Za-z0-9_-]{16,}';
+  rules.push({ kind: 'regex', match: `${host}(?:code/)?artifact/${id}`, token: 'https://claude.ai/artifact/<private-artifact>', id: 'link-artifact' });
+  rules.push({ kind: 'regex', match: `${host}(?:chat|project|share)/${id}`, token: 'https://claude.ai/<private-link>', id: 'link-claude' });
   rules.push({ kind: 'regex', match: '\\bmedium\\.com/p/[0-9a-f]{6,}(?:/edit)?(?![A-Za-z0-9_-])', token: 'medium.com/p/<draft>', id: 'link-medium-draft' });
   assertNoHexRule(rules);
   Object.defineProperty(rules, 'allow', { value: k.allow.map((a) => ({ path: globToRegExp(a.path), pattern: new RegExp(`^(?:${a.pattern})$`) })), enumerable: false });
