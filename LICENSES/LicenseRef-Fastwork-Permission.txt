@@ -1,0 +1,14 @@
+Fastwork material, published with permission. Not licensed by this project.
+
+The files marked LicenseRef-Fastwork-Permission (in REUSE.toml) hold material that belongs to
+Fastwork: the frozen copy of the fastwork.com homepage as it was on 30 September 2026 (site/,
+site-pretty/, shipped as a GitHub Release file), the lines of Fastwork's code inside the fix
+patches, and pictures and recordings of their page.
+
+Fastwork's Engineering Partner allowed publishing the link and the source of this study on
+12 October 2026 ("Feel free to publish the link and source according to your study").
+That permission covers this study. It is not an open-source licence: the MIT and CC BY 4.0
+licences of this project do not apply to this material, and reusing it outside this study
+needs Fastwork's own permission.
+
+This study is personal and educational and not affiliated with Fastwork.

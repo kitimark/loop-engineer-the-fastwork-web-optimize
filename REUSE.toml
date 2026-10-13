@@ -1,0 +1,69 @@
+version = 1
+
+# Licensing per folder (REUSE specification 3.3: in one file, the last matching table wins).
+# Summary for people: LICENSING.md.
+
+# Default: write-ups, research, fix write-ups, memory, console record and chat export.
+[[annotations]]
+path = "**"
+SPDX-FileCopyrightText = "2026 kitimark"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+# Code: tools, tests, hooks, agent and editor config, scripts anywhere.
+[[annotations]]
+path = [
+  "tools/**",
+  "tests/**",
+  ".githooks/**",
+  ".claude/**",
+  ".serena/**",
+  "package.json",
+  "jsconfig.json",
+  ".gitignore",
+  "**/*.mjs",
+  "**/*.js",
+  "**/*.cjs",
+  "**/*.py",
+  "**/*.sh",
+]
+SPDX-FileCopyrightText = "2026 kitimark"
+SPDX-License-Identifier = "MIT"
+
+# Third-party code with its own licence.
+[[annotations]]
+path = "research/team-article/capture/vendor/gifenc/**"
+precedence = "override"
+SPDX-FileCopyrightText = "2017 Matt DesLauriers"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "research/cpu-throttle-calibration/tools/lh_benchmark_index.js"
+precedence = "override"
+SPDX-FileCopyrightText = "2024 The Chromium Authors"
+SPDX-License-Identifier = "BSD-3-Clause"
+SPDX-FileComment = "copied from ChromeDevTools/devtools-frontend 1e16983d, CalibrationController.ts"
+
+# Fastwork's material, published with permission (LICENSES/LicenseRef-Fastwork-Permission.txt).
+# Patches mix both: our added lines are MIT, the quoted Fastwork lines are not ours.
+[[annotations]]
+path = ["fixes/**/patch.diff", "fixes/**/*.patch"]
+SPDX-FileCopyrightText = ["Fastwork", "2026 kitimark"]
+SPDX-License-Identifier = "LicenseRef-Fastwork-Permission AND MIT"
+
+[[annotations]]
+path = [
+  "site/**",
+  "site-pretty/**",
+  "research/team-article/capture/v8/media/**",
+  "console/proposals/**/*.webp",
+  "console/proposals/**/*.mp4",
+  "out/article-gifs/**",
+  "out/article-video/**",
+  "out/people-blink/**",
+  "out/snapshots/**",
+  "out/tryit/**",
+  "out/ab/**/*.png",
+]
+SPDX-FileCopyrightText = "Fastwork"
+SPDX-License-Identifier = "LicenseRef-Fastwork-Permission"
+SPDX-FileComment = "Fastwork's page, and pictures or recordings of it; shipped as GitHub Release files"
