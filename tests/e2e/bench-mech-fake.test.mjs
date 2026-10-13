@@ -268,20 +268,20 @@ test('review-i027: mech, gain, calibrate and reconfirm refuse a stubbed host out
 });
 
 test('review-snapshot note 1: mech on a baseline that is not the pinned snapshot (FW_BASELINE_ALLOW_MODIFIED=1): BASELINE-<STATE>: PASS, exit 3', async (t) => {
-  // a pin in the worktree, but the main checkout's fixture baseline is not a committed snapshot: state untracked
+  // a pin in the worktree, but the main checkout's fixture baseline is not a committed snapshot and its files do not match the pin: state modified (I-268; before it: untracked)
   const pinFile = join(repo.wt, 'baseline.json');
   writeFileSync(pinFile, JSON.stringify({ snapshot: 'b1-0123abcd', trees: { site: 'a'.repeat(40), 'site-pretty': 'b'.repeat(40) } }));
   t.after(() => rmSync(pinFile, { force: true }));
   let r = await bench('flag-refused', 'mech', 'fast-nav');
   assert.equal(r.code, 3, r.out);
-  assert.match(r.stderr, /^bench\.mjs: BASELINE-UNTRACKED: /m);
+  assert.match(r.stderr, /^bench\.mjs: BASELINE-MODIFIED: /m);
   r = await benchX('flag', { FW_BASELINE_ALLOW_MODIFIED: '1' }, 'mech', 'fast-nav');
   assert.equal(r.code, 3, r.out);
-  assert.match(r.stderr, /^WARNING bench\.mjs: FW_BASELINE_ALLOW_MODIFIED=1: using a baseline that is NOT the pinned snapshot \(state untracked\)/m);
-  assert.match(r.stdout, /^MECH BASELINE-UNTRACKED: PASS fast-nav \(2 checks, 1 parity, \d+ s\) -> fixes\/fast-nav\/bench-results.json$/m);
+  assert.match(r.stderr, /^WARNING bench\.mjs: FW_BASELINE_ALLOW_MODIFIED=1: using a baseline that is NOT the pinned snapshot \(state modified\)/m);
+  assert.match(r.stdout, /^MECH BASELINE-MODIFIED: PASS fast-nav \(2 checks, 1 parity, \d+ s\) -> fixes\/fast-nav\/bench-results.json$/m);
   const m = results('fast-nav').mech;
-  assert.equal(m.verdict, 'BASELINE-UNTRACKED: PASS');
-  assert.deepEqual(m.baselineSnapshot, { snapshot: 'b1-0123abcd', state: 'untracked', tag: 'BASELINE-UNTRACKED' });
+  assert.equal(m.verdict, 'BASELINE-MODIFIED: PASS');
+  assert.deepEqual(m.baselineSnapshot, { snapshot: 'b1-0123abcd', state: 'modified', tag: 'BASELINE-MODIFIED' });
 });
 
 test('ts-lock-share: mech is a functional job: with the shared lane on it holds chrome-measure as a reader (weight bench-mech)', async () => {

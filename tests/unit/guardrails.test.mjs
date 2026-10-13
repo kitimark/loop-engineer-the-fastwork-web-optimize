@@ -40,6 +40,7 @@ test('package.json has the test scripts and the hook setup', () => {
   assert.equal(s['test:bench'], 'node tools/bench.mjs reconfirm', 'lead decision Q4: Tier A on everything landed');
   assert.match(s['test:all'], /npm test && npm run test:chrome/);
   assert.equal(s.setup, 'git config core.hooksPath .githooks');
+  assert.equal(s.init, 'node tools/release/init.mjs', 'I-268: the public release fetches its snapshot and media with npm run init');
   assert.deepEqual(Object.keys(JSON.parse(readFileSync(join(REPO, 'package.json'), 'utf8')).dependencies || {}), [], 'no runtime deps');
 });
 

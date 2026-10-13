@@ -15,9 +15,15 @@
 // and refuses (exit 3) with the fix. FW_BASELINE_ALLOW_MODIFIED=1 (the user's, while reviewing a new
 // snapshot) downgrades the refusal to a warning; results then record baseline.state != "ok".
 // No baseline.json (temp test repos, branches from before the snapshot commit) = "unpinned": unchecked.
+// I-268, the public release: a checkout whose HEAD does not track site/ / site-pretty/ at all (the release removes the
+// snapshot from history; `npm run init` unpacks it from a Release file) but has the files: their git tree ids are
+// computed in a throwaway git dir (untrackedTreeId) and compared with the pin: equal = ok, source "untracked, verified";
+// different = BASELINE-MODIFIED. Cached by a stat fingerprint, so verify.mjs's per-run re-check stays fast. A checkout
+// that tracks the snapshot (this study's repo) is checked exactly as before.
 // FW_MIRROR_HOME (tests' fixture baselines) = "override": unchecked.
-import { existsSync, readFileSync, realpathSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, readdirSync, lstatSync, mkdtempSync, mkdirSync, writeFileSync, renameSync, rmSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { REPO, resolveTree, isLinkedWorktree, mainCheckout } from './paths.mjs';
@@ -34,16 +40,18 @@ export const EXIT_BASELINE = 3;
 export const GIT_TIMEOUT_MS = 10000;
 /** git in `cwd`; never takes optional locks (index refresh), so checking the main checkout can't
  *  collide with the lead's git commands there. Killed after GIT_TIMEOUT_MS ({ok: false, timedOut: true}). */
-export function git(cwd, args) {
+export function git(cwd, args, extraEnv = null) {
   const timeout = Number(process.env.FW_BASELINE_GIT_TIMEOUT_MS) || GIT_TIMEOUT_MS; // tests shorten it
-  const r = spawnSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' }, maxBuffer: 1 << 28, timeout, killSignal: 'SIGKILL' });
+  const env = { ...process.env, GIT_OPTIONAL_LOCKS: '0' };
+  if (extraEnv) for (const [k, v] of Object.entries(extraEnv)) { if (v == null) delete env[k]; else env[k] = v; }
+  const r = spawnSync('git', args, { cwd, encoding: 'utf8', env, maxBuffer: 1 << 28, timeout, killSignal: 'SIGKILL' });
   const timedOut = r.error?.code === 'ETIMEDOUT';
   return { ok: r.status === 0 && !r.error, out: (r.stdout || '').replace(/\n$/, ''), err: timedOut ? `timed out after ${timeout} ms` : (r.stderr || r.error?.message || '').trim(), ...(timedOut ? { timedOut: true } : {}) };
 }
 class GitTimeout extends Error {}
 /** git for baselineStatus: a timeout aborts the check (state "timeout"), any other failure is the caller's. */
-function gitChecked(cwd, args) {
-  const r = git(cwd, args);
+function gitChecked(cwd, args, extraEnv) {
+  const r = git(cwd, args, extraEnv);
   if (r.timedOut) throw new GitTimeout(`git ${args.slice(0, 2).join(' ')} in ${cwd}: ${r.err}`);
   return r;
 }
@@ -105,6 +113,94 @@ export function isSparse(dir = REPO) {
   return git(dir, ['sparse-checkout', 'list']).ok;
 }
 
+// ---- I-268: a snapshot present as files but not tracked by git (the public release) ----------------------------------
+/** Files inside a tree that never count, in both modes: this repo's .gitignore keeps them out of the committed snapshot
+ *  (serve.mjs's 404 log, a Chrome profile, Finder's .DS_Store), so an untracked copy must leave them out too. */
+const VOLATILE = (rel) => rel === '.mirror/missing-local.txt' || rel === '.mirror/chrome-profile' || rel.startsWith('.mirror/chrome-profile/') || rel === '.DS_Store' || rel.endsWith('/.DS_Store');
+const volatileExcludes = (t) => [`:(exclude)${t}/.mirror/missing-local.txt`, `:(exclude)${t}/.mirror/chrome-profile`, `:(exclude,glob)${t}/**/.DS_Store`];
+/** git env for the throwaway git dir: nothing from a calling hook (GIT_DIR, GIT_INDEX_FILE, ...) may redirect it. */
+const ISOLATED = { GIT_DIR: null, GIT_WORK_TREE: null, GIT_COMMON_DIR: null, GIT_OBJECT_DIRECTORY: null, GIT_ALTERNATE_OBJECT_DIRECTORIES: null, GIT_INDEX_FILE: null };
+/** Byte-exact hashing whatever the user's git config says (autocrlf, file modes); uncompressed loose objects: speed. */
+const RAW = ['-c', 'core.autocrlf=false', '-c', 'core.safecrlf=false', '-c', 'core.fileMode=true', '-c', 'core.symlinks=true', '-c', 'core.compression=0', '-c', 'core.looseCompression=0', '-c', 'gc.auto=0'];
+
+/**
+ * A cheap fingerprint of directory `dir`: sha256 over every entry's relative path, mode, size, mtime, ctime and inode
+ * (lstat, ns resolution; volatile files skipped). Any write changes ctime, which no tool can set back, so an unchanged
+ * fingerprint means unchanged bytes. Null when `dir` is unreadable.
+ */
+export function treeFingerprint(dir) {
+  const h = createHash('sha256');
+  const walk = (abs, rel) => {
+    for (const n of readdirSync(abs).sort()) {
+      const r = rel ? `${rel}/${n}` : n;
+      if (VOLATILE(r)) continue;
+      const st = lstatSync(join(abs, n), { bigint: true });
+      h.update(`${r}\0${st.mode}\0${st.size}\0${st.mtimeNs}\0${st.ctimeNs}\0${st.ino}\n`);
+      if (st.isDirectory()) walk(join(abs, n), r);
+    }
+  };
+  try { walk(dir, ''); } catch { return null; }
+  return h.digest('hex');
+}
+
+/**
+ * The git tree id that `<home>/<t>/` would have if committed (what baseline.json pins): `git add --force` into a
+ * throwaway bare git dir and index under the system temp dir, then `write-tree --prefix=<t>/`; the temp dir is removed.
+ * `home` need not be a git checkout (npm run init checks its staging dir with it). Throws on a git failure.
+ */
+export function dirTreeId(home, t) {
+  const tmp = mkdtempSync(join(tmpdir(), 'fw-baseline-tree-'));
+  try {
+    const gd = join(tmp, 'g');
+    const env = { ...ISOLATED, GIT_INDEX_FILE: join(tmp, 'index') };
+    const init = gitChecked(tmp, ['init', '-q', '--bare', gd], ISOLATED);
+    if (!init.ok) throw new Error(`git init failed: ${init.err}`);
+    const add = gitChecked(home, [...RAW, `--git-dir=${gd}`, `--work-tree=${home}`, 'add', '--force', '--', t, ...volatileExcludes(t)], env);
+    if (!add.ok) throw new Error(`git add ${t} failed: ${add.err.split('\n')[0]}`);
+    const wt = gitChecked(home, [...RAW, `--git-dir=${gd}`, 'write-tree', `--prefix=${t}/`], env);
+    if (!wt.ok || !wt.out) throw new Error(`git write-tree --prefix=${t}/ failed: ${wt.err.split('\n')[0] || 'no tree (empty directory?)'}`);
+    return wt.out;
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+}
+
+const treeCache = new Map(); // `${home}\0${t}` -> {fp, tree}: this process
+/** Where the fingerprint cache of checkout `home` lives: its own git dir (null when it has none). */
+function cacheFile(home) {
+  const r = gitChecked(home, ['rev-parse', '--absolute-git-dir']);
+  return r.ok && r.out ? join(r.out, 'fastwork-mirror', 'baseline-untracked.json') : null;
+}
+const readCache = (f) => { try { return JSON.parse(readFileSync(f, 'utf8')); } catch { return {}; } };
+
+/**
+ * dirTreeId(home, t), cached by treeFingerprint: the first check of an untracked snapshot hashes it (about a second
+ * for the real 61 MB one), later checks only stat its files. Returns {tree, cached}.
+ */
+export function untrackedTreeId(home, t) {
+  const key = `${real(home)}\0${t}`;
+  const fp = treeFingerprint(join(home, t));
+  const mem = treeCache.get(key);
+  if (fp && mem?.fp === fp) return { tree: mem.tree, cached: true };
+  const f = cacheFile(home);
+  const disk = f ? readCache(f) : {};
+  if (fp && disk[key]?.fp === fp && /^[0-9a-f]{40,64}$/.test(disk[key].tree ?? '')) {
+    treeCache.set(key, disk[key]);
+    return { tree: disk[key].tree, cached: true };
+  }
+  const tree = dirTreeId(home, t);
+  if (fp) {
+    treeCache.set(key, { fp, tree });
+    if (f) {
+      try { // best effort; the fingerprint was taken before hashing, so a file changed meanwhile never matches it again
+        mkdirSync(dirname(f), { recursive: true });
+        const tmpf = `${f}.${process.pid}.tmp`;
+        writeFileSync(tmpf, JSON.stringify({ ...readCache(f), [key]: { fp, tree, at: new Date().toISOString() } }, null, 1) + '\n');
+        renameSync(tmpf, f);
+      } catch {}
+    }
+  }
+  return { tree, cached: false };
+}
+
 const RESTORE = (where) => `git -C ${where} restore --source=HEAD --staged --worktree -- ${TREES.join(' ')} && git -C ${where} clean -fd -- ${TREES.join(' ')}`;
 
 /**
@@ -136,18 +232,36 @@ function checkStatus({ repo, env }) {
   const own = (home) => real(home) === real(repo);
   const ownCopy = 'node tools/baseline.mjs sparse --off   (checks out this branch\'s own committed copy, ~60 MB, <1 s)';
 
+  const verified = {}; // I-268: t -> {home, tree} for a snapshot tree HEAD does not track, hashed from its files
   for (const t of TREES) {
     const home = dirname(dirs[t]);
     if (!existsSync(dirs[t])) {
-      return res('missing', false, `BASELINE-MISSING: ${dirs[t]} does not exist; ${PIN_FILE} pins ${pin.snapshot}.\n  ${isLinkedWorktree() ? `This worktree is sparse and the main checkout has no ${t}/. Use your own copy: ${ownCopy}` : `Check it out: git checkout HEAD -- ${TREES.join(' ')}`}`, { homes });
+      const release = !isLinkedWorktree() && !git(home, ['rev-parse', '--verify', '-q', `HEAD:${t}`]).ok; // I-268: HEAD has no snapshot to check out
+      return res('missing', false, `BASELINE-MISSING: ${dirs[t]} does not exist; ${PIN_FILE} pins ${pin.snapshot}.\n  ${isLinkedWorktree() ? `This worktree is sparse and the main checkout has no ${t}/. Use your own copy: ${ownCopy}` : release ? `This checkout does not track the snapshot (the public release): install it from the release file: npm run init` : `Check it out: git checkout HEAD -- ${TREES.join(' ')}`}`, { homes });
     }
     const top = git(home, ['rev-parse', '--show-toplevel']);
-    if (!top.ok || real(top.out) !== real(home) || !git(home, ['ls-files', '--error-unmatch', '--', `${t}/.mirror/manifest.json`, `${t}/index.html`]).ok) {
+    const isTop = top.ok && real(top.out) === real(home);
+    const tracked = isTop && git(home, ['ls-files', '--error-unmatch', '--', `${t}/.mirror/manifest.json`, `${t}/index.html`]).ok;
+    if (isTop && !tracked && !git(home, ['rev-parse', '--verify', '-q', `HEAD:${t}`]).ok && !git(home, ['ls-files', '--', `${t}/`]).out) {
+      // HEAD does not track the tree at all and nothing is staged under it: the release's unpacked snapshot
+      try {
+        verified[t] = { home, tree: untrackedTreeId(home, t).tree };
+        continue;
+      } catch (e) {
+        if (e instanceof GitTimeout) throw e;
+        return res('untracked', false, `BASELINE-UNTRACKED: ${PIN_FILE} pins ${pin.snapshot}, but ${dirs[t]} is not tracked by git and could not be hashed (${e.message}).\n  Restore it from the release file: npm run init`, { homes });
+      }
+    }
+    if (!tracked) {
       return res('untracked', false, `BASELINE-UNTRACKED: ${PIN_FILE} pins ${pin.snapshot}, but ${dirs[t]} is not a committed snapshot (not tracked by git in ${home}).\n  ${own(home) ? `Check it out: git checkout HEAD -- ${TREES.join(' ')}` : `The main checkout lacks the snapshot commit. Tell the lead; meanwhile: ${ownCopy}`}`, { homes });
     }
   }
+  const vbad = TREES.filter((t) => verified[t] && verified[t].tree !== pin.trees[t]);
+  if (vbad.length) {
+    return res('modified', false, `BASELINE-MODIFIED: ${vbad.map((t) => `${dirs[t]} (not tracked by git) has tree ${verified[t].tree.slice(0, 10)}, not the pinned ${pin.trees[t].slice(0, 10)}`).join('; ')}: it is not the snapshot ${pin.snapshot} that ${PIN_FILE} pins (a changed, added or missing file). Tools only measure the pinned snapshot (CLAUDE.md Hard rules 3-4).\n  Restore it: remove ${vbad.map((t) => `${t}/`).join(' and ')} and run npm run init (unpacks and verifies the release file).\n  (The user, reviewing a new snapshot, may set ${ALLOW_ENV}=1 to measure it anyway.)`, { homes });
+  }
   const mism = [];
-  for (const t of TREES) {
+  for (const t of TREES.filter((x) => !verified[x])) {
     const home = dirname(dirs[t]);
     const have = git(home, ['rev-parse', '--verify', '-q', `HEAD:${t}`]).out || '(none)';
     if (have !== pin.trees[t]) mism.push({ t, home, have });
@@ -160,7 +274,8 @@ function checkStatus({ repo, env }) {
     return res('mismatch', false, `BASELINE-MISMATCH: this checkout pins ${pin.snapshot} (${mism.map((x) => `${x.t} ${pin.trees[x.t].slice(0, 10)}`).join(', ')}) but ${m.home} has ${mism.map((x) => `${x.t} ${x.have.slice(0, 10)}`).join(', ')} at HEAD.\n  ${fix}`, { homes });
   }
   for (const home of homes) {
-    const here = TREES.filter((t) => dirname(dirs[t]) === home);
+    const here = TREES.filter((t) => dirname(dirs[t]) === home && !verified[t]);
+    if (!here.length) continue;
     const st = git(home, ['status', '--porcelain=v1', '--untracked-files=all', '--', ...here]);
     const changed = st.out.split('\n').filter(Boolean);
     if (!st.ok || changed.length) {
@@ -171,6 +286,8 @@ function checkStatus({ repo, env }) {
       return res('modified', false, `BASELINE-MODIFIED: the committed snapshot ${pin.snapshot} in ${home} has local changes (${what}). Tools only measure the committed snapshot (CLAUDE.md Hard rules 3-4).\n  ${fix}\n  (The user, reviewing a new snapshot, may set ${ALLOW_ENV}=1 to measure it anyway.)`, { homes });
     }
   }
+  const vt = TREES.filter((t) => verified[t]);
+  if (vt.length) return res('ok', true, `baseline ${pin.snapshot} (${homes.join(', ')}) matches ${PIN_FILE} (untracked, verified: ${vt.join(', ')})`, { homes, source: 'untracked, verified' });
   return res('ok', true, `baseline ${pin.snapshot} (${homes.join(', ')}) matches ${PIN_FILE}`, { homes });
 }
 

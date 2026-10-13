@@ -26,7 +26,7 @@ function cmdStatus() {
   const s = baselineStatus();
   console.log(`snapshot   ${s.snapshot ?? '(none)'}`);
   console.log(`state      ${s.state}`);
-  console.log(`read from  ${(s.homes || []).join(', ')}`);
+  console.log(`read from  ${(s.homes || []).join(', ')}${s.source ? ` (${s.source})` : ''}`);
   console.log(`checkout   ${REPO}${isLinkedWorktree() ? ` (worktree, ${isSparse() ? 'sparse: no own copy' : existsSync(join(REPO, 'site')) ? 'own copy' : 'no copy'})` : ' (main checkout)'}`);
   if (!s.ok || s.state !== 'ok') console.log(s.message);
   process.exitCode = s.ok ? 0 : EXIT_BASELINE;

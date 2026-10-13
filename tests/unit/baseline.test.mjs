@@ -6,7 +6,7 @@
 // Temp repos only (no hooks): the authorized-commit rules are covered by tests/e2e/githooks.test.mjs.
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, readFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync, rmSync, statSync, utimesSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { makeTempRepo, tempDir, run, git } from '../helpers.mjs';
@@ -87,9 +87,114 @@ test('main checkout with the committed snapshot: ok, metadata records the id', (
   assert.equal(s.snapshot, s1.snapshot);
   assert.deepEqual(s.meta, { snapshot: s1.snapshot, state: 'ok' });
   assert.deepEqual(s.homes, [repo.main]);
+  assert.equal(s.message, `baseline ${s1.snapshot} (${repo.main}) matches baseline.json`);
   const c = cli(repo.main, ['status']);
   assert.equal(c.code, 0, c.out);
   assert.match(c.stdout, new RegExp(`^snapshot\\s+${s1.snapshot}$`, 'm'));
+  // I-268: a tracked snapshot is checked as before: no `source`, nothing hashed, no fingerprint cache written
+  assert.equal('source' in s, false);
+  assert.match(c.stdout, /^read from  \S+$/m);
+  assert.equal(existsSync(join(repo.main, '.git', 'fastwork-mirror', 'baseline-untracked.json')), false);
+  // a tracked snapshot deleted from the working tree: checked out from HEAD, as before (not npm run init)
+  renameSync(join(repo.main, 'site-pretty'), join(repo.main, 'site-pretty.away'));
+  try {
+    const m = probe(repo.main);
+    assert.equal(m.state, 'missing');
+    assert.match(m.message, /Check it out: git checkout HEAD -- site site-pretty$/);
+  } finally { renameSync(join(repo.main, 'site-pretty.away'), join(repo.main, 'site-pretty')); }
+});
+
+test('I-268 release checkout: HEAD does not track the snapshot, the unpacked files are verified against the pin', () => {
+  // the public release: site/ and site-pretty/ are gone from history (gitignored), baseline.json stays, npm run init unpacks them
+  const rel = makeTempRepo({ worktree: null });
+  writeFileSync(join(rel.main, 'baseline.json'), JSON.stringify(s1, null, 1) + '\n');
+  writeFileSync(join(rel.main, '.gitignore'), `${readFileSync(join(rel.main, '.gitignore'), 'utf8')}/site/\n/site-pretty/\n`);
+  git(rel.main, 'add', 'baseline.json', '.gitignore');
+  git(rel.main, 'commit', '-q', '-m', 'release pin');
+  // no files: missing, as before
+  let m = probe(rel.main);
+  assert.equal(m.state, 'missing');
+  assert.match(m.message, /does not track the snapshot \(the public release\): install it from the release file: npm run init$/);
+  makeFixtureHome(rel.main);
+  const cache = join(rel.main, '.git', 'fastwork-mirror', 'baseline-untracked.json');
+  let s = probe(rel.main);
+  assert.equal(s.state, 'ok', s.message);
+  assert.equal(s.ok, true);
+  assert.equal(s.source, 'untracked, verified');
+  assert.equal(s.snapshot, s1.snapshot);
+  assert.deepEqual(s.meta, { snapshot: s1.snapshot, state: 'ok' });
+  assert.deepEqual(s.homes, [rel.main]);
+  assert.match(s.message, /matches baseline\.json \(untracked, verified: site, site-pretty\)$/);
+  assert.equal(git(rel.main, 'status', '--porcelain'), '', 'the check writes nothing into the checkout');
+  const c = cli(rel.main, ['status']);
+  assert.equal(c.code, 0, c.out);
+  assert.match(c.stdout, /^read from  .* \(untracked, verified\)$/m);
+  // the fingerprint cache: written once, used by the next process (verify.mjs re-checks after every run)
+  assert.ok(existsSync(cache));
+  const ids = (dir) => {
+    const src = `const b = await import(${JSON.stringify(join(dir, 'tools/lib/baseline.mjs'))});
+      console.log(JSON.stringify(b.TREES.map((t) => b.untrackedTreeId(${JSON.stringify(dir)}, t))));`;
+    const r = run(process.execPath, ['--input-type=module', '-e', src], { cwd: dir });
+    assert.equal(r.code, 0, r.out);
+    return JSON.parse(r.stdout);
+  };
+  assert.deepEqual(ids(rel.main), [{ tree: s1.trees.site, cached: true }, { tree: s1.trees['site-pretty'], cached: true }]);
+  // volatile files the tools write (and Finder's .DS_Store) do not count, as in a tracked checkout
+  writeFileSync(join(rel.main, 'site', '.mirror', 'missing-local.txt'), '/x\n');
+  writeFileSync(join(rel.main, 'site-pretty', '_app', '.DS_Store'), 'x');
+  mkdirSync(join(rel.main, 'site', '.mirror', 'chrome-profile'), { recursive: true });
+  writeFileSync(join(rel.main, 'site', '.mirror', 'chrome-profile', 'Prefs'), '{}');
+  assert.equal(probe(rel.main).state, 'ok');
+  // a tampered byte (same size, mtime set back: the ctime still moves), an added and a deleted file: modified
+  const idx = join(rel.main, 'site-pretty', 'index.html');
+  const orig = readFileSync(idx);
+  for (const [mutate, undo] of [
+    [() => { const st = statSync(idx); const b = Buffer.from(orig); b[b.length - 2] ^= 1; writeFileSync(idx, b); utimesSync(idx, st.atime, st.mtime); }, () => writeFileSync(idx, orig)],
+    [() => writeFileSync(join(rel.main, 'site', '_app', 'new-build.js'), 'x'), () => rmSync(join(rel.main, 'site', '_app', 'new-build.js'))],
+    [() => rmSync(join(rel.main, 'site', 'robots.txt')), () => writeFileSync(join(rel.main, 'site', 'robots.txt'), 'User-agent: *\nAllow: /\n')],
+  ]) {
+    mutate();
+    s = probe(rel.main);
+    assert.equal(s.state, 'modified', s.message);
+    assert.equal(s.ok, false);
+    assert.match(s.message, /^BASELINE-MODIFIED: .*\(not tracked by git\) has tree [0-9a-f]{10}, not the pinned [0-9a-f]{10}: it is not the snapshot bfixture-\w+ .*npm run init/s);
+    assert.equal(cli(rel.main, ['status']).code, 3);
+    const src = `const b = await import(${JSON.stringify(join(rel.main, 'tools/lib/baseline.mjs'))}); b.requireBaseline('demo'); console.log('CONTINUED');`;
+    const r = run(process.execPath, ['--input-type=module', '-e', src], { cwd: rel.main });
+    assert.equal(r.code, 3, r.out);
+    assert.match(r.stderr, /^demo: BASELINE-MODIFIED: /);
+    undo();
+  }
+  s = probe(rel.main);
+  assert.equal(s.state, 'ok', s.message);
+  assert.equal(s.source, 'untracked, verified');
+  // a pin that does not describe the files (another snapshot's release file unpacked): modified, not ok
+  writeFileSync(join(rel.main, 'baseline.json'), JSON.stringify({ ...s1, trees: { ...s1.trees, 'site-pretty': 'f'.repeat(40) } }));
+  s = probe(rel.main);
+  assert.equal(s.state, 'modified');
+  assert.match(s.message, /site-pretty \(not tracked by git\) has tree \w{10}, not the pinned ffffffffff/);
+  git(rel.main, 'checkout', '--', 'baseline.json');
+  assert.equal(probe(rel.main).state, 'ok');
+});
+
+test('I-268 dirTreeId: the tree id git would commit, also outside a git checkout; treeFingerprint moves on any write', async () => {
+  const b = await import('../../tools/lib/baseline.mjs');
+  const d = tempDir('fw-dirtree-');
+  makeFixtureHome(d);
+  assert.equal(b.dirTreeId(d, 'site'), s1.trees.site);
+  assert.equal(b.dirTreeId(d, 'site-pretty'), s1.trees['site-pretty']);
+  const fp = b.treeFingerprint(join(d, 'site'));
+  assert.match(fp, /^[0-9a-f]{64}$/);
+  assert.equal(b.treeFingerprint(join(d, 'site')), fp, 'stable');
+  writeFileSync(join(d, 'site', '.DS_Store'), 'x');
+  assert.equal(b.treeFingerprint(join(d, 'site')), fp, 'volatile files skipped');
+  const f = join(d, 'site', 'robots.txt');
+  const st = statSync(f);
+  writeFileSync(f, readFileSync(f));
+  utimesSync(f, st.atime, st.mtime);
+  assert.notEqual(b.treeFingerprint(join(d, 'site')), fp, 'same bytes and mtime, but rewritten: ctime moved');
+  assert.equal(b.treeFingerprint(join(d, 'nope')), null);
+  assert.throws(() => b.dirTreeId(d, 'nope'), /git add nope failed/);
 });
 
 test('unpinned (no baseline.json) and FW_MIRROR_HOME are unchecked', () => {
@@ -199,7 +304,18 @@ test('untracked / missing: a pinned worktree whose main checkout has no committe
   // main checkout: untracked site/ (e.g. before the snapshot commit); the worktree's branch already pins one
   makeFixtureHome(r2.main);
   writeFileSync(join(r2.wt, 'baseline.json'), JSON.stringify(s1));
+  // I-268 (intended change): HEAD tracks nothing under site*/, so the files are hashed and compared with the pin; the
+  // fixture is byte-identical to s1, so this is the pinned snapshot (before I-268: BASELINE-UNTRACKED)
   let s = probe(r2.wt);
+  assert.equal(s.state, 'ok', s.message);
+  assert.equal(s.source, 'untracked, verified');
+  writeFileSync(join(r2.main, 'site', 'robots.txt'), 'User-agent: *\nDisallow: /\n');
+  s = probe(r2.wt);
+  assert.equal(s.state, 'modified');
+  assert.match(s.message, /^BASELINE-MODIFIED: .*site \(not tracked by git\) has tree \w{10}, not the pinned/);
+  // something staged under site/ (a snapshot commit being prepared) but not the snapshot's key files: still untracked
+  git(r2.main, 'add', 'site/robots.txt');
+  s = probe(r2.wt);
   assert.equal(s.state, 'untracked');
   assert.match(s.message, /^BASELINE-UNTRACKED: .*not a committed snapshot/);
   rmSync(join(r2.main, 'site'), { recursive: true });
