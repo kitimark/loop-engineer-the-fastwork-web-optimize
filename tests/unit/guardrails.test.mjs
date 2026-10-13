@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO } from '../helpers.mjs';
+import { SUITE_DIRS } from '../../tools/lib/test-run.mjs';
 
 const settings = JSON.parse(readFileSync(join(REPO, '.claude', 'settings.json'), 'utf8'));
 const { allow = [], ask = [], deny = [] } = settings.permissions;
@@ -26,7 +27,10 @@ test('.claude/settings.json: baseline edits and pushes stay denied', () => {
 
 test('package.json has the test scripts and the hook setup', () => {
   const s = JSON.parse(readFileSync(join(REPO, 'package.json'), 'utf8')).scripts;
-  assert.match(s.test, /node --test .*tests\/unit.*tests\/e2e.*tests\/hooks/);
+  // T-105 #2 (ts-testspeed): npm test is tools/test-run.mjs, node:test's run() over tests/{unit,e2e,hooks}, longest file first
+  assert.equal(s.test, 'node tools/test-run.mjs');
+  assert.deepEqual(SUITE_DIRS, ['tests/unit', 'tests/e2e', 'tests/hooks']);
+  assert.equal(s['test:changed'], 'node tools/test-run.mjs --changed', 'iteration only; the hook and landing run npm test');
   assert.match(s['test:chrome'], /tests\/chrome/);
   // one short-lane hold for the whole run: the files re-enter it, no queue wait inside test timeouts (I-022)
   assert.match(s['test:chrome'], /^node tools\/lock\.mjs run chrome-measure --short --max-seconds 300 --owner test-chrome -- node --test /);
@@ -35,8 +39,10 @@ test('package.json has the test scripts and the hook setup', () => {
   assert.doesNotMatch(s['test:chrome:fn'], /verify\.chrome|fix-ab\.chrome|host-real\.chrome|tests\/chrome\/\*/);
   for (const f of ['vendor-shim', 'bench', 'check', 'costcard']) assert.match(s['test:chrome:fn'], new RegExp(`tests/chrome/${f}\\.chrome\\.test\\.mjs`), `${f}.chrome is functional`);
   // postmortem 2026-09-30 fix (b) capped it at 3; I-076 (lead GO): 6, the suite waits on timers far more than it computes
-  // (c3: 299 s wall, c6: 160 s, both ~280 CPU-s), so the wall time stays well under the shared lane's 300 s kill
-  assert.match(s.test, /--test-concurrency=6 /, 'I-076');
+  // (c3: 299 s wall, c6: 160 s, both ~280 CPU-s), so the wall time stays well under the shared lane's 300 s kill.
+  // T-105 #2 (lead decision 2026-10-04): 8 with the longest file first; npm-test keeps lane weight 2; the 120 s per-test timeout stays
+  const runner = readFileSync(join(REPO, 'tools', 'test-run.mjs'), 'utf8');
+  assert.match(runner, /let concurrency = Number\(process\.env\.FW_TEST_CONCURRENCY \|\| 8\), timeout = 120000;/, 'I-076, T-105 #2');
   assert.equal(s['test:bench'], 'node tools/bench.mjs reconfirm', 'lead decision Q4: Tier A on everything landed');
   assert.match(s['test:all'], /npm test && npm run test:chrome/);
   assert.equal(s.setup, 'git config core.hooksPath .githooks');
