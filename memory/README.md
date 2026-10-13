@@ -32,7 +32,7 @@ Every agent:
 - [Trace before asking](trace-before-asking.md): a reported lag or bug is traced from our recordings, logs and probes first; ask the user only what no data can answer
 - [Busy workers answer later](busy-workers-answer-later.md): never pull a busy worker off its work for a user question; a helper answers now, the worker may reply later
 - [Issue loop: investigate, distinguish, workaround, long-term](lead-owns-issue-loop.md): every issue the user raises gets cause from our data, which cases, a workaround now and a long-term fix with an owner, in the first answer; the lead owns it for user threads
-- [Public release](public-release.md): Fastwork approved; a scrubbed copy is built by script outside this repo (all commits and branches rewritten, large files as GitHub Release files); only the user pushes and uploads
+- [Public release](public-release.md): this repo IS the public GitHub history since the 2026-10-13 sync; commits stay scrubbed, the snapshot is untracked, only the user pushes (fast-forward, after the pre-push scrub check)
 - [Proactive by default](proactive-by-default.md): pull your next step, results straight to their consumers, pre-stage while waiting, one owner per answer (T-160 #7)
 
 Lead:

@@ -33,3 +33,12 @@ uploaded its 4 Release files as v1.0; the lead verified the refs and checksums a
 `npm run init` (INIT OK, snapshot verified) and every link. The README links the Medium article and both Worker demos
 (user T-170 #498: the links are public). A later change to the public repo is a new build and a new tag, never a
 force-push over v1.0; the Medium post's source links point at v1.0 (kit out/article/medium-kit-v1.0-github).
+
+**History sync 2026-10-13 (user T-279 #22; Claude Code chat: "I approve replacing this repo's history with the public
+GitHub history after a full backup, adding the GitHub remote, and changing Hard rules 2 and 3: only I push, after a
+scrub check; the snapshot becomes untracked.").** This repo's main and branches are now the public ones (v1.0 =
+79fc236f) plus new commits on top; `origin` is the public repo; old local-only branches and the unscrubbed history are
+only in the backup (~/fw-backup/2026-10-13, mode 700). site/ and site-pretty/ are untracked (gitignored); the main
+checkout keeps the original bytes, the release file has 4 vendor files redacted (I-277: the check accepts both).
+New work is committed scrubbed; cited commit ids are public ones. The user pushes main as a fast-forward after the
+pre-push scrub check; agents never push. The release build (build.mjs) is no longer needed for ordinary updates.

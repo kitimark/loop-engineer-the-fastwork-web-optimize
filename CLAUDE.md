@@ -10,7 +10,7 @@ local mirror. Not affiliated with Fastwork. Details: `README.md` (mirror tooling
 |---|---|---|---|
 | (a) shared tooling | `tools/` (`serve`, `verify`, `fix`, `lock`, `iphone`, `ioscap`, `incident`, `finding`, `mirror`, `prettify`, `lib/`) | yes | any agent, with a covering test (Hard rule 6); usually a `toolsmith` per incident |
 | (b) research write-ups | `research/<nn-topic>/` (README, data, one-off tools) | yes | append new studies; don't rewrite history |
-| (c) baseline snapshot | `site/` (byte-identical), `site-pretty/` (Prettier 3.9.9 copy), pinned by `baseline.json`; agent worktrees are sparse and read the main checkout's | **yes, frozen on `main`** (local only, never pushed) | nobody; a new snapshot only by the user (`--new-snapshot`, then the authorized commit, "Baseline snapshot") |
+| (c) baseline snapshot | `site/` (byte-identical), `site-pretty/` (Prettier 3.9.9 copy), pinned by `baseline.json`; agent worktrees read the main checkout's | **no, untracked and gitignored** since the history sync (2026-10-13); `npm run init` unpacks the release file, the main checkout keeps the original bytes | nobody; a new snapshot only by the user (`--new-snapshot`, "Baseline snapshot") |
 | (d) per-fix experiments | `fixes/<topic>/` `README.md`, `patch.diff`, `results.json` (+ gitignored `overlay/`) | deliverables only, local branches | one fix agent per topic, in its own worktree |
 | (e) project memory | `memory/` (`README.md` index + one note per user rule) | yes | the lead |
 
@@ -41,22 +41,23 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
    any merge commit on a branch even with `--no-verify`); repo config `merge.ff=only`, `pull.rebase=true`;
    the Claude Code hook `.claude/hooks/git-guard.mjs` and deny rules in `.claude/settings.json`.
    Landing steps: `fixes/LEAD.md` "Land a fix".
-2. **Never push; no remote.** MUST NOT `git push` (any form), add a remote, or publish anything from
-   this repo (`gh repo create`, gists, PRs). *Why:* the mirror, overlays and the Fastwork excerpts in
-   `patch.diff` stay on this machine (personal study, see `README.md`). *Enforced:* deny rules,
-   git-guard, the `pre-push` hook; `git remote add` and `git config remote.*` ask the user.
-   **Release exception** (user, Claude Code chat, 2026-10-13, memory "public-release"): a scrubbed public release
-   (patches in its repo; the frozen snapshot and reviewed proposal pictures and videos as GitHub Release files) is
-   built in a separate folder outside this repo. Agents build and check it; only the user pushes it and uploads its
-   files. This repo still gets no remote and no push.
-3. **Never commit Fastwork-derived or secret files, except the frozen baseline snapshot:** `out/`,
-   `fixes/*/overlay/`, `.serena/cache/`, `*.pem`, `site*/.mirror/missing-local.txt`; never `git add -f`.
-   `site/` and `site-pretty/` ARE committed on `main` as the study's frozen snapshot (user decision
-   2026-10-01), pinned by `baseline.json`: MUST NOT stage any change to them or to `baseline.json`. Only
-   the user, or the lead on the user's explicit instruction, commits a new snapshot ("Baseline snapshot").
-   `patch.diff` and the snapshot stay on this machine, except in the scrubbed public release (rule 2's release
-   exception; nothing Fastwork-derived is committed in this repo for it). *Why:* third-party property; generated
-   keys; every result must name the exact build it measured. *Enforced:* `.gitignore`, deny rules on
+2. **Only the user pushes, after the scrub check.** Agents and the lead MUST NOT `git push` (any form), add or
+   change a remote, or publish anything (`gh repo create`, `gh release`, gists, PRs, uploads). Since the history sync
+   (user, Claude Code chat, 2026-10-13, memory "public-release") this repo's history IS the public GitHub history
+   (`origin` = github.com/kitimark/loop-engineer-the-fastwork-web-optimize): the user pushes `main` by hand, and only
+   commits that pass the scrub check (`tools/release/check.mjs` rules and the known values file) go out. Agents keep
+   every commit scrubbed (no personal data, Hard rule 12; no unscrubbed console text) and check before asking the user
+   to push. *Why:* only reviewed, scrubbed work becomes public; the snapshot, overlays and `out/` stay on this machine.
+   *Enforced:* deny rules and git-guard (agents); the `pre-push` hook (the scrub check, fail-closed; refuses merge
+   commits and non-fast-forward pushes); `git remote add` and `git config remote.*` ask the user.
+3. **Never commit Fastwork-derived or secret files:** `site/`, `site-pretty/` (the frozen snapshot, untracked and
+   gitignored since the history sync, user 2026-10-13), `out/`, `fixes/*/overlay/`, `.serena/cache/`, `*.pem`,
+   `site*/.mirror/missing-local.txt`; never `git add -f`. The snapshot stays pinned by `baseline.json`: MUST NOT
+   stage a change to it; only the user, or the lead on the user's explicit instruction, pins a new snapshot
+   ("Baseline snapshot"). The snapshot reaches others only as the reviewed GitHub Release file (redacted). *Why:*
+   third-party property; generated keys; every result must name the exact build it measured.
+   (Before 2026-10-13 the snapshot was committed on `main`; the text below still says so in places: read
+   "committed snapshot" as "the pinned snapshot on disk".) *Enforced:* `.gitignore`, deny rules on
    `git add -f`/`--force`, the `pre-commit` hook (refuses those paths, and any staged snapshot change that
    is not an authorized snapshot update: `FW_BASELINE_UPDATE=<id>`, pin = staged trees, nothing else
    staged, on `main`); git-guard asks the user before a command sets `FW_BASELINE_UPDATE`; the scope
