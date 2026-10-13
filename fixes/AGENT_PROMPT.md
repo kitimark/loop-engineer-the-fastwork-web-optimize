@@ -32,9 +32,10 @@ Do not change code outside your scope; if you need a change there, message its o
 **Steps** follow the six stages of protocol v2 (`fixes/LEAD.md` "Stages and gates"; card templates in
 `fixes/_template/CARDS.md`; rationale in `research/architecture/measurement-protocol-v2.md`). Skip no stage; a
 stage can be short. Send each card as it closes.
-0. Worktree. If you are a teammate (you start in the main checkout), call `EnterWorktree` with name
-   `fix-{{topic}}` (or run `git worktree add .claude/worktrees/fix-{{topic}} -b fix/{{topic}}` and
-   `EnterWorktree` with that path). Then run `node tools/fix.mjs doctor`: it must say
+0. Worktree. If you are a teammate (you start in the main checkout), work in the worktree the lead made for
+   you (`.claude/worktrees/fix-{{topic}}`, branch `fix/{{topic}}`) by absolute paths only, and run every Bash
+   command as `cd <that path> && …`. Never call `EnterWorktree`: in a team it moves the whole session (I-272).
+   Then run `node tools/fix.mjs doctor` there: it must say
    `linked worktree yes` and `baseline … OK`; `git branch --show-current` there is the branch you report.
    `node tools/incident.mjs list` shows known open problems and their workarounds. Read `fixes/FINDINGS.md`
    (the team's techniques and pitfalls) and `node tools/finding.mjs list --unread --as fix-{{topic}}`.

@@ -23,7 +23,8 @@ the next free `research/<nn>-…` number.
 ## Steps
 
 0. **Worktree.** `node tools/fix.mjs doctor` says `linked worktree yes`; if you are in the main
-   checkout, `EnterWorktree` with name `wave<N>` first. `git log --oneline main -5` and
+   checkout (a teammate), work in the worktree the lead named in your prompt by absolute paths and
+   `cd <worktree> && …` in every Bash command; never `EnterWorktree` as a teammate (I-272). `git log --oneline main -5` and
    `ls fixes/*/patch.diff`: every topic of the wave is there (your worktree starts at `main`).
 1. **Combine** in the order from the prompt (engine-level topics last, `fixes/TOPICS.md` conflicts):
    `node tools/fix.mjs combine all-wave<N> [all-wave<N-1>] <t1> <t2> …`. `CONFLICT` lines name the

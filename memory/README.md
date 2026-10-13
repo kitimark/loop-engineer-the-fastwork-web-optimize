@@ -42,4 +42,5 @@ Lead:
 - [Idle alarms are a pattern](idle-alarms-are-a-pattern.md): phone held and unused 2 min, read the holder's processes; from the 3rd idle alarm a day, review them together
 - [Best builds list](best-builds-list.md): `fixes/BEST_BUILDS.md` lists best-build versions newest first; update it and post in T-228 at every build change (user T-228 #3)
 - [Lead delegates areas, measures](lead-delegates-areas-measures.md): a recurring problem area gets an owner agent (cause, long-term fix, delegation); the lead measures it against an exit target and parks the owner when tools carry it
+- [Agent teams, not workflows](agent-teams-not-workflows.md): delegate to named teammates, never the Workflow tool, even with ultracode on; teammates work by absolute worktree paths and never call EnterWorktree (I-272)
 - [Lead delegates research](lead-delegates-research.md): research (docs, source, code, data, platform questions) goes to a spawned helper in the background; the lead keeps decisions, landing, answers and a one-line check of the citation

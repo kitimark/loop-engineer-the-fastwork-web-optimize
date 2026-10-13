@@ -328,10 +328,13 @@ the local `HEAD`, so **commit the tooling first**: a worktree only has committed
   `worktree-<name>` and keeps it if it has changes. A call that passes `isolation` stays a subagent
   even with agent teams on.
 - **Agent-team teammates:** a named Agent call **without** `isolation` becomes a teammate, which
-  runs in the lead's working directory (the main checkout). A teammate's **first action** is to
-  enter its own worktree: the `EnterWorktree` tool with name `fix-<topic>`, or
-  `git worktree add .claude/worktrees/fix-<topic> -b fix/<topic>` then `EnterWorktree` with that
-  path. `fix.mjs` refuses to create fixes in the main checkout, which catches a forgotten step.
+  runs in the lead's working directory (the main checkout). The lead creates its worktree first
+  (`git worktree add .claude/worktrees/fix-<topic> -b fix/<topic>`) and passes the path. The teammate
+  works there by absolute paths only: Read/Edit/Write on `.claude/worktrees/<wt>/…`, and every Bash
+  command as `cd <wt> && …` or `git -C <wt> …`. A teammate **never calls `EnterWorktree`**: in a team it
+  switches the whole session, the lead included, and the previously visited worktree stops being writable,
+  so teammates block each other (OBSERVED 2026-10-13, I-272; memory "agent-teams-not-workflows").
+  `fix.mjs` refuses to create fixes in the main checkout, which catches a forgotten `cd`.
   Teammates load this CLAUDE.md, not the lead's conversation: put the topic and the prompt from
   `fixes/AGENT_PROMPT.md` in the spawn prompt. Permission prompts of teammates appear in the lead.
 

@@ -23,8 +23,9 @@ measurement code is likely involved.
 
 0. **Worktree.** `git rev-parse --show-toplevel` must be under `.claude/worktrees/` and
    `node tools/fix.mjs doctor` must say `linked worktree yes`. If you are in the main checkout (you
-   were started as a teammate), call `EnterWorktree` with name `ts-<incident>` first. Use absolute
-   paths in every tool call.
+   were started as a teammate), work in the worktree the lead named in your prompt: absolute paths in
+   every Read/Edit/Write, and every Bash command as `cd <worktree> && …`. Never call `EnterWorktree`
+   as a teammate: it moves the whole session, the lead included (I-272).
 1. **Read the report.** `node tools/incident.mjs show <id>`. Record that you started:
    `node tools/incident.mjs update <id> --by <your name> --note "repro started"`. If you need
    details, `SendMessage` the reporter (listed under `affected`), briefly.
