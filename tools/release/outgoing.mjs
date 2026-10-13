@@ -7,7 +7,8 @@
 //       the hook: reads git's pre-push lines "<local ref> <local oid> <remote ref> <remote oid>" on stdin
 // Refused (pre-push): deleting a remote ref, pushing a tag or any ref outside refs/heads/, pushing anything but a commit
 // (an annotated tag to a branch), a non-fast-forward update (also when the remote's commit is not here: fetch first),
-// local changes to tools/release/ or .githooks/ (the hook runs the working-tree copies), and in both modes a merge
+// local changes to tools/release/, tools/lib/help.mjs or .githooks/, or such a file flagged assume-unchanged or
+// skip-worktree (the hook runs the working-tree copies), and in both modes a merge
 // commit among the outgoing commits (Hard rule 1). In the hook, what the remote has comes from the remote itself
 // (`git ls-remote <url>`: every advertised commit that exists here, plus the pre-push lines' remote commits), never
 // from local remote-tracking refs; an ls-remote failure refuses. Outgoing = the pushed commits minus what those reach.
@@ -15,12 +16,14 @@
 // ~/.cache/fw-release/known.json or $FW_RELEASE_KNOWN, plus the generic secret shapes), with git's replace refs off
 // (git pack-objects sends the original objects): its message and header lines; its author and committer, which must
 // already appear in the remote's history, as check.mjs --source does (a public identity line is kept, any other is
-// `identity-unknown` and scanned); every path it adds or changes (`path-forbidden`: what .githooks/pre-commit and the
-// release rewrite keep out of git: the snapshot site/ and site-pretty/, out/, overlays, .serena/cache/, *.pem,
-// __pycache__/, volatile mirror files); every blob it adds or changes: text (UTF-16 decoded) fully; pictures through
-// imagemeta.mjs shipImage (anything but `clean` refuses: `media-<kinds>`), videos through videoMeta; any other binary
-// blob for the literal values only and refused (`binary-unchecked`) unless a known values file `allow` entry's path
-// covers each of its outgoing paths; the pushed ref names.
+// `identity-unknown` and scanned); every path it adds or changes (`path-forbidden`, any letter case: what
+// .githooks/pre-commit and the release rewrite keep out of git: the snapshot site/ and site-pretty/, out/, overlays,
+// .serena/cache/, *.pem, __pycache__/, volatile mirror files); every blob it adds or changes: its raw bytes for the
+// literal values always; text (also UTF-16, when the whole blob decodes as such) fully, and every data: URI picture
+// in it through imagemeta.mjs dataUriVerdict (`media-<kinds>` at <path>#data-N unless clean); pictures through
+// shipImage (anything but `clean` refuses: `media-<kinds>`), videos through videoMeta; any other binary blob refused
+// (`binary-unchecked`) unless a known values file `allowBinary` entry pins it (path glob + sha256 or blob id; the text
+// `allow` entries never exempt a binary); the pushed ref names.
 // Output: "COMMIT <sha10> <subject>" per outgoing commit and "REFUSED <why>" lines, then check.mjs's "HIT <rule-id>
 // <where>:<line>" lines and "CHECK <n> residual (<r> rules)"; every printed text has its rule matches replaced by their
 // tokens, so no value is ever printed. Last line "OUTGOING <n> commit(s) to <remote>: clean" or "...: REFUSED".
@@ -30,7 +33,8 @@ import { readFileSync } from 'node:fs';
 import { exitOnHelp, isMain } from '../lib/help.mjs';
 import { loadKnown, buildRules, scanText, safeText, withSecrets } from './rules.mjs';
 import { gitEnv, formatHits } from './check.mjs';
-import { shipImage, videoMeta, sniffMedia, IMAGE_FILE } from './imagemeta.mjs';
+import { shipImage, videoMeta, sniffMedia, IMAGE_FILE, dataImages, dataUriVerdict } from './imagemeta.mjs';
+import { createHash } from 'node:crypto';
 
 exitOnHelp(import.meta.url);
 
@@ -39,9 +43,9 @@ const IDENT = /^(author|committer|tagger) (.*>) \d+ [+-]\d{4}$/;
 const VIDEO_FILE = /\.(mp4|mov|m4v)$/i;
 const isBinary = (buf) => buf.subarray(0, 8192).includes(0);
 /** Paths no push publishes: .githooks/pre-commit's FORBIDDEN list and tools/release/rewrite.mjs DROP_PATHS. */
-export const FORBIDDEN_PATHS = [/^out\//, /^fixes\/[^/]+\/overlay\//, /^\.serena\/cache\//, /\.pem$/i, /^site(-pretty)?\//, /(^|\/)__pycache__\//, /(^|\/)missing-local\.txt$/, /(^|\/)\.mirror\/chrome-profile\//];
+export const FORBIDDEN_PATHS = [/^out\//i, /^fixes\/[^/]+\/overlay\//i, /^\.serena\/cache\//i, /\.pem$/i, /^site(-pretty)?\//i, /(^|\/)__pycache__\//i, /(^|\/)missing-local\.txt$/i, /(^|\/)\.mirror\/chrome-profile\//i];
 /** The working-tree files the hook runs: a local change to them would run unreviewed code (or none) as the check. */
-const HOOK_PATHS = ['tools/release', '.githooks'];
+const HOOK_PATHS = ['tools/release', 'tools/lib/help.mjs', '.githooks'];
 
 /** git in `cwd` (the repo being pushed), replace refs off; latin1 keeps bytes intact. Throws on a non-zero exit. */
 function gitIn(cwd) {
@@ -84,16 +88,63 @@ function readBlobs(git, oids) {
   return out;
 }
 
-/** UTF-16 text (a BOM, or every other byte 0 in the first 4 KiB) decoded, else null. */
+/** True when s reads as text: no NUL or other control character but tab and line breaks, no U+FFFD, no lone surrogate. */
+const textLike = (s) => !/[\u0000-\u0008\u000b\u000e-\u001f\ufffd]|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(s);
+/** The whole blob as UTF-16 text (a BOM, or every other byte 0 throughout), decoded; null unless all of it fits. */
 export function utf16Text(buf) {
-  const be = (b) => { const y = Buffer.from(b.subarray(0, b.length & ~1)); y.swap16(); return y.toString('utf16le'); };
-  if (buf.length >= 2 && buf[0] === 0xff && buf[1] === 0xfe) return buf.subarray(2).toString('utf16le');
-  if (buf.length >= 2 && buf[0] === 0xfe && buf[1] === 0xff) return be(buf.subarray(2));
-  const n = Math.min(buf.length, 4096) & ~1;
-  if (n < 8) return null;
-  let le = 0, bg = 0;
-  for (let i = 0; i < n; i += 2) { if (buf[i] && !buf[i + 1]) le++; if (!buf[i] && buf[i + 1]) bg++; }
-  return le === n / 2 ? buf.toString('utf16le') : bg === n / 2 ? be(buf) : null;
+  const be = (b) => { const y = Buffer.from(b); y.swap16(); return y.toString('utf16le'); };
+  let body = buf, big = false;
+  if (buf.length >= 2 && buf[0] === 0xff && buf[1] === 0xfe) body = buf.subarray(2);
+  else if (buf.length >= 2 && buf[0] === 0xfe && buf[1] === 0xff) { body = buf.subarray(2); big = true; }
+  else {
+    if (buf.length < 8 || buf.length % 2) return null;
+    let le = 0, bg = 0;
+    for (let i = 0; i < buf.length; i += 2) { if (buf[i] && !buf[i + 1]) le++; if (!buf[i] && buf[i + 1]) bg++; }
+    if (le !== buf.length / 2 && bg !== buf.length / 2) return null;
+    big = bg === buf.length / 2;
+  }
+  if (body.length % 2) return null;
+  const t = big ? be(body) : body.toString('utf16le');
+  return textLike(t) ? t : null;
+}
+
+/**
+ * The bytes a browser would still show from a data: URI that dataImages could not read strictly (a wrapped or
+ * escaped base64 run, percent-encoded bytes, odd parameters): from the "data:" before the entry to the first quote,
+ * angle bracket, parenthesis or backtick; base64 with whitespace and JSON escapes dropped, else %XX-decoded.
+ */
+function lenientBytes(text, d) {
+  const at = text.toLowerCase().lastIndexOf('data:', d.start);
+  if (at < 0) return null;
+  const m = /^[^"'`<>()]*/.exec(text.slice(at, at + (64 << 20)))[0];
+  const comma = m.indexOf(',');
+  if (comma < 0) return null;
+  const head = m.slice(0, comma), body = m.slice(comma + 1);
+  if (/;base64$/i.test(head.replace(/\s+$/, ''))) return Buffer.from(body.replace(/\\[rnt]|\s/g, '').replace(/\\\//g, '/'), 'base64');
+  const out = [];
+  for (let i = 0; i < body.length; i++) {
+    if (body[i] === '%' && /^[0-9a-f]{2}$/i.test(body.slice(i + 1, i + 3))) { out.push(parseInt(body.slice(i + 1, i + 3), 16)); i += 2; } else out.push(...Buffer.from(body[i], 'utf8'));
+  }
+  return Buffer.from(out);
+}
+/**
+ * Why a data: URI in a pushed text blob refuses (kinds), or null: dataUriVerdict (imagemeta.mjs, the packer's rule)
+ * on what it reads, anything but clean or ignore refusing. A URI it refuses only for its syntax (undecodable,
+ * non-base64, unparsed) or as no picture is decoded leniently, as a browser would: it refuses when those bytes are a
+ * picture or video that is not clean; bytes that are none (source code that mentions the syntax) cannot be shown.
+ */
+function dataUriKinds(text, d, name, literalHits) {
+  const v = dataUriVerdict(d, { name, literalHits });
+  if (v.action === 'clean' || v.action === 'ignore') return null;
+  const syntax = ['undecodable-data-uri', 'non-base64-data-uri', 'unparsed-data-uri', 'not-an-image'];
+  if (!v.kinds.length || !v.kinds.every((k) => syntax.includes(k))) return v.kinds.length ? v.kinds : [v.action];
+  const bytes = d.buf && v.kinds.includes('not-an-image') ? d.buf : lenientBytes(text, d);
+  if (!bytes || bytes.length < 4) return null;
+  const kind = sniffMedia(bytes);
+  if (!kind) return null;
+  if (kind === 'video') { const vm = videoMeta(bytes); return vm.risky.length ? vm.risky : null; }
+  const s = shipImage(bytes, { name, literalHits });
+  return s.action === 'clean' ? null : (s.risky.length ? s.risky : s.kinds).length ? (s.risky.length ? s.risky : s.kinds) : [s.action];
 }
 
 /**
@@ -141,7 +192,7 @@ export function checkCommits(cwd, { args = [], input } = {}, rules, { identities
       if (!l) blobPaths.set(m[2], [path]); else if (!l.includes(path)) l.push(path);
     }
   }
-  const allow = rules.allow || [];
+  const allow = rules.allow || [], allowBinary = rules.allowBinary || [];
   const literalHits = (t) => scanText(t, rules, { literalsOnly: true, allow: [] }).length;
   const blobs = readBlobs(git, [...blobPaths.keys()]);
   for (const [oid, ps] of blobPaths) {
@@ -156,11 +207,21 @@ export function checkCommits(cwd, { args = [], input } = {}, rules, { identities
       const s = shipImage(data, { name: ps.find((p) => IMAGE_FILE.test(p)) ?? name, literalHits });
       if (s.action !== 'clean') hit(`media-${(s.risky.length ? s.risky : s.kinds).join('+') || s.action}`, where, 0);
     }
-    const text = isBinary(data) ? utf16Text(data) : null;
-    if (text !== null) { for (const h of scanText(text, rules, { path: name, allow: here })) hit(h.id, where, h.line); continue; }
     const binary = isBinary(data);
-    if (binary && !kind && !ps.every((p) => allow.some((a) => a.path.test(p)))) hit('binary-unchecked', where, 0);
+    // the raw bytes, always (a value appended to UTF-16 text, or inside a binary): literal values only for binaries
     for (const h of scanText(data, rules, { path: name, allow: here, literalsOnly: binary })) hit(h.id, where, h.line);
+    const text = binary ? utf16Text(data) : data.toString('utf8');
+    if (text !== null) {
+      if (binary) for (const h of scanText(text, rules, { path: name, allow: here })) hit(h.id, where, h.line);
+      // pictures inside the text as data: URIs, each checked like a picture file (the packer's rule since e9439bbf)
+      for (const d of dataImages(text)) {
+        const kinds = dataUriKinds(text, d, `${name}#data-${d.n}`, literalHits);
+        if (kinds) hit(`media-${kinds.join('+')}`, `${where}#data-${d.n}`, 0);
+      }
+    } else if (!kind) {
+      const sum = createHash('sha256').update(data).digest('hex');
+      if (!ps.every((p) => allowBinary.some((a) => a.path.test(p) && (a.sha256 === sum || a.blob === oid)))) hit('binary-unchecked', where, 0);
+    }
   }
   return { commits, merges, hits };
 }
@@ -217,7 +278,10 @@ async function main(argv) {
       const plan = prePushPlan(git, stdin.split('\n').filter((l) => l.trim()), rules);
       refused = plan.refused; refHits = plan.hits;
       const dirty = git(['status', '--porcelain', '--untracked-files=all', '--', ...HOOK_PATHS], { encoding: 'utf8' }).split('\n').filter(Boolean);
-      if (dirty.length) refused.push(`${dirty.length} local change(s) in ${HOOK_PATHS.join('/ or ')}/ (the hook runs the working-tree copies): commit or restore them first`);
+      if (dirty.length) refused.push(`${dirty.length} local change(s) in ${HOOK_PATHS.join(', ')} (the hook runs the working-tree copies): commit or restore them first`);
+      // git status does not see edits to a file flagged assume-unchanged (tag a lowercase letter) or skip-worktree (S)
+      const flagged = git(['ls-files', '-v', '--', ...HOOK_PATHS], { encoding: 'utf8' }).split('\n').filter((l) => l && l[0] !== 'H');
+      if (flagged.length) refused.push(`${flagged.length} hook file(s) flagged assume-unchanged or skip-worktree (git update-index --no-assume-unchanged / --no-skip-worktree them first)`);
       if (plan.tips.length) {
         const theirs = remoteCommits(git, opt.url || remote);
         const input = [...plan.tips, '--not', ...plan.have, ...theirs].join('\n') + '\n';

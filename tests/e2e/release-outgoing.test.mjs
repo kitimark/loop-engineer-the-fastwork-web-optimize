@@ -109,8 +109,27 @@ test('outgoing.mjs --pre-push (direct): an annotated tag to a branch, local chan
   writeFileSync(join(g.cwd, 'tools', 'release', 'outgoing.mjs'), '// edited\n');
   r = pre([`refs/heads/main ${head} refs/heads/main ${zero}`]);
   assert.equal(r.code, 1, r.out);
-  assert.match(r.stdout, /^REFUSED 1 local change\(s\) in tools\/release\/ or \.githooks\/ \(the hook runs the working-tree copies\)/m);
+  assert.match(r.stdout, /^REFUSED 1 local change\(s\) in tools\/release, tools\/lib\/help\.mjs, \.githooks \(the hook runs the working-tree copies\)/m);
   rmSync(join(g.cwd, 'tools'), { recursive: true, force: true });
+  // ... also the library it imports (tools/lib/help.mjs)
+  mkdirSync(join(g.cwd, 'tools', 'lib'), { recursive: true });
+  writeFileSync(join(g.cwd, 'tools', 'lib', 'help.mjs'), '// edited\n');
+  r = pre([`refs/heads/main ${head} refs/heads/main ${zero}`]);
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.stdout, /^REFUSED 1 local change\(s\) in /m);
+  // ... and a committed hook file flagged assume-unchanged or skip-worktree (git status would not show its edits)
+  g.git('add', 'tools/lib/help.mjs');
+  g.git('commit', '-q', '-m', 'lib');
+  const head2 = g.git('rev-parse', 'HEAD');
+  for (const flag of ['--assume-unchanged', '--skip-worktree']) {
+    g.git('update-index', flag, 'tools/lib/help.mjs');
+    writeFileSync(join(g.cwd, 'tools', 'lib', 'help.mjs'), '// edited again\n');
+    r = pre([`refs/heads/main ${head2} refs/heads/main ${zero}`]);
+    assert.equal(r.code, 1, r.out);
+    assert.match(r.stdout, /^REFUSED 1 hook file\(s\) flagged assume-unchanged or skip-worktree/m, flag);
+    g.git('update-index', flag.replace('--', '--no-'), 'tools/lib/help.mjs');
+    g.git('checkout', '--', 'tools/lib/help.mjs');
+  }
   // the remote cannot be asked: refused (exit 2), never checked against local guesses
   r = pre([`refs/heads/main ${head} refs/heads/main ${zero}`], join(g.cwd, '..', 'no-such-remote.git'));
   assert.equal(r.code, 2, r.out);

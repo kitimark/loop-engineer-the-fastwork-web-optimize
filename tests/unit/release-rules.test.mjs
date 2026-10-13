@@ -47,6 +47,11 @@ test('I-269 loadKnown: reads a private file outside any repo; refuses others-rea
     [{ literals: [{ value: 'zqhome', token: '<a>' }, { value: 'zqhome', token: '<b>' }] }, /repeats literals\[0\]/],
     [{ lanPrefixes: ['10.300.1'] }, /lanPrefixes\[0\]/],
     [{ allow: [{ path: 'x', pattern: '(' }] }, /allow\[0\] pattern/],
+    // allowBinary (pre-push review): a binary is exempted only pinned to its bytes
+    [{ allowBinary: {} }, /allowBinary must be an array/],
+    [{ allowBinary: [{ path: 'x.bin', reason: 'r' }] }, /allowBinary\[0\] needs a path, a sha256 or blob id and a reason/],
+    [{ allowBinary: [{ path: 'x.bin', sha256: 'abc', reason: 'r' }] }, /allowBinary\[0\] needs/],
+    [{ allowBinary: [{ path: 'x.bin', blob: 'a'.repeat(40) }] }, /allowBinary\[0\] needs/],
     // fail-closed (review of 10cd1810): an empty file, or one with neither a <user> literal nor a LAN prefix
     [{}, /no literals/],
     [{ literals: [], lanPrefixes: ['10.1.2'] }, /no literals/],
@@ -270,4 +275,16 @@ test('I-269 secret shapes: Python 3 compiles them and matches as JS does (scoped
   if (py.error) return t.skip('no python3');
   assert.equal(py.status, 0, py.stderr);
   assert.deepEqual(JSON.parse(py.stdout), R.SECRET_SHAPES.map((s) => cases.map((c) => new RegExp(s.match).test(c))));
+});
+
+test('pre-push review: allowBinary entries are validated and kept on the rules (path glob + sha256 or blob id)', () => {
+  const ab = [{ path: 'fixtures/*.bin', sha256: 'b'.repeat(64), reason: 'test binary' }, { path: 'x.bin', blob: 'c'.repeat(40), reason: 'r' }];
+  const k = R.loadKnown(knownFile({ ...KNOWN, allowBinary: ab }));
+  assert.deepEqual(k.allowBinary, ab);
+  const rs = R.buildRules(k, { home: HOME });
+  assert.equal(rs.allowBinary.length, 2);
+  assert.ok(rs.allowBinary[0].path.test('fixtures/a.bin') && !rs.allowBinary[0].path.test('fixtures/x/a.bin'));
+  assert.equal(rs.allowBinary[0].sha256, 'b'.repeat(64));
+  assert.equal(R.withSecrets(rs).allowBinary, rs.allowBinary, 'withSecrets keeps them');
+  assert.deepEqual(R.buildRules(KNOWN, { home: HOME }).allowBinary, []);
 });

@@ -2,7 +2,10 @@
 //   loadKnown(path)              the known personal values, a JSON file outside any repo, mode 600
 //                                (default ~/.cache/fw-release/known.json, or $FW_RELEASE_KNOWN):
 //                                {"literals":[{"value":"…","token":"<user>"}…], "lanPrefixes":["a.b.c"],
-//                                 "allow":[{"path":"tests/…","pattern":"192\\.168\\.0\\.\\d+"}]}
+//                                 "allow":[{"path":"tests/…","pattern":"192\\.168\\.0\\.\\d+"}],
+//                                 "allowBinary":[{"path":"glob","sha256":"<64 hex>"|"blob":"<git blob id>","reason":"…"}]}
+//                                (allowBinary: a binary file the pre-push check (outgoing.mjs) may publish, pinned to
+//                                its bytes; rules.allowBinary [{path: RegExp, sha256, blob, reason}])
 //   buildRules(known)            -> [{kind:'literal'|'regex', match, token, id}] (literals longest first, then the
 //                                generic rules: /Users/<home> -> /Users/<user>, every LAN /24 -> 192.168.0.N keeping
 //                                the last octet, claude.ai artifact links and Medium draft links -> placeholders);
@@ -83,10 +86,16 @@ export function validateKnown(k, shown = 'known') {
     if (!a || typeof a.path !== 'string' || typeof a.pattern !== 'string' || !a.path) throw new Error(`${shown}: allow[${i}] needs a path and a pattern`);
     try { new RegExp(a.pattern); } catch { throw new Error(`${shown}: allow[${i}] pattern is not a valid regex`); }
   });
+  const allowBinary = k.allowBinary ?? [];
+  if (!Array.isArray(allowBinary)) throw new Error(`${shown}: allowBinary must be an array`);
+  allowBinary.forEach((a, i) => {
+    const pinned = (typeof a?.sha256 === 'string' && /^[0-9a-f]{64}$/.test(a.sha256)) || (typeof a?.blob === 'string' && /^[0-9a-f]{40}(?:[0-9a-f]{24})?$/.test(a.blob));
+    if (!a || typeof a.path !== 'string' || !a.path || !pinned || typeof a.reason !== 'string' || !a.reason) throw new Error(`${shown}: allowBinary[${i}] needs a path, a sha256 or blob id and a reason`);
+  });
   // fail-closed: an empty or partial file would make the check pass on everything (review of 10cd1810)
   if (!literals.length) throw new Error(`${shown}: no literals (an empty known file would check nothing)`);
   if (!literals.some((l) => l.token === '<user>') && !lanPrefixes.length) throw new Error(`${shown}: neither a "<user>" literal nor a LAN prefix`);
-  return { literals, lanPrefixes, allow };
+  return { literals, lanPrefixes, allow, allowBinary };
 }
 
 /** glob for allow paths: `**` any characters, `*` any but `/`, a trailing `/` a directory prefix, else exact. */
@@ -156,6 +165,7 @@ export function buildRules(known, { home = homedir() } = {}) {
   rules.push({ kind: 'regex', match: '\\bmedium\\.com/p/[0-9a-f]{6,}(?:/edit)?(?![A-Za-z0-9_-])', token: 'medium.com/p/<draft>', id: 'link-medium-draft' });
   assertNoHexRule(rules);
   Object.defineProperty(rules, 'allow', { value: k.allow.map((a) => ({ path: globToRegExp(a.path), pattern: new RegExp(`^(?:${a.pattern})$`) })), enumerable: false });
+  Object.defineProperty(rules, 'allowBinary', { value: k.allowBinary.map((a) => ({ path: globToRegExp(a.path), sha256: a.sha256 ?? null, blob: a.blob ?? null, reason: a.reason })), enumerable: false });
   return rules;
 }
 
@@ -204,6 +214,7 @@ export function redactSecrets(text) {
 export function withSecrets(rules) {
   const out = [...rules, ...SECRET_SHAPES.map((s) => ({ kind: 'regex', match: s.match, token: '<secret>', id: s.id }))];
   Object.defineProperty(out, 'allow', { value: rules.allow || [], enumerable: false });
+  Object.defineProperty(out, 'allowBinary', { value: rules.allowBinary || [], enumerable: false });
   return out;
 }
 

@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync, existsSync, cpSync, chmodSync, mkdirSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -200,14 +201,14 @@ test('hooks apply in linked worktrees (MERGE_HEAD is per worktree)', (t) => {
 // on git's ref lines and refuses unless it exits 0. Real pushes into a temp bare remote, with a temp known values file
 // (made-up values only).
 const PLANT = { name: 'Quentin Zorblax', user: 'qzuser' };
-function pushRepo(t, { knownFile, allow = [], hooks = HOOKS } = {}) {
+function pushRepo(t, { knownFile, allow = [], allowBinary = [], hooks = HOOKS } = {}) {
   const g = makeRepo(t);
   const remote = join(g.dir, 'remote.git');
   assert.equal(spawnSync('git', ['init', '-q', '--bare', remote], { env: gitEnv(g.dir) }).status, 0);
   g.noHooks('remote', 'add', 'origin', remote);
   g.noHooks('push', '-q', 'origin', 'main'); // the public history: pushed before the hook existed
   const known = join(g.dir, 'known.json');
-  writeFileSync(known, JSON.stringify({ literals: [{ value: PLANT.name, token: '<name>' }, { value: PLANT.user, token: '<user>' }], lanPrefixes: ['10.77.31'], allow }), { mode: 0o600 });
+  writeFileSync(known, JSON.stringify({ literals: [{ value: PLANT.name, token: '<name>' }, { value: PLANT.user, token: '<user>' }], lanPrefixes: ['10.77.31'], allow, allowBinary }), { mode: 0o600 });
   const env = { ...gitEnv(g.dir), FW_RELEASE_KNOWN: knownFile ?? known };
   const push = (...args) => {
     const r = spawnSync('git', ['-c', `core.hooksPath=${hooks}`, 'push', ...args], { cwd: g.repo, env, encoding: 'utf8' });
@@ -218,6 +219,14 @@ function pushRepo(t, { knownFile, allow = [], hooks = HOOKS } = {}) {
   const rawCommit = (file, content, msg = file) => { mkdirSync(dirname(join(g.repo, file)), { recursive: true }); writeFileSync(join(g.repo, file), content); g.noHooks('add', '-f', file); g.noHooks('commit', '-q', '-m', msg); };
   return { ...g, remote, push, remoteHead, rawCommit };
 }
+const BIN = Buffer.from([0, 1, 2, 3, 0, 255]);
+const sha = (b) => createHash('sha256').update(b).digest('hex');
+/** A minimal MP4: ftyp, then moov/mvhd with the given creation time (0: none). */
+const mp4 = (created) => {
+  const box = (t, body) => { const h = Buffer.alloc(8); h.writeUInt32BE(8 + body.length); h.write(t, 4, 'latin1'); return Buffer.concat([h, body]); };
+  const mvhd = Buffer.alloc(20); mvhd.writeUInt32BE(created, 4);
+  return Buffer.concat([box('ftyp', Buffer.from('isom\0\0\0\0isom', 'latin1')), box('moov', box('mvhd', mvhd))]);
+};
 /** A PNG with the given ancillary chunks (pngChunk from the release fixtures). */
 const pngWith = (pngChunk, extra = []) => Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), pngChunk('IHDR', Buffer.from([0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, 0])), ...extra, pngChunk('IDAT', deflateSync(Buffer.from([0, 0]))), pngChunk('IEND', Buffer.alloc(0))]);
 const pushRefused = (r, re) => {
@@ -254,13 +263,16 @@ test('pre-push: a clean fast-forward push passes the scrub check and lands', (t)
 
 test('pre-push: a clean picture and an allow-listed binary pass; the remote-tracking refs do not hide a commit the remote lacks', async (t) => {
   const { pngChunk } = await import('../fixtures/release/stage.mjs');
-  const g = pushRepo(t, { allow: [{ path: 'fixtures/*.bin', pattern: 'x', reason: 'test binary' }] });
+  const g = pushRepo(t, { allowBinary: [{ path: 'fixtures/*.bin', sha256: sha(BIN), reason: 'test binary' }] });
   g.commit('pic.png', pngWith(pngChunk), 'a picture');
   mkdirSync(join(g.repo, 'fixtures'), { recursive: true });
-  g.commit('fixtures/data.bin', Buffer.from([0, 1, 2, 3, 0, 255]), 'a binary the known file allows');
+  g.commit('fixtures/data.bin', BIN, 'a binary the known file pins');
+  g.commit('page.html', `<img src="data:image/png;base64,${pngWith(pngChunk).toString('base64')}">\n`, 'a page with a clean data: picture');
+  g.commit('v.mp4', mp4(0), 'a video without dates');
+  g.commit('notes.md', 'Pictures as `data:image/...;base64` or `data:image/png;base64,${run}` URIs, or data:image/png,abc, are checked.\n', 'prose about the syntax');
   const r = g.push('origin', 'main');
   assert.equal(r.status, 0, r.out);
-  assert.match(r.out, /^OUTGOING 2 commit\(s\) to origin: clean$/m);
+  assert.match(r.out, /^OUTGOING 5 commit\(s\) to origin: clean$/m);
   // a planted commit that only a local remote-tracking ref points at (the remote never had it)
   g.ok('switch', '-q', '-c', 'x');
   g.commit('p.txt', `by ${PLANT.name}\n`, 'planted');
@@ -273,7 +285,7 @@ test('pre-push: a clean picture and an allow-listed binary pass; the remote-trac
 
 test('pre-push: a planted personal value, secret shape or unknown identity refuses; the value is never printed', async (t) => {
   const { FAKE_KEY } = await import('../fixtures/release/stage.mjs');
-  for (const [what, plant, re, args] of [
+  for (const [what, plant, re, args, opts] of [
     ['file content', (g) => g.commit('d.txt', `by ${PLANT.name}\n`, 'add d'), /^HIT lit\d+-\S+ d\.txt@[0-9a-f]{10}:1$/m],
     ['letter case', (g) => g.commit('d.txt', `by ${PLANT.name.toUpperCase()}\n`, 'add d'), /^HIT lit\d+-\S+ d\.txt@/m],
     ['commit message', (g) => g.commit('d.txt', 'd\n', `thanks ${PLANT.name}`), /^HIT lit\d+-\S+ commit@[0-9a-f]{10}:\d+$/m],
@@ -298,9 +310,19 @@ test('pre-push: a planted personal value, secret shape or unknown identity refus
     ['a picture with text metadata', async (g) => { const { pngChunk } = await import('../fixtures/release/stage.mjs'); g.commit('p.png', pngWith(pngChunk, [pngChunk('tEXt', Buffer.from('Comment\0hello'))]), 'add p'); }, /^HIT media-text p\.png@[0-9a-f]{10}:0$/m],
     ['a file named as a picture that is none', (g) => g.commit('p.png', 'not a picture\n', 'add p'), /^HIT media-not-an-image p\.png@/m],
     ['a pushed ref name', (g) => g.commit('d.txt', 'd\n', 'add d'), /^HIT lit\d+-\S+ ref@refs\/heads\/<user>-topic:0$/m, ['origin', `HEAD:refs/heads/${PLANT.user}-topic`]],
+    ['an uppercase forbidden path', (g) => g.rawCommit('OUT/x.json', '{}\n', 'out'), /^HIT path-forbidden path@[0-9a-f]{10}\/OUT\/x\.json:0$/m],
+    ['a data: URI picture with text metadata', async (g) => { const { pngChunk } = await import('../fixtures/release/stage.mjs'); g.commit('page.html', `<p><img src="data:image/png;base64,${pngWith(pngChunk, [pngChunk('tEXt', Buffer.from('Comment\0hello'))]).toString('base64')}"></p>\n`, 'add page'); }, /^HIT media-text page\.html@[0-9a-f]{10}#data-1:0$/m],
+    ['a data: URI picture in UTF-16 text', async (g) => { const { pngChunk } = await import('../fixtures/release/stage.mjs'); g.commit('page.html', Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(`<img src="data:image/png;base64,${pngWith(pngChunk, [pngChunk('tEXt', Buffer.from('Comment\0hello'))]).toString('base64')}">\n`, 'utf16le')]), 'add page'); }, /^HIT media-text page\.html@[0-9a-f]{10}#data-1:0$/m],
+    ['a line-wrapped data: URI picture (a browser reads it)', async (g) => { const { pngChunk } = await import('../fixtures/release/stage.mjs'); const b = pngWith(pngChunk, [pngChunk('tEXt', Buffer.from('Comment\0hello'))]).toString('base64').replace(/(.{20})/g, '$1\n'); g.commit('page.html', `<img src="data:image/png;base64,${b}">\n`, 'add page'); }, /^HIT media-text page\.html@[0-9a-f]{10}#data-1:0$/m],
+    ['a percent-encoded data: URI picture', async (g) => { const { pngChunk } = await import('../fixtures/release/stage.mjs'); const b = [...pngWith(pngChunk, [pngChunk('tEXt', Buffer.from('Comment\0hello'))])].map((x) => `%${x.toString(16).padStart(2, '0')}`).join(''); g.commit('page.html', `<img src="data:image/png,${b}">\n`, 'add page'); }, /^HIT media-text page\.html@[0-9a-f]{10}#data-1:0$/m],
+    ['a binary under an allow (text) path entry', (g) => { mkdirSync(join(g.repo, 'fixtures'), { recursive: true }); g.commit('fixtures/data.bin', BIN, 'add bin'); }, /^HIT binary-unchecked fixtures\/data\.bin@/m, null, { allow: [{ path: 'fixtures/*.bin', pattern: 'x', reason: 'text allow' }] }],
+    ['another blob on an allowBinary path', (g) => { mkdirSync(join(g.repo, 'fixtures'), { recursive: true }); g.commit('fixtures/data.bin', Buffer.from([0, 9, 9, 0]), 'add bin'); }, /^HIT binary-unchecked fixtures\/data\.bin@/m, null, { allowBinary: [{ path: 'fixtures/*.bin', sha256: sha(BIN), reason: 'pinned' }] }],
+    ['UTF-16 text with a raw ASCII value appended', (g) => g.commit('d.txt', Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from('notes\n', 'utf16le'), Buffer.from(PLANT.name)]), 'add d'), /^HIT lit\d+-\S+ d\.txt@/m],
+    ['a BOM before binary bytes', (g) => g.commit('d.dat', Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from([0, 0, 1, 0, 0xff, 0xdf])]), 'add d'), /^HIT binary-unchecked d\.dat@/m],
+    ['a video with a creation date', (g) => g.commit('v.mp4', mp4(1234), 'add v'), /^HIT media-video-date v\.mp4@[0-9a-f]{10}:0$/m],
   ]) {
     await t.test(what, async (tt) => {
-      const g = pushRepo(tt);
+      const g = pushRepo(tt, opts);
       const before = g.remoteHead();
       await plant(g);
       const r = g.push(...(args ?? ['origin', 'main']));
