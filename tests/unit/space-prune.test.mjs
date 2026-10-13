@@ -45,6 +45,7 @@ const shots = (dir, n = 5, extra = true) => {
   age(dir);
   return dir;
 };
+const inside = (p, d) => p === d || p.startsWith(d + '/');
 const logLines = () => readFileSync(P.pruneLogFile(), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
 
 test('auto-clean is on by default; FW_SPACE_AUTOPRUNE=0 turns it off', () => {
@@ -134,6 +135,57 @@ test('keep: recordings and phone records (iphone-screen, ioscap, iphone), certs,
   assert.deepEqual(paths(pl), []);
   P.applyPrune(pl, { now: NOW, thumb: copyThumb });
   for (const f of ['run.mov', 'run.result.json', 'run.frames.json']) assert.ok(existsSync(join(root, 'main', 'out', 'iphone-screen', f)));
+});
+
+test('I-275: deploy sources, article material and archives are never frames; only known measurement-frame folders are', () => {
+  const out = join(root, 'main', 'out');
+  const real = shots(join(out, 'v10', 'px-mobile-2026-10-06T05-06-24-000Z'));
+  const tool = shots(join(wtA, 'out', 'check', 'gpu-preview', '2026-10-05T01-02-03-004Z'));
+  // the 2026-10-12 deletions: named top-level trees (in every checkout's out/)
+  const named = ['cf-review/original/notes', 'pages-export/builds/v7', 'pages-repo/console/proposals/PR-022', 'article/medium-kit', 'article-shots',
+    'people-blink', 'lead/shots', 'tryit/a/sim', 'archive/agent-x/out/sim', 'pruned-records/pages-export/shared'].map((r) => shots(join(out, r)));
+  named.push(shots(join(wtA, 'out', 'cf-review', 'optimized', 'px-sim')));
+  // a dir holding a deploy marker, or under one, whatever its name
+  const deploy = [];
+  for (const m of ['wrangler.jsonc', 'wrangler.toml', '_headers', 'index.html', 'package.json']) {
+    const top = join(out, `demo-${m.replace(/\W/g, '')}`);
+    deploy.push(shots(join(top, 'public', 'shots')));
+    put(join(top, m), 'x');
+    const self = join(out, `self-${m.replace(/\W/g, '')}`, 'sim');
+    put(join(self, m), 'x');
+    deploy.push(shots(self));
+  }
+  const unknown = shots(join(out, 'misc', 'gallery'));
+  age(out); age(join(wtA, 'out'));
+  const pl = plan();
+  assert.deepEqual(paths(pl, 'frames'), [real, tool].sort());
+  for (const d of [...named, ...deploy, unknown]) assert.equal(pl.candidates.some((c) => inside(c.path, d) || inside(d, c.path)), false, d);
+  for (const d of deploy) assert.match(keptWhy(pl, d) || 'not listed', /deploy tree|not listed/, d);
+  assert.match(keptWhy(pl, unknown), /not a known measurement-frame folder/);
+  const res = P.applyPrune(pl, { now: NOW, thumb: copyThumb });
+  assert.equal(res.removed.length, 2);
+  for (const d of [...named, ...deploy, unknown]) assert.equal(readdirSync(d).filter((f) => f.endsWith('.png')).length, 5, `${d} keeps its images`);
+});
+
+test('I-275: frameScope names why a folder is out of scope; applyPrune re-checks it before deleting', () => {
+  const out = join(root, 'main', 'out');
+  assert.equal(P.frameScope(out, join(out, 'sim', 'shots')), null);
+  assert.equal(P.frameScope(out, join(out, 'g0-gpu', 'seek-a-c3')), null);
+  assert.match(P.frameScope(out, join(out, 'pages-export', 'sim')), /never cleaned/);
+  assert.match(P.frameScope(out, join(out, 'article-gifs', 'px')), /never cleaned/);
+  assert.match(P.frameScope(out, join(out, 'notes')), /not a known measurement-frame folder/);
+  assert.match(P.frameScope(out, out), /not inside/);
+  assert.match(P.frameScope(out, join(root, 'elsewhere', 'sim')), /not inside/);
+  const site = shots(join(out, 'cf2', 'public', 'px-sim'));
+  put(join(out, 'cf2', 'wrangler.jsonc'), '{}');
+  assert.match(P.frameScope(out, site), /deploy tree \(out\/cf2\/wrangler\.jsonc\)/);
+  // a stale or hand-made plan entry for it is skipped, nothing deleted
+  const pl = plan();
+  pl.candidates.push({ cls: 'frames', path: site, show: 'cf2', bytes: 1, images: readdirSync(site).filter((f) => f.endsWith('.png')) });
+  const res = P.applyPrune(pl, { now: NOW, thumb: copyThumb });
+  assert.deepEqual(res.skipped.map((s) => s.why), ['deploy tree (out/cf2/wrangler.jsonc)']);
+  assert.equal(readdirSync(site).filter((f) => f.endsWith('.png')).length, 5);
+  assert.equal(existsSync(join(site, P.RECORD)), false);
 });
 
 test('keep: no thumbnail could be made, so no image is removed', () => {

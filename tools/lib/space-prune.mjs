@@ -12,7 +12,8 @@
 //             anything in it or a folder above it, nothing holds it open and its newest entry is more than a day old.
 //             A record stays first: frames-pruned.json (every image's name, size, time) and up to THUMBS downscaled
 //             thumbnails (sips) in _pruned-thumbs/, so the blog can still show what was captured. No thumbnail, no
-//             deletion. Only image files go; JSON, Markdown, logs and subfolders stay.
+//             deletion. Only image files go; JSON, Markdown, logs and subfolders stay. Fails closed since I-275: only a
+//             known measurement-frame folder (frameScope), never a deploy tree, article material or an archive.
 //   snapshot  an immutable build copy out/snapshots/<name>-<12 hex>, when one of its files hashes to that name (sha256
 //             prefix), the hash appears in committed fixes/ or research/ text (a pinned, rebuildable build), the path
 //             itself is not cited, no process serves or holds it and it is more than a day old.
@@ -42,6 +43,34 @@ export const RECORD = 'frames-pruned.json';
 export const THUMB_DIR = '_pruned-thumbs';
 /** Top-level out/ entries never searched for frames: in use (certs, Try-it, snapshots: their own class), recordings, phone records. */
 export const NO_FRAMES_TOP = new Set(['certs', 'tryit', 'snapshots', 'iphone-screen', 'ioscap', 'iphone']);
+// I-275: on 2026-10-12 the frames class deleted deployed demo images (out/cf-review, out/pages-*), article figures and
+// archived worktree output, because ANY folder of 3+ old images counted as frames. Now it fails closed: a folder is a
+// frames folder only when a segment of its out/ path names a measurement-frame run (FRAME_SEG_RE, the names our tools and
+// gate probes write: verify/check/ab shots, out/sim, simpx, pixel runs, px-*/sim*/seek-* gate runs, frames-*), and never
+// inside NEVER_TOP_RE or a deploy tree (a folder holding DEPLOY_MARKERS, or under one, out/ itself included).
+export const NEVER_TOP_RE = /^(cf-review|pages-.*|article.*|people-blink|lead|tryit|archive|pruned-records)$/;
+export const DEPLOY_MARKERS = ['wrangler.jsonc', 'wrangler.toml', '_headers', 'index.html', 'package.json'];
+export const FRAME_SEG_RE = /^(ab|check|sim|simpx|pixels?|pix|png|shots|frames|look|vres|clock)$|^(px|sim|seek)[A-Za-z0-9]*([-_]|$)|^(verify|motion|prelook|frames|simframes|morphframes|fadeframes|pixels|corner|cost|probe|ipad|avatar|deck|shots|switch|stepprobe)-|-(frames|shots|sim|px|raster)$|settle-(sim|chrome)/;
+const deployMarker = (d) => DEPLOY_MARKERS.find((m) => existsSync(join(d, m))) || null;
+
+/**
+ * Why `dir` may not lose frames (a reason), or null when it is a known measurement-frame folder of `outRoot`. Used by the
+ * plan and again by applyPrune just before deleting.
+ */
+export function frameScope(outRoot, dir) {
+  const rel = relative(outRoot, dir);
+  if (!rel || rel.startsWith('..') || isAbsolute(rel)) return `not inside ${outRoot}`;
+  const segs = rel.split(sep);
+  if (NO_FRAMES_TOP.has(segs[0]) || NEVER_TOP_RE.test(segs[0])) return `out/${segs[0]} is never cleaned (I-275)`;
+  if (segs.some((s) => s.startsWith('_pruned') || s === 'pruned-records')) return 'a pruned record folder';
+  for (let i = 0; i <= segs.length; i++) {
+    const d = join(outRoot, ...segs.slice(0, i));
+    const m = deployMarker(d);
+    if (m) return `deploy tree (${['out', ...segs.slice(0, i), m].join('/')})`;
+  }
+  if (!segs.some((s) => FRAME_SEG_RE.test(s))) return 'not a known measurement-frame folder (I-275 allow-list)';
+  return null;
+}
 export const SNAPSHOT_NAME = /^[A-Za-z0-9._-]+-([0-9a-f]{12})$/;
 
 /** Is the automatic run on? (FW_SPACE_AUTOPRUNE=0 turns it off; default on, user T-049 #27.) */
@@ -176,11 +205,16 @@ export function planPrune(opts) {
     const walk = (d, n, top) => {
       let es = []; try { es = readdirSync(d, { withFileTypes: true }); } catch { return; }
       const images = es.filter((e) => e.isFile() && IMAGE_RE.test(e.name)).map((e) => e.name);
-      if (!top && images.length >= MIN_FRAMES) consider('frames', d, 1, { images, why: `${images.length} full-frame image(s); a record and ${Math.min(THUMBS, images.length)} thumbnail(s) stay` });
-      if (n <= 0) return;
+      const marker = DEPLOY_MARKERS.find((m) => es.some((e) => e.name === m));
+      if (!top && images.length >= MIN_FRAMES) {
+        const scope = frameScope(out, d);
+        if (scope) keep('frames', d, scope);
+        else consider('frames', d, 1, { images, why: `${images.length} full-frame image(s); a record and ${Math.min(THUMBS, images.length)} thumbnail(s) stay` });
+      }
+      if (n <= 0 || marker) return; // I-275: nothing under a deploy tree
       for (const e of es) {
-        if (!e.isDirectory() || e.isSymbolicLink() || e.name.startsWith('_pruned')) continue;
-        if (top && NO_FRAMES_TOP.has(e.name)) continue;
+        if (!e.isDirectory() || e.isSymbolicLink() || e.name.startsWith('_pruned') || e.name === 'pruned-records') continue;
+        if (top && (NO_FRAMES_TOP.has(e.name) || NEVER_TOP_RE.test(e.name))) continue;
         const p = join(d, e.name);
         if (profSet.has(p) || isChromeProfile(p)) continue;
         walk(p, n - 1, false);
@@ -250,6 +284,9 @@ export function applyPrune(plan, { by = 'space.mjs', now = Date.now(), thumb = s
       if (existsSync(c.path)) { skip('could not be removed'); continue; }
       record(c, {});
     } else if (c.cls === 'frames') {
+      const outRoot = plan.roots.outs.find((o) => inside(c.path, o));
+      const scope = outRoot ? frameScope(outRoot, c.path) : 'outside every out/';
+      if (scope) { skip(scope); continue; }
       const images = c.images.filter((f) => IMAGE_RE.test(f) && !f.includes('/') && existsSync(join(c.path, f))).sort();
       if (!images.length) { skip('no images left'); continue; }
       const tdir = join(c.path, THUMB_DIR);

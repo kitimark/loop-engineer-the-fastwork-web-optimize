@@ -3,6 +3,7 @@
 //
 //   node tools/space.mjs report [--list <file.tsv>] [--json] [--idle-hours 2] [--scratch <dir>]... [--top 12]
 //   node tools/space.mjs prune [--apply] [--json] [--scratch <dir>]... [--top 12]
+//   node tools/space.mjs restore [--dry-run | --apply] [--json] [--root <out dir>]... [--archive] [--no-git]
 //
 // `report` is READ-ONLY: it measures and lists; it never deletes, moves or changes a file. `prune` alone is a dry run
 // (what would go and why the rest stays); `prune --apply` removes only the auto-clean classes of tools/lib/space-prune.mjs
@@ -10,6 +11,10 @@
 // each unused for a day) and logs every removal with its size to .git/fastwork-mirror/space/prune.log (kept, for the
 // write-up). Never: JSON, Markdown, logs, results, phone records, recordings, cited, fresh or held paths.
 // `idle.mjs watch --by lead` runs the same prune by itself (FW_SPACE_AUTOPRUNE=0 turns that off).
+// `restore` (incident I-275) puts pruned images back from their frames-pruned.json records: the same path in site/, else
+// an exact name + size match in the console store, any checkout's out/, research/ or git history when all candidates
+// have the same content (tools/lib/space-restore.mjs). A dry run unless --apply; --root (default the main checkout's
+// out/) is repeatable; out/archive only with --archive. --apply also moves records out of deploy trees into pruned-records/.
 //
 // Lists, with sizes: (1) throwaway Chrome profiles no running process uses, (2) out/ of finished worktrees (branch
 // has nothing main lacks, or its board row is done / landed / dropped / parked; "check first" when a process still
@@ -24,10 +29,11 @@
 //
 // Paths in the output are local (this Mac only): never paste them into a committed file (CLAUDE.md Hard rule 12).
 import { writeFileSync, mkdirSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { mainCheckout } from './lib/paths.mjs';
-import { buildReport, renderText, renderList, spaceRunRefusalNow, fmtSize } from './lib/space.mjs';
+import { resolve, dirname, join, relative } from 'node:path';
+import { mainCheckout, resolveTree, sharedStateDir } from './lib/paths.mjs';
+import { buildReport, renderText, renderList, spaceRunRefusalNow, fmtSize, worktrees } from './lib/space.mjs';
 import { runPrune, renderPlan, pruneLogFile } from './lib/space-prune.mjs';
+import { planRestore, applyRestore, renderRestore } from './lib/space-restore.mjs';
 import { list as boardRows } from './lib/status.mjs';
 import { exitOnHelp } from './lib/help.mjs';
 
@@ -37,12 +43,12 @@ const cmd = argv[0];
 const opt = (n, d) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[i + 1] : d; };
 const opts = (n) => argv.flatMap((a, i) => (a === `--${n}` ? [argv[i + 1]] : []));
 const flag = (n) => argv.includes(`--${n}`);
-const USAGE = 'usage: node tools/space.mjs report [--list <file.tsv>] [--json] [--idle-hours 2] [--scratch <dir>]... [--top 12]   (read-only)\n       node tools/space.mjs prune [--apply] [--json] [--scratch <dir>]... [--top 12]   (dry run unless --apply)';
+const USAGE = 'usage: node tools/space.mjs report [--list <file.tsv>] [--json] [--idle-hours 2] [--scratch <dir>]... [--top 12]   (read-only)\n       node tools/space.mjs prune [--apply] [--json] [--scratch <dir>]... [--top 12]   (dry run unless --apply)\n       node tools/space.mjs restore [--dry-run | --apply] [--json] [--root <out dir>]... [--archive] [--no-git]   (dry run unless --apply)';
 const die = (m) => { console.error(m); process.exit(2); };
 
-if (!['report', 'prune'].includes(cmd) || flag('help')) die(USAGE);
-const known = new Set(cmd === 'report' ? ['--list', '--json', '--idle-hours', '--scratch', '--top'] : ['--apply', '--json', '--scratch', '--top']);
-const bare = new Set(['--json', '--apply']);
+if (!['report', 'prune', 'restore'].includes(cmd) || flag('help')) die(USAGE);
+const known = new Set(cmd === 'report' ? ['--list', '--json', '--idle-hours', '--scratch', '--top'] : cmd === 'prune' ? ['--apply', '--json', '--scratch', '--top'] : ['--apply', '--dry-run', '--json', '--root', '--archive', '--no-git']);
+const bare = new Set(['--json', '--apply', '--dry-run', '--archive', '--no-git']);
 for (let i = 1; i < argv.length; i++) {
   if (!known.has(argv[i])) die(`unknown argument ${argv[i]}\n${USAGE}`);
   if (!bare.has(argv[i])) { if (argv[i + 1] === undefined) die(`${argv[i]} needs a value\n${USAGE}`); i++; }
@@ -56,6 +62,23 @@ const busy = spaceRunRefusalNow();
 if (busy) { console.error(busy); process.exit(3); }
 
 const scratch = opts('scratch');
+if (cmd === 'restore') {
+  if (flag('apply') && flag('dry-run')) die('--apply and --dry-run exclude each other');
+  const mainRoot = mainCheckout();
+  const outRoots = opts('root').map((r) => resolve(process.cwd(), r));
+  const plan = planRestore({
+    outRoots: outRoots.length ? outRoots : [join(mainRoot, 'out')],
+    siteRoot: resolveTree('site'),
+    searchDirs: [join(sharedStateDir(), 'console'), ...worktrees(mainRoot).map((w) => join(w.path, 'out')), join(mainRoot, 'research')],
+    gitRoot: flag('no-git') ? null : mainRoot,
+    archive: flag('archive'),
+  });
+  const result = flag('apply') ? applyRestore(plan, { gitRoot: mainRoot, by: process.env.FW_AGENT || 'space.mjs', log: (m) => console.error(m) }) : null;
+  const show = (p) => relative(mainRoot, p) || '.';
+  const text = flag('json') ? JSON.stringify({ plan, result }, null, 1) : renderRestore(plan, result, show);
+  await new Promise((r) => process.stdout.write(text + '\n', r)); // a pipe takes 64 KB before exit() would cut it
+  process.exit(result && result.failed.length ? 1 : 0);
+}
 if (cmd === 'prune') {
   const apply = flag('apply');
   const log = (m) => console.error(m);

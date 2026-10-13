@@ -111,3 +111,31 @@ test('idle.mjs check --by lead: the disk alarm posts one thread (no prune in a c
   const c = idle(40);
   assert.match(c.stdout, /^ENDED disk: 40\.0 GB free again; thread T-\d+/m);
 });
+
+test('I-275 restore: usage; a dry run writes nothing; --apply restores from site/ and the console store and moves the deploy-tree record', () => {
+  const home = tempDir('fw-sprune-home-');
+  put(join(home, 'site', 'images', 'logo.png'), 'LOGO');
+  put(join(state, 'console', 'proposals', 'PR-022', 'r1-a-1.png'), 'PROPOSAL');
+  const dir = join(repo.main, 'out', 'pages-export', 'builds', 'images');
+  put(join(repo.main, 'out', 'pages-export', 'index.html'), '<html>');
+  put(join(dir, 'frames-pruned.json'), JSON.stringify({ schema: 'fw-frames-pruned/1', images: [{ name: 'logo.png', bytes: 4 }, { name: 'r1-a-1.png', bytes: 8 }, { name: 'gone.png', bytes: 3 }] }));
+  put(join(dir, '_pruned-thumbs', 'logo.png'), 't');
+  const restore = (...a) => node(join(repo.main, 'tools', 'space.mjs'), ['restore', ...a], { cwd: repo.main, env: env({ FW_MIRROR_HOME: home }), timeout: 120000 });
+  assert.equal(restore('--apply', '--dry-run').code, 2);
+  assert.equal(restore('--scratch', 'x').code, 2, '--scratch is a prune/report option');
+  const dry = restore('--dry-run');
+  assert.equal(dry.code, 0, dry.out);
+  assert.match(dry.stdout, /^RESTORE PLAN \(dry run\): 1 record\(s\)/m);
+  assert.match(dry.stdout, /out\/pages-export\s+1\s+3\s+0\s+1\s+1\s+0\s+1$/m);
+  assert.equal(existsSync(join(dir, 'logo.png')), false);
+  const ap = restore('--apply');
+  assert.equal(ap.code, 0, ap.out);
+  assert.match(ap.stdout, /^RESTORED 2 file\(s\); moved 1 record\(s\) out of deploy trees; failed 0$/m);
+  assert.equal(readFileSync(join(dir, 'logo.png'), 'utf8'), 'LOGO');
+  assert.equal(readFileSync(join(dir, 'r1-a-1.png'), 'utf8'), 'PROPOSAL');
+  assert.deepEqual(readdirSync(dir).sort(), ['logo.png', 'r1-a-1.png']);
+  const moved = join(repo.main, 'out', 'pruned-records', 'pages-export', 'builds', 'images');
+  assert.equal(JSON.parse(readFileSync(join(moved, 'frames-pruned.json'), 'utf8')).origin, 'pages-export/builds/images');
+  assert.ok(existsSync(join(moved, '_pruned-thumbs', 'logo.png')));
+  assert.doesNotMatch(ap.stdout + ap.stderr, /LOGO|PROPOSAL/, 'no file contents printed');
+});
