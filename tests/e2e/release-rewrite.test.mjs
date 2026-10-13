@@ -312,11 +312,11 @@ test('I-269 check.mjs finds secret shapes and private links (kind and path:line 
   const tok = ['gh', 'p_', 'Q7'.repeat(18)].join(''), pem = ['-----BEGIN ', 'PRIVATE KEY-----'].join('');
   w(d, 'docs/a.md', `fine\nuse ${tok} here\n`);
   w(d, 'keys/id.txt', `${pem}\nMIIE\n`);
-  w(d, 'notes/links.md', `a\nb\nhttps://claude.ai/artifact/${ART_ID}\nmedium.com/p/${MED_ID}\n`);
+  w(d, 'notes/links.md', `a\nb\nhttps://claude.ai/artifact/${ART_ID}\nmedium.com/p/${MED_ID}\nsee claude.ai/artifact/${ART_ID} (no scheme)\n`);
   const r = node(CHECK, [d, '--known', k]);
   assert.equal(r.code, 1, r.out);
   assert.deepEqual(r.stdout.trim().split('\n').map((l) => l.replace(/ \(\d+ rules\)$/, '')), ['HIT secret-github docs/a.md:2', 'HIT secret-pem keys/id.txt:1',
-    'HIT link-artifact notes/links.md:3', 'HIT link-medium-draft notes/links.md:4', 'CHECK 4 residual']);
+    'HIT link-artifact notes/links.md:3', 'HIT link-medium-draft notes/links.md:4', 'HIT link-artifact notes/links.md:5', 'CHECK 5 residual']);
   assert.ok(!r.out.includes(tok.slice(4)), 'the secret is not printed');
   const repo = join(d, 'r');
   mkdirSync(repo);

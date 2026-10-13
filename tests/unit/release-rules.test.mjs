@@ -185,6 +185,39 @@ test('I-269 link rules: claude.ai artifact and Medium draft links to placeholder
   // the same regexes in Python's bytes re (filter-repo): checked end to end in tests/e2e/release-rewrite.test.mjs
 });
 
+test('I-270 link-artifact: a claude.ai artifact link without a scheme is scrubbed too, to the https token; not inside a longer host', () => {
+  const rs = rules();
+  const id = fake('Ab1Cd2Ef3', 'Gh4Ij5Kl6Mn7');
+  const text = `plan claude.ai/artifact/${id}, (claude.ai/code/artifact/${id})\n"claude.ai/artifact/${id}" and <claude.ai/artifact/${id}>\n`
+    + `kept: myclaude.ai/artifact/${id} x.claude.ai/artifact/${id} claude.ai/artifact/123e4567-e89b-12d3-a456-426614174000\n`;
+  const T = 'https://claude.ai/artifact/<private-artifact>';
+  const { text: out, hits } = R.scrubText(text, rs);
+  assert.equal(out, `plan ${T}, (${T})\n"${T}" and <${T}>\n`
+    + `kept: myclaude.ai/artifact/${id} x.claude.ai/artifact/${id} claude.ai/artifact/123e4567-e89b-12d3-a456-426614174000\n`);
+  assert.deepEqual(hits, [{ id: 'link-artifact', count: 4 }]);
+  assert.deepEqual(R.scanText(text, rs).map((h) => `${h.id}:${h.line}`), ['link-artifact:1', 'link-artifact:2']);
+  assert.equal(R.scrubText(out, rs).text, out, 'idempotent');
+  assert.equal(R.scrubText(`see https://claude.ai/artifact/${id}`, rs).text, `see ${T}`, 'with a scheme as before');
+});
+
+test('I-270 the regex rules in Python\'s bytes re (filter-repo --replace-text) replace exactly what the JS rules do', (t) => {
+  const rs = rules();
+  const id = fake('Ab1Cd2Ef3', 'Gh4Ij5Kl6Mn7');
+  const text = `plan claude.ai/artifact/${id} and https://claude.ai/code/artifact/${id}; myclaude.ai/artifact/${id} x.claude.ai/artifact/${id}\n`
+    + `claude.ai/artifact/123e4567-e89b-12d3-a456-426614174000 draft medium.com/p/${fake('1a2b3c', '4d5e6f')}/edit\n`
+    + 'at /Users/zzother/x and 10.77.3.42, 10-77-3-9, 10%2E77%2E3%2E8\n';
+  const expr = R.filterRepoExpressions(rs).trimEnd().split('\n').filter((l) => l.startsWith('regex:')).map((l) => l.slice(6).split('==>'));
+  // filter-repo: re.compile(regex bytes), then sub(replacement bytes) in the file's order
+  const py = spawnSync('python3', ['-I', '-c', 'import json,re,sys\nd=json.load(sys.stdin)\nb=d["text"].encode()\n'
+    + 'for m, r in d["expr"]:\n  b=re.compile(m.encode()).sub(r.encode(), b)\nsys.stdout.write(b.decode())'],
+  { input: JSON.stringify({ text, expr }), encoding: 'utf8' });
+  if (py.error) return t.skip('no python3');
+  assert.equal(py.status, 0, py.stderr);
+  const js = rs.filter((r) => r.kind === 'regex').reduce((s, r) => s.replace(new RegExp(r.match, 'g'), r.token), text);
+  assert.equal(py.stdout, js);
+  assert.match(py.stdout, /^plan https:\/\/claude\.ai\/artifact\/<private-artifact> and https:\/\/claude\.ai\/artifact\/<private-artifact>; myclaude/);
+});
+
 test('I-269 scrubAll: literals in any letter case (text and bytes), then the regexes; redactSecrets: markers no shape matches', () => {
   const rs = rules();
   const { text, hits } = R.scrubAll('ZQHOME and ZqHome at /Users/zqhome/x, ZED\'S IPHONE 99, 10.77.3.4\n', rs);

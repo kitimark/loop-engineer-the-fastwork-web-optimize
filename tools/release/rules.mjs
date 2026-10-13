@@ -145,8 +145,10 @@ export function buildRules(known, { home = homedir() } = {}) {
   });
   // private links, anchored to their host: a claude.ai artifact, a Medium draft (a published post's slug URL stays).
   // Artifact ids in the history are 22 characters (OBSERVED, 2026-10-13); the tests' made-up ids are shorter or the
-  // RFC 4122 example UUID 123e4567-e89b-12d3-a456-…, and stay, so the released tests still pass (as with the LAN net)
-  rules.push({ kind: 'regex', match: 'https?://claude\\.ai/(?:code/)?artifact/(?!(?i:123e4567-e89b-12d3-a456-))[A-Za-z0-9_-]{16,}', token: 'https://claude.ai/artifact/<private-artifact>', id: 'link-artifact' });
+  // RFC 4122 example UUID 123e4567-e89b-12d3-a456-…, and stay, so the released tests still pass (as with the LAN net).
+  // The scheme is optional ("claude.ai/artifact/<id>" in prose and threads), so the host is anchored: nothing word-like
+  // or a dot right before it (not "myclaude.ai", not "x.claude.ai"); the token always takes the https form
+  rules.push({ kind: 'regex', match: '(?:https?://)?(?<![A-Za-z0-9_.])claude\\.ai/(?:code/)?artifact/(?!(?i:123e4567-e89b-12d3-a456-))[A-Za-z0-9_-]{16,}', token: 'https://claude.ai/artifact/<private-artifact>', id: 'link-artifact' });
   rules.push({ kind: 'regex', match: '\\bmedium\\.com/p/[0-9a-f]{6,}(?:/edit)?(?![A-Za-z0-9_-])', token: 'medium.com/p/<draft>', id: 'link-medium-draft' });
   assertNoHexRule(rules);
   Object.defineProperty(rules, 'allow', { value: k.allow.map((a) => ({ path: globToRegExp(a.path), pattern: new RegExp(`^(?:${a.pattern})$`) })), enumerable: false });
