@@ -90,6 +90,29 @@ Why inline writes rather than dropping `inherits: false` (the lead's preference)
       anti-aliasing of the panel clock under the panel's scale, and likely a C-vs-baseline difference rather than
       part of this fix. That attribution rests on Chrome only (fixed C vs C is 0 px there); there is no WebKit C-vs-M
       frame at these m with live children to compare, so on WebKit it is OBSERVED, cause unknown.
+- Mid-tween time series (after landing, review point: at open + 0.25 s earn opacity 1 in B vs 0.786 in M):
+  `gates/tween-series-sim.mjs B,M,C,B2,M2`, `out/morph-inherit/series-2026-10-03T14-20-45-448Z` (fix-nav-morph-main
+  checkout), read with `gates/tween-series-read.mjs`. Per rAF frame from the wheel dispatch: header m, each child's
+  computed `--morph`, x, width, opacity.
+  - Everything `--morph` maps directly matches B at the same m: the children's `--morph` (0 difference), logo x
+    (≤ 0.25 px on open), panel opacity (≤ 0.07, at the first tween frame).
+  - The earn button differs in time. Its opacity and max-width / padding are CSS transitions (opacity 0.32 s after a
+    0.12 s delay, max-width 0.68 s) toward targets that reach 0 once m ≥ 0.2 (`--earn-out` = m / 0.2), so the fade is
+    anchored to the frame where m first reaches 0.2, not to m.
+
+    | open tween | B | B2 | M | M2 | C (stale kids) |
+    |---|---|---|---|---|---|
+    | first frame with m ≥ 0.2, ms after dispatch | 117 | 123 | 70 | 67 | 68 |
+    | m on the frame before it | 0.018 | 0.048 | 0.073 | 0.077 | 0.077 |
+    | first earn opacity < 0.99, ms after that frame | ≤ 249 (no sample 231-366) | 151 | 144 | 140 | never |
+    | earn width < 78 px, ms after that frame | 249 | 277 | 216 | 222 | never |
+
+    In the Simulator the baseline's second tween frame comes ~110 ms after the first, C's and M's ~50 ms after
+    (st6-rb2, not this fix; Simulator ms are not judged, F-084). So M's earn fade starts ~50 ms earlier and is
+    further along at a given time or m (opacity 0.79-0.81 at m 0.75 vs B2 0.97 at m 0.78; at most 0.25 apart at the
+    same time). Measured from the anchoring frame, the opacity fade starts after the same 140-151 ms in B2, M and M2;
+    width is 40-60 ms earlier in M (the first frame's smaller m in B retargets the max-width transition from a
+    different point). OBSERVED, Simulator, in our setup; the phone check (P-085) decides whether it shows on the device.
 
 (b) Chrome (headless 430x932 DPR 3), `gates/reveal-frames.mjs --builds C,M,C2`,
 `out/f3r/frames-2026-10-03T14-00-03-524Z`:
@@ -157,6 +180,8 @@ refuses any build whose hashes differ from the ones measured. Each gate script's
 - `gates/reveal-sim-frames.mjs` (gate a) / `gates/reveal-frames.mjs` (gate b) / `gates/reveal-diff.py --ref`: frozen
   frames.
 - `gates/tween-paint-sim.mjs` C / M, `gates/tween-paint-read.mjs`: gate (c), WebKit counts.
+- `gates/tween-series-sim.mjs` B / M / C, `gates/tween-series-read.mjs`: per-frame child state through an open and
+  close tween (user path).
 
 Provenance: the data above were taken with the same scripts in `fixes/nav-morph/` (fix-nav-morph's F3 branch, commit
 28c36e2), which also carried F3 #4 prototype arms; the copies here drop those arms and write to `out/morph-inherit/`.
