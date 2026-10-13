@@ -1,22 +1,29 @@
 // tools/release/check.mjs: the release's fail-closed residual check (I-269; memory/public-release.md).
-//   node tools/release/check.mjs <dir|bare.git> [--known <file>]
+//   node tools/release/check.mjs <dir|bare.git> [--known <file>] [--source <repo>]
 // Scans everything for the scrub rules (tools/release/rules.mjs, built from the known values file, default
-// ~/.cache/fw-release/known.json or $FW_RELEASE_KNOWN):
+// ~/.cache/fw-release/known.json or $FW_RELEASE_KNOWN; a file with no literals, or with neither a <user> literal nor
+// a LAN prefix, is refused):
 //   - a directory: every file's bytes and every file and directory name (symlinks: their target text, never followed);
 //     a `.git` inside it is scanned as a git repo (below), not as raw files;
 //   - a git dir (bare, or a checkout's .git): every object in its object store, reachable or not: every blob, every
-//     commit and tag message and header line (but the author, committer and tagger lines: the user keeps their name;
-//     `encoding`, `mergetag`, `gpgsig` and the tag name are scanned), every tree entry name, and every ref name.
+//     commit and tag message and header line, every tree entry name, and every ref name. Author, committer and tagger
+//     lines naming an identity of --source's history are kept (the user keeps their name and email); any other
+//     identity is a hit `identity-unknown`. Without --source every identity line is scanned like the rest.
+// Besides the scrub rules it looks for generic secret shapes (rules.mjs SECRET_SHAPES: GitHub tokens, sk- keys, AWS
+// key ids, Bearer tokens, PEM private keys, key/token/secret values with 24+ base64 chars), reported as
+// `secret-<kind>` and never replaced. The known file's `allow` entries (path glob + full-match pattern) cover
+// known-safe fixtures: a file by its path, a blob only when the entry covers every path the blob has in the history.
 // Binary files and blobs (a NUL in the first 8 KiB, filter-repo's test) are scanned as bytes for the literal values
 // only. Literals match in any ASCII letter case.
-// Output: "CHECK 0 residual", exit 0; or one line per hit "HIT <rule-id> <path>:<line>" then "CHECK <n> residual",
-// exit 1. Git hits name `<path>@<blob10>`, `commit@<sha10>`, `tag@<sha10>`, `tree@<sha10>/<name>` or `ref@<name>`; any
-// printed name has its matches replaced by their tokens, so no value is ever printed. Exit 2: usage or a bad known file.
+// Output: "CHECK 0 residual (<r> rules)", exit 0; or one line per hit "HIT <rule-id> <path>:<line>" then
+// "CHECK <n> residual (<r> rules)", exit 1. Git hits name `<path>@<blob10>`, `commit@<sha10>`, `tag@<sha10>`,
+// `tree@<sha10>/<name>` or `ref@<name>`; any printed name has its matches replaced by their tokens, so no value is
+// ever printed. Exit 2: usage, a bad known file or a --source that is no git repo.
 import { readdirSync, lstatSync, readFileSync, readlinkSync, existsSync, statSync } from 'node:fs';
 import { join, resolve, relative } from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
 import { exitOnHelp, isMain } from '../lib/help.mjs';
-import { loadKnown, buildRules, scanText, safeText, tildify } from './rules.mjs';
+import { loadKnown, buildRules, scanText, safeText, tildify, withSecrets } from './rules.mjs';
 
 exitOnHelp(import.meta.url);
 
@@ -102,17 +109,48 @@ export function eachObject(gitDir, onObject) {
   });
 }
 
-/** Scan a git dir: every blob, commit/tag message, tree entry name and ref name. hit(id, where, line). */
-export async function checkGit(gitDir, rules, hit) {
+/** "Name <email>" of every author, committer and tagger in a git dir's history (all refs and reflogs). */
+export function identitiesOf(gitDir) {
+  const git = (...a) => execFileSync('git', ['--git-dir', gitDir, ...a], { encoding: 'utf8', maxBuffer: 2 ** 31, env: gitEnv(), stdio: ['ignore', 'pipe', 'pipe'] });
+  const ids = new Set();
+  try { for (const l of git('log', '--all', '--reflog', '--format=%an <%ae>%x00%cn <%ce>').split('\n')) for (const x of l.split('\0')) if (x) ids.add(x); } catch {}
+  try { for (const l of git('for-each-ref', 'refs/tags', '--format=%(taggername) %(taggeremail)').split('\n')) if (/<.*>$/.test(l)) ids.add(l.trim()); } catch {}
+  return ids;
+}
+
+/** Every path each blob has in any commit of the history: blob oid -> [paths] (`log --raw -m --root`, all refs). */
+function blobPaths(git) {
+  const paths = new Map();
+  const add = (oid, p) => { const l = paths.get(oid); if (!l) paths.set(oid, [p]); else if (!l.includes(p)) l.push(p); };
+  let out = '';
+  try { out = git('log', '--all', '--reflog', '--raw', '-z', '--no-renames', '--no-abbrev', '-m', '--root', '--format='); } catch { return paths; }
+  const f = out.split('\0');
+  for (let i = 0; i < f.length; i++) {
+    const m = f[i].match(/^\n*:\d+ \d+ [0-9a-f]+ ([0-9a-f]+) [A-Z]/);
+    if (m) { if (!/^0+$/.test(m[1])) add(m[1], Buffer.from(f[i + 1] ?? '', 'latin1').toString('utf8')); i++; }
+  }
+  return paths;
+}
+
+const IDENT = /^(author|committer|tagger) (.*>) \d+ [+-]\d{4}$/;
+
+/**
+ * Scan a git dir: every blob, commit/tag message and header line, tree entry name and ref name. hit(id, where, line).
+ * opts.identities (a Set of "Name <email>", e.g. identitiesOf(<source repo>)): author/committer/tagger lines naming
+ * one of them are kept unscanned (the user keeps their identity); any other identity is a hit `identity-unknown`
+ * and is scanned. Without it every identity line is scanned like the rest.
+ */
+export async function checkGit(gitDir, rules, hit, { identities = null } = {}) {
   const git = (...a) => execFileSync('git', ['--git-dir', gitDir, ...a], { encoding: 'latin1', maxBuffer: 2 ** 31, env: gitEnv(), stdio: ['ignore', 'pipe', 'pipe'] });
   const show = (s) => safeText(s, rules);
-  const pathOf = new Map();   // blob oid -> the first path naming it (reachable blobs; the others print "(unreachable)")
+  const paths = blobPaths(git);   // reachable blobs; an unreachable one prints "(unreachable)" and no allow entry applies
   try {
     for (const l of git('rev-list', '--objects', '--all', '--reflog').split('\n')) {
       const i = l.indexOf(' ');
-      if (i > 0 && !pathOf.has(l.slice(0, i))) pathOf.set(l.slice(0, i), Buffer.from(l.slice(i + 1), 'latin1').toString('utf8'));
+      if (i > 0 && !paths.has(l.slice(0, i))) paths.set(l.slice(0, i), [Buffer.from(l.slice(i + 1), 'latin1').toString('utf8')]);
     }
   } catch { /* an empty repo has no revisions */ }
+  const allow = rules.allow || [];
   let oidBytes = 20;
   try { if (git('rev-parse', '--show-object-format').trim() === 'sha256') oidBytes = 32; } catch {}
   let objects = 0;
@@ -120,52 +158,64 @@ export async function checkGit(gitDir, rules, hit) {
     objects++;
     const o10 = oid.slice(0, 10);
     if (type === 'blob') {
-      const path = pathOf.get(oid) ?? '(unreachable)';
-      for (const h of scanText(data, rules, { path, literalsOnly: isBinary(data) })) hit(h.id, `${show(path)}@${o10}`, h.line);
+      const ps = paths.get(oid) || [];
+      const path = ps[0] ?? '(unreachable)';
+      // an allow entry covers a blob only when it covers every path the blob has
+      const here = ps.length ? allow.filter((a) => ps.every((p) => a.path.test(p))) : [];
+      for (const h of scanText(data, rules, { path, allow: here, literalsOnly: isBinary(data) })) hit(h.id, `${show(path)}@${o10}`, h.line);
     } else if (type === 'commit' || type === 'tag') {
       const end = data.indexOf('\n\n');
       const head = end < 0 ? data : data.subarray(0, end), body = end < 0 ? Buffer.alloc(0) : data.subarray(end + 2);
       const headLines = head.toString('latin1').split('\n');
-      // every header line but the identities (kept by the user's choice): a tag's name, encoding, mergetag, gpgsig
       headLines.forEach((l, i) => {
-        if (/^(author|committer|tagger) /.test(l)) return;
-        for (const h of scanText(Buffer.from(l, 'latin1'), rules)) hit(h.id, `${type}@${o10}`, i + 1);
+        const m = l.match(IDENT);
+        if (m && identities) {
+          if (identities.has(Buffer.from(m[2], 'latin1').toString('utf8'))) return;
+          hit('identity-unknown', `${type}@${o10}`, i + 1);
+        }
+        for (const h of scanText(Buffer.from(l, 'latin1'), rules, { allow: [] })) hit(h.id, `${type}@${o10}`, i + 1);
       });
-      for (const h of scanText(body, rules)) hit(h.id, `${type}@${o10}`, h.line + headLines.length + 1);
+      for (const h of scanText(body, rules, { allow: [] })) hit(h.id, `${type}@${o10}`, h.line + headLines.length + 1);
     } else if (type === 'tree') {
       for (let i = 0; i < data.length;) {
         const sp = data.indexOf(32, i), nul = sp < 0 ? -1 : data.indexOf(0, sp);
         if (nul < 0) break;
         const name = data.subarray(sp + 1, nul);
-        for (const h of scanText(name, rules, { path: name.toString('utf8') })) hit(h.id, `tree@${o10}/${show(name.toString('utf8'))}`, 0);
+        for (const h of scanText(name, rules, { allow: [] })) hit(h.id, `tree@${o10}/${show(name.toString('utf8'))}`, 0);
         i = nul + 1 + oidBytes;
       }
     }
   });
   let refs = '';
   try { refs = git('for-each-ref', '--format=%(refname)'); } catch {}
-  for (const r of refs.split('\n').filter(Boolean)) for (const h of scanText(Buffer.from(r, 'latin1'), rules)) hit(h.id, `ref@${show(r)}`, 0);
+  for (const r of refs.split('\n').filter(Boolean)) for (const h of scanText(Buffer.from(r, 'latin1'), rules, { allow: [] })) hit(h.id, `ref@${show(r)}`, 0);
   return objects;
 }
 
-/** Check a dir or a git dir; returns {hits:[{id, where, line}]}. */
-export async function check(target, rules) {
+/**
+ * Check a dir or a git dir for the rules and the secret shapes; returns {hits:[{id, where, line}], rules: <count>}.
+ * opts.identities: see checkGit (used for a git dir target only).
+ */
+export async function check(target, scrubRules, { identities = null } = {}) {
+  const rules = scrubRules.some((r) => r.id.startsWith('secret-')) ? scrubRules : withSecrets(scrubRules);
   const hits = [];
   const hit = (id, where, line) => hits.push({ id, where, line });
-  if (isGitDir(target)) await checkGit(target, rules, hit);
+  if (isGitDir(target)) await checkGit(target, rules, hit, { identities });
   else await checkDir(target, rules, hit);
-  return { hits };
+  return { hits, rules: rules.length };
 }
 
-export function formatHits(hits) {
-  return [...hits.map((h) => `HIT ${h.id} ${h.where}:${h.line}`), `CHECK ${hits.length} residual`].join('\n') + '\n';
+/** HIT lines, then "CHECK <n> residual (<r> rules)". */
+export function formatHits(hits, nRules) {
+  return [...hits.map((h) => `HIT ${h.id} ${h.where}:${h.line}`), `CHECK ${hits.length} residual (${nRules} rules)`].join('\n') + '\n';
 }
 
 async function main(argv) {
   const pos = [], opt = {};
-  const usage = 'usage: check.mjs <dir|bare.git> [--known <file>]';
+  const usage = 'usage: check.mjs <dir|bare.git> [--known <file>] [--source <repo>]';
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--known') opt.known = argv[++i];
+    else if (argv[i] === '--source') opt.source = argv[++i];
     else if (argv[i].startsWith('--')) { console.error(`${usage} (unknown option ${argv[i]})`); return 2; }
     else pos.push(argv[i]);
   }
@@ -173,9 +223,15 @@ async function main(argv) {
   let rules;
   try { rules = buildRules(loadKnown(opt.known)); } catch (e) { console.error(`CHECK refused: ${e.message}`); return 2; }
   const target = resolve(pos[0]);
+  let identities = null;
+  if (opt.source) {
+    let gd;
+    try { gd = resolve(opt.source, execFileSync('git', ['-C', opt.source, 'rev-parse', '--git-common-dir'], { encoding: 'utf8', env: gitEnv(), stdio: ['ignore', 'pipe', 'pipe'] }).trim()); } catch { console.error(`CHECK refused: --source ${safeText(tildify(resolve(opt.source)), rules)} is not a git repo`); return 2; }
+    identities = identitiesOf(gd);
+  }
   let res;
-  try { res = await check(target, rules); } catch (e) { console.error(`CHECK failed on ${tildify(target)}: ${safeText(e.message, rules)}`); return 1; }
-  process.stdout.write(formatHits(res.hits));
+  try { res = await check(target, rules, { identities }); } catch (e) { console.error(`CHECK failed on ${tildify(target)}: ${safeText(e.message, rules)}`); return 1; }
+  process.stdout.write(formatHits(res.hits, res.rules));
   return res.hits.length ? 1 : 0;
 }
 

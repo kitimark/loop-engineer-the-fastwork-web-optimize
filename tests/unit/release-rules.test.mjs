@@ -46,6 +46,10 @@ test('I-269 loadKnown: reads a private file outside any repo; refuses others-rea
     [{ literals: [{ value: 'zqhome', token: '<a>' }, { value: 'zqhome', token: '<b>' }] }, /repeats literals\[0\]/],
     [{ lanPrefixes: ['10.300.1'] }, /lanPrefixes\[0\]/],
     [{ allow: [{ path: 'x', pattern: '(' }] }, /allow\[0\] pattern/],
+    // fail-closed (review of 10cd1810): an empty file, or one with neither a <user> literal nor a LAN prefix
+    [{}, /no literals/],
+    [{ literals: [], lanPrefixes: ['10.1.2'] }, /no literals/],
+    [{ literals: [{ value: 'abcdx', token: '<x>' }] }, /neither a "<user>" literal nor a LAN prefix/],
   ]) {
     let msg = '';
     try { R.loadKnown(knownFile(k)); } catch (e) { msg = e.message; }
@@ -56,7 +60,8 @@ test('I-269 loadKnown: reads a private file outside any repo; refuses others-rea
 
 test('I-269 buildRules: literals longest first, the generic /Users/<home> and LAN rules, none can match bare hex', () => {
   const rs = rules();
-  assert.deepEqual(rs.map((r) => r.kind), ['literal', 'literal', 'literal', 'literal', 'regex', 'regex']);
+  assert.deepEqual(rs.map((r) => r.kind), ['literal', 'literal', 'literal', 'literal', 'regex', 'regex', 'regex', 'regex', 'regex', 'regex']);
+  assert.deepEqual(rs.slice(4).map((r) => r.id), ['users-home', 'lan0', 'lan0-dash', 'lan0-pct', 'link-artifact', 'link-medium-draft']);
   assert.deepEqual(rs.slice(0, 4).map((r) => r.match.length), [22, 15, 12, 6]);
   for (const r of rs) {
     assert.match(r.id, /^[a-z0-9-]+$/);
@@ -65,7 +70,7 @@ test('I-269 buildRules: literals longest first, the generic /Users/<home> and LA
   }
   const users = rs.find((r) => r.id === 'users-home');
   assert.equal(users.token, '/Users/<user>');
-  assert.equal(rs.filter((r) => r.id.startsWith('lan')).length, 1, '192.168.0 is the replacement net itself: no rule');
+  assert.equal(rs.filter((r) => r.id.startsWith('lan')).length, 3, '192.168.0 is the replacement net itself: no rule');
   // the trial's hazard: a rule that eats commit SHAs
   assert.throws(() => R.assertNoHexRule([{ kind: 'regex', match: '[0-9a-f]{8}', id: 'bad' }]), /can match bare hex/);
   assert.throws(() => R.assertNoHexRule([{ kind: 'literal', match: 'cafe1234', id: 'bad' }]), /bare hex/);
@@ -79,6 +84,9 @@ test('I-269 scrubText: values to tokens, home paths, LAN /24 -> 192.168.0.N keep
   const text = "cd /Users/zqhome/src && ssh zq.person@mail.invalid\nZed's iPhone 99 at 10.77.3.42 and 10.77.3.7, not 110.77.3.4\n/Users/zzother/x /Users/zzotherx /Users/Shared\nzq-tunnel-77.workers.dev\n";
   const { text: out, hits } = R.scrubText(text, rs);
   assert.equal(out, 'cd /Users/<user>/src && ssh <email>\n<device-name> at 192.168.0.42 and 192.168.0.7, not 110.77.3.4\n/Users/<user>/x /Users/zzotherx /Users/Shared\n<subdomain>.workers.dev\n');
+  // the same LAN address as a host name and URL-encoded
+  assert.equal(R.scrubText('http://10-77-3-42.nip.io/ and http%3A%2F%2F10%2E77%2e3%2E9%3A5200 not 110-77-3-4\n', rs).text,
+    'http://192-168-0-42.nip.io/ and http%3A%2F%2F192%2E168%2E0%2E9%3A5200 not 110-77-3-4\n');
   const by = Object.fromEntries(hits.map((h) => [h.id, h.count]));
   assert.equal(by['lit0-user'], 1);
   assert.equal(by['users-home'], 1);
@@ -104,11 +112,89 @@ test('I-269 scanText: rule ids and 1-based lines, never values; literals in any 
 
 test('I-269 filterRepoExpressions: literal and regex lines for filter-repo (Python \\1 groups)', () => {
   const lines = R.filterRepoExpressions(rules()).trimEnd().split('\n');
-  assert.equal(lines.length, 6);
+  assert.equal(lines.length, 10);
   assert.equal(lines[0], 'literal:zq.person@mail.invalid==><email>');
   assert.ok(lines.every((l) => /^(literal|regex):/.test(l) && l.split('==>').length === 2));
-  assert.match(lines.at(-1), /^regex:\\b10\\\.77\\\.3\\\.\(\\d\{1,3\}\)\\b==>192\.168\.0\.\\1$/);
+  assert.match(lines[5], /^regex:\\b10\\\.77\\\.3\\\.\(\\d\{1,3\}\)\\b==>192\.168\.0\.\\1$/);
   assert.equal(R.globToRegExp('tests/**').test('tests/a/b.mjs'), true);
   assert.equal(R.globToRegExp('tests/*.mjs').test('tests/a/b.mjs'), false);
   assert.equal(R.globToRegExp('tests/').test('tests/a/b.mjs'), true);
+});
+
+// samples are built at run time, so this file holds no secret shape itself (the release's check scans it too)
+const fake = (...parts) => parts.join('');
+const X = (n, c = 'Q7') => c.repeat(Math.ceil(n / c.length)).slice(0, n);
+
+test('I-269 secret shapes: each kind found as secret-<kind> with its line, near misses and bare hex not; allow kept', () => {
+  const rs = R.withSecrets(rules());
+  assert.equal(rs.allow.length, 2, 'the known allow list rides along');
+  R.assertNoHexRule(rs);
+  const samples = {
+    'secret-github': [fake('gh', 'p_', X(36)), fake('gh', 'o_', X(36)), fake('github', '_pat_', X(40, 'a_1'))],
+    'secret-sk': [fake('s', 'k-', X(32)), fake('s', 'k-ant-', X(30, 'a-1'))],
+    'secret-aws': [fake('AK', 'IA', X(16, 'Z9')), fake('AS', 'IA', X(16, 'Z9'))],
+    'secret-bearer': [fake('Authorization: Bea', 'rer ', X(24, 'a.B-'))],
+    'secret-pem': [fake('-----BEGIN ', 'PRIVATE KEY-----'), fake('-----BEGIN RSA ', 'PRIVATE KEY-----'), fake('-----BEGIN OPENSSH ', 'PRIVATE KEY-----')],
+    'secret-kv': [fake('api_ke', 'y=', X(24, 'aZ+/'), '=='), fake('TOK', 'EN=', X(30)), fake('client_sec', 'ret=', X(40)), fake('api_key', ': ', X(30)), fake('{"tok', 'en": "', X(28), '"}'), fake("SECRET", "='", X(26), "'")],
+  };
+  for (const [id, list] of Object.entries(samples)) {
+    for (const s of list) assert.deepEqual(R.scanText(`ok\nx ${s} y\n`, rs), [{ id, line: 2 }], `${id} finds its sample`);
+  }
+  const near = [fake('gh', 'p_', X(10)), fake('s', 'k-', X(12)), fake('desk-', X(30)), fake('AK', 'IA', X(10, 'Z9')), 'Bearer of bad news',
+    '-----BEGIN PUBLIC KEY-----', '-----BEGIN CERTIFICATE-----', fake('ke', 'y=', X(20)), 'token=short', 'see 0123456789abcdef0123456789abcdef01234567'];
+  assert.deepEqual(R.scanText(near.join('\n'), rs), [], 'near misses and SHAs are not secrets');
+  // secrets are found, not replaced: buildRules (the rewrite's rules) carries none of them
+  assert.ok(!rules().some((r) => r.id.startsWith('secret-')));
+  // an allow entry (path glob + full-match pattern) skips a known-safe fixture, only there
+  const known = { ...KNOWN, allow: [...KNOWN.allow, { path: 'tests/fixtures/**', pattern: fake('gh', 'p_', '(?:Q7)+') }] };
+  const ra = R.withSecrets(R.buildRules(known, { home: HOME }));
+  const tok = fake('gh', 'p_', X(36));
+  assert.deepEqual(R.scanText(tok, ra, { path: 'tests/fixtures/a.mjs' }), []);
+  assert.deepEqual(R.scanText(tok, ra, { path: 'tools/a.mjs' }), [{ id: 'secret-github', line: 1 }]);
+});
+
+test('I-269 link rules: claude.ai artifact and Medium draft links to placeholders; published Medium posts and bare hex stay', () => {
+  const rs = rules();
+  const text = [
+    // samples built at run time: this file holds no private-link shape itself (the release scrubs it too)
+    `see https://claude.ai/artifact/${fake('0a1b2c3d-4e5f-6789', '-abcd-ef0123456789')} and http://claude.ai/code/artifact/${fake('Ab_9-xY8z', 'W7vU6tS5rQ')}`,
+    `draft https://medium.com/p/${fake('1a2b3c', '4d5e6f')}/edit, also medium.com/p/${fake('abcdef', '012345')}.`,
+    'post https://medium.com/@someone/how-we-made-it-smooth-1a2b3c4d5e6f stays',
+    'sha 1a2b3c4d5e6f 0123456789abcdef0123456789abcdef01234567 stays',
+  ].join('\n');
+  const { text: out, hits } = R.scrubText(text, rs);
+  assert.equal(out, [
+    'see https://claude.ai/artifact/<private-artifact> and https://claude.ai/artifact/<private-artifact>',
+    'draft https://medium.com/p/<draft>, also medium.com/p/<draft>.',
+    'post https://medium.com/@someone/how-we-made-it-smooth-1a2b3c4d5e6f stays',
+    'sha 1a2b3c4d5e6f 0123456789abcdef0123456789abcdef01234567 stays',
+  ].join('\n'));
+  assert.deepEqual(Object.fromEntries(hits.map((h) => [h.id, h.count])), { 'link-artifact': 2, 'link-medium-draft': 2 });
+  assert.deepEqual(R.scanText(text, rs).map((h) => h.id + ':' + h.line), ['link-artifact:1', 'link-medium-draft:2']);
+  assert.deepEqual(R.scanText(out, rs), [], 'the placeholders do not match again');
+  assert.equal(R.scrubText(out, rs).text, out, 'idempotent');
+  // made-up ids the repo's own tests use stay, so the released tests pass: short ones and the RFC 4122 example UUID
+  const fixtures = 'https://claude.ai/artifact/abcdef12 https://claude.ai/code/artifact/AbC_de-12345 '
+    + 'https://claude.ai/code/artifact/123E4567-E89B-12D3-A456-426614174000 https://claude.ai/artifact/123e4567-e89b-12d3-a456-42661417400';
+  assert.equal(R.scrubText(fixtures, rs).text, fixtures);
+  // the same regexes in Python's bytes re (filter-repo): checked end to end in tests/e2e/release-rewrite.test.mjs
+});
+
+test('I-269 scrubAll: literals in any letter case (text and bytes), then the regexes; redactSecrets: markers no shape matches', () => {
+  const rs = rules();
+  const { text, hits } = R.scrubAll('ZQHOME and ZqHome at /Users/zqhome/x, ZED\'S IPHONE 99, 10.77.3.4\n', rs);
+  assert.equal(text, '<user> and <user> at /Users/<user>/x, <device-name>, 192.168.0.4\n');
+  assert.deepEqual(Object.fromEntries(hits.map((h) => [h.id, h.count])), { 'lit0-user': 3, 'lit1-device-name': 1, lan0: 1 });
+  assert.deepEqual(R.scanText(text, rs), []);
+  const b = R.scrubAll(Buffer.from('\0ZQHOME é'), rs, { literalsOnly: true });
+  assert.ok(Buffer.isBuffer(b.text));
+  assert.equal(b.text.toString('utf8'), '\0<user> é');
+  const tok = fake('gh', 'p_', X(36)), pem = fake('-----BEGIN ', 'PRIVATE KEY-----');
+  const rsa = (k) => fake('-----', k, ' RSA ', 'PRIVATE KEY-----');
+  const kv = fake('api_tok', 'en=', X(30));
+  const red = R.redactSecrets(`a ${tok} b\n${pem}\nMIIEbody\nmore\n${fake('-----END ', 'PRIVATE KEY-----')}\nafter ${kv}\n${rsa('BEGIN')}\nbody\n${rsa('END')}\n${pem}\nno end`);
+  assert.equal(red.text, 'a [secret omitted: secret-github] b\n[secret omitted: secret-pem]\nafter api_token=[secret omitted: secret-kv]\n'
+    + '[secret omitted: secret-pem]\n[secret omitted: secret-pem]', 'a PEM block goes whole (to its END line or the end), a key keeps its name');
+  assert.deepEqual(red.hits, [{ id: 'secret-github', count: 1 }, { id: 'secret-pem', count: 3 }, { id: 'secret-kv', count: 1 }]);
+  assert.deepEqual(R.scanText(red.text, R.withSecrets(rs)), [], 'the markers match no shape');
 });

@@ -5,10 +5,14 @@
 //                                 "allow":[{"path":"tests/…","pattern":"192\\.168\\.0\\.\\d+"}]}
 //   buildRules(known)            -> [{kind:'literal'|'regex', match, token, id}] (literals longest first, then the
 //                                generic rules: /Users/<home> -> /Users/<user>, every LAN /24 -> 192.168.0.N keeping
-//                                the last octet); refuses a rule that can match bare hex (it would eat commit SHAs)
+//                                the last octet, claude.ai artifact links and Medium draft links -> placeholders);
+//                                refuses a rule that can match bare hex (it would eat commit SHAs)
 //   scrubText(text, rules)       -> {text, hits:[{id,count}]}: literals exactly, then regexes (filter-repo's order)
 //   scanText(text, rules, {path})-> [{id, line}]: literals in any ASCII letter case, regexes as written; `allow`
 //                                entries (path glob + full-match pattern) are skipped
+//   scrubAll(text, rules)        -> {text, hits}: scrubText with literals in any ASCII letter case (exports outside git)
+//   SECRET_SHAPES, withSecrets(rules), redactSecrets(text): generic secret shapes ([{id, match}]); check.mjs reports
+//                                them (never replaced in history), exports replace them with "[secret omitted: <id>]"
 // A Buffer works too (bytes, as git and filter-repo see them); {literalsOnly:true} is the binary-file mode.
 // Never print a value: errors and reports name the rule id, the token and path:line only. A regex `match` is a
 // source string valid in both JS and Python's bytes `re` (filter-repo compiles it); its token uses $1 for a group.
@@ -79,6 +83,9 @@ export function validateKnown(k, shown = 'known') {
     if (!a || typeof a.path !== 'string' || typeof a.pattern !== 'string' || !a.path) throw new Error(`${shown}: allow[${i}] needs a path and a pattern`);
     try { new RegExp(a.pattern); } catch { throw new Error(`${shown}: allow[${i}] pattern is not a valid regex`); }
   });
+  // fail-closed: an empty or partial file would make the check pass on everything (review of 10cd1810)
+  if (!literals.length) throw new Error(`${shown}: no literals (an empty known file would check nothing)`);
+  if (!literals.some((l) => l.token === '<user>') && !lanPrefixes.length) throw new Error(`${shown}: neither a "<user>" literal nor a LAN prefix`);
   return { literals, lanPrefixes, allow };
 }
 
@@ -131,10 +138,62 @@ export function buildRules(known, { home = homedir() } = {}) {
   k.lanPrefixes.forEach((p, i) => {
     if (p === LAN_NET || k.lanPrefixes.indexOf(p) !== i) return;   // the replacement net itself: nothing to hide
     rules.push({ kind: 'regex', match: `\\b${esc(p)}\\.(\\d{1,3})\\b`, token: `${LAN_NET}.$1`, id: `lan${i}` });
+    // the same address as a host name (a-b-c-d, e.g. nip.io, mDNS) and URL-encoded (%2E)
+    const o = p.split('.');
+    rules.push({ kind: 'regex', match: `\\b${o.join('-')}-(\\d{1,3})\\b`, token: `${LAN_NET.replace(/\./g, '-')}-$1`, id: `lan${i}-dash` });
+    rules.push({ kind: 'regex', match: `(?<![0-9])${o.join('%2[Ee]')}%2[Ee](\\d{1,3})\\b`, token: `${LAN_NET.replace(/\./g, '%2E')}%2E$1`, id: `lan${i}-pct` });
   });
+  // private links, anchored to their host: a claude.ai artifact, a Medium draft (a published post's slug URL stays).
+  // Artifact ids in the history are 22 characters (OBSERVED, 2026-10-13); the tests' made-up ids are shorter or the
+  // RFC 4122 example UUID 123e4567-e89b-12d3-a456-…, and stay, so the released tests still pass (as with the LAN net)
+  rules.push({ kind: 'regex', match: 'https?://claude\\.ai/(?:code/)?artifact/(?!(?i:123e4567-e89b-12d3-a456-))[A-Za-z0-9_-]{16,}', token: 'https://claude.ai/artifact/<private-artifact>', id: 'link-artifact' });
+  rules.push({ kind: 'regex', match: '\\bmedium\\.com/p/[0-9a-f]{6,}(?:/edit)?(?![A-Za-z0-9_-])', token: 'medium.com/p/<draft>', id: 'link-medium-draft' });
   assertNoHexRule(rules);
   Object.defineProperty(rules, 'allow', { value: k.allow.map((a) => ({ path: globToRegExp(a.path), pattern: new RegExp(`^(?:${a.pattern})$`) })), enumerable: false });
   return rules;
+}
+
+/**
+ * Generic secret shapes, one list for the checker (check.mjs reports them; the history rewrite never replaces them,
+ * since a token in its place would hide that one was ever committed) and the exports (redactSecrets). ids name the
+ * kind; a hit prints the id and path:line only. `match` is a JS RegExp source (compile with flag 'g').
+ */
+export const SECRET_SHAPES = [
+  { id: 'secret-github', match: '\\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})' },
+  { id: 'secret-sk', match: '\\bsk-(?:ant-[A-Za-z0-9_-]{20,}|[A-Za-z0-9]{20,})' },
+  { id: 'secret-aws', match: '\\b(?:AKIA|ASIA)[0-9A-Z]{16}\\b' },
+  { id: 'secret-bearer', match: '\\bBearer [A-Za-z0-9._~+/=-]{20,}' },
+  { id: 'secret-pem', match: '-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----' },
+  { id: 'secret-kv', match: '(?i:key|token|secret)["\']?[ \\t]*[:=][ \\t]*["\']?[A-Za-z0-9+/]{24,}={0,2}' },   // key=v, key: v, "token": "v"
+];
+
+// redactSecrets only: a whole PEM private key block (to its END line, or to the end of the text) and a key/token/secret
+// value without its name and separator
+const REDACT = {
+  'secret-pem': { re: '-----BEGIN ((?:[A-Z0-9]+ )*)PRIVATE KEY-----[\\s\\S]*?(?:-----END \\1PRIVATE KEY-----|$)', keep: '' },
+  'secret-kv': { re: '((?i:key|token|secret)["\']?[ \\t]*[:=][ \\t]*["\']?)[A-Za-z0-9+/]{24,}={0,2}', keep: '$1' },
+};
+
+/** Every secret-shape match replaced by "[secret omitted: <id>]" (exports outside git: console, chat; it matches no
+ *  shape): a PEM key block as a whole, a key=value keeping its name. Returns {text, hits:[{id,count}]}. */
+export function redactSecrets(text) {
+  let s = String(text);
+  const hits = [];
+  for (const sh of SECRET_SHAPES) {
+    let n = 0;
+    const r = REDACT[sh.id];
+    const marker = `[secret omitted: ${sh.id}]`;
+    s = s.replace(new RegExp(r ? r.re : sh.match, 'g'), (...m) => { n++; return (r && r.keep ? m[1] : '') + marker; });
+    if (n) hits.push({ id: sh.id, count: n });
+  }
+  return { text: s, hits };
+}
+
+/** The rules plus the secret shapes (kind 'regex', token '<secret>'), keeping the rules' `allow` list. */
+export function withSecrets(rules) {
+  const out = [...rules, ...SECRET_SHAPES.map((s) => ({ kind: 'regex', match: s.match, token: '<secret>', id: s.id }))];
+  Object.defineProperty(out, 'allow', { value: rules.allow || [], enumerable: false });
+  return out;
 }
 
 /** filter-repo --replace-text / --replace-message lines for the rules (values inside: write it mode 600, delete it). */
@@ -172,6 +231,22 @@ export function scrubText(text, rules, { literalsOnly = false } = {}) {
     if (n) hits.push({ id: r.id, count: n });
   }
   return { text: bytes ? Buffer.from(s, 'latin1') : s, hits };
+}
+
+/** scrubText with literals matched in any ASCII letter case (what scanText finds), for exports outside git. */
+export function scrubAll(text, rules, { literalsOnly = false } = {}) {
+  const v0 = view(text, rules), { bytes, conv } = v0;
+  let s = v0.s;
+  const hits = [];
+  for (const r of rules) {
+    if (r.kind !== 'literal') continue;
+    const v = lowerAscii(conv(r.match)), tok = conv(r.token);
+    let low = lowerAscii(s), n = 0, out = '', at = 0;
+    for (let i = low.indexOf(v); i >= 0; i = low.indexOf(v, i + v.length)) { out += s.slice(at, i) + tok; at = i + v.length; n++; }
+    if (n) { s = out + s.slice(at); hits.push({ id: r.id, count: n }); }
+  }
+  const rest = scrubText(bytes ? Buffer.from(s, 'latin1') : s, rules.filter((r) => r.kind !== 'literal'), { literalsOnly });
+  return { text: rest.text, hits: [...hits, ...rest.hits] };
 }
 
 function lineAt(starts, idx) {
