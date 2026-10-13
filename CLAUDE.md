@@ -45,12 +45,17 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
    this repo (`gh repo create`, gists, PRs). *Why:* the mirror, overlays and the Fastwork excerpts in
    `patch.diff` stay on this machine (personal study, see `README.md`). *Enforced:* deny rules,
    git-guard, the `pre-push` hook; `git remote add` and `git config remote.*` ask the user.
+   **Release exception** (user, Claude Code chat, 2026-10-13, memory "public-release"): a scrubbed public release
+   (patches in its repo; the frozen snapshot and reviewed proposal pictures and videos as GitHub Release files) is
+   built in a separate folder outside this repo. Agents build and check it; only the user pushes it and uploads its
+   files. This repo still gets no remote and no push.
 3. **Never commit Fastwork-derived or secret files, except the frozen baseline snapshot:** `out/`,
    `fixes/*/overlay/`, `.serena/cache/`, `*.pem`, `site*/.mirror/missing-local.txt`; never `git add -f`.
    `site/` and `site-pretty/` ARE committed on `main` as the study's frozen snapshot (user decision
    2026-10-01), pinned by `baseline.json`: MUST NOT stage any change to them or to `baseline.json`. Only
    the user, or the lead on the user's explicit instruction, commits a new snapshot ("Baseline snapshot").
-   `patch.diff` and the snapshot stay on this machine (rule 2). *Why:* third-party property; generated
+   `patch.diff` and the snapshot stay on this machine, except in the scrubbed public release (rule 2's release
+   exception; nothing Fastwork-derived is committed in this repo for it). *Why:* third-party property; generated
    keys; every result must name the exact build it measured. *Enforced:* `.gitignore`, deny rules on
    `git add -f`/`--force`, the `pre-commit` hook (refuses those paths, and any staged snapshot change that
    is not an authorized snapshot update: `FW_BASELINE_UPDATE=<id>`, pin = staged trees, nothing else
