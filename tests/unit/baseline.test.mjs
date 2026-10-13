@@ -268,6 +268,16 @@ test('I-270 release checkout with redacted snapshot files: exactly the listed sw
   assert.match(s.message, /^BASELINE-MODIFIED: the committed snapshot \S+ in \S+ has local changes/);
 });
 
+test('I-278 temp repos own their release manifest: makeTempRepo leaves out the checkout\'s (its redactions list the real snapshot)', () => {
+  const r = makeTempRepo({ worktree: null });
+  assert.equal(existsSync(join(r.main, 'tools', 'release', 'release-assets.json')), false);
+  assert.ok(existsSync(join(r.main, 'tools', 'release', 'init.mjs')), 'the rest of tools/release/ is copied');
+  const src = `const b = await import(${JSON.stringify(join(r.main, 'tools/lib/baseline.mjs'))}); console.log(JSON.stringify(b.releaseRedactions(${JSON.stringify(r.main)})));`;
+  const o = run(process.execPath, ['--input-type=module', '-e', src], { cwd: r.main });
+  assert.equal(o.code, 0, o.out);
+  assert.deepEqual(JSON.parse(o.stdout), { swaps: [] });
+});
+
 test('I-268 dirTreeId: the tree id git would commit, also outside a git checkout; treeFingerprint moves on any write', async () => {
   const b = await import('../../tools/lib/baseline.mjs');
   const d = tempDir('fw-dirtree-');

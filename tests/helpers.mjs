@@ -287,13 +287,16 @@ export function request(url, { method = 'GET', headers = {}, body, decode = true
  * A throwaway git repo that contains a copy of the *working-tree* tools/ (so tests exercise the code
  * under review, not HEAD), fixes/_template, package.json and .gitignore, committed on main, plus an
  * optional linked worktree at <root>/main/.claude/worktrees/<wtName>. Lives under a temp dir.
+ * The checkout's own release manifest (tools/release/release-assets.json) is left out (I-278): its redactions list the
+ * real snapshot's files, not a fixture's; a test that needs one writes and commits its own.
  * Returns {root, main, wt}.
  */
 export function makeTempRepo({ worktree = 'fix-wt', withHooks = false } = {}) {
   const root = tempDir('fw-repo-');
   const main = join(root, 'main');
   mkdirSync(main);
-  cpSync(TOOLS, join(main, 'tools'), { recursive: true });
+  const manifest = join(TOOLS, 'release', 'release-assets.json');
+  cpSync(TOOLS, join(main, 'tools'), { recursive: true, filter: (src) => src !== manifest });
   cpSync(join(REPO, 'fixes', '_template'), join(main, 'fixes', '_template'), { recursive: true });
   for (const f of ['package.json', '.gitignore']) cpSync(join(REPO, f), join(main, f));
   if (withHooks && existsSync(join(REPO, '.githooks'))) cpSync(join(REPO, '.githooks'), join(main, '.githooks'), { recursive: true });
