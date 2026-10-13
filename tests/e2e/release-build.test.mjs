@@ -134,9 +134,10 @@ test('I-270 pack: out-data text files are scrubbed, binaries kept; never-packed 
   assert.equal(ex['out/top.log'], 'loose logs');
   assert.match(ex['out/other/'], /not in the release include set/);
   const inside = r.excluded.filter((e) => e.path.startsWith('inside included')).map((e) => e.reason).sort();
-  assert.deepEqual(inside, ['Chrome profile folders', 'Finder metadata', 'SQLite databases', 'browser cookie or login stores', 'key or certificate file', 'log files',
+  assert.deepEqual(inside, ['Chrome profile folders', 'Finder metadata', 'SQLite databases', 'browser cookie or login stores',
+    'disk auto-clean leftovers (thumbnails and records of deleted pictures)', 'key or certificate file', 'log files',
     'not cited by path in the committed write-ups (out/lead, out/tryit and out/article ship only cited files)', 'screen recordings and capture logs (only the JSON results ship)']);
-  for (const a of ['out-media.tar', 'out-data.tar.gz']) for (const x of tarList(join(assets, a))) assert.ok(!/DS_Store|\.pem$|Cookies|Login Data|\.log$|\.db$|t163-draft|console-cited|link\.txt|tryit\/x\.txt|\.mov$.*iphone|iphone-screen\/r\.(mov|log)/.test(x), x);
+  for (const a of ['out-media.tar', 'out-data.tar.gz']) for (const x of tarList(join(assets, a))) assert.ok(!/_pruned-thumbs|frames-pruned|DS_Store|\.pem$|Cookies|Login Data|\.log$|\.db$|t163-draft|console-cited|link\.txt|tryit\/x\.txt|\.mov$.*iphone|iphone-screen\/r\.(mov|log)/.test(x), x);
   // out/lead and out/tryit: only what research/notes/README.md cites (its run.log is cited, but logs never ship; its
   // cited link and its out/lead/../tryit/x.txt never ship either)
   assert.equal(r.cited, 3);
@@ -585,23 +586,40 @@ test('I-270 build: the picture policy covers the release git history: committed 
   assert.ok(!rep.includes('made-up-author-7') && !sheet.includes('made-up-author-7'), 'kinds only');
 });
 
-test('I-270 historyPictures: a short run is noted unless its text or its bytes (decoded leniently) hold a known value, in any letter case', async () => {
+test('I-270 historyPictures: a short run (base64, SVG text or percent-encoded) is noted unless its text or its bytes (decoded leniently) hold a known value, in any letter case', async () => {
   const { historyPictures } = await import(join(staged.dir, 'pack.mjs'));
   const repo = tempDir('fw-hp-short-');
   git(repo, 'init', '-q', '-b', 'main');
   git(repo, 'config', 'commit.gpgsign', 'false');
   const b64 = (s) => Buffer.from(s).toString('base64');
+  const pct = (s) => [...Buffer.from(s)].map((c) => `%${c.toString(16).padStart(2, '0')}`).join('');
+  // a minimal 1x1 GIF (29 bytes, no colour table), optionally with a comment block: fits under 100 characters percent-encoded
+  const tinyGif = (comment) => Buffer.concat([Buffer.from('GIF89a', 'latin1'), Buffer.from([1, 0, 1, 0, 0, 0, 0]),
+    ...(comment ? [Buffer.from([0x21, 0xfe, comment.length]), Buffer.from(comment, 'latin1'), Buffer.from([0])] : []),
+    Buffer.from([0x2c, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 2, 0x44, 1, 0, 0x3b])]);
+  const pctU = (b) => [...b].map((c) => (/[A-Za-z0-9._~-]/.test(String.fromCharCode(c)) ? String.fromCharCode(c) : `%${c.toString(16).padStart(2, '0')}`)).join(''); // as encodeURIComponent
   writeFileSync(join(repo, 'a.md'), [
     'data:image/png;base64,AAAA', // an example: noted
     `data:image/png;base64,${b64(V.email.toUpperCase())}`, // decodes to a known value (any case)
     `data:image/png;base64,QUFB${V.home}QUFB`, // the run's own text holds one
     `data:image/png;base64,${b64(`xx${V.email}`).replace(/=+$/, '')}`, // padding missing: undecodable, decoded leniently
     `data:image\\/png;base64,${b64(V.email).replace(/\//g, '\\/')}`, // JSON's escaped form
+    `data:image/svg+xml,${'%3Csvg'}%ZZ`, // short SVG text with a bad escape: noted
+    `data:image/png,${'%89PNG'}%0D%0A`, // short percent-encoded bytes: noted
+    `data:image/png,${pct(V.email)}`, // short, but its percent-decoded bytes hold a known value
+    `data:image/png,${'%41'.repeat(40)}`, // 120 characters of percent-encoded bytes: still a problem
+    `data:image/gif,${pctU(tinyGif('x'.repeat(7)))}`, // short (under 100), but a real GIF with a comment: needs a strip
+    `data:image/gif,${pctU(tinyGif())}`, // short and a clean real GIF: checked, listed for review
   ].join('\n') + '\n');
   git(repo, 'add', '-A'); git(repo, 'commit', '-q', '-m', 'a');
   const hp = await historyPictures({ gitDir: join(repo, '.git'), rules });
-  assert.deepEqual(hp.problems.map((p) => [p.path.replace(/@[0-9a-f]{12}/, ''), p.kinds]), [2, 3, 4, 5].map((n) => [`git:a.md#data-${n}`, ['known-value-in-data-uri']]));
-  assert.deepEqual(hp.notes.map((n) => n.path.replace(/@[0-9a-f]{12}/, '')), ['git:a.md#data-1']);
+  assert.deepEqual(hp.problems.map((p) => [p.path.replace(/@[0-9a-f]{12}/, ''), p.kinds]), [
+    ...[2, 3, 4, 5, 8].map((n) => [`git:a.md#data-${n}`, ['known-value-in-data-uri']]), ['git:a.md#data-9', ['non-base64-data-uri']],
+    ['git:a.md#data-10', ['comment', 'needs a strip (not possible in history)']]]);
+  assert.deepEqual(hp.items.map((i) => i.path.replace(/@[0-9a-f]{12}/, '')), ['git:a.md#data-11']);
+  assert.deepEqual(hp.notes.map((n) => n.path.replace(/@[0-9a-f]{12}/, '')), [1, 6, 7].map((n) => `git:a.md#data-${n}`));
+  assert.match(hp.notes[1].kind, /^short SVG text URI/);
+  assert.match(hp.notes[2].kind, /^short percent-encoded URI that is no picture this reads \((not-an-image|unreadable)/);
   assert.ok(!JSON.stringify(hp.problems).includes(V.home), 'kinds and paths only');
 });
 

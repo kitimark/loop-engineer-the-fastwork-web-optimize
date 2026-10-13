@@ -77,6 +77,9 @@ export function outReason(name, isDirectory) {
 const skipFile = (rel) => (/(^|\/)(\.DS_Store|\._[^/]*)$/.test(rel) ? 'Finder metadata' : /\.(pem|key|p12|crt|cer|keychain)$/i.test(rel) ? 'key or certificate file'
   : /\.log$/i.test(rel) ? 'log files' : /(^|\/)[^/]*(Cookies|Login Data)[^/]*(\/|$)/i.test(rel) ? 'browser cookie or login stores' : null);
 const skipDir = (rel, name) => /^chrome-|-profile$|^Default$/i.test(name);
+/** The disk auto-clean's thumbnails and records of pictures it deleted (I-124 space-prune THUMB_DIR, RECORD): leftovers, not release content. */
+const PRUNED_THUMBS = '_pruned-thumbs', PRUNED_RECORD = /(^|\/)frames-pruned\.json$/;
+const PRUNED_WHY = 'disk auto-clean leftovers (thumbnails and records of deleted pictures)';
 /** A file whose first bytes say SQLite (browser history, cookies, app stores): never packed, whatever its name. */
 const isSqlite = (file) => {
   const b = Buffer.alloc(16);
@@ -132,13 +135,16 @@ export const inShippedDir = (p) => SHIPPED_DIRS.includes(p.split('/')[1]);
 export const PICTURE_RUN = 100;
 /** What a short run may be refused for and still be only noted: no picture this reads (an example, a placeholder). */
 const SHORT_NOTED = new Set(['undecodable-data-uri', 'unreadable', 'not-an-image']);
+/** The bytes of a percent-encoded data: URI payload, decoded leniently (a bad escape stays as it is). */
+const pctBytes = (s) => Buffer.from(s.replace(/%([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16))), 'latin1');
 /**
  * The picture policy over the release's git history (lead, I-270): every picture or video blob reachable from any ref
  * of `gitDir`, and every data: URI in a text blob, checked as pack.mjs checks shipped files. History cannot be stripped
  * in place, so a picture that would be stripped or refused, a video with tags beyond the encoder, a refused data: URI
  * and a run of PICTURE_RUN+ base64 characters that is no picture this reads are problems (the build is not ready); a
- * shorter such run (undecodable, unreadable, not an image) and an unparsed "data:image" are noted only (prose, code,
- * examples), but every short run's text and its bytes (decoded leniently, readable or not) are scanned for the known
+ * shorter such run (undecodable, unreadable, not an image; also a short SVG-text or percent-encoded payload, e.g. the
+ * release tools' own test fixtures) and an unparsed "data:image" are noted only (prose, code, examples), but every
+ * short run's text and its bytes (decoded leniently, base64 or percent, readable or not) are scanned for the known
  * values (any letter case; 39 bytes hold an e-mail address): a hit is a problem, known-value-in-data-uri. Only blobs a
  * ref reaches are read (others are never pushed: counted as `unreachable`). Each blob once, named by the
  * first path git lists for it: git:<path>@<short blob>[#data-N]. `extra` ([{path, buf}]): files the build is about to
@@ -181,15 +187,26 @@ export async function historyPictures({ gitDir, rules, extra = [] }) {
     for (const d of dataImages(text)) {
       const p = `${name(sha)}#data-${d.n}`;
       if (d.kind === 'unparsed') { out.notes.push({ path: p, kind: 'unparsed data:image (prose or code)', length: 0 }); continue; }
-      const short = d.kind === 'base64' && d.runLength < PICTURE_RUN;
+      // short: a base64 run, or the payload of a percent-encoded (SVG text or other) URI, under PICTURE_RUN characters
+      const len = d.kind === 'base64' ? d.runLength : d.end - d.start;
+      const short = d.kind !== 'octet' && len < PICTURE_RUN;
       if (short) {
         const run = text.slice(d.start, d.end).replace(/\\\//g, '/');
-        if (literalHits(run) || literalHits(Buffer.from(run, 'base64'))) { out.checked++; out.problems.push({ path: p, kinds: ['known-value-in-data-uri'] }); continue; }
+        if (literalHits(run) || literalHits(d.kind === 'base64' ? Buffer.from(run, 'base64') : pctBytes(run))) { out.checked++; out.problems.push({ path: p, kinds: ['known-value-in-data-uri'] }); continue; }
+        if (d.kind === 'other') {
+          // percent-encoded bytes can be a real picture (a 1x1 GIF is 73 characters): checked like a decoded base64 run
+          const bytes = pctBytes(run), r = shipImage(bytes, { name: p, literalHits });
+          if (r.action === 'refused' && r.risky.every((k) => SHORT_NOTED.has(k))) { out.notes.push({ path: p, kind: `short percent-encoded URI that is no picture this reads (${r.risky.join(', ')}; an example or placeholder)`, length: len }); continue; }
+          out.checked++;
+          if (r.action === 'clean') out.items.push({ path: p, buf: bytes });
+          else out.problems.push({ path: p, kinds: r.action === 'refused' ? r.risky : [...r.kinds, 'needs a strip (not possible in history)'] });
+          continue;
+        }
       }
       const v = dataUriVerdict(d, { name: p, literalHits });
       if (v.action === 'ignore') continue;
       if (short && v.action === 'refused' && v.kinds.every((k) => SHORT_NOTED.has(k))) {
-        out.notes.push({ path: p, kind: d.buf ? `short run that is no picture this reads (${v.kinds.join(', ')}; an example or placeholder)` : 'short undecodable run (an example or placeholder)', length: d.runLength });
+        out.notes.push({ path: p, kind: d.kind === 'svg-text' ? `short SVG text URI (${v.kinds.join(', ')}; an example or placeholder)` : d.buf ? `short run that is no picture this reads (${v.kinds.join(', ')}; an example or placeholder)` : 'short undecodable run (an example or placeholder)', length: len });
         continue;
       }
       out.checked++;
@@ -251,9 +268,9 @@ export function outFiles(outRoot, { cited = new Set() } = {}) {
     if (!isDir(join(outRoot, dir))) return [];
     const files = [];
     const others = own(dir);
-    for (const f of walkFiles(join(outRoot, dir), { skipDir: (rel, name) => { if (others.includes(rel)) return true; if (!skipDir(rel, name)) return false; skip('Chrome profile folders'); return true; } })) {
+    for (const f of walkFiles(join(outRoot, dir), { skipDir: (rel, name) => { if (others.includes(rel)) return true; if (name === PRUNED_THUMBS) { skip(PRUNED_WHY); return true; } if (!skipDir(rel, name)) return false; skip('Chrome profile folders'); return true; } })) {
       const rel = `out/${dir}/${f}`;
-      const why = skipFile(f) || (only && !only.test(f) ? onlyWhy : null) || (citedOnly && !cited.has(rel) && !(citedDirs && under(rel)) ? NOT_CITED : null) || (isSqlite(join(outRoot, dir, f)) ? 'SQLite databases' : null);
+      const why = skipFile(f) || (PRUNED_RECORD.test(f) ? PRUNED_WHY : null) || (only && !only.test(f) ? onlyWhy : null) || (citedOnly && !cited.has(rel) && !(citedDirs && under(rel)) ? NOT_CITED : null) || (isSqlite(join(outRoot, dir, f)) ? 'SQLite databases' : null);
       if (why) skip(why); else { files.push(rel); if (citedOnly) nCited++; }
     }
     return files;

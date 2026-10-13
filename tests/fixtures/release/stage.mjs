@@ -181,6 +181,8 @@ export function makeOutRoot(out) {
   put(out, 'lead/pic.avif', avif());
   put(out, 'lead/key.pem', ['-----BEGIN ', 'PRIVATE KEY-----\n'].join('')); // built at run time: no secret shape in this file
   put(out, 'lead/chrome-x/Default/Cookies', 'cookie');
+  put(out, 'ab/hero/_pruned-thumbs/figure-1.png', 'a disk auto-clean thumbnail'); // I-124 leftovers never ship
+  put(out, 'ab/hero/frames-pruned.json', '{"schema":"fw-frames-pruned/1"}\n');
   put(out, 'certs/key.pem', 'k');
   put(out, 'chrome-verify-profile/Default/History', 'h');
   put(out, 'archive/x.txt', 'x');
