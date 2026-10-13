@@ -142,7 +142,8 @@ export function makeSourceRepo(dir, git) {
     + 'A link: out/lead/link.txt. Up and over: out/lead/../tryit/x.txt.\n'
     // cited, but not in out/ (a deleted picture, an old run): CITED-MISSING; a placeholder and a word ending in "out" are no path
     + 'Gone: out/lead/gone.png, out/article/old/shot.png and out/ab/old-run/results.json. Per topic: out/check/<topic>/top.png. '
-    + 'The checkout/lead/x.png note. Relative: ../../out/article/old/x.png and ./out/people-blink/gone.mov.\n');
+    + 'The checkout/lead/x.png note. Relative: ../../out/article/old/x.png and ./out/people-blink/gone.mov. '
+    + 'Another checkout: out/scratch/run1/a.png.\n');
   git(dir, 'init', '-q', '-b', 'main');
   git(dir, 'config', 'commit.gpgsign', 'false');
   git(dir, 'add', '-A');

@@ -135,19 +135,61 @@ test('I-270 pack: out-data text files are scrubbed, binaries kept; never-packed 
   assert.match(ex['out/other/'], /not in the release include set/);
   const inside = r.excluded.filter((e) => e.path.startsWith('inside included')).map((e) => e.reason).sort();
   assert.deepEqual(inside, ['Chrome profile folders', 'Finder metadata', 'SQLite databases', 'browser cookie or login stores', 'key or certificate file', 'log files',
-    'not cited by path in the committed write-ups (out/lead, out/tryit ship only cited files)', 'screen recordings and capture logs (only the JSON results ship)']);
+    'not cited by path in the committed write-ups (out/lead, out/tryit and out/article ship only cited files)', 'screen recordings and capture logs (only the JSON results ship)']);
   for (const a of ['out-media.tar', 'out-data.tar.gz']) for (const x of tarList(join(assets, a))) assert.ok(!/DS_Store|\.pem$|Cookies|Login Data|\.log$|\.db$|t163-draft|console-cited|link\.txt|tryit\/x\.txt|\.mov$.*iphone|iphone-screen\/r\.(mov|log)/.test(x), x);
   // out/lead and out/tryit: only what research/notes/README.md cites (its run.log is cited, but logs never ship; its
   // cited link and its out/lead/../tryit/x.txt never ship either)
   assert.equal(r.cited, 3);
   assert.deepEqual(tarList(data).filter((x) => /^out\/(lead|tryit)\//.test(x)), ['out/tryit/t.diff', 'out/lead/notes.txt', 'out/lead/pic.avif']);
   assert.deepEqual(r.textFiles, ['out/ab/hero/results.json', 'out/iphone-screen/r.json', 'out/snapshots/best/x.js', 'out/tryit/t.diff', 'out/lead/notes.txt'], 'every shipped text file, for the needs-human-read list');
-  assert.deepEqual(PK.citedOutPaths({ source: f.source }), new Set(['out/lead/notes.txt', 'out/lead/pic.avif', 'out/tryit/t.diff', 'out/lead/run.log', 'out/lead/link.txt', 'out/lead/gone.png']), 'no .. path');
+  assert.deepEqual(PK.citedOutPaths({ source: f.source }), new Set(['out/lead/notes.txt', 'out/lead/pic.avif', 'out/tryit/t.diff', 'out/lead/run.log', 'out/lead/link.txt', 'out/lead/gone.png', 'out/article/old/shot.png', 'out/article/old/x.png']), 'no .. path');
   // any out/ folder: what out/ does not have is CITED-MISSING (a link counts as there; placeholders and checkout/ are no path)
   const all = PK.citedOutAll({ source: f.source });
-  assert.deepEqual([...all].sort(), ['out/ab/old-run/results.json', 'out/article/old/shot.png', 'out/article/old/x.png', 'out/lead/gone.png', 'out/lead/link.txt', 'out/lead/notes.txt', 'out/lead/pic.avif', 'out/lead/run.log', 'out/people-blink/gone.mov', 'out/tryit/t.diff']);
-  assert.deepEqual(PK.citedMissing(f.outRoot, all), ['out/ab/old-run/results.json', 'out/article/old/shot.png', 'out/article/old/x.png', 'out/lead/gone.png', 'out/people-blink/gone.mov'], '../../out/ and ./out/ citations count');
-  assert.deepEqual(PK.citedMissing(f.outRoot, all).filter(PK.inShippedDir), ['out/ab/old-run/results.json', 'out/lead/gone.png', 'out/people-blink/gone.mov'], 'out/article is no folder the release ships from');
+  assert.deepEqual([...all].sort(), ['out/ab/old-run/results.json', 'out/article/old/shot.png', 'out/article/old/x.png', 'out/lead/gone.png', 'out/lead/link.txt', 'out/lead/notes.txt', 'out/lead/pic.avif', 'out/lead/run.log', 'out/people-blink/gone.mov', 'out/scratch/run1/a.png', 'out/tryit/t.diff']);
+  assert.deepEqual(PK.citedMissing(f.outRoot, all), ['out/ab/old-run/results.json', 'out/article/old/shot.png', 'out/article/old/x.png', 'out/lead/gone.png', 'out/people-blink/gone.mov', 'out/scratch/run1/a.png'], '../../out/ and ./out/ citations count');
+  assert.deepEqual(PK.citedMissing(f.outRoot, all).filter(PK.inShippedDir), ['out/ab/old-run/results.json', 'out/article/old/shot.png', 'out/article/old/x.png', 'out/lead/gone.png', 'out/people-blink/gone.mov'], 'out/article ships (cited files), out/scratch is no folder the release ships from');
+});
+
+test('I-270 pack: the cited out/article (a cited folder: every file in it) and out/lead/medium-images, out/lead/medium-visuals ship: pictures and videos in out-media through the picture check, other files in out-data scrubbed', async () => {
+  const f = fixture();
+  const put = (rel, data) => { mkdirSync(dirname(join(f.outRoot, rel)), { recursive: true }); writeFileSync(join(f.outRoot, rel), data); };
+  put('article/kit/fig.png', png(40, 30, '', [pngChunk('tEXt', 'Author\0someone')]));
+  put('article/kit/sub/notes.md', `drafted at /Users/${V.home}/x\n`);
+  put('article/kit/run.log', 'a log in a cited folder\n');
+  put('article/single.png', png(20, 20));
+  put('article/loose.txt', 'not cited\n');
+  put('article/other/fig.png', png(10, 10));
+  put('lead/medium-visuals/v01.png', png(30, 30));
+  put('lead/medium-visuals/v02.gif', gif([gifComment('made by someone')]));
+  put('lead/medium-visuals/manifest.json', JSON.stringify({ by: V.name }));
+  put('lead/medium-visuals/bad.avif', avif(true));
+  put('lead/medium-images/_thumbs/f.png', png(8, 8));
+  put('lead/other-drafts/x.png', png(8, 8));
+  writeFileSync(join(f.source, 'research', 'notes', 'art.md'), 'See out/article/kit/ and out/article/single.png.\n');
+  git(f.source, 'add', 'research'); git(f.source, 'commit', '-q', '-m', 'cite');
+  const assets = join(f.d, 'assets');
+  const r = await PK.packRelease({ source: f.source, mediaDir: f.media, outRoot: f.outRoot, assetsDir: assets, rules });
+  const media = tarList(join(assets, 'out-media.tar')), data = tarList(join(assets, 'out-data.tar.gz'));
+  const pick = (list, re) => list.filter((x) => re.test(x)).sort();
+  assert.deepEqual(pick(media, /^out\/(article|lead)\//), ['out/article/kit/fig.png', 'out/article/single.png', 'out/lead/medium-images/_thumbs/f.png', 'out/lead/medium-visuals/v01.png', 'out/lead/medium-visuals/v02.gif']);
+  assert.deepEqual(pick(data, /^out\/(article|lead\/medium)/), ['out/article/kit/sub/notes.md', 'out/lead/medium-visuals/manifest.json'], 'other files under the text rules (a log never ships)');
+  assert.ok(!data.some((x) => /medium-visuals\/v0|other-drafts|loose\.txt|other\/fig/.test(x)) && !media.some((x) => /other-drafts|loose\.txt|other\/fig/.test(x)), 'nothing else of out/lead or out/article; no file twice');
+  assert.deepEqual(r.images.stripped.filter((s) => /^out\/(article|lead)\//.test(s.path)).map((s) => [s.path, s.kinds]).sort(), [['out/article/kit/fig.png', ['text']], ['out/lead/medium-visuals/v02.gif', ['comment']]]);
+  assert.deepEqual(r.images.refused, [{ path: 'out/lead/medium-visuals/bad.avif', kinds: ['xmp'] }], 'a picture with metadata there is refused: not ready');
+  assert.ok(!media.includes('out/lead/medium-visuals/bad.avif'));
+  const notes = spawnSync('tar', ['-xzOf', join(assets, 'out-data.tar.gz'), 'out/article/kit/sub/notes.md'], { encoding: 'utf8' }).stdout;
+  assert.equal(notes, 'drafted at /Users/<user>/x\n', 'scrubbed like any out-data text');
+  assert.ok(r.textFiles.includes('out/article/kit/sub/notes.md') && r.textFiles.includes('out/lead/medium-visuals/manifest.json'), 'on the needs-human-read list');
+  assert.deepEqual(PK.SHIPPED_DIRS.filter((x) => ['article', 'lead'].includes(x)), ['lead', 'article']);
+  assert.equal(r.excluded.some((e) => e.path === 'out/article/'), false, 'out/article is in the include set');
+});
+
+test('I-270 build: LOST-FILES.md names paths only, scrubbed like any text', async () => {
+  const { lostFiles } = await import(join(staged.dir, 'build.mjs'));
+  const t = lostFiles([`out/lead/${V.home}-notes.txt`, 'out/lead/gone.png'], ['out/lead/gone.png'], rules);
+  assert.equal(t, '# Lost files\n\nThese files were deleted before the release. The write-ups that cite them link to nothing: the links below are broken in the published text.\n\n'
+    + '## Pictures and videos (1)\n\n- out/lead/gone.png\n\n## Other files (1)\n\n- out/lead/<user>-notes.txt\n');
+  assert.match(lostFiles([], [], rules), /\(0\)\n\nNone\.\n\n## Other files \(0\)\n\nNone\.\n$/);
 });
 
 test('I-270 pack: AppleDouble ._ files (a restore may bring them) are skipped as Finder metadata, never refused pictures', async () => {
@@ -347,7 +389,8 @@ test('I-270 build: release repo + console export commit + assets + CHECK 0 resid
   assert.equal(git(repo, 'log', '-1', '--format=%s'), 'release: console record export');
   const changed = git(repo, 'show', '--name-only', '--format=', 'HEAD').split('\n');
   assert.ok(changed.includes('console/index.md') && changed.includes('console/threads/T-001.md') && changed.includes('console/.gitignore') && changed.includes('tools/release/release-assets.json'));
-  assert.ok(changed.every((x) => x.startsWith('console/') || x === 'tools/release/release-assets.json'), 'the last commit holds only the console export and the manifest');
+  assert.ok(changed.includes('LOST-FILES.md'));
+  assert.ok(changed.every((x) => x.startsWith('console/') || x === 'tools/release/release-assets.json' || x === 'LOST-FILES.md'), 'the last commit holds only the console export, the manifest and LOST-FILES.md');
   assert.ok(!existsSync(join(repo, 'chat')) && !existsSync(join(b.out, 'chat')), 'no chat export (user T-170 #454)');
   for (const f of ['LICENSE', 'LICENSES/MIT.txt', 'REUSE.toml']) {
     assert.deepEqual(readFileSync(join(repo, f)), readFileSync(join(b.source, f)), `${f} byte-identical`);
@@ -391,12 +434,19 @@ test('I-270 build: release repo + console export commit + assets + CHECK 0 resid
   assert.match(rep, /\| out\/article-video\/v\.mp4 \|  \| video: watch it \| container metadata stripped \|/, 'out/ media on the review sheet');
   // out/lead: only what the committed write-ups cite (a console thread naming a file ships nothing); every shipped
   // out-data text file on the human-read list
-  assert.match(r.stdout, /^CITED 3 out\/lead and out\/tryit file\(s\) ship \(6 path\(s\) cited\)$/m);
+  assert.match(r.stdout, /^CITED 3 out\/lead, out\/tryit and out\/article file\(s\) ship \(8 path\(s\) cited\)$/m);
   // cited but not in out/: reported (pictures first in the report), not a refusal
-  assert.match(r.stdout, /^CITED-MISSING 3 out\/ path\(s\) cited by the committed text do not exist \(2 picture or video file\(s\)\); listed in the scrub report$/m);
-  assert.match(r.stdout, /^CITED-ELSEWHERE 2 \(per-worktree outputs, never shipped\)$/m);
-  assert.match(rep, /## Cited but missing in out\/\n[\s\S]*?Not listed: 2 missing path\(s\) in other out\/ folders[\s\S]*?\n- out\/lead\/gone\.png\n- out\/people-blink\/gone\.mov\n- out\/ab\/old-run\/results\.json\n\n/);
-  assert.doesNotMatch(rep, /^- out\/article\//m);
+  assert.match(r.stdout, /^CITED-MISSING 5 out\/ path\(s\) cited by the committed text do not exist \(4 picture or video file\(s\)\); listed in the scrub report$/m);
+  assert.match(r.stdout, /^CITED-ELSEWHERE 1 \(per-worktree outputs, never shipped\)$/m);
+  const lost = ['out/article/old/shot.png', 'out/article/old/x.png', 'out/lead/gone.png', 'out/people-blink/gone.mov', 'out/ab/old-run/results.json'];
+  assert.ok(rep.includes(`\n${lost.map((p) => `- ${p}`).join('\n')}\n\n`), 'the report lists them, pictures and videos first');
+  assert.doesNotMatch(rep, /^- out\/scratch\//m);
+  // LOST-FILES.md at the release repo's root: the same list, in the release commit, scrubbed
+  const lf = readFileSync(join(repo, 'LOST-FILES.md'), 'utf8');
+  assert.match(lf, /^# Lost files\n\nThese files were deleted before the release\. The write-ups that cite them link to nothing/);
+  assert.deepEqual(lf.split('\n').filter((l) => l.startsWith('- ')).map((l) => l.slice(2)), lost);
+  assert.match(lf, /## Pictures and videos \(4\)\n\n- out\/article\/old\/shot\.png\n[\s\S]*## Other files \(1\)\n\n- out\/ab\/old-run\/results\.json\n$/);
+  assert.equal(git(repo, 'show', 'HEAD:LOST-FILES.md') + '\n', lf, 'committed in the release commit');
   // no xattrs, ACLs or Apple metadata in any archive, the snapshot's git archive included
   assert.match(r.stdout, /^TAR-META 0 xattr, ACL or Apple metadata record\(s\) in 4 archive\(s\)$/m);
   assert.match(r.stdout, /^HISTORY-PICTURES 0 checked in \d+ blob\(s\) of every ref \(0 clean, listed for review\), 0 problem\(s\), 0 noted; 0 unreachable blob\(s\) skipped \(never pushed\); \d+(\.\d)? s$/m);

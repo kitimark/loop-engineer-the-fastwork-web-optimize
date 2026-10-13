@@ -21,12 +21,14 @@
 //   4. pictures.mjs -> <dir>/media and <dir>/review-sheet.md
 //   5. pack.mjs -> <dir>/assets/* and <dir>/repo/tools/release/release-assets.json; the snapshot's secret-shaped values
 //                (third-party keys in vendored code) are redacted and listed in the manifest (I-270), REDACTED lines;
-//                out/lead and out/tryit only as far as the committed write-ups cite them (CITED line);
+//                out/lead, out/tryit and out/article only as far as the committed write-ups cite them (CITED line;
+//                out/lead/medium-images and out/lead/medium-visuals whole);
 //                pictures stripped of metadata or refused (IMAGES, IMAGE-REFUSED lines); every out/ path the committed
 //                text cites that out/ does not have is reported (CITED-MISSING line, the paths in the report), not refused
-//   6. commit    the console export and the manifest go onto main as one last commit "release: console
-//                record export" (console/.gitignore keeps the unpacked pictures out of git); they are made from the
-//                store after the rewrite, so they enter history only in this commit
+//   6. commit    the console export, the manifest and LOST-FILES.md (the CITED-MISSING paths, pictures and videos
+//                first, scrubbed) go onto main as one last commit "release: console record export" (console/.gitignore
+//                keeps the unpacked pictures out of git); they are made from the store after the rewrite, so they enter
+//                history only in this commit
 //   7. check     tools/release/check.mjs over the mirror (all refs, every object) and over every asset unpacked; the
 //                licence files (LICENSE, LICENSES/, REUSE.toml, LICENSING.md) must come out of the rewrite byte-identical
 //                (same blob ids as the source HEAD), else a rule matched them: LICENCE-CHANGED, not ready; every
@@ -46,7 +48,7 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync, cpSync
 import { join, resolve, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { loadKnown, buildRules, scanText, safeText } from './rules.mjs';
+import { loadKnown, buildRules, scanText, safeText, scrubAll } from './rules.mjs';
 import { parseArgs, knownFile, addHits, isDir, tarExtract, insideAny, show, scanFileLiterals, tarMetaHits, isVideo, walkFiles } from './release-util.mjs';
 import { exportConsole } from './export-console.mjs';
 import { encodePictures } from './pictures.mjs';
@@ -130,6 +132,18 @@ function historyRows(h) {
   return rows;
 }
 
+/**
+ * LOST-FILES.md at the release repo's root (user T-170 #485): the out/ paths the write-ups cite that were deleted
+ * before the release (the CITED-MISSING list), pictures and videos first; paths only, scrubbed like any other text.
+ */
+export function lostFiles(missing, missingPictures, rules) {
+  const other = missing.filter((p) => !missingPictures.includes(p));
+  const list = (xs) => (xs.length ? xs.map((p) => `- ${p}`).join('\n') + '\n' : 'None.\n');
+  return scrubAll(`# Lost files\n\nThese files were deleted before the release. The write-ups that cite them link to nothing: `
+    + `the links below are broken in the published text.\n\n## Pictures and videos (${missingPictures.length})\n\n${list(missingPictures)}`
+    + `\n## Other files (${other.length})\n\n${list(other)}`, rules).text;
+}
+
 export function scrubReport(d) {
   const ids = [...new Set([...d.rules.map((r) => r.id), ...d.cons.keys(), ...d.data.keys(), ...d.residual.keys()])];
   const tok = new Map(d.rules.map((r) => [r.id, r.token]));
@@ -180,7 +194,7 @@ export function scrubReport(d) {
     + (d.hp.notes.length ? `Noted:\n\n${d.hp.notes.map((x) => `- ${safeText(x.path, d.rules)}: ${x.kind}${x.length ? `, ${x.length} characters` : ''}`).join('\n')}\n` : '')
     + `\n## Cited but missing in out/\n\nout/ paths the committed write-ups (research/, fixes/, memory/, README files) cite under a `
     + `folder the release ships from (out/${SHIPPED_DIRS.join(', out/')}) that this out/ does not have: deleted or never copied here. `
-    + `Each is a broken link in the published text (reported, not a refusal). ${d.missing.length} path(s), ${d.missingPictures.length} of `
+    + `Each is a broken link in the published text (reported, not a refusal; LOST-FILES.md in the release repo lists them). ${d.missing.length} path(s), ${d.missingPictures.length} of `
     + `them picture or video files (first). Not listed: ${d.elsewhere} missing path(s) in other out/ folders (per-worktree outputs, `
     + `never shipped).\n\n`
     + (d.missing.length ? [...d.missingPictures, ...d.missing.filter((p) => !d.missingPictures.includes(p))].map((p) => `- ${safeText(p, d.rules)}`).join('\n') + '\n' : 'None.\n')
@@ -227,7 +241,7 @@ async function main() {
 
   step('export-console');
   const exp = exportConsole({ state, out: join(out, 'console'), rules });
-  // out/lead and out/tryit ship only the files the committed write-ups cite by path (never a console mention)
+  // out/lead, out/tryit and out/article ship only the files the committed write-ups cite by path (never a console mention)
   const cited = citedOutPaths({ source });
   step('history-pictures');
   // the picture policy over the release repo too: every picture and video blob of every ref, every data: URI in a text
@@ -242,7 +256,7 @@ async function main() {
   const pic = await encodePictures({ state, out: join(out, 'media'), sheet: join(out, 'review-sheet.md'), outRoot, cited, rules, quality, lossless: !!a.lossless, jobs: a.jobs, extra: hp.items });
   step('pack');
   const pk = await packRelease({ source, mediaDir: join(out, 'media'), outRoot, assetsDir: join(out, 'assets'), manifest: join(repo, 'tools', 'release', 'release-assets.json'), rules, tag: a.tag, repo: a.repo, cited });
-  console.log(`CITED ${pk.cited} out/lead and out/tryit file(s) ship (${cited.size} path(s) cited)`);
+  console.log(`CITED ${pk.cited} out/lead, out/tryit and out/article file(s) ship (${cited.size} path(s) cited)`);
   console.log(`IMAGES ${pk.images.checked} checked, ${pk.images.stripped.length} stripped, ${pk.images.refused.length} refused`);
   for (const x of pk.images.refused) console.log(`IMAGE-REFUSED ${safeText(x.path, rules)}: ${x.kinds.join(', ')}`);
   for (const x of pk.redacted) console.log(`REDACTED ${safeText(x.path, rules)} ${x.rule} ${x.count}`);
@@ -260,7 +274,8 @@ async function main() {
   rmSync(join(repo, 'console'), { recursive: true, force: true });
   cpSync(join(out, 'console'), join(repo, 'console'), { recursive: true });
   writeFileSync(join(repo, 'console', '.gitignore'), '# proposal pictures and videos: a Release file (proposal-media.tar), unpacked by npm run init\nproposals/*/\n');
-  git(['add', '-A', '--', 'console', 'tools/release/release-assets.json'], repo);
+  writeFileSync(join(repo, 'LOST-FILES.md'), lostFiles(missing, missingPictures, rules));
+  git(['add', '-A', '--', 'console', 'tools/release/release-assets.json', 'LOST-FILES.md'], repo);
   git(['commit', '-q', '-m', FINAL_SUBJECT], repo);
   const releaseSha = git(['rev-parse', 'HEAD'], repo);
 

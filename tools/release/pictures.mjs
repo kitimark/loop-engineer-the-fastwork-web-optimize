@@ -7,8 +7,8 @@
 //                                   [--known <file>] [--quality 85] [--lossless] [--sheet <file>] [--jobs N]
 //
 //   --out       media tree root; files land in <out>/console/proposals/PR-NNN/<name>.webp|.mp4 (the release paths)
-//   --out-root  also list the out/ media and data pack.mjs ships (their images and videos) on the sheet; out/lead and
-//               out/tryit as far as --source's committed write-ups (default: this repo's main checkout) cite them
+//   --out-root  also list the out/ media and data pack.mjs ships (their images and videos) on the sheet; out/lead,
+//               out/tryit and out/article as far as --source's committed write-ups (default: this repo's main checkout) cite them
 //   --sheet     the review sheet (default <out>/../review-sheet.md; never inside --out, which is packed)
 //   --quality   cwebp -q (default 85); --lossless uses cwebp -lossless instead
 //   --jobs      parallel encoder/OCR processes (default: cores - 1, at most 4)

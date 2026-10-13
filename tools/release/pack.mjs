@@ -16,12 +16,15 @@
 //                                  literals are never redacted and shipped)
 //   proposal-media.tar             the --media tree from pictures.mjs (console/proposals/PR-NNN/*.webp|*.mp4)
 //   out-media.tar                  out/article-gifs, out/article-video, out/people-blink, as they are, except that the
-//                                  MP4/MOV videos lose their container metadata (ffmpeg -map_metadata -1 -c copy)
+//                                  MP4/MOV videos lose their container metadata (ffmpeg -map_metadata -1 -c copy); the
+//                                  pictures and videos of out/lead/medium-images, out/lead/medium-visuals and of the
+//                                  cited out/article (a cited folder: every file in it)
 //   out-data.tar.gz                out/ab, out/iphone-screen/*.json, out/snapshots, and of out/tryit and out/lead only the
 //                                  files the committed text cites by path (git grep over HEAD's research/, fixes/,
 //                                  memory/, README files; no `..`; a linked included folder is refused); every text
 //                                  file scrubbed (rules.mjs scrubAll: known literals in any letter case, then the
-//                                  regexes) and listed for a human read, binary files as they are
+//                                  regexes) and listed for a human read, binary files as they are; the other files of
+//                                  out/lead/medium-images, out/lead/medium-visuals and the cited out/article too
 // Pictures (imagemeta.mjs; every file with a picture name, whatever its bytes): PNG and GIF lose their text, date and
 // EXIF chunks/blocks losslessly; a JPEG, AVIF or WebP with XMP, IPTC, a comment, GPS, camera, owner or other non-pixel
 // EXIF data, a file that is no picture it reads, HEIC/TIFF/BMP/JPEG XL, and a PNG colour profile with a known value
@@ -53,8 +56,12 @@ export const OUT_MEDIA = ['article-gifs', 'article-video', 'people-blink'];
 // out/lead and out/tryit hold the lead's scratch files (reply drafts, logs) next to the few the write-ups cite: only
 // the files the committed text cites by path ship (citedOutPaths)
 export const OUT_DATA = [{ dir: 'ab' }, { dir: 'iphone-screen', only: /\.json$/i, why: 'screen recordings and capture logs (only the JSON results ship)' }, { dir: 'snapshots' }, { dir: 'tryit', citedOnly: true }, { dir: 'lead', citedOnly: true }];
-export const CITED_ONLY = OUT_DATA.filter((d) => d.citedOnly).map((d) => d.dir);
-const NOT_CITED = 'not cited by path in the committed write-ups (out/lead, out/tryit ship only cited files)';
+// out/article and the article's picture folders in out/lead (user T-170 #485): their pictures and videos ship in
+// out-media.tar (the picture check, fail closed), every other file in out-data.tar.gz under the text rules; out/article
+// only as far as the write-ups cite it, where a cited folder ships every file in it
+export const OUT_SPLIT = [{ dir: 'article', citedOnly: true, citedDirs: true }, { dir: 'lead/medium-images' }, { dir: 'lead/medium-visuals' }];
+export const CITED_ONLY = [...OUT_DATA, ...OUT_SPLIT].filter((d) => d.citedOnly).map((d) => d.dir);
+const NOT_CITED = 'not cited by path in the committed write-ups (out/lead, out/tryit and out/article ship only cited files)';
 /** out/ entries never packed, with the scrub report's reason; other entries: "not cited by the write-ups". */
 export function outReason(name, isDirectory) {
   if (name === 'certs') return 'TLS keys and certificates';
@@ -117,8 +124,8 @@ export function citedOutAll({ source }) {
   }
   return cited;
 }
-/** The out/ folders the release ships from (out-media and out-data include sets, out/lead and out/tryit among them). */
-export const SHIPPED_DIRS = [...OUT_MEDIA, ...OUT_DATA.map((d) => d.dir)];
+/** The out/ folders the release ships from (out-media and out-data include sets, out/lead, out/tryit and out/article among them). */
+export const SHIPPED_DIRS = [...new Set([...OUT_MEDIA, ...OUT_DATA.map((d) => d.dir), ...OUT_SPLIT.map((d) => d.dir.split('/')[0])])];
 /** A cited path under one of SHIPPED_DIRS (else another checkout's or a never-shipped output). */
 export const inShippedDir = (p) => SHIPPED_DIRS.includes(p.split('/')[1]);
 /** Base64 runs shorter than this that do not decode are prose or code (an example, "...", a placeholder), not a picture. */
@@ -226,27 +233,34 @@ export function citedMissing(outRoot, cited) {
 /**
  * The out/ files the release ships, as out/... paths: {media, data, skipped: Map(reason -> count), cited: number of
  * shipped cited files}. Regular files only (links and special files never: npm run init refuses them), minus the
- * never-packed files above; in out/lead and out/tryit only the paths in `cited` (citedOutPaths; none without it).
+ * never-packed files above; in out/lead and out/tryit only the paths in `cited` (citedOutPaths; none without it), in
+ * out/article also every file below a cited folder; out/lead/medium-images and out/lead/medium-visuals whole.
  */
 export function outFiles(outRoot, { cited = new Set() } = {}) {
   const skipped = new Map();
   const skip = (why) => skipped.set(why, (skipped.get(why) || 0) + 1);
   let nCited = 0;
-  const pick = (dir, { only, why: onlyWhy, citedOnly } = {}) => {
+  const under = (rel) => { for (let p = dirname(rel); p !== 'out' && p !== '.'; p = dirname(p)) if (cited.has(p)) return true; return false; };
+  // folders another entry packs (out/lead/medium-visuals is OUT_SPLIT's, not out/lead's)
+  const own = (dir) => OUT_SPLIT.map((d) => d.dir).filter((d) => d.startsWith(`${dir}/`)).map((d) => d.slice(dir.length + 1));
+  const pick = (dir, { only, why: onlyWhy, citedOnly, citedDirs } = {}) => {
     // an included folder that is a link could point anywhere (the home folder, another checkout): refused
     let st = null;
     try { st = lstatSync(join(outRoot, dir)); } catch {}
     if (st?.isSymbolicLink()) throw new Error(`out/${dir} is a symbolic link; the release packs real folders only`);
     if (!isDir(join(outRoot, dir))) return [];
     const files = [];
-    for (const f of walkFiles(join(outRoot, dir), { skipDir: (rel, name) => { if (!skipDir(rel, name)) return false; skip('Chrome profile folders'); return true; } })) {
+    const others = own(dir);
+    for (const f of walkFiles(join(outRoot, dir), { skipDir: (rel, name) => { if (others.includes(rel)) return true; if (!skipDir(rel, name)) return false; skip('Chrome profile folders'); return true; } })) {
       const rel = `out/${dir}/${f}`;
-      const why = skipFile(f) || (only && !only.test(f) ? onlyWhy : null) || (citedOnly && !cited.has(rel) ? NOT_CITED : null) || (isSqlite(join(outRoot, dir, f)) ? 'SQLite databases' : null);
+      const why = skipFile(f) || (only && !only.test(f) ? onlyWhy : null) || (citedOnly && !cited.has(rel) && !(citedDirs && under(rel)) ? NOT_CITED : null) || (isSqlite(join(outRoot, dir, f)) ? 'SQLite databases' : null);
       if (why) skip(why); else { files.push(rel); if (citedOnly) nCited++; }
     }
     return files;
   };
-  return { media: OUT_MEDIA.flatMap((d) => pick(d)), data: OUT_DATA.flatMap((d) => pick(d.dir, d)), skipped, cited: nCited };
+  const media = OUT_MEDIA.flatMap((d) => pick(d)), data = OUT_DATA.flatMap((d) => pick(d.dir, d));
+  for (const d of OUT_SPLIT) for (const rel of pick(d.dir, d)) (IMAGE_FILE.test(rel) || isVideo(rel) ? media : data).push(rel);
+  return { media, data, skipped, cited: nCited };
 }
 
 function git(cwd, ...args) {
@@ -430,7 +444,7 @@ export async function packRelease({ source, mediaDir, outRoot, assetsDir, manife
     counts['proposal-media'] = media.length;
     if (media.length) { const p = join(assetsDir, 'proposal-media.tar'); tarCreate(p, mediaDir, media); assets.push(await asset(p, 'media', maxBytes)); }
     // 3. out/: what is left out, then media as they are, then data scrubbed
-    const included = new Set([...OUT_MEDIA, ...OUT_DATA.map((d) => d.dir)]);
+    const included = new Set(SHIPPED_DIRS);
     if (isDir(outRoot)) for (const e of readdirSync(outRoot, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       if (!included.has(e.name)) excluded.push({ path: `out/${e.name}${e.isDirectory() ? '/' : ''}`, reason: outReason(e.name, e.isDirectory()) });
     }
@@ -470,7 +484,7 @@ export async function packRelease({ source, mediaDir, outRoot, assetsDir, manife
     });
     counts['out-data'] = od.length;
     counts['out-data-text'] = scrubbed;
-    counts['out/lead and out/tryit files cited'] = of.cited;
+    counts['out/lead, out/tryit and out/article files cited'] = of.cited;
     counts['images checked'] = images.checked;
     counts['images stripped'] = images.stripped.length;
     counts['images refused'] = images.refused.length;
@@ -498,7 +512,7 @@ async function main() {
   const rules = RULES = buildRules(loadKnown(knownFile(a)));
   const r = await packRelease({ source, mediaDir: resolve(a.media), outRoot: resolve(a['out-root'] || join(source, 'out')), assetsDir: resolve(a.assets), manifest: a.manifest && resolve(a.manifest), rules, tag: a.tag, repo: a.repo });
   for (const x of r.assets) console.log(`ASSET ${x.name} ${x.bytes} ${x.sha256} ${x.kind}`);
-  console.log(`CITED ${r.cited} out/lead and out/tryit file(s) ship (cited by path)`);
+  console.log(`CITED ${r.cited} out/lead, out/tryit and out/article file(s) ship (cited by path)`);
   console.log(`IMAGES ${r.images.checked} checked, ${r.images.stripped.length} stripped, ${r.images.refused.length} refused`);
   for (const x of r.images.refused) console.log(`IMAGE-REFUSED ${safeText(x.path, rules)}: ${x.kinds.join(', ')}`);
   for (const h of r.hits) console.log(`SCRUB ${h.id} ${h.count}`);
