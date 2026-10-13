@@ -81,7 +81,8 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
    write fixes in the main checkout, `fix.mjs doctor`; otherwise convention. Details: "Parallel agents",
    roles and who may do what: `fixes/AGENT_ROLES.md`.
 6. **Tooling is guarded by tests.** Agents MAY change `tools/` to fix a bug or unblock work. Such a
-   change MUST come with a covering test (new or updated in `tests/`) and `npm test` MUST pass; an
+   change MUST come with a covering test (new or updated in `tests/`) and `npm test` MUST pass (a commit that
+   touches only the release tools runs `npm run test:release`, user T-170 #489, 2026-10-13); an
    accidental edit caught by a failing test MUST be reverted; tests MUST NOT be weakened to go green
    (change a test only for a genuine, intended behaviour change). Roles that never change tooling
    (fix owners, integrators, bench authors, architecture, management, reviewers) run
@@ -93,7 +94,7 @@ you). Never work around an enforcement layer (`--no-verify`, `-c core.hooksPath=
    affect A/B comparability. The enforcement
    layer (`.githooks/`, `.claude/hooks/`, `.claude/settings.json`) is not tooling: edits ask the user.
    *Why:* tools have bugs; tests, not a ban, keep them right for every agent. *Enforced:* the
-   `pre-commit` hook runs `npm test` when tooling is staged; `fix-reviewer` checks tests and commit
+   `pre-commit` hook runs `npm test` when tooling is staged (release-only: `test:release`); `fix-reviewer` checks tests and commit
    separation; ask rules on the enforcement layer. Details: "Tooling is guarded by tests".
 7. **Chrome measurements only through the `chrome-measure` lock:** `tools/verify.mjs` or
    `tools/fix.mjs ab`, never `--no-lock`, and no CPU-heavy work (builds, `npx`, other Chromes) while
@@ -250,6 +251,7 @@ dependencies). The tests are the hardening, not permission prompts:
 ```sh
 npm test              # default: unit + e2e + hook tests on a tiny fixture baseline; no Chrome, network or iPhone (~165 s of wall time, ~285 CPU-s at --test-concurrency=6, I-076)
 npm run test:unit     # non-tooling roles: scope guard, then the unit tests only (~5 s, ~7 CPU-s)
+npm run test:release  # the pre-commit run for release-only commits: unit tests + tests/e2e/release-*.test.mjs
 npm run test:scope    # the scope guard alone (node tools/scope.mjs)
 npm run test:chrome   # opt-in: real Chrome, short runs, queues on the real chrome-measure lock (~2 min)
 npm run test:all      # both
@@ -292,7 +294,9 @@ npm run test:all      # both
   comparability of A/B results measured before and after. Run `npm run test:chrome` after them.
 - `.githooks/pre-commit` (enable once per clone: `npm run setup`, i.e.
   `git config core.hooksPath .githooks`, shared by all worktrees) runs `npm test` when a commit
-  touches the paths above and blocks the commit if it fails; it also blocks staged `out/`,
+  touches the paths above and blocks the commit if it fails (a commit whose only tooling paths are
+  `tools/release/`, `tests/unit|e2e/release-*.test.mjs` and `tests/fixtures/release/` runs `npm run test:release`
+  instead, user T-170 #489; any other tooling path, package.json included, still runs `npm test`); it also blocks staged `out/`,
   `fixes/*/overlay/`, `.serena/cache/`, `*.pem` and `site*/.mirror/missing-local.txt`, and any staged
   change to `site/`, `site-pretty/` or `baseline.json` that is not an authorized snapshot update
   ("Baseline snapshot"). Never bypass it (`--no-verify`, `-c core.hooksPath=...`).
